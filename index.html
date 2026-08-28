@@ -4254,26 +4254,13 @@
                 const bannerBox = (innerLines, { forceCols = null } = {}) => {
                     const innerCols = forceCols
                         ? forceCols
-                        : Math.max(70, ...innerLines.map(displayWidth));
-                    // Per-row layout using ECMA-48 CHA (CSI Horizontal Absolute) for the
-                    // right-border column. Cursor positions are 1-indexed in CHA: left ║ is
-                    // implicitly at col 1 (line start), right ║ must be at col W to match the
-                    // ╗ / ╝ corners written via '═'.repeat(W-2). We intentionally OVERSIZE
-                    // the frame by 2 extra '═' vs the content estimate, so any undercount
-                    // (CJK fullwidth / symbol drift vs wterm's width table) still leaves
-                    // the raw padded row shorter than the frame — the CHA anchor then jumps
-                    // past the actual content, wipes cells W-1 with a plain space, and
-                    // draws ║ exactly at col W. This eliminates BOTH the historic bleed
-                    // (content longer than estimate) AND the latest "cut-into-Color word"
-                    // bug (estimate longer than wterm's actual cell grid, so CHA landed on
-                    // top of the rightmost English word).
-                    const W = innerCols + 8; // 2 spaces + innerCols + 2 spaces + 4 extra safe cols
+                        : Math.max(68, ...innerLines.map(displayWidth));
+                    const W = innerCols + 6;
                     const top = `\x1b[1;35m╔${'═'.repeat(W - 2)}╗\x1b[0m`;
                     const bot = `\x1b[1;35m╚${'═'.repeat(W - 2)}╝\x1b[0m`;
-                    const anchorRight = `\x1b[${W - 1}G \x1b[${W}G\x1b[1;35m║\x1b[0m`;
                     const rows = innerLines.map(line => {
-                        const padded = padDisplayRight(line, innerCols + 2); // 2 extra padding over estimate
-                        return `\x1b[1;35m║\x1b[0m  ${padded}  ${anchorRight}`;
+                        const padded = padDisplayRight(line, innerCols);
+                        return `\x1b[1;35m║\x1b[0m  ${padded}  \x1b[1;35m║\x1b[0m`;
                     });
                     return [top, ...rows, bot].join('\r\n');
                 };
