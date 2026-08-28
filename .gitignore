@@ -6,10 +6,12 @@ Webcom*.zip
 # ---- WebGPU LLM model weights (GB+) ----
 /models/**
 !/models/.gitkeep
+!/models/README.md
 
 # ---- Python embedded runtime & venv ----
 /python/**
 !/python/.gitkeep
+!/python/README.md
 __pycache__/
 *.pyc
 *.pyo
@@ -21,6 +23,8 @@ __pycache__/
 # ---- RAG sample assets / scratch ----
 /assets/RAG/**
 !/assets/RAG/.gitkeep
+!/assets/RAG/README.md
+!/assets/RAG/Animals/**
 
 # ---- Logs & runtime state ----
 *.log
