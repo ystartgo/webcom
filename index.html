@@ -4268,11 +4268,11 @@
                 const termIsEn = currentLang === 'en';
                 const bannerRaw = termIsEn ? [
                     "\x1b[1;36mWebcom Multi-Protocol Terminal\x1b[0m  \x1b[33m(Powered by Vercel Labs wterm)\x1b[0m",
-                    "\x1b[32m✔ WASM Core (~12KB)\x1b[0m   \x1b[32m✔ DOM Native Rendering\x1b[0m   \x1b[32m✔ 24-bit True Color\x1b[0m",
+                    "\x1b[32m● WASM Core (~12KB)\x1b[0m   \x1b[32m● DOM Native Rendering\x1b[0m   \x1b[32m● 24-bit True Color\x1b[0m",
                     "\x1b[90mSupports: Local Shell (WSL) / SSH / Telnet / Web Serial (Direct)\x1b[0m"
                 ] : [
                     "\x1b[1;36mWebcom 多協定終端機\x1b[0m  \x1b[33m(Powered by Vercel Labs wterm)\x1b[0m",
-                    "\x1b[32m✔ WASM 核心 (~12KB)\x1b[0m   \x1b[32m✔ DOM 原生渲染\x1b[0m   \x1b[32m✔ 24-bit 真彩色\x1b[0m",
+                    "\x1b[32m● WASM 核心 (~12KB)\x1b[0m   \x1b[32m● DOM 原生渲染\x1b[0m   \x1b[32m● 24-bit 真彩色\x1b[0m",
                     "\x1b[90m支援：本地 Shell (WSL) / SSH / Telnet / Web Serial (直連)\x1b[0m"
                 ];
                 wtermInstance.write(bannerBox(bannerRaw) + '\r\n\r\n');
