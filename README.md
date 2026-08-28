@@ -120,6 +120,26 @@ webcom/
 
 完成後就能在介面頂部「Engine Mode Select」切換到 `⚡ WebGPU Browser Local` 並選擇模型。
 
+### ④ (可選 / WSL) 在 WSL 啟動 Daemon 並開通 Port 8001
+
+若你要使用終端機的 **Local Shell (WSL)** 協定，或想把 Daemon 跑在 WSL Linux 環境內，請參閱完整步驟文件：
+👉 **[docs/wsl_port_8001.md](docs/wsl_port_8001.md)**（雙語：繁中 + English）
+
+簡易啟動（在 Windows 端雙擊 / 執行）：
+
+```powershell
+scripts\start_daemon_wsl.bat            # 自動選預設發行版
+scripts\start_daemon_wsl.bat Ubuntu-22.04   # 或指定發行版
+```
+
+它會自動：
+1. 確認 WSL distro 可執行；
+2. 把專案複製到 `~/workspace/webcom/`（原生 Linux FS，比 `/mnt/c` 快 10~30x）；
+3. 呼叫 [scripts/start_daemon_wsl.sh](scripts/start_daemon_wsl.sh) 自動找 venv / 裝依賴 / 啟動 `daemon.py` 監聽 `0.0.0.0:8001`；
+4. Windows 端一樣能直接開 `http://127.0.0.1:8001`（WSL2 localhost forwarding）。
+
+> 若 Windows 端 `127.0.0.1:8001` 連不到 WSL → 照 [docs/wsl_port_8001.md §4](docs/wsl_port_8001.md#4-遇到問題port-8001-在-windows-端連不到-wsl-) 改用 **mirrored 網路模式**（最穩）或手動 `netsh interface portproxy` 轉送。
+
 ---
 
 ## 🌐 語系切換
@@ -269,6 +289,26 @@ webcom/
 ```
 
 After that switch the top-bar **Engine Mode Select** to `⚡ WebGPU Browser Local` and pick your model.
+
+### ④ (Optional / WSL) Run the daemon inside WSL + reach Port 8001 on Windows
+
+If you plan to use the **Local Shell (WSL)** terminal protocol, or just prefer running the FastAPI daemon on Linux, follow the full guide:
+👉 **[docs/wsl_port_8001.md](docs/wsl_port_8001.md)** (bilingual: English + 繁體中文)
+
+One-click launch (directly from Windows — double-click or run from PowerShell):
+
+```powershell
+scripts\start_daemon_wsl.bat                    # uses your default WSL distro
+scripts\start_daemon_wsl.bat Ubuntu-22.04       # or pass an explicit distro name
+```
+
+It automatically:
+1. verifies the WSL distro boots;
+2. copies the project to `~/workspace/webcom/` (native Linux FS — 10~30× faster than `/mnt/c`);
+3. calls [scripts/start_daemon_wsl.sh](scripts/start_daemon_wsl.sh) which locates the venv / installs deps / launches `daemon.py` listening on `0.0.0.0:8001`;
+4. keeps Windows `http://127.0.0.1:8001` accessible via WSL2 localhost forwarding.
+
+> If your browser on Windows can't reach `127.0.0.1:8001`, follow [§4 of the WSL guide](docs/wsl_port_8001.md#4-troubleshooting-windows-cant-reach-1270018001-inside-wsl) → enable **mirrored networking** (most reliable), or set up a manual `netsh interface portproxy` forward.
 
 ---
 
