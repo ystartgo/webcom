@@ -4247,7 +4247,11 @@
                     const innerCols = forceCols
                         ? forceCols
                         : Math.max(60, ...innerLines.map(displayWidth));
-                    const W = innerCols + 4; // 2 spaces + 2 border chars on each side is folded into this (║ + "  " + content + "  " + ║)
+                    // Layout per row: ║  [content padded to innerCols]  ║
+                    //   => display width between ║ chars = 2 + innerCols + 2 = innerCols + 4
+                    //   => total row W = 1 (║) + (innerCols+4) + 1 (║) = innerCols + 6
+                    // Top/bottom frame row: ╔ ═×(W-2) ╗ must match the same W total.
+                    const W = innerCols + 6;
                     const top = `\x1b[1;35m╔${'═'.repeat(W - 2)}╗\x1b[0m`;
                     const bot = `\x1b[1;35m╚${'═'.repeat(W - 2)}╝\x1b[0m`;
                     const rows = innerLines.map(line => {
