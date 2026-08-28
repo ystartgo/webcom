@@ -28,6 +28,7 @@
 - 🪟 **WinPE 自動執行**：`WinPE_Autorun.bat` 掛載 ISO 即可自動啟動 Daemon 並開啟介面
 
 ---
+<img width="2544" height="1300" alt="image" src="https://github.com/user-attachments/assets/8ccd21ef-c563-417b-8829-d94504a09855" />
 
 ## 🧱 目錄結構
 
@@ -203,6 +204,8 @@ Licensed under **GNU GPL v3.0**. See the built-in User Guide tab 6 *License & Cr
 - 🪟 **WinPE Autorun**: `WinPE_Autorun.bat` starts the Daemon & launches UI automatically when the ISO boots
 
 ---
+<img width="2551" height="1302" alt="image" src="https://github.com/user-attachments/assets/6a82b437-c9d2-4238-807f-f26e54d920bd" />
+
 
 ## 🧱 Repository Layout
 
