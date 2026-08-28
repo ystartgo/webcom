@@ -1,0 +1,34 @@
+# ---- Large binary bundles / releases ----
+*.zip
+Webcom*.zip
+*.tar.gz
+
+# ---- WebGPU LLM model weights (GB+) ----
+/models/**
+!/models/.gitkeep
+
+# ---- Python embedded runtime & venv ----
+/python/**
+!/python/.gitkeep
+__pycache__/
+*.pyc
+*.pyo
+
+# ---- WASM engine files (user-downloaded) ----
+/assets/*.wasm
+!/assets/.gitkeep
+
+# ---- RAG sample assets / scratch ----
+/assets/RAG/**
+!/assets/RAG/.gitkeep
+
+# ---- Logs & runtime state ----
+*.log
+daemon.log
+*.tmp
+
+# ---- OS / editor ----
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
