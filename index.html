@@ -4254,17 +4254,23 @@
                 const bannerBox = (innerLines, { forceCols = null } = {}) => {
                     const innerCols = forceCols
                         ? forceCols
-                        : Math.max(60, ...innerLines.map(displayWidth));
-                    // Layout per row: ║  [content padded to innerCols]  ║
-                    //   => display width between ║ chars = 2 + innerCols + 2 = innerCols + 4
-                    //   => total row W = 1 (║) + (innerCols+4) + 1 (║) = innerCols + 6
-                    // Top/bottom frame row: ╔ ═×(W-2) ╗ must match the same W total.
+                        : Math.max(72, ...innerLines.map(displayWidth));
+                    // Per-row layout using ECMA-48 CHA (CSI Horizontal Absolute) for the
+                    // right-border column. Cursor positions are 1-indexed in CHA: left ║ is
+                    // implicitly at col 1 (line start), right ║ must be at col W to match the
+                    // ╗ / ╝ corners written via '═'.repeat(W-2). Before writing ║, we erase
+                    // cell W-1 with a plain space in case the *rendered* display width of
+                    // the content disagrees with our displayWidth() estimate (East Asian
+                    // Ambiguous glyphs, bold metrics, wterm internal width table…) — this
+                    // "wipe & anchor" pattern makes the right border pixel-perfect on BOTH
+                    // language tabs regardless of font or terminal width model.
                     const W = innerCols + 6;
                     const top = `\x1b[1;35m╔${'═'.repeat(W - 2)}╗\x1b[0m`;
                     const bot = `\x1b[1;35m╚${'═'.repeat(W - 2)}╝\x1b[0m`;
+                    const anchorRight = `\x1b[${W - 1}G \x1b[${W}G\x1b[1;35m║\x1b[0m`;
                     const rows = innerLines.map(line => {
                         const padded = padDisplayRight(line, innerCols);
-                        return `\x1b[1;35m║\x1b[0m  ${padded}  \x1b[1;35m║\x1b[0m`;
+                        return `\x1b[1;35m║\x1b[0m  ${padded}  ${anchorRight}`;
                     });
                     return [top, ...rows, bot].join('\r\n');
                 };
