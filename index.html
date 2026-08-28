@@ -4218,6 +4218,14 @@
                 const isCJKFullwidth = (code) =>
                     (code >= 0x1100 && code <= 0x115F) ||
                     (code >= 0x2329 && code <= 0x232A) ||
+                    // East_Asian_Width=Ambiguous symbols rendered as 2 columns in CJK locales.
+                    // NOTE: deliberately EXCLUDE U+2500..U+257F (Box Drawing ═ ║ ╔ ╗ etc.) — those are
+                    // always narrow (1 col) in wcwidth even under CJK; treating them as 2 would
+                    // double-break the top/bottom frame that repeats `═`.
+                    (code >= 0x2580 && code <= 0x259F) || // Block Elements (▀ ▁ ▂ ▮ ▯ …)
+                    (code >= 0x25A0 && code <= 0x25FF) || // Geometric Shapes (■ □ ▲ ● …)
+                    (code >= 0x2600 && code <= 0x26FF) || // Misc Symbols (☀ ☁ ☂ …)
+                    (code >= 0x2700 && code <= 0x27BF) || // Dingbats (✔ ✘ ✈ ✂ …) — includes U+2714 ✔ used in banner
                     (code >= 0x2E80 && code <= 0x303E) ||
                     (code >= 0x3041 && code <= 0x33FF) ||
                     (code >= 0x3400 && code <= 0x4DBF) ||
