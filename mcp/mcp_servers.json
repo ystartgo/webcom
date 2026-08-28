@@ -1,0 +1,11 @@
+{
+  "description": "Webcom MCP (Model Context Protocol) 伺服器與自訂工具設定目錄",
+  "version": "1.0",
+  "mcpServers": {
+    "local-system": {
+      "command": "python",
+      "args": ["-m", "mcp_server_local"],
+      "env": {}
+    }
+  }
+}

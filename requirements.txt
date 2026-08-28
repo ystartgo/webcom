@@ -1,0 +1,11 @@
+fastapi>=0.115
+uvicorn[standard]>=0.30
+pydantic>=2.8
+anyio>=4.4
+h11>=0.14
+click>=8.1
+idna>=3.8
+annotated-types>=0.7
+annotated-doc>=0.0.5
+paramiko>=3.4
+pyserial>=3.5
