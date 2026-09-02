@@ -23,10 +23,18 @@
   - Web Serial（Chrome/Edge 內建，免驅動免 Daemon，直接操作 COM 埠）
   - 後端 Serial（透過 Daemon 遠端寫入序列埠）
   - 虛擬鍵盤：`Ctrl+A / Ctrl+C / Ctrl+V / Ctrl+X` + 方向鍵
+  - **匯出 LOG / 清除畫面**：一次按鈕輸出整段終端機 Log 為 .log 檔 / 清空滾動緩衝
 - 📚 **RAG 知識庫管理員**（Chunk 分段 + 向量索引 + 即時搜尋測試）
-- 🔧 **MCP 工具面板**：Model Context Protocol Server 設定與發現
+  - **支援格式**：`.txt` / `.md` / `.json` / `.pdf` / `.docx` (Word) / `.xlsx` (Excel) / `.pptx` (PowerPoint) / 原始程式碼（`.py/.js/.sh/.bat/.ps1/...`）
+  - 可設定 Chunk 大小（預設 512 / 25% overlap），內建「已收錄文件清單 + 分塊數」即時顯示
+- 🔧 **MCP 工具面板**：Model Context Protocol Server 設定與發現（內建 MCP Servers 一鍵掃描、探索工具）
+- ⚙️ **4 頁系統設定分頁**（Router 設定 / 知識庫管理 / MCP 工具 / 常駐程式）：
+  - **Router 設定**：4+ 個 Router Profile（LM Studio / Ollama / OpenRouter / OpenAI），A/B 作用對象分派
+  - **知識庫管理**：RAG Chunk 設定 + 上傳 + 分塊數檢視 + 單詞檢索測試
+  - **MCP 工具**：MCP Servers 設定 / 掃描 / 瀏覽已就緒工具
+  - **常駐程式**：Port 8001 連線狀態 + **一鍵重啟（自動斷開舊進程 + 重啟）** + 查看日誌 + 下載 .bat
 - 🛜 **純斷網模擬開關**：一鍵封鎖所有非 `127.0.0.1` 外部請求，免拔網路線測試離線情境
-- 🖹 **6 頁完整使用手冊**（雙語 zh-TW / EN）：快速上手、終端機協定、AI + RAG、離線 WinPE、常見問題、版權致謝
+- 🖹 **6 頁完整使用手冊**（雙語 zh-TW / EN）：快速上手、終端機協定、AI + RAG、離線 WinPE、常見問題、**版權 & 致謝**
 - 🌍 **完整 zh-TW / English 雙語 UI**：頂部語言切換鈕即時生效
 - 🪟 **WinPE 自動執行**：`WinPE_Autorun.bat` 掛載 ISO 即可自動啟動 Daemon 並開啟介面
 
@@ -228,6 +236,8 @@ Final Summary Card（正式 log 報告）
   🔎 Stage-C 修補工程輸出
   🛡️ Stage-D 5 節最終稽核報告（若未執行則顯示 ⚠️ 跳過原因）
   🧭 最終可執行方案
+
+※ 若 A/B **雙方各自獨立回傳 ❗CLARIFY_NEEDED**（bothWantClarify=true），直接觸發「澄清短路」：跳過 Stage-C/D 全部、不跑修補、改輸出 🟡 **待澄清卡片**（自動整合兩側澄清提問，請使用者補充資訊後重送）。
 ```
 
 ### ≥ 27 種配對方式（Side-A / Side-B 獨立選型，3 種 engine kind × 多模型）
@@ -316,6 +326,48 @@ Final Summary Card（正式 log 報告）
 2. Stream 規則：`superviseGuards = { maxTokens:1800, endMarker, repeatStreak:4, repeatSim:0.92 }`
 3. Chunk 規則：每 chunk 檢查 END marker / 4 行相似 ≥ 0.92 / maxTokens，任一命中立即截斷並附 `⚠️ [防護：...]`
 
+### 第 5 段：CLARIFY 短路（雙方都說不清楚時直接問使用者）
+
+當 Stage-A 與 Stage-B **各自獨立**在輸出尾端寫下 `❗CLARIFY_NEEDED <使用者必須先回答的一或多個封閉式問題>` 時：
+- `bothWantClarify=true` 自動成立；
+- **Stage-C 修補工程 / Stage-D 稽核**全數跳過（因為前提不足，跑修補只是在製造幻覺）；
+- Final Summary Card 改為 **🟡 待澄清卡片**（琥珀色），自動整併兩側的澄清問題成條列，等使用者補充再 rerun。
+
+---
+
+## ⚙️ 四頁系統設定分頁（Router / RAG / MCP / Daemon）
+
+點擊介面下方的 4 個圓角圖示按鈕或對應熱區即可進入：
+
+| 分頁 | 內容 |
+|---|---|
+| 🛰️ **Router 設定** | 4+ 個 API Router Profile（Local LM Studio / Ollama / OpenRouter / OpenAI / 自訂）；URL / Key / Model 三欄；**作用對象 A/B 分派列**（A 專用 / B 專用 / A+B 同步，Shift+Click = A+B 一次套用）；儲存 / 匯入 / 匯出 JSON；ONNX 硬體加速 3 選下拉；自訂模型三頁籤（API / WebGPU / 📦 ONNX）；測試連線按鈕 |
+| 📚 **知識庫管理** | 上傳檔案（txt/md/json/pdf/docx/xlsx/pptx/code）→ 選 Chunk 大小 → 新增並建立索引；文件清單 + 已切分塊數；「檢索」測試單詞查詢即時結果 |
+| 🔧 **MCP 工具** | MCP Servers 設定 / 探索工具 / 已就緒工具清單 |
+| 🩺 **常駐程式 (Port 8001)** | 目前連線狀態即時指示；**一鍵重啟 / 啟用**（自動 kill 舊 8001 process，再啟 python daemon.py）；查看日誌；下載模型 / 資源包；手動 cmd.exe 啟動指令複製 |
+
+---
+
+## 🛠️ 常見問題 FAQ（Q4/Q5/Q6 新增）
+
+Q1~Q3 請見內建手冊第 5 頁「常見問題」。以下為本次 v1.0.0 新增的 SRE 流水線 / ONNX / WebGPU 進階問題：
+
+**Q4：WebGPU 模式出現「Program terminated with exit(1)」、「MLCEngine exception」或畫面上 D 進度 0% 卡死怎麼辦？**
+> 這是 WebGPU 驅動 / 記憶體不足或 MLC WebLLM 舊 instance 被復用的典型症狀。解決三步驟：
+> 1. 點對話框右下角 **🛑 停止 Stage**（或上方全域停止按鈕）—— 會自動呼叫 `webllmEngine=null` invalidate cache；
+> 2. 切換 Engine Mode 到 `🖥️ LM Studio / API` 再切回 `⚡ WebGPU`，強制卸載舊權重；
+> 3. 仍失敗時 **把 WebGPU 模型換成 Qwen2.5-0.5B**（350MB 卡頓率最低），或改使用 **📦 ONNX Qwen2.5-0.5B CPU SIMD**（完全不碰 WebGPU 驅動）。
+
+**Q5：LM Studio 有 tokens 統計但對話框空白、assistant 訊息沒內容？**
+> 這是 LM Studio 預設 `stream=true` 的 SSE chunk 沒有正確帶 `content` 欄位。Router 設定 → 對應 Profile 點「測試此節點連線」，若回傳 OK 但 content 空：
+> - 在 LM Studio 設定頁面 → 啟用「OpenAI API compatibility mode → Include raw stream payloads」；
+> - 或改用 Supervise 模式（任一 Stage 若內容 0 token 超過 15s 會被 0-token-fast-abort 即時中斷，不會等 200s）。
+
+**Q6：切換語系到 English 後 AI 只吐 0 tokens / 空回應？**
+> 原因：Supervise Prompt 裡的固定 7 行/5 節報告格式用的是 zh 欄位名，LLM 以為要中文而 prompt 換英文導致不一致。解決：
+> - 切到 English 後先按一次 Router 設定的 **儲存設定**（重新載入 i18n 預設 Prompt 版本）；
+> - 或 Supervise 模式下送任何一句話前先送 `/reset` 清空 chat（清空 Prompt cache）。
+
 ---
 
 ## 📜 License / 授權
@@ -351,10 +403,18 @@ Licensed under **GNU GPL v3.0**. See the built-in User Guide tab 6 *License & Cr
   - **Web Serial** (Chrome/Edge built-in — no driver, no daemon, direct COM/UART control)
   - Backend Serial (serial ports routed through port-8001 Daemon for AI Agent mode)
   - Virtual keypad: `Ctrl+A / Ctrl+C / Ctrl+V / Ctrl+X` + arrow keys
+  - **Export Log / Clear Buffer**: one-click export the entire terminal scrollback as `.log` / reset scrollback
 - 📚 **RAG Knowledge Base Manager** (chunked indexing + live search test)
-- 🔧 **MCP Tools Panel** (Model Context Protocol server configuration + discovery)
+  - **Supported formats**: `.txt` / `.md` / `.json` / **`.pdf`** / **`.docx` (Word)** / **`.xlsx` (Excel)** / **`.pptx` (PowerPoint)** / raw source code (`.py/.js/.sh/.bat/.ps1/…`)
+  - Configurable chunk size (default 512, 25% overlap) with live "ingested files + chunk count" indicator
+- 🔧 **MCP Tools Panel**: Model Context Protocol server configuration + discovery (one-click scan for registered MCP servers / explore tools)
+- ⚙️ **4 System Settings tabs** (Router / Knowledge Base / MCP Tools / Daemon):
+  - **🛰️ Router**: 4+ API Router Profiles (LM Studio / Ollama / OpenRouter / OpenAI + Custom); Target-slot A/B assignment row (A-only / B-only / A+B sync, Shift+Click = A+B simultaneously); Save / Import / Export JSON; ONNX hardware 3-pick dropdown; Custom Models 3-sub-tabs (API / WebGPU / 📦 ONNX); Test Connection button
+  - **📚 Knowledge Base**: file upload → chunk size pick → index build; files list with chunk count; live query retrieval test
+  - **🔧 MCP Tools**: MCP Servers config / scan / list-ready-tools
+  - **🩺 Daemon (Port 8001)**: live health indicator; **1-click restart/enable** (auto-kill stale :8001 process, relaunch `daemon.py`); View Logs; Download Models / Assets bundle; copy-paste manual `cmd.exe` launcher
 - 🛜 **Simulated Offline Mode toggle**: one-click block ALL non-`127.0.0.1` traffic; test offline scenarios without unplugging cables
-- 🖹 **6-page User Guide** (bilingual zh-TW / EN): Quick Start, Terminal Protocols, AI+RAG, Offline & WinPE, FAQ, License & Credits
+- 🖹 **6-page User Guide** (bilingual zh-TW / EN): Quick Start, Terminal Protocols, AI+RAG, Offline & WinPE, **FAQ**, **License & Credits**
 - 🌍 **Full zh-TW ↔ English bilingual UI** — live switch from the top bar
 - 🪟 **WinPE Autorun**: `WinPE_Autorun.bat` starts the Daemon & launches UI automatically when the ISO boots
 
@@ -552,6 +612,8 @@ Final Summary Card (official log report — ALWAYS produced)
   🔎 Stage-C Patch Engineering output (full)
   🛡️ Stage-D 5-section Audit (or ⚠️ D-skipped reason)
   🧭 Final executable plan (priority: D's plan → C's patches → B's original answer)
+
+※ If **BOTH sides independently emit `❗CLARIFY_NEEDED`** → `bothWantClarify = true` short-circuit triggers: Stage-C/D are SKIPPED entirely, Final card becomes an 🟡 **Amber Clarify Card** that merges the two sides' questions and asks the user to answer before the pipeline re-runs.
 ```
 
 ### ≥ 27 Pairing Configurations (Side-A / Side-B Independent Selectors — 3 engine kinds × multi-model)
@@ -639,6 +701,48 @@ User bubbles & assistant bubbles also each get independent 🔄 Retry / 📋 Cop
 1. Prompt rule: every stage must end with explicit `--- END STAGE ---` marker
 2. Stream meta: `superviseGuards = { maxTokens:1800, endMarker, repeatStreak:4, repeatSim:0.92 }`
 3. Per-chunk: END marker / 4-line sim ≥ 0.92 repeat / maxTokens — ANY triggers immediate truncate + `⚠️ [Guard: …reason…]`
+
+### Stage 5 — CLARIFY Short-Circuit (ask user, don't hallucinate patches)
+
+If Stage-A and Stage-B **independently** append `❗CLARIFY_NEEDED <one or more closed-end questions the user MUST answer first>` at the end of their own prose:
+- `bothWantClarify = true` is asserted;
+- **Stage-C (Patch Eng) and Stage-D (Audit) are skipped** (patching under ambiguous inputs only produces hallucinations);
+- Final Summary Card is replaced by an **🟡 Amber Clarify Card** that auto-merges both sides' questions, waits for user reply, then re-runs the full 4-Stage pipeline.
+
+---
+
+## ⚙️ 4 System Settings Tabs (Router / Knowledge Base / MCP Tools / Daemon)
+
+Open any of the 4 rounded-icon buttons in the lower toolbar:
+
+| Tab | Contents |
+|---|---|
+| 🛰️ **Router Settings** | 4+ API Router Profiles (Local LM Studio / Ollama / OpenRouter / OpenAI / Custom); URL/Key/Model triples; **Target-slot (A-only / B-only / A+B sync)** row; Save/Import/Export JSON; ONNX Hardware Acceleration 3-picker; Custom Models 3-sub-tabs (API / WebGPU / 📦 ONNX); Test Connection button |
+| 📚 **Knowledge Base** | File upload (txt/md/json/pdf/docx/xlsx/pptx/code) → Chunk size picker → Build Index; Ingested files + chunk count live indicator; Live query Retrieval-Test button |
+| 🔧 **MCP Tools** | MCP Servers definition / Scan / Ready tools browser |
+| 🩺 **Daemon (Port 8001)** | Live health indicator; **1-click Restart/Enable** (auto kill stale :8001 process → relaunch `daemon.py`); View Logs; Download Models / Assets bundles; copy `cmd.exe` manual launcher command |
+
+---
+
+## 🛠️ Troubleshooting FAQ (added Q4 / Q5 / Q6)
+
+Q1~Q3 live inside the built-in User Guide Tab 5 *FAQ*. The Q4~Q6 below cover v1.0.0's new SRE pipeline, ONNX backend, and WebGPU edge cases:
+
+**Q4: WebGPU mode throws "Program terminated with exit(1)" / "MLCEngine exception" OR Stage-D progress freezes at 0%?**
+> Classic WebGPU driver / OOM / stale WebLLM cached-engine reuse pattern. 3-step recovery:
+> 1. Hit the stage card's **🛑 Stop Stage** (or the global Stop) — this also runs `webllmEngine = null` to invalidate the cached engine instance;
+> 2. Flip Engine Mode to `🖥️ LM Studio / API` and back to `⚡ WebGPU` to force unload stale weights;
+> 3. If still failing, swap the WebGPU model to `Qwen2.5-0.5B` (350 MB, lowest hang rate), or migrate to **📦 ONNX Qwen2.5-0.5B CPU High-Perf SIMD** (bypasses WebGPU driver stack completely).
+
+**Q5: LM Studio reports tokens in its UI but Webcom assistant bubble shows blank / 0 chars?**
+> Root cause: LM Studio's default SSE streaming sometimes omits the `choices[].delta.content` field in non-OpenAI-compatible streams. Fix:
+> - In LM Studio → enable **OpenAI API compatibility mode → Include raw stream payloads**;
+> - Or switch to Supervised-Mutual-Debug mode — any stage that reports **0 tokens ≥ 15 s** gets aborted by the 0-token-fast-abort guard immediately (does not wait the 200s+ grand timeout).
+
+**Q6: After switching UI to English the LLM outputs 0 tokens / empty response?**
+> Supervise pipeline prompts contain fixed-format report headings; mixing a zh-format prompt template with an en UI can confuse the model. Recovery:
+> - After flipping the language picker, open Router Settings and hit **Save** (forces reload of the i18n-defaulted prompt templates);
+> - Or send `/reset` once inside Supervise mode to flush the per-session prompt cache.
 
 ---
 

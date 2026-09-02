@@ -329,13 +329,13 @@
     <!-- 右側：AI 對話與設定區塊 -->
     <div class="w-1/2 flex flex-col bg-gray-950 min-w-0">
         <div
-            class="px-4 py-3 border-b border-gray-800 bg-gray-900 flex flex-wrap items-center justify-between gap-3 shrink-0">
+            class="px-3 py-2 sm:px-4 sm:py-2.5 border-b border-gray-800 bg-gray-900 flex flex-wrap items-center justify-between gap-2 shrink-0">
             <!-- 雙 LLM 引擎切換器 (Dual Engine Mode Switcher) -->
-            <div class="flex flex-nowrap items-center gap-2.5">
-                <div class="flex items-center bg-black border border-gray-800 rounded-lg px-2.5 py-1 gap-2">
-                    <i data-lucide="cpu" class="w-4 h-4 text-cyan-400"></i>
+            <div class="flex flex-wrap items-center gap-2 min-w-0">
+                <div class="flex items-center bg-black border border-gray-800 rounded-lg px-2 py-1 gap-1.5 shrink-0">
+                    <i data-lucide="cpu" class="w-4 h-4 text-cyan-400 shrink-0"></i>
                     <select id="engine-mode-select"
-                        class="bg-transparent text-xs text-cyan-300 font-bold focus:outline-none cursor-pointer">
+                        class="bg-transparent text-xs text-cyan-300 font-bold focus:outline-none cursor-pointer max-w-[150px] sm:max-w-none">
                         <option value="lmstudio" class="bg-gray-900 text-white">🖥️ LM Studio / API</option>
                         <option value="webgpu" class="bg-gray-900 text-white">⚡ WebGPU 瀏覽器純本機</option>
                         <option value="onnx" class="bg-gray-900 text-white">📦 ONNX 瀏覽器本機 (ONNX Runtime)</option>
@@ -344,35 +344,35 @@
                     </select>
                 </div>
 
-                <div id="wrapper-ab-pair" class="flex items-center gap-2" style="order: 1;">
+                <div id="wrapper-ab-pair" class="flex flex-wrap items-center gap-1.5" style="order: 1;">
                 <!-- LM Studio Profiles (When in API mode) -->
                 <div id="wrapper-profile-select"
-                    class="relative flex items-center bg-black border border-gray-800 rounded-lg px-2 py-1 gap-1.5">
+                    class="relative flex items-center bg-black border border-gray-800 rounded-lg px-2 py-1 gap-1.5 shrink-0">
                     <span
                         class="sv-ab-role absolute -top-2 -left-1 text-[9px] font-bold font-mono px-1 rounded bg-indigo-600 text-white opacity-80 hidden">A</span>
-                    <i data-lucide="network" class="w-3.5 h-3.5 text-purple-400"></i>
+                    <i data-lucide="network" class="w-3.5 h-3.5 text-purple-400 shrink-0"></i>
                     <select id="main-profile-select"
-                        class="bg-transparent text-xs text-white focus:outline-none w-32 cursor-pointer font-bold"></select>
+                        class="bg-transparent text-xs text-white focus:outline-none w-28 sm:w-32 cursor-pointer font-bold truncate"></select>
                 </div>
 
                 <!-- LM Studio Profiles #2 (Secondary API profile - used when in API↔API pairing) -->
                 <div id="wrapper-profile-select-2"
-                    class="relative hidden flex items-center bg-black border border-purple-800/60 rounded-lg px-2 py-1 gap-1.5">
+                    class="relative hidden flex items-center bg-black border border-purple-800/60 rounded-lg px-2 py-1 gap-1.5 shrink-0">
                     <span
                         class="sv-ab-role absolute -top-2 -left-1 text-[9px] font-bold font-mono px-1 rounded bg-sky-600 text-white opacity-80 hidden">B</span>
-                    <i data-lucide="network" class="w-3.5 h-3.5 text-fuchsia-400"></i>
+                    <i data-lucide="network" class="w-3.5 h-3.5 text-fuchsia-400 shrink-0"></i>
                     <select id="main-profile-select-2"
-                        class="bg-transparent text-xs text-white focus:outline-none w-32 cursor-pointer font-bold"></select>
+                        class="bg-transparent text-xs text-white focus:outline-none w-28 sm:w-32 cursor-pointer font-bold truncate"></select>
                 </div>
 
                 <!-- WebGPU Model Selector (When in WebGPU mode) -->
                 <div id="wrapper-webgpu-select"
-                    class="relative hidden flex items-center bg-black border border-cyan-800/60 rounded-lg px-2 py-1 gap-1.5">
+                    class="relative hidden flex items-center bg-black border border-cyan-800/60 rounded-lg px-2 py-1 gap-1.5 shrink-0">
                     <span
                         class="sv-ab-role absolute -top-2 -left-1 text-[9px] font-bold font-mono px-1 rounded bg-cyan-600 text-white opacity-80 hidden">A</span>
-                    <i data-lucide="zap" class="w-3.5 h-3.5 text-yellow-400"></i>
+                    <i data-lucide="zap" class="w-3.5 h-3.5 text-yellow-400 shrink-0"></i>
                     <select id="webgpu-model-select"
-                        class="bg-transparent text-xs text-cyan-300 font-mono focus:outline-none cursor-pointer w-48">
+                        class="bg-transparent text-xs text-cyan-300 font-mono focus:outline-none cursor-pointer w-36 sm:w-44 truncate">
                         <option value="Qwen2.5-0.5B-Instruct-q4f16_1-MLC" class="bg-gray-900 text-white">Qwen2.5-0.5B (極速 350MB)</option>
                         <option value="Qwen2.5-1.5B-Instruct-q4f16_1-MLC" class="bg-gray-900 text-white">Qwen2.5-1.5B (⚡推薦 900MB)</option>
                         <option value="gemma-2-2b-it-q4f16_1-MLC" class="bg-gray-900 text-white">Gemma-2-2B (Google 1.4GB)</option>
@@ -385,12 +385,12 @@
 
                 <!-- WebGPU Model Selector #2 (Secondary WebGPU model - used when in WebGPU↔WebGPU pairing) -->
                 <div id="wrapper-webgpu-select-2"
-                    class="relative hidden flex items-center bg-black border border-fuchsia-800/60 rounded-lg px-2 py-1 gap-1.5">
+                    class="relative hidden flex items-center bg-black border border-fuchsia-800/60 rounded-lg px-2 py-1 gap-1.5 shrink-0">
                     <span
                         class="sv-ab-role absolute -top-2 -left-1 text-[9px] font-bold font-mono px-1 rounded bg-fuchsia-600 text-white opacity-80 hidden">B</span>
-                    <i data-lucide="zap" class="w-3.5 h-3.5 text-pink-400"></i>
+                    <i data-lucide="zap" class="w-3.5 h-3.5 text-pink-400 shrink-0"></i>
                     <select id="webgpu-model-select-2"
-                        class="bg-transparent text-xs text-fuchsia-300 font-mono focus:outline-none cursor-pointer w-48">
+                        class="bg-transparent text-xs text-fuchsia-300 font-mono focus:outline-none cursor-pointer w-36 sm:w-44 truncate">
                         <option value="Qwen2.5-0.5B-Instruct-q4f16_1-MLC" class="bg-gray-900 text-white">Qwen2.5-0.5B (極速 350MB)</option>
                         <option value="Qwen2.5-1.5B-Instruct-q4f16_1-MLC" class="bg-gray-900 text-white">Qwen2.5-1.5B (⚡推薦 900MB)</option>
                         <option value="gemma-2-2b-it-q4f16_1-MLC" class="bg-gray-900 text-white">Gemma-2-2B (Google 1.4GB)</option>
@@ -403,12 +403,12 @@
 
                 <!-- ONNX Model Selector (When in ONNX mode) -->
                 <div id="wrapper-onnx-select"
-                    class="relative hidden flex items-center bg-black border border-emerald-800/60 rounded-lg px-2 py-1 gap-1.5">
+                    class="relative hidden flex items-center bg-black border border-emerald-800/60 rounded-lg px-2 py-1 gap-1.5 shrink-0">
                     <span
                         class="sv-ab-role absolute -top-2 -left-1 text-[9px] font-bold font-mono px-1 rounded bg-emerald-600 text-white opacity-80 hidden">A</span>
-                    <i data-lucide="package" class="w-3.5 h-3.5 text-emerald-400"></i>
+                    <i data-lucide="package" class="w-3.5 h-3.5 text-emerald-400 shrink-0"></i>
                     <select id="onnx-model-select"
-                        class="bg-transparent text-xs text-emerald-300 font-mono focus:outline-none cursor-pointer w-48">
+                        class="bg-transparent text-xs text-emerald-300 font-mono focus:outline-none cursor-pointer w-36 sm:w-44 truncate">
                         <option value="onnx-community/Qwen2.5-0.5B-Instruct" selected class="bg-gray-900 text-white">Qwen2.5-0.5B ONNX (極速 350MB ⭐)</option>
                         <option value="onnx-community/Bonsai-1.7B-ONNX" class="bg-gray-900 text-white">Bonsai-1.7B ONNX (🔥需GPU 1.0GB)</option>
                         <option value="onnx-community/Qwen3-VL-2B-Instruct-ONNX" class="bg-gray-900 text-white">Qwen3-VL-2B 視覺 ONNX (🔥需GPU 1.6GB)</option>
@@ -419,12 +419,12 @@
                 </div>
                 <!-- ONNX Model Selector #2 (Secondary ONNX model - used when in ONNX↔ONNX pairing) -->
                 <div id="wrapper-onnx-select-2"
-                    class="relative hidden flex items-center bg-black border border-teal-800/60 rounded-lg px-2 py-1 gap-1.5">
+                    class="relative hidden flex items-center bg-black border border-teal-800/60 rounded-lg px-2 py-1 gap-1.5 shrink-0">
                     <span
                         class="sv-ab-role absolute -top-2 -left-1 text-[9px] font-bold font-mono px-1 rounded bg-teal-600 text-white opacity-80 hidden">B</span>
-                    <i data-lucide="package" class="w-3.5 h-3.5 text-teal-400"></i>
+                    <i data-lucide="package" class="w-3.5 h-3.5 text-teal-400 shrink-0"></i>
                     <select id="onnx-model-select-2"
-                        class="bg-transparent text-xs text-teal-300 font-mono focus:outline-none cursor-pointer w-48">
+                        class="bg-transparent text-xs text-teal-300 font-mono focus:outline-none cursor-pointer w-36 sm:w-44 truncate">
                         <option value="onnx-community/Qwen2.5-0.5B-Instruct" class="bg-gray-900 text-white">Qwen2.5-0.5B ONNX (極速 350MB ⭐)</option>
                         <option value="onnx-community/Bonsai-1.7B-ONNX" selected class="bg-gray-900 text-white">Bonsai-1.7B ONNX (🔥需GPU 1.0GB)</option>
                         <option value="onnx-community/Qwen3-VL-2B-Instruct-ONNX" class="bg-gray-900 text-white">Qwen3-VL-2B 視覺 ONNX (🔥需GPU 1.6GB)</option>
@@ -434,25 +434,25 @@
                         class="text-teal-400 hover:text-teal-200 hover:bg-teal-900/40 rounded px-0.5 transition text-sm leading-none flex items-center">⊕</button>
                 </div>
                 </div>
+            </div>
 
-                <div id="wrapper-row1-right" class="flex items-center gap-2.5" style="order: 2;">
+            <div id="wrapper-row1-right" class="flex flex-wrap items-center gap-1.5 sm:gap-2 shrink-0" style="order: 2;">
                 <button id="btn-open-settings"
-                    class="text-xs bg-gray-800 hover:bg-gray-700 text-gray-200 px-2.5 py-1.5 rounded-lg border border-gray-700 transition flex items-center gap-1.5 font-medium">
-                    <i data-lucide="settings" class="w-3.5 h-3.5"></i> <span data-i18n="routerSettings">Router 設定</span>
+                    class="text-xs bg-gray-800 hover:bg-gray-700 text-gray-200 px-2.5 py-1.5 rounded-lg border border-gray-700 transition flex items-center gap-1.5 font-medium whitespace-nowrap shrink-0">
+                    <i data-lucide="settings" class="w-3.5 h-3.5 shrink-0"></i> <span data-i18n="routerSettings" class="whitespace-nowrap">Router 設定</span>
                 </button>
 
-                <!-- 斷網/外網模擬開關 (Simulate Offline / Network Mock) → 2026-08-30 搬移到第一列右側，
-                     原位置在第二列，使用者紅線要求移到 Router 設定右邊。 -->
+                <!-- 斷網/外網模擬開關 (Simulate Offline / Network Mock) -->
                 <button id="btn-toggle-offline-mock" type="button"
-                    class="text-xs px-2.5 py-1.5 rounded-lg border transition flex items-center gap-1.5 font-medium bg-gray-900 border-gray-700 text-gray-300 hover:border-gray-500"
+                    class="text-xs px-2.5 py-1.5 rounded-lg border transition flex items-center gap-1.5 font-medium bg-gray-900 border-gray-700 text-gray-300 hover:border-gray-500 whitespace-nowrap shrink-0"
                     title="點擊切換純斷網模擬：嚴格封鎖所有非 127.0.0.1 外網連線，免拔網路線驗證">
-                    <i data-lucide="wifi" id="icon-offline-mock" class="w-3.5 h-3.5 text-emerald-400"></i>
-                    <span id="label-offline-mock">外網：連通</span>
+                    <i data-lucide="wifi" id="icon-offline-mock" class="w-3.5 h-3.5 text-emerald-400 shrink-0"></i>
+                    <span id="label-offline-mock" class="whitespace-nowrap">外網：連通</span>
                 </button>
 
                 <!-- 語系切換器 (Language Selector) -->
-                <div class="flex items-center bg-black border border-gray-800 rounded-lg px-2 py-1 gap-1.5">
-                    <i data-lucide="globe" class="w-3.5 h-3.5 text-blue-400"></i>
+                <div class="flex items-center bg-black border border-gray-800 rounded-lg px-2 py-1 gap-1.5 whitespace-nowrap shrink-0">
+                    <i data-lucide="globe" class="w-3.5 h-3.5 text-blue-400 shrink-0"></i>
                     <select id="lang-select"
                         class="bg-transparent text-xs text-gray-200 focus:outline-none cursor-pointer font-medium">
                         <option value="zh-TW" class="bg-gray-900 text-white">繁體中文</option>
@@ -461,22 +461,21 @@
                 </div>
 
                 <button id="btn-import-chat"
-                    class="text-xs text-green-400 hover:text-green-300 p-1.5 rounded-lg bg-gray-800 border border-gray-700 flex items-center gap-1 transition"
+                    class="text-xs text-green-400 hover:text-green-300 p-1.5 rounded-lg bg-gray-800 border border-gray-700 flex items-center gap-1 transition shrink-0"
                     title="匯入對話紀錄" data-i18n-title="tooltipImportChat">
                     <i data-lucide="upload" class="w-3.5 h-3.5"></i>
                 </button>
                 <input type="file" id="file-import-chat" class="hidden" accept=".json">
                 <button id="btn-export-chat"
-                    class="text-xs text-blue-400 hover:text-blue-300 p-1.5 rounded-lg bg-gray-800 border border-gray-700 flex items-center gap-1 transition"
+                    class="text-xs text-blue-400 hover:text-blue-300 p-1.5 rounded-lg bg-gray-800 border border-gray-700 flex items-center gap-1 transition shrink-0"
                     title="匯出對話紀錄" data-i18n-title="tooltipExportChat">
                     <i data-lucide="download" class="w-3.5 h-3.5"></i>
                 </button>
                 <button id="btn-screenshot-window"
-                    class="text-xs text-amber-400 hover:text-amber-300 p-1.5 rounded-lg bg-gray-800 border border-gray-700 flex items-center gap-1 transition"
+                    class="text-xs text-amber-400 hover:text-amber-300 p-1.5 rounded-lg bg-gray-800 border border-gray-700 flex items-center gap-1 transition shrink-0"
                     title="全視窗截圖並儲存 (Ctrl+Shift+S)" data-i18n-title="tooltipScreenshotWindow">
                     <i data-lucide="camera" class="w-3.5 h-3.5"></i>
                 </button>
-                </div>
             </div>
 
             <!-- 🛡️ 監督模式配對控制（僅 engineMode = supervise 顯示）
@@ -648,7 +647,7 @@
                 </button>
                 <input type="file" id="file-upload-image" accept="image/*" multiple class="hidden">
                 <input type="file" id="file-upload-doc"
-                    accept=".pdf,.docx,.doc,.xlsx,.xls,.pptx,.ppt,.txt,.md,.markdown,.csv,.json,.py,.bat,.log,.yaml,.yml,.xml"
+                    accept=".pdf,.docx,.doc,.xlsx,.xls,.pptx,.ppt,.txt,.md,.markdown,.csv,.json,.jsonl,.py,.bat,.cmd,.ps1,.sh,.yaml,.yml,.xml,.html,.htm,.xhtml,.js,.jsx,.ts,.tsx,.css,.scss,.less,.sql,.log,.ini,.env,.toml,.conf,.c,.cpp,.h,.hpp,.cs,.go,.rs,.java,.kt,.php,.vue,.svelte,.r,.rb,text/*"
                     multiple class="hidden">
 
 
@@ -3679,7 +3678,28 @@
             lucide.createIcons();
         }
 
-        function saveSettingsToLocal() { localStorage.setItem('ai_os_settings', JSON.stringify(appSettings)); }
+        function saveSettingsToLocal() {
+            try {
+                localStorage.setItem('ai_os_settings', JSON.stringify(appSettings));
+            } catch (e) {
+                console.warn('[Storage Quota] localStorage.setItem quota exceeded, saving trimmed copy:', e);
+                try {
+                    const copy = { ...appSettings };
+                    if (copy.ragDocs && copy.ragDocs.length > 0) {
+                        copy.ragDocs = copy.ragDocs.map(d => ({
+                            id: d.id,
+                            title: d.title,
+                            date: d.date,
+                            content: d.content ? (d.content.length > 20000 ? d.content.slice(0, 20000) + '...[truncated for storage]' : d.content) : '',
+                            chunks: d.chunks ? d.chunks.slice(0, 60) : []
+                        }));
+                    }
+                    localStorage.setItem('ai_os_settings', JSON.stringify(copy));
+                } catch (e2) {
+                    console.error('[Storage Quota] Failed to save settings copy:', e2);
+                }
+            }
+        }
 
         // rd3: If we have 2+ profiles and activeAltProfile equals activeProfile,
         // auto-pick the first distinct one so API↔API pairing never points to same source.
@@ -4825,8 +4845,7 @@
         document.getElementById('file-rag-upload').addEventListener('change', async (e) => {
             const file = e.target.files[0];
             if (!file) return;
-            const ext = file.name.toLowerCase().split('.').pop();
-            const isText = ['txt', 'md', 'markdown', 'json', 'csv', 'log', 'svg', 'xml', 'py', 'bat', 'yaml', 'yml'].includes(ext);
+            const isText = ['txt', 'md', 'markdown', 'json', 'jsonl', 'csv', 'tsv', 'log', 'svg', 'xml', 'html', 'htm', 'xhtml', 'js', 'jsx', 'ts', 'tsx', 'css', 'scss', 'less', 'py', 'bat', 'cmd', 'ps1', 'sh', 'bash', 'yaml', 'yml', 'ini', 'env', 'toml', 'conf', 'config', 'sql', 'c', 'cpp', 'h', 'hpp', 'cs', 'go', 'rs', 'java', 'kt', 'php', 'vue', 'svelte', 'r', 'rb'].includes(ext);
 
 
             if (isText) {
@@ -7003,7 +7022,7 @@
                                             fullAiResponse += `\n\n⚠️ ${currentLang === 'en' ? '[Guarded: repeated output detected, stream cut short]' : '[防護：偵測到重複輸出迴圈，已截斷串流]'}`;
                                             safeInterruptONNX();
                                         }
-                                        if (generatedTokens >= 1500) {
+                                        if (generatedTokens >= 8192) {
                                             fullAiResponse += `\n\n⚠️ ${currentLang === 'en' ? '[Guarded: token limit reached]' : '[防護：已達最大 Token 上限，安全截斷]'}`;
                                             safeInterruptONNX();
                                         }
@@ -7077,7 +7096,7 @@
                                                 updateStats(false);
                                                 scrollToBottom();
                                                 if (tailHasRepeat(fullAiResponse)) { safeInterruptONNX(); }
-                                                if (generatedTokens >= 1500) { safeInterruptONNX(); }
+                                                if (generatedTokens >= 8192) { safeInterruptONNX(); }
                                             }
                                         }
                                     });
@@ -7089,7 +7108,7 @@
 
                                 const vlOut = await model.generate({
                                     ...inputs,
-                                    max_new_tokens: 512,
+                                    max_new_tokens: 4096,
                                     temperature: 0.6,
                                     top_p: 0.9,
                                     repetition_penalty: 1.15,
@@ -7140,7 +7159,7 @@
                         }
                         try {
                             const output = await generator(inputForGenerator, {
-                                max_new_tokens: 512,
+                                max_new_tokens: 4096,
                                 temperature: 0.6,
                                 top_p: 0.85,
                                 repetition_penalty: 1.18,
@@ -7188,6 +7207,7 @@
                                 top_p: 0.85,
                                 presence_penalty: 0.3,
                                 frequency_penalty: 0.3,
+                                max_tokens: 4096,
                                 stream: true
                             });
 
@@ -7209,7 +7229,7 @@
                                         await safeInterruptWebLLM();
                                         break;
                                     }
-                                    if (generatedTokens >= 1500) {
+                                    if (generatedTokens >= 8192) {
                                         fullAiResponse += `\n\n⚠️ ${currentLang === 'en' ? '[Guarded: token limit reached]' : '[防護：已達最大 Token 上限，安全截斷]'}`;
                                         await safeInterruptWebLLM();
                                         break;
@@ -7883,7 +7903,7 @@
                                              if (typeof generator === 'function') {
                                                  const inputForGen = formattedPrompt || messages;
                                                  const output = await generator(inputForGen, {
-                                                     max_new_tokens: 512,
+                                                     max_new_tokens: 4096,
                                                      temperature: 0.6,
                                                      top_p: 0.85,
                                                      repetition_penalty: 1.18,
@@ -7936,7 +7956,7 @@
 
                                                  const vlOut = await generator.model.generate({
                                                      ...inputs,
-                                                     max_new_tokens: 512,
+                                                     max_new_tokens: 4096,
                                                      temperature: 0.6,
                                                      top_p: 0.85,
                                                      repetition_penalty: 1.18,
@@ -8627,7 +8647,25 @@
         const imagePreviewContainer = document.getElementById('image-preview-container');
         const btnUploadImage = document.getElementById('btn-upload-image');
         const fileUploadImage = document.getElementById('file-upload-image');
+        const btnUploadDoc = document.getElementById('btn-upload-doc');
+        const fileUploadDoc = document.getElementById('file-upload-doc');
         let attachedImages = [];
+
+        function showUploadToast(msg, isError = false) {
+            const toast = document.createElement('div');
+            toast.className = `fixed bottom-20 right-6 z-[200] px-4 py-2.5 rounded-xl text-xs font-mono shadow-2xl flex items-center gap-2 border transition-all duration-300 ${
+                isError 
+                ? 'bg-red-950/90 border-red-700/60 text-red-300' 
+                : 'bg-gray-900/95 border-cyan-600/60 text-cyan-300 shadow-cyan-950/50'
+            }`;
+            toast.innerHTML = msg;
+            document.body.appendChild(toast);
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                toast.style.transform = 'translateY(8px)';
+                setTimeout(() => { if (document.body.contains(toast)) document.body.removeChild(toast); }, 300);
+            }, 4500);
+        }
 
         function renderImagePreviews() {
             if (!imagePreviewContainer) return;
@@ -8656,6 +8694,223 @@
                     }
                 };
                 imagePreviewContainer.appendChild(wrap);
+            });
+        }
+
+        // ── 圖片上傳 (Vision) ──
+        if (btnUploadImage && fileUploadImage) {
+            btnUploadImage.addEventListener('click', () => {
+                fileUploadImage.click();
+            });
+            fileUploadImage.addEventListener('change', (e) => {
+                const files = e.target.files;
+                if (!files || files.length === 0) return;
+                Array.from(files).forEach(file => {
+                    if (file.type.startsWith('image/')) {
+                        const reader = new FileReader();
+                        reader.onload = (evt) => {
+                            attachedImages.push(evt.target.result);
+                            renderImagePreviews();
+                        };
+                        reader.readAsDataURL(file);
+                    }
+                });
+                fileUploadImage.value = '';
+            });
+        }
+
+        // ── 文件上傳 (PDF / Word / Excel / PPT / 純文字 / 完整原始碼與大檔案) ──
+        async function processDocumentFile(file) {
+            if (!file) return;
+            const ext = file.name.toLowerCase().split('.').pop();
+            const textExts = ['txt', 'md', 'markdown', 'json', 'jsonl', 'csv', 'tsv', 'log', 'svg', 'xml', 'html', 'htm', 'xhtml', 'js', 'jsx', 'ts', 'tsx', 'css', 'scss', 'less', 'py', 'bat', 'cmd', 'ps1', 'sh', 'bash', 'yaml', 'yml', 'ini', 'env', 'toml', 'conf', 'config', 'sql', 'c', 'cpp', 'h', 'hpp', 'cs', 'go', 'rs', 'java', 'kt', 'php', 'vue', 'svelte', 'r', 'rb', 'dockerfile', 'makefile', 'lock'];
+            const isTextFile = textExts.includes(ext) || file.type.startsWith('text/') || file.type.includes('json') || file.type.includes('javascript') || file.type.includes('html') || file.type.includes('xml');
+
+            if (isTextFile) {
+                const reader = new FileReader();
+                reader.onload = (evt) => {
+                    const content = evt.target.result || '';
+                    const sizeKb = (file.size / 1024).toFixed(1);
+                    const lineCount = content.split('\n').length;
+                    const charCount = content.length;
+
+                    // 1. 自動同步切塊加入 RAG 知識庫，以支援大檔案全域高精確檢索
+                    try {
+                        const chunkSize = parseInt(document.getElementById('rag-chunk-size')?.value) || 400;
+                        const chunks = chunkText(content, chunkSize);
+                        const docObj = {
+                            id: 'doc_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
+                            title: file.name,
+                            content: content,
+                            chunks: chunks,
+                            date: new Date().toISOString()
+                        };
+                        appSettings.ragDocs = appSettings.ragDocs || [];
+                        appSettings.ragDocs.push(docObj);
+                        renderRagDocList();
+                        saveSettingsToLocal();
+                    } catch (ragErr) {
+                        console.warn('[RAG Auto Index Warning]', ragErr);
+                    }
+
+                    // 2. 注入提示詞到使用者輸入框
+                    const currentText = userInput.value.trim();
+                    let promptInjection = '';
+                    if (content.length <= 15000) {
+                        // 適合直接完整放入對話框的尺寸
+                        promptInjection = `【附件文件: ${file.name} (${sizeKb} KB, ${lineCount} 行)】\n\`\`\`${ext}\n${content}\n\`\`\``;
+                    } else {
+                        // 超長文本檔案 (如 index.html ~650KB)
+                        const snippet = content.slice(0, 12000);
+                        promptInjection = `【附加長文本文件: ${file.name} (${sizeKb} KB / ${lineCount.toLocaleString()} 行 / ${charCount.toLocaleString()} 字)】\n> 💡 此檔案已自動同步建立 RAG 向量索引庫，可直接提問、重構或分析！\n\`\`\`${ext}\n${snippet}\n\n... (其餘 ${(charCount - 12000).toLocaleString()} 字符已載入 RAG 知識庫與記憶體，可精準檢索回答)\n\`\`\``;
+                    }
+
+                    userInput.value = currentText ? `${currentText}\n\n${promptInjection}` : promptInjection;
+                    userInput.dispatchEvent(new Event('input'));
+                    showUploadToast(`📄 <b>${file.name}</b> (${sizeKb} KB, ${lineCount.toLocaleString()} 行) 已載入對話與 RAG 知識庫`);
+                };
+                reader.readAsText(file, 'utf-8');
+                return;
+            }
+
+            // 非純文字二進位類 (PDF, DOCX, XLSX, PPTX)：透過 Daemon 解析
+            const isDaemonOnline = document.getElementById('daemon-status-badge')?.textContent.includes('Online') || document.getElementById('daemon-status-badge')?.textContent.includes('已連線');
+            if (!isDaemonOnline) {
+                showUploadToast(`⚠️ 解析二進位文件 (${file.name}) 需要常駐程式 (Port 8001) 運行中。<br>純文字/程式碼檔案可直接讀取。`, true);
+                return;
+            }
+
+            showUploadToast(`⏳ 正在透過 Daemon 解析 <b>${file.name}</b>...`);
+
+            try {
+                const reader = new FileReader();
+                const base64Data = await new Promise((resolve, reject) => {
+                    reader.onload = (evt) => resolve(evt.target.result);
+                    reader.onerror = reject;
+                    reader.readAsDataURL(file);
+                });
+
+                const res = await fetchWithTimeout(`${appSettings.daemonEndpoint}/tools/parse_document`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ filename: file.name, data_base64: base64Data }),
+                    timeout: 45000
+                });
+
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                const data = await res.json();
+
+                if (data.status === 'success') {
+                    const parsedText = data.text || '';
+                    const charCount = data.char_count || parsedText.length;
+                    const sizeKb = (file.size / 1024).toFixed(1);
+
+                    // 自動加入 RAG
+                    if (parsedText.length > 0) {
+                        const chunkSize = parseInt(document.getElementById('rag-chunk-size')?.value) || 400;
+                        const chunks = chunkText(parsedText, chunkSize);
+                        const docObj = {
+                            id: 'doc_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
+                            title: file.name,
+                            content: parsedText,
+                            chunks: chunks,
+                            date: new Date().toISOString()
+                        };
+                        appSettings.ragDocs = appSettings.ragDocs || [];
+                        appSettings.ragDocs.push(docObj);
+                        renderRagDocList();
+                        saveSettingsToLocal();
+                    }
+
+                    const currentText = userInput.value.trim();
+                    const snippet = parsedText.length <= 15000 ? parsedText : parsedText.slice(0, 12000) + `\n... (其餘 ${(charCount - 12000).toLocaleString()} 字符已加入 RAG 知識庫)`;
+                    const promptInjection = `【附件文件: ${file.name} (${sizeKb} KB, ${charCount.toLocaleString()} 字符已解析)】\n\`\`\`\n${snippet}\n\`\`\``;
+
+                    userInput.value = currentText ? `${currentText}\n\n${promptInjection}` : promptInjection;
+                    userInput.dispatchEvent(new Event('input'));
+                    showUploadToast(`✅ <b>${file.name}</b> 解析成功 (${charCount.toLocaleString()} 字)，已載入 RAG 知識庫`);
+                } else {
+                    showUploadToast(`❌ ${file.name} 解析失敗: ${data.error}`, true);
+                }
+            } catch (err) {
+                showUploadToast(`❌ ${file.name} 解析發生錯誤: ${err.message}`, true);
+            }
+        }
+
+        if (btnUploadDoc && fileUploadDoc) {
+            btnUploadDoc.addEventListener('click', () => {
+                fileUploadDoc.click();
+            });
+            fileUploadDoc.addEventListener('change', async (e) => {
+                const files = e.target.files;
+                if (!files || files.length === 0) return;
+                fileUploadDoc.value = '';
+                for (const file of Array.from(files)) {
+                    await processDocumentFile(file);
+                }
+            });
+        }
+
+        // ── 支援全域與輸入框 Drag & Drop 拖放上傳 ──
+        const inputContainer = document.querySelector('.input-container');
+        if (inputContainer) {
+            ['dragenter', 'dragover'].forEach(eventName => {
+                inputContainer.addEventListener(eventName, (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    inputContainer.classList.add('border-cyan-500', 'bg-gray-800/80');
+                }, false);
+            });
+            ['dragleave', 'drop'].forEach(eventName => {
+                inputContainer.addEventListener(eventName, (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    inputContainer.classList.remove('border-cyan-500', 'bg-gray-800/80');
+                }, false);
+            });
+            inputContainer.addEventListener('drop', async (e) => {
+                const dt = e.dataTransfer;
+                const files = dt?.files;
+                if (!files || files.length === 0) return;
+                for (const file of Array.from(files)) {
+                    if (file.type.startsWith('image/')) {
+                        const reader = new FileReader();
+                        reader.onload = (evt) => {
+                            attachedImages.push(evt.target.result);
+                            renderImagePreviews();
+                        };
+                        reader.readAsDataURL(file);
+                    } else {
+                        await processDocumentFile(file);
+                    }
+                }
+            });
+        }
+
+        // ── 支援 Ctrl+V 剪貼簿貼上圖片或檔案 ──
+        if (userInput) {
+            userInput.addEventListener('paste', async (e) => {
+                const items = (e.clipboardData || e.originalEvent?.clipboardData)?.items;
+                if (!items) return;
+                for (const item of items) {
+                    if (item.kind === 'file') {
+                        const file = item.getAsFile();
+                        if (file) {
+                            if (file.type.startsWith('image/')) {
+                                e.preventDefault();
+                                const reader = new FileReader();
+                                reader.onload = (evt) => {
+                                    attachedImages.push(evt.target.result);
+                                    renderImagePreviews();
+                                };
+                                reader.readAsDataURL(file);
+                            } else {
+                                e.preventDefault();
+                                await processDocumentFile(file);
+                            }
+                        }
+                    }
+                }
             });
         }
 

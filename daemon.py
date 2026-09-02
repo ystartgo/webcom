@@ -497,16 +497,27 @@ def parse_document(req: DocumentParseRequest):
             except ImportError:
                 return {"status": "error", "error": "解析 PowerPoint 需要 python-pptx 套件。\n請執行: pip install python-pptx"}
 
-        # ── 純文字與向量類 (.txt / .md / .csv / .json / .svg / .xml / .log) ───────
-        elif ext in (".txt", ".md", ".markdown", ".csv", ".log", ".json", ".svg", ".xml", ".py", ".bat", ".yaml", ".yml"):
+        # ── 純文字、網頁與各類原始碼程式檔案 ───────
+        elif ext in (
+            ".txt", ".md", ".markdown", ".csv", ".tsv", ".log", ".json", ".jsonl", ".svg", ".xml",
+            ".html", ".htm", ".xhtml", ".js", ".jsx", ".ts", ".tsx", ".css", ".scss", ".less",
+            ".py", ".bat", ".cmd", ".ps1", ".sh", ".bash", ".yaml", ".yml", ".ini", ".env",
+            ".toml", ".conf", ".config", ".sql", ".c", ".cpp", ".h", ".hpp", ".cs", ".go",
+            ".rs", ".java", ".kt", ".php", ".vue", ".svelte", ".r", ".rb", ".dockerfile", ".makefile"
+        ):
             text = file_bytes.decode("utf-8", errors="replace")
 
         else:
-            return {"status": "error", "error": f"不支援的檔案格式: {ext}。支援格式: PDF, DOCX, XLSX, PPTX, SVG, TXT, MD, CSV, JSON"}
+            # 嘗試作為通用 UTF-8 純文字讀取，若無亂碼則直接支援
+            try:
+                decoded = file_bytes.decode("utf-8")
+                text = decoded
+            except Exception:
+                return {"status": "error", "error": f"不支援的檔案格式: {ext}。支援格式: PDF, DOCX, XLSX, PPTX, SVG, HTML, JS, CSS, TXT, MD, CSV, JSON 等純文字與代碼檔案"}
 
         text = (text or "").strip()
         if not text:
-            return {"status": "error", "error": "文件解析成功，但未能提取到任何文字內容（可能為掃描圖像 PDF）"}
+            return {"status": "error", "error": "文件解析成功，但未能提取到任何文字內容（可能為掃描圖像 PDF 或空檔案）"}
 
         char_count = len(text)
         return {
@@ -514,7 +525,7 @@ def parse_document(req: DocumentParseRequest):
             "filename": req.filename,
             "ext": ext,
             "char_count": char_count,
-            "text": text[:80000]  # 限制 80K 字符避免過大
+            "text": text  # 支援完整大文字/原始碼檔案 (包含 index.html 等完整內容)
         }
 
     except Exception as e:
