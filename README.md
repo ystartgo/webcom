@@ -10,10 +10,13 @@
 
 ## ✨ 功能亮點
 
-- 🎛️ **雙 LLM 引擎 & 聯合思考（Co-Think）**
-  - LM Studio / 任意 OpenAI 相容 API
-  - WebGPU 純瀏覽器本地推理（Qwen 2.5 0.5B / 1.5B / 3B、Llama-3.2-1B、SmolLM2-360M）
-  - 可切換「API → WebGPU → 雙引擎聯合思考」三種模式
+- 🎛️ **三 LLM 引擎 & 混合模式（Co-Think / Supervise）**
+  - LM Studio / 任意 OpenAI 相容 API Endpoint
+  - ⚡ **WebGPU 純瀏覽器本地推理**（WebLLM MLC：Qwen 2.5 0.5B / 1.5B / 3B、Llama-3.2-1B、SmolLM2-360M）
+  - 📦 **ONNX Runtime + Transformers.js 本地推理**（雙後端：💻 CPU SIMD 高效運算 或 ⚡ WebGPU 顯卡加速）
+    - 內建 4 模型：Qwen2.5-0.5B (350MB 極速⭐)、Bonsai-1.7B、Qwen3-VL-2B 視覺、Gemma-4-2B (Google)
+    - 支援「自訂 HuggingFace onnx-community 模型 ID」手動加載
+  - 可切換：「API → WebGPU → ONNX → 雙引擎聯合思考 → 監督排查流水線」共 5 模式
 - 🖥️ **多協定終端機**（以 [wterm](https://github.com/vercel-labs/wterm) 為基礎的 WASM 終端）
   - 本地 Shell（WSL）
   - SSH / Telnet 遠端登入
@@ -121,7 +124,29 @@ webcom/
 
 完成後就能在介面頂部「Engine Mode Select」切換到 `⚡ WebGPU Browser Local` 並選擇模型。
 
-### ④ (可選 / WSL) 在 WSL 啟動 Daemon 並開通 Port 8001
+### ④ (選用) 啟用 📦 ONNX Runtime + Transformers.js 本地模型（CPU SIMD / WebGPU 雙後端）
+
+**不需要手動執行 batch 下載**，首次切換 Engine Mode 到 `📦 ONNX 瀏覽器本機` 時會自動：
+1. 加載 ONNX Runtime Web + Transformers.js WASM 模組；
+2. 從 HuggingFace `onnx-community` 自動下載選取的 ONNX 模型權重（進度條位於輸入列上方，顯示「📦 正在載入 ONNX Runtime 本地模型…」+ 百分比）。
+
+**內建 4 個 ONNX 模型**（隨選即用，推薦標註 ⭐）：
+
+| 模型 | 體積 / 顯卡需求 | 適用場景 |
+|------|----------------|---------|
+| `onnx-community/Qwen2.5-0.5B-Instruct` | 350 MB ⭐（純 CPU 也流暢） | 一般問答 / 快速初審 / 無獨顯老電腦 |
+| `onnx-community/Bonsai-1.7B-ONNX` | 約 1.0 GB（建議 WebGPU）| 複雜推理 / 程式碼修補 |
+| `onnx-community/Qwen3-VL-2B-Instruct-ONNX` | 約 1.6 GB（WebGPU 強烈建議）| **圖片 / 截圖 / 故障照片** 視覺診斷（Agent 上傳圖片後啟用） |
+| `onnx-community/gemma-4-E2B-it-ONNX` | 約 1.5 GB（WebGPU 建議）| Google 官方模型，程式碼生成 / 除錯品質穩定 |
+
+**📦 ONNX 運算硬體 3 選**（Router 設定 → ONNX 硬體設定下拉）：
+- ⚙️ **自動偵測**（預設）：優先 WebGPU，失敗無縫切換到 CPU SIMD
+- 💻 **CPU 高性能 SIMD**：無獨立顯卡、或內顯跑 WebGPU 會卡頓時**強烈建議**
+- ⚡ **WebGPU 顯卡加速**：需中高階獨立顯卡（RTX / RX / Apple M Pro 以上）
+
+> 💡 **自訂 ONNX 模型**：Router 設定 → 自訂模型分頁 → 切到 📦 ONNX 頁籤 → 輸入 HuggingFace `onnx-community/<model-id>` 即可新增。
+
+### ⑤ (可選 / WSL) 在 WSL 啟動 Daemon 並開通 Port 8001
 
 若你要使用終端機的 **Local Shell (WSL)** 協定，或想把 Daemon 跑在 WSL Linux 環境內，請參閱完整步驟文件：
 👉 **[docs/wsl_port_8001.md](docs/wsl_port_8001.md)**（雙語：繁中 + English）
@@ -161,10 +186,10 @@ scripts\start_daemon_wsl.bat Ubuntu-22.04   # 或指定發行版
 | 模式 | 說明 | 需求 |
 |---|---|---|
 | 🖥️ LM Studio / API | 呼叫任何 OpenAI 相容 Endpoint（需在 Router Settings 設定 profile）| 有 Daemon 或 LM Studio 本機執行中 |
-| ⚡ WebGPU 瀏覽器純本機 | 100% 離線，瀏覽器內 WebLLM 推理 | 需支援 WebGPU 之瀏覽器 |
-| 📦 ONNX 瀏覽器本機 | 100% 離線，瀏覽器內 ONNX Runtime / Transformers.js 推理 | 支援 WebGPU / WASM CPU 雙後端 |
-| 🧠 Co-Think（雙引擎聯合思考）| WebGPU 邊緣初步拆解意圖 + 主模型深度綜合決策 | 兩者皆需設定 |
-| 🛡️ Supervise（監督排查模式）| 雙 LLM 互查、盲點糾錯與程式碼交叉審查（支援 API / WebGPU / ONNX 自由配對）| 任選兩側模型 |
+| ⚡ WebGPU 瀏覽器純本機 | 100% 離線，瀏覽器內 WebLLM (MLC) 推理；需先 `download_offline_models.bat` | 需支援 WebGPU 之顯卡 |
+| 📦 ONNX 瀏覽器本機 (ONNX Runtime + Transformers.js) | 100% 離線，**雙後端**：💻 CPU 高效 SIMD 或 ⚡ WebGPU 顯卡加速；**首次選模型自動 HuggingFace 下載**；內建 4 模型；可自訂 onnx-community ID | **免 batch 下載**；CPU SIMD 無獨顯也能跑 |
+| 🧠 Co-Think（雙引擎聯合思考）| 優先使用 API 強模型，失敗或無連線時自動 fallback 到 WebGPU / ONNX | 至少設定 2 種引擎 |
+| 🛡️ Supervise（監督排查模式，4-Stage SRE 流水線）| 雙 LLM 互查 → 偵測問題 → 可執行修補 → 稽核簽核；**最差情境（階段失敗）也一定出 log 報告**。3 種引擎型別 (API / WGPU / ONNX) 自由配對 ≥ 27 種組合 | 任選兩側模型（含 ONNX ↔ ONNX 純本地）|
 
 ---
 
@@ -205,20 +230,24 @@ Final Summary Card（正式 log 報告）
   🧭 最終可執行方案
 ```
 
-### ≥ 12 種配對方式（Side-A / Side-B 獨立選型）
+### ≥ 27 種配對方式（Side-A / Side-B 獨立選型，3 種 engine kind × 多模型）
 
-不再假設「A=WGPU / B=API」，4 種 Router Profile × 5 種 WGPU Model × 2 個 Role 可自由交換：
+不再假設「A=WGPU / B=API」，3 種引擎型別 × 4+ Router Profile × 5+ WGPU Model × 4+ ONNX Model × 2 Role 可自由組合，基礎 3×3=9 種配對 + 模型互換 = **≥ 27 種設定**：
 
-| 選擇器 | 可用類型 |
-|--------|---------|
-| Side-A (左側) | 🖥️ API Profile 或 ⚡ WebGPU Model |
-| Side-B (右側) | 🖥️ API Profile 或 ⚡ WebGPU Model |
+| 選擇器 | 可用類型（3 選 1） |
+|--------|------------------|
+| Side-A (左側) | 🖥️ API Profile 或 ⚡ WebGPU Model 或 **📦 ONNX Model** |
+| Side-B (右側) | 🖥️ API Profile 或 ⚡ WebGPU Model 或 **📦 ONNX Model** |
 
-常見場景推薦：
+常見場景推薦（新增 ONNX 系列）：
 - `WGPU 0.5B ↔ LM Studio Qwen 14B`：本地快速初審 + 強模型深度審查
 - `OpenRouter Claude ↔ OpenAI GPT-4o`：跨廠交叉稽核，單邊降級不影響流程
 - `WGPU 3B ↔ WGPU 0.5B`：100% 斷網環境也能跑雙引擎互查
 - `API A (不同 Profile) ↔ API B (不同 Profile)`：Router 設定內「作用對象 A/B」切換可強制分派不同 Endpoint
+- `📦 ONNX Qwen2.5-0.5B (CPU SIMD) ↔ API GPT-4o`：**無獨顯老電腦**首選，CPU 即可跑 ONNX 小模型初審
+- `📦 ONNX Bonsai-1.7B (WebGPU) ↔ WGPU Qwen2.5-3B`：WebGPU 雙 ONNX/WGPU 跨引擎交叉，100% 離線
+- `📦 ONNX Qwen3-VL-2B 視覺 ↔ API GPT-4V`：**影像故障排查** 雙模型交叉核對截圖/畫面
+- `📦 ONNX Gemma-4-2B ↔ 📦 ONNX Qwen2.5-0.5B`：**100% 純 ONNX 雙引擎互查**（適用 WebLLM/WASM 不相容的特殊瀏覽器）
 
 ### 結構化報告範例
 
@@ -309,10 +338,13 @@ Licensed under **GNU GPL v3.0**. See the built-in User Guide tab 6 *License & Cr
 
 ## ✨ Highlights
 
-- 🎛️ **Dual LLM Engine & Co-Think hybrid mode**
+- 🎛️ **Triple LLM Engine & Hybrid Modes (Co-Think / Supervised-Mutual-Debug)**
   - LM Studio / any OpenAI-compatible API endpoint
-  - WebGPU pure-browser local inference (Qwen 2.5 0.5B/1.5B/3B, Llama-3.2-1B, SmolLM2-360M)
-  - Switchable: `API` → `WebGPU` → `Co-Think (hybrid)`
+  - ⚡ **WebGPU browser-local inference** (WebLLM MLC: Qwen 2.5 0.5B / 1.5B / 3B, Llama-3.2-1B, SmolLM2-360M)
+  - 📦 **ONNX Runtime + Transformers.js browser-local inference** (dual backends: 💻 CPU High-Perf SIMD OR ⚡ WebGPU GPU acceleration)
+    - 4 built-in models: Qwen2.5-0.5B (350 MB ultra-fast ⭐), Bonsai-1.7B, Qwen3-VL-2B (Vision), Gemma-4-2B (Google)
+    - "Custom HuggingFace onnx-community model ID" tab for user-added models
+  - 5 selectable top-level modes: `API → WebGPU → ONNX → Co-Think (hybrid) → Supervised-Mutual-Debug (4-Stage SRE Pipeline)`
 - 🖥️ **Multi-Protocol Terminal** (WASM, powered by [wterm](https://github.com/vercel-labs/wterm))
   - Local Shell via WSL
   - SSH / Telnet remote login
@@ -416,7 +448,29 @@ webcom/
 
 After that switch the top-bar **Engine Mode Select** to `⚡ WebGPU Browser Local` and pick your model.
 
-### ④ (Optional / WSL) Run the daemon inside WSL + reach Port 8001 on Windows
+### ④ (Optional) Enable 📦 ONNX Runtime + Transformers.js local models (dual backend: 💻 CPU SIMD / ⚡ WebGPU)
+
+**No manual batch download required** — the first time you flip **Engine Mode Select** → `📦 ONNX Browser Local (ONNX Runtime)` it auto:
+1. loads the ONNX Runtime Web + Transformers.js WASM modules;
+2. downloads the selected ONNX weights directly from HuggingFace `onnx-community` (progress bar appears above the user input row: "📦 Initializing ONNX Runtime & Model… %").
+
+**4 built-in ONNX models** (ready-to-pick, ⭐ = recommended default):
+
+| Model ID (onnx-community/…) | Size / GPU req. | Typical use |
+|---|---|---|
+| Qwen2.5-0.5B-Instruct | 350 MB ⭐ (CPU-friendly, smooth on iGPU only) | General chat / quick triage / legacy PCs without discrete GPU |
+| Bonsai-1.7B-ONNX | ~1.0 GB (WebGPU recommended) | Complex reasoning / code patching |
+| Qwen3-VL-2B-Instruct-ONNX | ~1.6 GB (WebGPU **strongly** recommended) | **Image / screenshot / fault-photo visual diagnostics** (after Agent uploads a picture) |
+| gemma-4-E2B-it-ONNX | ~1.5 GB (WebGPU recommended) | Google official — stable code generation / debugging quality |
+
+**📦 ONNX Hardware Acceleration — 3 options** (Router Settings → "ONNX Hardware" dropdown):
+- ⚙️ **Auto Detect** (default) → WebGPU first, seamless fallback to CPU SIMD
+- 💻 **CPU High-Perf SIMD** → **Strongly recommended** on iGPU-only laptops / PCs that stutter under WebGPU
+- ⚡ **WebGPU GPU Acceleration** → needs mid/high-end discrete GPU (RTX / RX / Apple M Pro class)
+
+> 💡 **Custom ONNX models**: Router Settings → *Custom Models* tab → flip to the 📦 ONNX sub-tab → paste any HuggingFace `onnx-community/<model-id>`.
+
+### ⑤ (Optional / WSL) Run the daemon inside WSL + reach Port 8001 on Windows
 
 If you plan to use the **Local Shell (WSL)** terminal protocol, or just prefer running the FastAPI daemon on Linux, follow the full guide:
 👉 **[docs/wsl_port_8001.md](docs/wsl_port_8001.md)** (bilingual: English + 繁體中文)
@@ -456,9 +510,10 @@ Use the top-right **Engine Mode Select**:
 | Mode | What it does | Requirements |
 |---|---|---|
 | 🖥️ LM Studio / API Mode | Calls any OpenAI-compatible endpoint (configure a Router Profile first) | Daemon running or a local LM Studio instance |
-| ⚡ WebGPU Browser Local | 100% offline. In-browser inference via WebLLM | Run `download_offline_models.bat` first |
-| 🧠 Co-Think (hybrid) | Tries API endpoint first, falls back to WebGPU automatically | Both engines configured |
-| 🛡️ Supervised-Mutual-Debug (4-Stage SRE Pipeline) | Dual-LLM cross review → Detect failures → Produce executable patches → Audit sign-off. **Logs & structured reports always generated, even when stages fail** | Any two models selected (API ↔ API / WGPU ↔ API / WGPU ↔ WGPU) |
+| ⚡ WebGPU Browser Local | 100% offline. In-browser inference via WebLLM (MLC) | Run `download_offline_models.bat` first; WebGPU-capable GPU |
+| 📦 ONNX Browser Local | 100% offline. In-browser inference via **ONNX Runtime + Transformers.js** — dual backends: **💻 CPU SIMD** or **⚡ WebGPU** | No batch download needed; first load auto-fetches 4 built-in ONNX models from HuggingFace onnx-community |
+| 🧠 Co-Think (hybrid) | Tries the primary strong-model endpoint first, falls back to WebGPU/ONNX automatically | At least two engines configured |
+| 🛡️ Supervised-Mutual-Debug (4-Stage SRE Pipeline) | Dual-LLM cross review → Detect failures → Produce executable patches → Audit sign-off. **Logs & structured reports always generated, even when stages fail** | Any 2 models picked from 3 engine kinds: API ↔ API / WGPU ↔ API / WGPU ↔ WGPU / **ONNX ↔ API / ONNX ↔ WGPU / ONNX ↔ ONNX** |
 
 ---
 
@@ -499,20 +554,24 @@ Final Summary Card (official log report — ALWAYS produced)
   🧭 Final executable plan (priority: D's plan → C's patches → B's original answer)
 ```
 
-### ≥ 12 Pairing Configurations (Side-A / Side-B Independent Selectors)
+### ≥ 27 Pairing Configurations (Side-A / Side-B Independent Selectors — 3 engine kinds × multi-model)
 
-No hardcoded "A=WGPU / B=API" assumption. 4 Router profiles × 5 WGPU models × 2 roles freely swappable:
+No hardcoded "A=WGPU / B=API" assumption. 3 engine kinds × 4+ Router profiles × 5+ WGPU models × 4+ ONNX models × 2 roles freely combinable: **9 base pairings × model swaps = ≥ 27 configurations**.
 
-| Selector | Available Types |
-|----------|----------------|
-| Side-A (left)  | 🖥️ API Profile OR ⚡ WebGPU Model |
-| Side-B (right) | 🖥️ API Profile OR ⚡ WebGPU Model |
+| Selector | Available Types (pick 1 of 3) |
+|----------|--------------------------------|
+| Side-A (left)  | 🖥️ API Profile OR ⚡ WebGPU Model OR **📦 ONNX Model** |
+| Side-B (right) | 🖥️ API Profile OR ⚡ WebGPU Model OR **📦 ONNX Model** |
 
-Recommended scenarios:
+Recommended scenarios (new ONNX set added):
 - `WGPU 0.5B ↔ LM Studio Qwen 14B` — fast local triage + strong deep-audit model
 - `OpenRouter Claude ↔ OpenAI GPT-4o` — cross-vendor audit; single-vendor outage degrades gracefully
 - `WGPU 3B ↔ WGPU 0.5B` — 100% offline dual-engine mutual review
 - `API A (Profile X) ↔ API B (Profile Y)` — force-distinct endpoints via Router Modal **Target slot (A-only / B-only / A+B sync)** row (Shift+Click = A+B simultaneously)
+- `📦 ONNX Qwen2.5-0.5B (CPU SIMD) ↔ API GPT-4o` — **non-discrete-GPU legacy PCs**, CPU-only ONNX lightweight triage works out of the box
+- `📦 ONNX Bonsai-1.7B (WebGPU) ↔ WGPU Qwen2.5-3B` — cross-engine ONNX/WebGPU mutual audit, 100% offline
+- `📦 ONNX Qwen3-VL-2B (Vision) ↔ API GPT-4V` — **visual/photo troubleshooting** (paste screenshots) dual-model cross-verify
+- `📦 ONNX Gemma-4-2B ↔ 📦 ONNX Qwen2.5-0.5B` — **100% pure-ONNX dual-engine audit** (for locked-down browsers where WebLLM/WASM load is blocked)
 
 ### Structured Report Snippets
 
