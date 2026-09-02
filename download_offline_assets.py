@@ -34,6 +34,11 @@ RESOURCES = [
         "filename": "webllm.bundle.js",
         "url": "https://esm.run/@mlc-ai/web-llm",
         "optional_if_exists": True
+    },
+    {
+        "filename": "transformers.min.js",
+        "url": "https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.3.3/dist/transformers.min.js",
+        "optional_if_exists": True
     }
 ]
 

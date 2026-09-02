@@ -100,10 +100,56 @@ def download_model(model_name=DEFAULT_MODEL):
     wasm_dest = os.path.join(MODELS_DIR, wasm_filename)
     download_file(wasm_url, wasm_dest)
 
-    print(f"\n✅ Model {model_name} offline download complete!")
+def download_onnx_model(model_name="onnx-community/Qwen2.5-0.5B-Instruct"):
+    target_dir = os.path.join(MODELS_DIR, model_name.replace("/", os.sep))
+    os.makedirs(target_dir, exist_ok=True)
+    
+    print(f"\n=======================================================")
+    print(f" Downloading Offline ONNX Model: {model_name}")
+    print(f" Destination: {target_dir}")
+    print(f"=======================================================")
+
+    hf_base = f"https://huggingface.co/{model_name}/resolve/main"
+
+    essential_files = [
+        "config.json",
+        "generation_config.json",
+        "tokenizer.json",
+        "tokenizer_config.json",
+        "special_tokens_map.json",
+        "vocab.json",
+        "merges.txt"
+    ]
+    for fn in essential_files:
+        url = f"{hf_base}/{fn}"
+        dest = os.path.join(target_dir, fn)
+        download_file(url, dest)
+
+    # ONNX model files inside onnx/ subfolder
+    onnx_dir = os.path.join(target_dir, "onnx")
+    os.makedirs(onnx_dir, exist_ok=True)
+    
+    onnx_files = [
+        "model_q4.onnx",
+        "model_q4.onnx_data",
+        "model_quantized.onnx",
+        "model_quantized.onnx_data",
+        "model.onnx",
+        "model.onnx_data"
+    ]
+    for of in onnx_files:
+        url = f"{hf_base}/onnx/{of}"
+        dest = os.path.join(onnx_dir, of)
+        download_file(url, dest)
+
+    print(f"\n✅ ONNX Model {model_name} offline download complete!")
     print(f"Files stored in: {target_dir}")
     return True
 
 if __name__ == "__main__":
     target = sys.argv[1] if len(sys.argv) > 1 else DEFAULT_MODEL
-    download_model(target)
+    if "onnx" in target.lower() or "xenova" in target.lower() or "/" in target:
+        download_onnx_model(target)
+    else:
+        download_model(target)
+

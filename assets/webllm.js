@@ -1,3 +1,4 @@
+/* WEBCOM_LOCK_PATCH */
 const require$$3 = "MLC_DUMMY_REQUIRE_VAR"
 const require$$4 = "MLC_DUMMY_REQUIRE_VAR"
 
@@ -8356,6 +8357,8 @@ function getChunkedPrefillInputData(inputData, prefillChunkSize) {
  * - https://www.linkedin.com/pulse/asynchronous-locking-using-promises-javascript-abdul-ahad-o7smf/
  */
 class CustomLock {
+  forceUnlock() { this.acquired = false; while (this.queue.length > 0) { const fn = this.queue.shift(); try { fn(); } catch(e){} } }
+
     constructor() {
         this.acquired = false;
         this.queue = [];
@@ -8378,7 +8381,7 @@ class CustomLock {
     release() {
         return __awaiter(this, void 0, void 0, function* () {
             if (!this.acquired) {
-                throw Error("InternalError: expect lock is acquired upon release()");
+                return;");
             }
             if (this.queue.length === 0) {
                 // No one is waiting for the lock, so we free it

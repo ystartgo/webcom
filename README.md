@@ -154,15 +154,138 @@ scripts\start_daemon_wsl.bat Ubuntu-22.04   # 或指定發行版
 
 ---
 
-## 🧪 三種引擎模式
+## 🧪 五種引擎模式 (Inference Engine Modes)
 
 在右上角 Engine Mode Select 切換：
 
 | 模式 | 說明 | 需求 |
 |---|---|---|
 | 🖥️ LM Studio / API | 呼叫任何 OpenAI 相容 Endpoint（需在 Router Settings 設定 profile）| 有 Daemon 或 LM Studio 本機執行中 |
-| ⚡ WebGPU 瀏覽器純本機 | 100% 離線，瀏覽器內推理 | 需先執行 `download_offline_models.bat` |
-| 🧠 Co-Think（雙引擎聯合思考）| 先問 API，無回應時自動 fallback WebGPU | 兩者皆需設定 |
+| ⚡ WebGPU 瀏覽器純本機 | 100% 離線，瀏覽器內 WebLLM 推理 | 需支援 WebGPU 之瀏覽器 |
+| 📦 ONNX 瀏覽器本機 | 100% 離線，瀏覽器內 ONNX Runtime / Transformers.js 推理 | 支援 WebGPU / WASM CPU 雙後端 |
+| 🧠 Co-Think（雙引擎聯合思考）| WebGPU 邊緣初步拆解意圖 + 主模型深度綜合決策 | 兩者皆需設定 |
+| 🛡️ Supervise（監督排查模式）| 雙 LLM 互查、盲點糾錯與程式碼交叉審查（支援 API / WebGPU / ONNX 自由配對）| 任選兩側模型 |
+
+---
+
+## 🛡️ 監督排查模式：4-Stage SRE 故障排除流水線（v1.0.0 新增）
+
+解決單一 LLM 容易出現的**幻覺指令 / 遺漏風險 / rm -rf 類危險操作 / 逾時卡死**四類常見問題。
+
+### 運作流程
+```
+使用者提問
+   │
+   ▼
+Stage-A（第一引擎獨立作答） ──► 輸出答案 + 自陳盲點清單
+Stage-B（第二引擎獨立作答） ──► 輸出答案 + 自陳盲點清單
+   │
+   ▼  _stageDiagnostics() 自動產生 diagA / diagB 結構化偵測物件
+   │
+   ▼
+Stage-C（🛠️ Patch Eng 修補工程師）
+  ① 🔍 問題偵測（逐項列出，並核對 diagA/diagB 診斷表）
+  ② 🔧 可執行修補程式（強制 bash/cmd/powershell fence，禁止空泛文字）
+  ③ 🧐 A 盲點稽核（A 自陳盲點的真實性 / 幻覺比例）
+  ④ 📋 固定 7 行 Stage-C 診斷報告（問題數 / 修補數 / 信心 / 阻斷級別 / 下一步）
+   │
+   ▼  (若 Stage-C TIMEOUT / 有效字元 < 100 / 手動停止 → 自動跳過 Stage-D，並附 D Skipped 原因)
+   ▼
+Stage-D（🛡️ Audit Sign-off 最終稽核 SRE）
+  ① Patch 驗證（逐段 VERIFIED✅ / NEEDS-EDIT⚠️ / DANGEROUS❌ 標註）
+  ② 殘留風險掃描（P0/P1 風險一定要揭露，禁止隱藏 escalate）
+  ③ 🛡️ 固定 5 節最終稽核報告（摘要 / 確認問題 / 已驗證修補 / 殘留風險 / 最終執行方案）
+   │
+   ▼
+Final Summary Card（正式 log 報告）
+  📊 4 階段診斷儀表板表格（Status/Tokens/有效字元/截斷原因）
+  📌 配對流水線元資訊（Pairing / AnyFail 旗標）
+  🔎 Stage-C 修補工程輸出
+  🛡️ Stage-D 5 節最終稽核報告（若未執行則顯示 ⚠️ 跳過原因）
+  🧭 最終可執行方案
+```
+
+### ≥ 12 種配對方式（Side-A / Side-B 獨立選型）
+
+不再假設「A=WGPU / B=API」，4 種 Router Profile × 5 種 WGPU Model × 2 個 Role 可自由交換：
+
+| 選擇器 | 可用類型 |
+|--------|---------|
+| Side-A (左側) | 🖥️ API Profile 或 ⚡ WebGPU Model |
+| Side-B (右側) | 🖥️ API Profile 或 ⚡ WebGPU Model |
+
+常見場景推薦：
+- `WGPU 0.5B ↔ LM Studio Qwen 14B`：本地快速初審 + 強模型深度審查
+- `OpenRouter Claude ↔ OpenAI GPT-4o`：跨廠交叉稽核，單邊降級不影響流程
+- `WGPU 3B ↔ WGPU 0.5B`：100% 斷網環境也能跑雙引擎互查
+- `API A (不同 Profile) ↔ API B (不同 Profile)`：Router 設定內「作用對象 A/B」切換可強制分派不同 Endpoint
+
+### 結構化報告範例
+
+**📊 各階段診斷儀表板**（每次流水線自動產生，**最差情境（Stage-C/D 全壞）也會有這張表當 log**）：
+
+| Stage | Status | Tokens | Useful chars | Truncated reason |
+|-------|--------|--------|--------------|------------------|
+| Stage A (Side-A) | ✅ OK | 412 | 588 | — |
+| Stage B (Side-B) | ✅ OK | 520 | 701 | — |
+| Stage C (Patch Eng) | ⚠️ TIMEOUT/TRUNCATED | 0 | 22 | watchdog-idle-30s |
+| Stage D (Audit) | 🛑 SKIPPED (C failed) | 0 | 0 | stage-c-threw-timeout |
+
+**📋 Stage-C 診斷報告（7 行固定格式）**：
+```
+📋 Stage-C 診斷報告
+====================
+偵測到的問題數：   3
+已撰寫修補數：     3
+修補信心水準：     高 (所有修補均使用官方 apt / systemctl 指令)
+阻斷級別：         P1-故障 (SSH server 未啟用導致連線失敗)
+下一步動作：       accept-B-apply-patches
+若 escalate，1 行提問：—
+```
+
+**🛡️ Stage-D 最終稽核報告（5 節固定格式）**：
+```
+🛡️ 監督排查最終稽核報告
+=======================
+✅ 執行摘要：部分通過 (3 patches, 2 VERIFIED / 1 NEEDS-EDIT)
+🔍 已確認的問題清單：P1-001 (sshd off) / P2-002 (ufw default deny) / P2-003 (apt cache stale)
+🔧 已驗證修補：Patch-001 [VERIFIED✅] 最終版 → systemctl enable --now ssh.socket
+⚠️ 殘留風險與後續行動：Patch-003 NEEDS-EDIT (換 apt-get 避免 20.04 相容問題，建議手動加 -y 旗標)
+🧭 最終執行方案：照 Patch-001 + Patch-002 VERIFIED 版直接執行；Patch-003 等使用者確認 distro 再跑
+```
+
+### 12 層卡死 / 逾時防護鏈（stop-timer + watchdog 架構 v26）
+
+針對「WebGPU for-await 卡死 / API SSE 0 token 半死連線 / 停止按鈕按了還跳 idle timer」三類常見問題：
+
+| # | 防護項目 | 門檻 / 行為 |
+|---|---------|------------|
+| 1 | 新 Stage 卡片建立前，removeAllByStageId 移除同一 stageId 的歷史卡 | 解決「同一 Stage C 同時有 3 張」 |
+| 2 | CustomEvent `webcom-stage-killed` → 閉包 `_killedFlag=true` + 立即清 4 timer | 停止按鈕穿透非同步閉包 |
+| 3 | WebGPU watchdog setInterval tick = 350ms（原本 700ms） | idle / 0-tok 反應縮半 |
+| 4 | Review Stage (C/D) idle 門檻：30s；Independent Stage (A/B)：35s | 不再 idle=38s 仍未截斷 |
+| 5 | TIMEOUT/IDLE/WDOG 被中斷時，`webllmEngine = null` 強制 invalidate cache | 解決「第二次重跑一樣卡」 |
+| 6 | API observeTimer 每 420ms 掃 body，idle>50s(review)/60s(indep) abort | API 分支也有 idle 防護 |
+| 7 | API 分支 0 tokens ≥ 15s 快速 abort（總 timeout 為 200s+ 的 early-exit）| 失效的 OpenRouter key 立即脫離 |
+| 8 | `stageTimersRegistry` 全域存 4 timer + 2 reject → `stopOneStage()` 外部直接清/reject | 不用等 finally，idle 立即停跳 |
+| 9 | `_onKilledEvt` 閉包內同步清 4 timer + reject + stageAC.abort() | 雙重確保 timer 不再跳 |
+| 10 | Loop 內 badge 寫入前檢查 `!_killedFlag && !perStageStopFlags.get(stageId)` | 已停止的卡片不會被 tick 覆蓋回「串流中」 |
+| 11 | `awaitStageSettled(stageId, 450ms)` 管線屏障：上一 Stage 的 AC + registry 全清空才出下一張卡 | 解決「A 還在停但 B 已出現」 |
+| 12 | finally 區塊雙重清：閉包 timer + `_treg.*` + delete registry 全域 entry | 預防 memory leak 與 ghost tick |
+
+### Per-Stage 獨立操作按鈕
+
+4 張 Stage 卡片 footer 列均有（右→左順序）：
+- 🛑 **停止 Stage**：只中止該 Stage，不影響其他（例如 C timeout → 只停 C）
+- 🔄 **重試 Stage**：原地重跑同一 Stage，自動移除舊卡片並回填最新結果
+- 📋 **複製 Stage Body**：只複製 body 內容，不含 badge 與按鈕
+
+使用者 / assistant 聊天氣泡也各有獨立 🔄 重試 / 📋 複製按鈕。
+
+### 防重複 / 死循環 3 層防護
+1. Prompt 規則：回答末尾強制加 `--- END STAGE ---` 標記
+2. Stream 規則：`superviseGuards = { maxTokens:1800, endMarker, repeatStreak:4, repeatSim:0.92 }`
+3. Chunk 規則：每 chunk 檢查 END marker / 4 行相似 ≥ 0.92 / maxTokens，任一命中立即截斷並附 `⚠️ [防護：...]`
 
 ---
 
@@ -335,6 +458,128 @@ Use the top-right **Engine Mode Select**:
 | 🖥️ LM Studio / API Mode | Calls any OpenAI-compatible endpoint (configure a Router Profile first) | Daemon running or a local LM Studio instance |
 | ⚡ WebGPU Browser Local | 100% offline. In-browser inference via WebLLM | Run `download_offline_models.bat` first |
 | 🧠 Co-Think (hybrid) | Tries API endpoint first, falls back to WebGPU automatically | Both engines configured |
+| 🛡️ Supervised-Mutual-Debug (4-Stage SRE Pipeline) | Dual-LLM cross review → Detect failures → Produce executable patches → Audit sign-off. **Logs & structured reports always generated, even when stages fail** | Any two models selected (API ↔ API / WGPU ↔ API / WGPU ↔ WGPU) |
+
+---
+
+## 🛡️ Supervised Mutual-Debug Mode: 4-Stage SRE Troubleshooting Pipeline (v1.0.0 added)
+
+Solves 4 common single-LLM failure classes: **hallucinated commands, missed P0/P1 risks, dangerous destructive ops (rm -rf), and timeouts/stuck iterators**.
+
+### Pipeline Flow
+```
+User query
+  │
+  ▼
+Stage-A (Engine-A independent answer) ──► output + self-reported blind spots
+Stage-B (Engine-B independent answer) ──► output + self-reported blind spots
+  │
+  ▼  _stageDiagnostics() auto-generates structured diagA / diagB
+  │
+  ▼
+Stage-C (🛠️ Patch Engineer — always runs)
+  ① 🔍 Issue detection (maps against diagA/diagB table)
+  ② 🔧 Executable patches (MUST be `bash / cmd / powershell` fenced code; NEVER empty prose)
+  ③ 🧐 Blind-spot audit of Stage-A claims (real issues vs. hallucinations)
+  ④ 📋 Fixed 7-line Stage-C diagnostic report
+  │
+  ▼  (If Stage-C TIMEOUT / useful chars < 100 / manual stop → Stage-D SKIPPED with reason logged)
+  ▼
+Stage-D (🛡️ Audit Sign-off SRE)
+  ① Patch verification, line-by-line:  VERIFIED✅ / NEEDS-EDIT⚠️ / DANGEROUS❌
+  ② Residual-risk scan (P0/P1 MUST be disclosed — silent escalate is forbidden)
+  ③ 🛡️ Fixed 5-section Final Audit Report
+  │
+  ▼
+Final Summary Card (official log report — ALWAYS produced)
+  📊 4-stage diagnostics table (Status / Tokens / Useful chars / Truncation reason)
+  📌 Pipeline metadata (Pairing config · AnyFail flag)
+  🔎 Stage-C Patch Engineering output (full)
+  🛡️ Stage-D 5-section Audit (or ⚠️ D-skipped reason)
+  🧭 Final executable plan (priority: D's plan → C's patches → B's original answer)
+```
+
+### ≥ 12 Pairing Configurations (Side-A / Side-B Independent Selectors)
+
+No hardcoded "A=WGPU / B=API" assumption. 4 Router profiles × 5 WGPU models × 2 roles freely swappable:
+
+| Selector | Available Types |
+|----------|----------------|
+| Side-A (left)  | 🖥️ API Profile OR ⚡ WebGPU Model |
+| Side-B (right) | 🖥️ API Profile OR ⚡ WebGPU Model |
+
+Recommended scenarios:
+- `WGPU 0.5B ↔ LM Studio Qwen 14B` — fast local triage + strong deep-audit model
+- `OpenRouter Claude ↔ OpenAI GPT-4o` — cross-vendor audit; single-vendor outage degrades gracefully
+- `WGPU 3B ↔ WGPU 0.5B` — 100% offline dual-engine mutual review
+- `API A (Profile X) ↔ API B (Profile Y)` — force-distinct endpoints via Router Modal **Target slot (A-only / B-only / A+B sync)** row (Shift+Click = A+B simultaneously)
+
+### Structured Report Snippets
+
+**📊 Per-Stage Diagnostics Dashboard** (auto-generated **every run** — guaranteed log even under worst-case C/D total failure):
+
+| Stage | Status | Tokens | Useful chars | Truncated reason |
+|-------|--------|--------|--------------|------------------|
+| Stage A (Side-A) | ✅ OK | 412 | 588 | — |
+| Stage B (Side-B) | ✅ OK | 520 | 701 | — |
+| Stage C (Patch Eng) | ⚠️ TIMEOUT/TRUNCATED | 0 | 22 | watchdog-idle-30s |
+| Stage D (Audit) | 🛑 SKIPPED (C failed) | 0 | 0 | stage-c-threw-timeout |
+
+**📋 Stage-C Diagnostic Report (7 lines fixed)**:
+```
+📋 Stage-C Diagnostic Report
+============================
+Issues detected:            3
+Patches authored:           3
+Patch confidence:           HIGH (all use official apt/systemctl verbs)
+Severity blocker level:     P1-DEGRADED (SSH server socket disabled)
+Recommended next action:    accept-B-apply-patches
+Escalate 1-line question:   —
+```
+
+**🛡️ Stage-D Final Audit Report (5 sections fixed)**:
+```
+🛡️ Final Audit Report (Supervised Mutual Debug)
+================================================
+✅ Executive summary:   PARTIALLY PASSED (3 patches · 2 VERIFIED✅ / 1 NEEDS-EDIT⚠️)
+🔍 Confirmed issues:    P1-001 (sshd off) · P2-002 (ufw default deny) · P2-003 (apt cache stale)
+🔧 Verified patches:    Patch-001 [VERIFIED✅] final → systemctl enable --now ssh.socket
+⚠️ Residual risks:      Patch-003 NEEDS-EDIT (apt → apt-get for 20.04 compat; add -y non-interactive)
+🧭 Final executable plan:  Execute Patch-001 + Patch-002 VERIFIED now; hold Patch-003 until distro confirmed
+```
+
+### 12-Layer Timeout / Stuck-Iterator Kill Chain (stop-timer + watchdog v26)
+
+Targets: **WebGPU for-await iterator ignores AbortSignal · API SSE 0-token half-dead conn · stop btn pressed but idle tick still jumps**
+
+| # | Guard | Threshold / Behaviour |
+|---|-------|----------------------|
+| 1 | removeAllByStageId BEFORE new card mount | Eliminates "3 identical Stage-C cards rendered concurrently" |
+| 2 | CustomEvent `webcom-stage-killed` → closure `_killedFlag=true` + 4 timers cleared INSTANTLY | Crosses async-closure boundary that AbortSignal alone can't reach |
+| 3 | WebGPU watchdog tick: 350 ms (prev 700 ms) | idle/0-tok reaction time halved |
+| 4 | Review-stage (C/D) idle: 30 s · Independent-stage (A/B) idle: 35 s | Abort BEFORE user sees 38 s+ idle |
+| 5 | On TIMEOUT/IDLE/WDOG → `webllmEngine = null` (invalidate cached engine instance) | Fixes "first run stuck → second run ALSO stuck forever" |
+| 6 | API observeTimer 420ms body-scan: idle>50 s (review) / 60 s (indep) → abort | API branch gets idle protection (not only total-timeout) |
+| 7 | API branch 0-tokens ≥ 15 s FAST abort (early-exit bypass of 200s+ grand timeout) | Dead OpenRouter / bad key exits instantly |
+| 8 | `stageTimersRegistry` global Map holds 4 timers + 2 rejects → `stopOneStage()` clears/rejects OUTSIDE closure | Idle stops jumping WITHOUT waiting for finally block |
+| 9 | Closure `_onKilledEvt` handler: 4 timers clear + both rejects + `stageAC.abort()` | Dual guarantee no ghost tick survives |
+| 10 | In-loop badge write guard: `if (!_killedFlag && !perStageStopFlags.get(stageId))` | Stopped cards cannot be overwritten back to "streaming…" by a stale tick |
+| 11 | `awaitStageSettled(stageId, 450 ms)` pipeline barrier: next card waits until AC+registry fully empty | Fixes "Stage-A still halting → Stage-B already appears" |
+| 12 | `finally` double-clean: closure timers + `_treg.*` + delete global registry entry | Prevents memory leak & phantom ticks |
+
+### Per-Stage Independent Action Buttons
+
+Each of the 4 Stage cards footer row (right→left order):
+- 🛑 **Stop Stage**: aborts ONLY that stage (siblings continue)
+- 🔄 **Retry Stage**: re-runs that stage in-place; auto removes the old card; result written back to answerA/B/reviewBA/reviewAB
+- 📋 **Copy Stage Body**: copies ONLY the prose body; never the badge or action buttons
+
+User bubbles & assistant bubbles also each get independent 🔄 Retry / 📋 Copy action bars.
+
+### Anti-Repeat / Infinite-Loop 3-Tier Guards
+1. Prompt rule: every stage must end with explicit `--- END STAGE ---` marker
+2. Stream meta: `superviseGuards = { maxTokens:1800, endMarker, repeatStreak:4, repeatSim:0.92 }`
+3. Per-chunk: END marker / 4-line sim ≥ 0.92 repeat / maxTokens — ANY triggers immediate truncate + `⚠️ [Guard: …reason…]`
 
 ---
 

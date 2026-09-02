@@ -1,3 +1,4 @@
+/* WEBCOM_LOCK_PATCH */
 var webllm = (() => {
   var __defProp = Object.defineProperty;
   var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
