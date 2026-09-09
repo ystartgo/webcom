@@ -2,7 +2,7 @@
 
 > **繁體中文** ・ [English](#english)
 >
-> 🎯 **當前版本：`v1.0.3-Dual-Engine-WebGPU-RAG-Supervise`** ・ 釋出日期：`2026-09-09`
+> 🎯 **當前版本：`v1.0.4-Dual-Engine-WebGPU-RAG-Supervise`** ・ 釋出日期：`2026-09-09`
 > 📝 變更紀錄：見下方 [## 🕓 變更日誌 (Changelog)](#-變更日誌-changelog) / [English Changelog](#-changelog)
 
 **Webcom** 是一套單檔 `index.html` 就能啟動的 **雙引擎 AI 主控台**，整合 **多協定終端機（WSL / SSH / Telnet / Web Serial / 後端 Serial）**、**LM Studio / API** 與 **WebGPU 瀏覽器本地 LLM** 兩種推理引擎、**RAG 知識庫管理**、**MCP 協定工具面板**、**純斷網模擬**、**WinPE 開機自動執行** 等常見的現場維運／離線操作需求。
@@ -375,6 +375,18 @@ Q1~Q3 請見內建手冊第 5 頁「常見問題」。以下為本次 v1.0.0 新
 
 ## 🕓 變更日誌 (Changelog)
 
+### `v1.0.4-Dual-Engine-WebGPU-RAG-Supervise` — 2026-09-09 **修正釋出 (Bugfix)**
+> 🐛 修復 v1.0.3 回報的 3 項穩定性問題 + 2 項檔案同步
+- **🩹 daemon.py 4 處修復（8001 埠佔用 + 靜默啟動 + pythonw 崩潰）**：
+  1. 啟動前自動偵測 `127.0.0.1:8001 LISTEN` → 非自身 PID 就 `psutil.kill()` 舊進程（解決「Daemon 一鍵重啟失敗/Address already in use」）
+  2. `delayed_exit()` 0.5s→0.3s + 寫 `.stop_daemon` 停止旗標檔 + 父程序 cmd.exe 也一併結束（解決關閉時留下殭屍 cmd 黑窗）
+  3. `pythonw.exe` / 無視窗服務模式 `sys.stdout/sys.stderr is None` 時自動重導向到 `daemon.log`（解決 Windows 排程/靜默啟動時 stderr 丟失造成崩潰）
+  4. 工作目錄保險：啟動開頭強制 `os.chdir(__file__)` + `sys.path.insert(0, __dir__)`（解決從不同 CWD 啟動 import 失敗）
+- **🩹 `webcom://` 協定改為 `<a>.click()` 而非 `iframe.src`**：Edge/Chromium 新版 CSP 安全機制會阻止 iframe 載入 custom protocol（3000ms 閃退）；改 `<a href="webcom://…">` + `.click()` + 2000ms 後移除，支援 Chrome/Edge/Firefox
+- **🩹 下載註冊 regbat → 改 wscript `silent_daemon.vbs` 靜默啟動**：原本 `regbat` 直接 `start_daemon.bat` 會彈 cmd 黑窗；改為 `HKCU\…\webcom\shell\open\command = wscript.exe silent_daemon.vbs %1`，**完全背景執行、無干擾、無黑窗**
+- **📦 同步檔案**：`assets/webllm.bundle.js`（WebGPU 載入期間 callback 優先級調整，78 bytes 差異）
+- **📄 文件**：雙語 Changelog 補 v1.0.4 修正明細 + 頂部 banner 版號 v1.0.3→v1.0.4
+
 ### `v1.0.3-Dual-Engine-WebGPU-RAG-Supervise` — 2026-09-09
 - **文件一致化維護釋出**（程式碼主體與 v1.0.2 功能相同，版本升級用於標記以下穩定凍結點）：
   - 🛡️ Supervise SRE 4-Stage 流水線 12 層卡死防護鏈 + stop-timer v26 → 標記 **STABLE**
@@ -432,7 +444,7 @@ Q1~Q3 請見內建手冊第 5 頁「常見問題」。以下為本次 v1.0.0 新
 <a id="english"></a>
 # Webcom — Dual-Engine AI Console (English)
 
-> 🎯 **Current Release:** `v1.0.3-Dual-Engine-WebGPU-RAG-Supervise` ・ **Released:** `2026-09-09`
+> 🎯 **Current Release:** `v1.0.4-Dual-Engine-WebGPU-RAG-Supervise` ・ **Released:** `2026-09-09`
 > 📝 **Changelog:** [Jump to Changelog ↓](#-changelog)
 
 **Webcom** is a single-file (`index.html`) **Dual-Engine AI Console** that combines a **multi-protocol terminal (WSL / SSH / Telnet / Web Serial / Backend Serial)**, **LM Studio / API** and **WebGPU browser-local LLM** inference engines, **RAG Knowledge Base**, **MCP tool panel**, **pure-offline simulation switch**, and **WinPE autorun** for real-world on-site / offline ops.
@@ -801,6 +813,18 @@ Q1~Q3 live inside the built-in User Guide Tab 5 *FAQ*. The Q4~Q6 below cover v1.
 
 <a id="changelog"></a>
 ## 🕓 Changelog
+
+### `v1.0.4-Dual-Engine-WebGPU-RAG-Supervise` — 2026-09-09 **Bugfix Release**
+> 🐛 Addresses 3 stability regressions reported in v1.0.3 + 2 asset/doc sync items
+- **🩹 4 fixes in daemon.py (8001 port-claim + silent startup + pythonw crash)**
+  1. Pre-launch auto-check `127.0.0.1:8001 LISTEN` — if owned by a *different* PID → `psutil.kill()` the stale process (fixes "Daemon 1-click Restart fails / Address already in use")
+  2. `delayed_exit()` 0.5 s → 0.3 s + writes `.stop_daemon` stop-marker file + also terminates the parent `cmd.exe` wrapper (fixes zombie cmd black window after close)
+  3. `pythonw.exe` / windowless service mode: when `sys.stdout/sys.stderr is None` → auto-redirect both to `daemon.log` (fixes crashes under Task Scheduler / silent launcher because stderr was unavailable)
+  4. CWD hardening: at startup, force `os.chdir(__file__ dir)` + `sys.path.insert(0, __dir__)` (fixes imports when daemon is launched from a different working directory)
+- **🩹 `webcom://` custom protocol launcher now uses `<a>.click()` instead of `iframe.src`**: newer Edge/Chromium CSP policies block iframe-loading custom protocols (caused a 3000 ms ghost-flash / no-launch). Replaced with `<a href="webcom://…">` + programmatic `.click()` + removal after 2000 ms — works on Chrome / Edge / Firefox.
+- **🩹 Download-register `.reg.bat` now launches via `wscript.exe silent_daemon.vbs` (truly silent)**: the previous `start_daemon.bat` route popped a cmd black console; the new `HKCU\…\webcom\shell\open\command = wscript.exe silent_daemon.vbs %1` runs **fully in background, zero windows, zero user disruption**.
+- **📦 Asset sync**: `assets/webllm.bundle.js` (WebGPU loader callback priority tweak — 78-byte delta)
+- **📄 Docs**: bilingual Changelog entries + top banner version bumped v1.0.3 → v1.0.4
 
 ### `v1.0.3-Dual-Engine-WebGPU-RAG-Supervise` — 2026-09-09
 - **Docs-consolidation maintenance release** (feature parity with v1.0.2; version bump marks the following **STABLE** freeze points):

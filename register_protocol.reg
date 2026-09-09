@@ -1,0 +1,12 @@
+Windows Registry Editor Version 5.00
+
+[HKEY_CURRENT_USER\Software\Classes\webcom]
+@="URL:Webcom Daemon Launcher"
+"URL Protocol"=""
+
+[HKEY_CURRENT_USER\Software\Classes\webcom\shell]
+
+[HKEY_CURRENT_USER\Software\Classes\webcom\shell\open]
+
+[HKEY_CURRENT_USER\Software\Classes\webcom\shell\open\command]
+@="wscript.exe \"C:\\Apps\\Webcom\\silent_daemon.vbs\" \"%1\""

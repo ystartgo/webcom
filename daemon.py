@@ -5,6 +5,18 @@ import shutil
 
 # Ensure working directory is always script directory
 os.chdir(os.path.dirname(os.path.abspath(__file__)))
+
+# Support windowless execution (pythonw / hidden background service)
+if sys.stdout is None or sys.stderr is None:
+    try:
+        _log_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "daemon.log")
+        _log_f = open(_log_path, "a", encoding="utf-8", buffering=1)
+        if sys.stdout is None:
+            sys.stdout = _log_f
+        if sys.stderr is None:
+            sys.stderr = _log_f
+    except Exception:
+        pass
 if os.path.dirname(os.path.abspath(__file__)) not in sys.path:
     sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from typing import Optional
@@ -232,7 +244,20 @@ def health_check():
 def shutdown_daemon():
     import threading, time
     def delayed_exit():
-        time.sleep(0.5)
+        time.sleep(0.3)
+        stop_marker = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".stop_daemon")
+        try:
+            with open(stop_marker, "w", encoding="utf-8") as f:
+                f.write("stop")
+        except Exception:
+            pass
+        try:
+            import psutil
+            parent = psutil.Process(os.getpid()).parent()
+            if parent and "cmd" in parent.name().lower():
+                parent.kill()
+        except Exception:
+            pass
         os._exit(0)
     threading.Thread(target=delayed_exit).start()
     return {"status": "success", "message": "Daemon shutting down"}
@@ -899,6 +924,26 @@ def call_mcp_tool(req: MCPCallRequest):
     return {"isError": True, "content": [{"type": "text", "text": f"未知的 MCP 工具: {tool_name}"}]}
 
 if __name__ == "__main__":
+    import time
+    try:
+        import socket, psutil
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        res = s.connect_ex(('127.0.0.1', 8001))
+        s.close()
+        if res == 0:
+            current_pid = os.getpid()
+            for proc in psutil.process_iter(['pid', 'name']):
+                if proc.info['pid'] != current_pid:
+                    try:
+                        for conn in proc.connections(kind='inet'):
+                            if conn.laddr.port == 8001 and conn.status == 'LISTEN':
+                                print(f"[info] 釋放被佔用之 8001 埠 (終止舊行程 PID: {proc.info['pid']})...")
+                                proc.kill()
+                                time.sleep(0.8)
+                    except Exception:
+                        pass
+    except Exception:
+        pass
     print("Webcom Daemon 正在啟動於 http://127.0.0.1:8001 ...")
     uvicorn.run(app, host="127.0.0.1", port=8001)
 

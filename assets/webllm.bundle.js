@@ -19802,9 +19802,9 @@ ${officialHermes2FunctionCallSchema} For each function call return a json object
       var _a, _b, _c;
       return __asyncGenerator(this, arguments, function* asyncGenerate_1() {
         const lock = this.loadedModelIdToLock.get(model);
-        const isChatCompletion = "messages" in request;
-        const isFunctionCalling = "tools" in request && request.tools !== void 0 && request.tools !== null;
         try {
+          const isChatCompletion = "messages" in request;
+          const isFunctionCalling = "tools" in request && request.tools !== void 0 && request.tools !== null;
           if (isFunctionCalling && !isChatCompletion) {
             throw new Error("Expect `chat.completions` with tools, not `completions`.");
           }
@@ -19812,106 +19812,90 @@ ${officialHermes2FunctionCallSchema} For each function call return a json object
           if (request.seed !== null && request.seed !== void 0) {
             pipeline.setSeed(request.seed);
           }
-        } catch (err) {
-          yield __await(lock.release());
-          throw err;
-        }
-        const created = Date.now();
-        const id = crypto.randomUUID();
-        this.interruptSignal = false;
-        let prevMessageLength = 0;
-        function _countTrailingReplacementChar(curMessage) {
-          let cntr = 0;
-          for (let i = curMessage.length - 1; i >= 0; i--) {
-            if (curMessage.charAt(i) === "\uFFFD") {
-              cntr += 1;
-            } else {
-              return cntr;
+          const created = Date.now();
+          const id = crypto.randomUUID();
+          this.interruptSignal = false;
+          let prevMessageLength = 0;
+          function _countTrailingReplacementChar(curMessage) {
+            let cntr = 0;
+            for (let i = curMessage.length - 1; i >= 0; i--) {
+              if (curMessage.charAt(i) === "\uFFFD") {
+                cntr += 1;
+              } else {
+                return cntr;
+              }
             }
+            return cntr;
           }
-          return cntr;
-        }
-        function _getChunk(selectedPipeline) {
-          return __awaiter(this, void 0, void 0, function* () {
-            const curMessage = selectedPipeline.getMessage();
-            const numTrailingReplacementChar = _countTrailingReplacementChar(curMessage);
-            if (numTrailingReplacementChar % 4 !== 0) {
-              return void 0;
-            }
-            const deltaMessage = curMessage.slice(prevMessageLength);
-            prevMessageLength = curMessage.length;
-            const logprobs = request.logprobs ? {
-              content: selectedPipeline.getTokenLogprobArray().slice(-1)
-              // always the last entry
-            } : null;
-            if (isChatCompletion) {
-              const chunk = {
-                id,
-                choices: [
-                  {
-                    delta: { content: deltaMessage, role: "assistant" },
-                    finish_reason: null,
-                    index: 0,
-                    logprobs
-                  }
-                ],
-                model,
-                object: "chat.completion.chunk",
-                created
-              };
-              return chunk;
-            } else {
-              const chunk = {
-                id,
-                choices: [
-                  {
-                    text: deltaMessage,
-                    finish_reason: null,
-                    index: 0,
-                    logprobs
-                  }
-                ],
-                model,
-                object: "text_completion",
-                created
-              };
-              return chunk;
-            }
-          });
-        }
-        let curChunk;
-        try {
+          function _getChunk(selectedPipeline) {
+            return __awaiter(this, void 0, void 0, function* () {
+              const curMessage = selectedPipeline.getMessage();
+              const numTrailingReplacementChar = _countTrailingReplacementChar(curMessage);
+              if (numTrailingReplacementChar % 4 !== 0) {
+                return void 0;
+              }
+              const deltaMessage = curMessage.slice(prevMessageLength);
+              prevMessageLength = curMessage.length;
+              const logprobs = request.logprobs ? {
+                content: selectedPipeline.getTokenLogprobArray().slice(-1)
+              } : null;
+              if (isChatCompletion) {
+                const chunk = {
+                  id,
+                  choices: [
+                    {
+                      delta: { content: deltaMessage, role: "assistant" },
+                      finish_reason: null,
+                      index: 0,
+                      logprobs
+                    }
+                  ],
+                  model,
+                  object: "chat.completion.chunk",
+                  created
+                };
+                return chunk;
+              } else {
+                const chunk = {
+                  id,
+                  choices: [
+                    {
+                      text: deltaMessage,
+                      finish_reason: null,
+                      index: 0,
+                      logprobs
+                    }
+                  ],
+                  model,
+                  object: "text_completion",
+                  created
+                };
+                return chunk;
+              }
+            });
+          }
+          let curChunk;
           yield __await(this.prefill(request, pipeline, chatConfig, genConfig));
           curChunk = yield __await(_getChunk(pipeline));
-        } catch (err) {
-          yield __await(lock.release());
-          throw err;
-        }
-        if (curChunk) {
-          yield yield __await(curChunk);
-        }
-        while (!pipeline.stopped()) {
-          if (this.interruptSignal) {
-            pipeline.triggerStop();
-            break;
-          }
-          try {
-            yield __await(this.decode(pipeline, genConfig));
-            curChunk = yield __await(_getChunk(pipeline));
-          } catch (err) {
-            yield __await(lock.release());
-            throw err;
-          }
           if (curChunk) {
             yield yield __await(curChunk);
           }
-        }
-        if (request.seed !== null && request.seed !== void 0) {
-          pipeline.setSeed(Date.now());
-        }
-        let finish_reason = pipeline.getFinishReason();
-        let tool_calls;
-        try {
+          while (!pipeline.stopped()) {
+            if (this.interruptSignal) {
+              pipeline.triggerStop();
+              break;
+            }
+            yield __await(this.decode(pipeline, genConfig));
+            curChunk = yield __await(_getChunk(pipeline));
+            if (curChunk) {
+              yield yield __await(curChunk);
+            }
+          }
+          if (request.seed !== null && request.seed !== void 0) {
+            pipeline.setSeed(Date.now());
+          }
+          let finish_reason = pipeline.getFinishReason();
+          let tool_calls;
           if (pipeline.getFinishReason() === "stop" && isFunctionCalling) {
             finish_reason = "tool_calls";
             const outputMessage = pipeline.getMessage();
@@ -19921,93 +19905,93 @@ ${officialHermes2FunctionCallSchema} For each function call return a json object
               true
             );
           }
-        } catch (err) {
-          yield __await(lock.release());
-          throw err;
-        }
-        if (isChatCompletion) {
-          const lastChunk = {
-            id,
-            choices: [
-              {
-                delta: isFunctionCalling ? {
-                  role: "assistant",
-                  tool_calls
-                } : {},
-                finish_reason,
-                index: 0
-              }
-            ],
-            model,
-            object: "chat.completion.chunk",
-            created
-          };
-          yield yield __await(lastChunk);
-        } else {
-          const lastChunk = {
-            id,
-            choices: [
-              {
-                text: "",
-                finish_reason,
-                index: 0
-              }
-            ],
-            model,
-            object: "text_completion",
-            created
-          };
-          yield yield __await(lastChunk);
-        }
-        if ((_a = request.stream_options) === null || _a === void 0 ? void 0 : _a.include_usage) {
-          const usedGrammar = "response_format" in request && (((_b = request.response_format) === null || _b === void 0 ? void 0 : _b.type) === "grammar" || ((_c = request.response_format) === null || _c === void 0 ? void 0 : _c.type) === "json_object");
-          const completion_tokens = pipeline.getCurRoundDecodingTotalTokens();
-          const prompt_tokens = pipeline.getCurRoundPrefillTotalTokens();
-          const prefill_tokens_per_s = pipeline.getCurRoundPrefillTokensPerSec();
-          const decode_tokens_per_s = pipeline.getCurRoundDecodingTokensPerSec();
-          const grammar_init_s = pipeline.getCurRoundGrammarInitTotalTime();
-          const prefill_time = pipeline.getCurRoundPrefillTotalTime();
-          const decode_time = pipeline.getCurRoundDecodingTotalTime();
-          const grammar_per_token_s = pipeline.getCurRoundGrammarPerTokenTotalTime();
-          const defaultExtra = {
-            e2e_latency_s: (Date.now() - timeReceived) / 1e3,
-            prefill_tokens_per_s,
-            decode_tokens_per_s,
-            time_to_first_token_s: prefill_time,
-            time_per_output_token_s: decode_time / completion_tokens
-          };
-          const usage = {
-            completion_tokens,
-            prompt_tokens,
-            total_tokens: completion_tokens + prompt_tokens,
-            extra: usedGrammar ? Object.assign(Object.assign({}, defaultExtra), {
-              grammar_init_s,
-              grammar_per_token_s: grammar_per_token_s / completion_tokens
-            }) : defaultExtra
-          };
           if (isChatCompletion) {
-            const usageChunk = {
+            const lastChunk = {
               id,
-              choices: [],
-              usage,
+              choices: [
+                {
+                  delta: isFunctionCalling ? {
+                    role: "assistant",
+                    tool_calls
+                  } : {},
+                  finish_reason,
+                  index: 0
+                }
+              ],
               model,
               object: "chat.completion.chunk",
               created
             };
-            yield yield __await(usageChunk);
+            yield yield __await(lastChunk);
           } else {
-            const usageChunk = {
+            const lastChunk = {
               id,
-              choices: [],
-              usage,
+              choices: [
+                {
+                  text: "",
+                  finish_reason,
+                  index: 0
+                }
+              ],
               model,
               object: "text_completion",
               created
             };
-            yield yield __await(usageChunk);
+            yield yield __await(lastChunk);
+          }
+          if ((_a = request.stream_options) === null || _a === void 0 ? void 0 : _a.include_usage) {
+            const usedGrammar = "response_format" in request && (((_b = request.response_format) === null || _b === void 0 ? void 0 : _b.type) === "grammar" || ((_c = request.response_format) === null || _c === void 0 ? void 0 : _c.type) === "json_object");
+            const completion_tokens = pipeline.getCurRoundDecodingTotalTokens();
+            const prompt_tokens = pipeline.getCurRoundPrefillTotalTokens();
+            const prefill_tokens_per_s = pipeline.getCurRoundPrefillTokensPerSec();
+            const decode_tokens_per_s = pipeline.getCurRoundDecodingTokensPerSec();
+            const grammar_init_s = pipeline.getCurRoundGrammarInitTotalTime();
+            const prefill_time = pipeline.getCurRoundPrefillTotalTime();
+            const decode_time = pipeline.getCurRoundDecodingTotalTime();
+            const grammar_per_token_s = pipeline.getCurRoundGrammarPerTokenTotalTime();
+            const defaultExtra = {
+              e2e_latency_s: (Date.now() - timeReceived) / 1e3,
+              prefill_tokens_per_s,
+              decode_tokens_per_s,
+              time_to_first_token_s: prefill_time,
+              time_per_output_token_s: decode_time / completion_tokens
+            };
+            const usage = {
+              completion_tokens,
+              prompt_tokens,
+              total_tokens: completion_tokens + prompt_tokens,
+              extra: usedGrammar ? Object.assign(Object.assign({}, defaultExtra), {
+                grammar_init_s,
+                grammar_per_token_s: grammar_per_token_s / completion_tokens
+              }) : defaultExtra
+            };
+            if (isChatCompletion) {
+              const usageChunk = {
+                id,
+                choices: [],
+                usage,
+                model,
+                object: "chat.completion.chunk",
+                created
+              };
+              yield yield __await(usageChunk);
+            } else {
+              const usageChunk = {
+                id,
+                choices: [],
+                usage,
+                model,
+                object: "text_completion",
+                created
+              };
+              yield yield __await(usageChunk);
+            }
+          }
+        } finally {
+          if (lock && lock.acquired) {
+            yield __await(lock.release());
           }
         }
-        yield __await(lock.release());
       });
     }
     interruptGenerate() {
