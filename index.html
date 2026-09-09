@@ -11796,7 +11796,15 @@ Important guidelines:
                     const charCount = data.char_count || parsedText.length;
                     const sizeKb = (file.size / 1024).toFixed(1);
 
-                    // 自動加入 RAG
+                    // 1. 若 PDF 提取出內嵌圖片，自動掛載至 Vision 圖片預覽列 (支援多模態 LLM 分析)
+                    if (data.images && Array.isArray(data.images) && data.images.length > 0) {
+                        data.images.forEach(imgData => {
+                            attachedImages.push(imgData);
+                        });
+                        renderImagePreviews();
+                    }
+
+                    // 2. 自動加入 RAG
                     if (parsedText.length > 0) {
                         const chunkSize = parseInt(document.getElementById('rag-chunk-size')?.value) || 400;
                         const chunks = chunkText(parsedText, chunkSize);
@@ -11813,16 +11821,21 @@ Important guidelines:
                         saveSettingsToLocal();
                     }
 
+                    // 3. 注入 Markdown 與提示詞至對話輸入框
                     const currentText = userInput.value.trim();
-                    const snippet = parsedText.length <= 15000 ? parsedText : parsedText.slice(0, 12000) + `\n... (其餘 ${(charCount - 12000).toLocaleString()} 字符已加入 RAG 知識庫)`;
-                    const promptInjection = `【附件文件: ${file.name} (${sizeKb} KB, ${charCount.toLocaleString()} 字符已解析)】\n\`\`\`\n${snippet}\n\`\`\``;
+                    const snippet = parsedText.length <= 15000 ? parsedText : parsedText.slice(0, 12000) + `\n\n... (其餘 ${(charCount - 12000).toLocaleString()} 字符已同步加入 RAG 知識庫)`;
+                    const imgNote = (data.images && data.images.length > 0) ? `\n> 🖼️ 已從文件提取 ${data.images.length} 張圖片/圖表附加至 Vision 對話！` : '';
+                    const tableNote = (data.tables_count > 0) ? `\n> 📊 已自動識別並轉為 Markdown 表格 (${data.tables_count} 個)` : '';
+                    const isMd = ext === 'pdf' || ext === 'md' || ext === 'markdown' || data.format === 'markdown';
+                    const formattedBody = isMd ? snippet : `\`\`\`${ext}\n${snippet}\n\`\`\``;
+                    const promptInjection = `【附件文件: ${file.name} (${sizeKb} KB / Markdown 格式)】${imgNote}${tableNote}\n\n${formattedBody}`;
 
                     userInput.value = currentText ? `${currentText}\n\n${promptInjection}` : promptInjection;
                     userInput.style.height = 'auto';
                     userInput.style.height = Math.min(userInput.scrollHeight, 180) + 'px';
                     userInput.focus();
                     userInput.dispatchEvent(new Event('input'));
-                    showUploadToast(`✅ <b>${file.name}</b> 解析成功 (${charCount.toLocaleString()} 字)，已載入 RAG 知識庫`);
+                    showUploadToast(`✅ <b>${file.name}</b> 已轉為 Markdown (${charCount.toLocaleString()} 字${data.images && data.images.length ? ` / ${data.images.length} 張圖片` : ''}${data.tables_count ? ` / ${data.tables_count} 個表格` : ''})`);
                 } else {
                     showUploadToast(`❌ ${file.name} 解析失敗: ${data.error}`, true);
                 }
