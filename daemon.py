@@ -247,17 +247,33 @@ def execute_shell(req: ShellRequest):
         is_windows = sys.platform.startswith("win")
         process = None
 
+        env = os.environ.copy()
+        env["PYTHONIOENCODING"] = "utf-8"
+        env["PYTHONUTF8"] = "1"
+        env["LANG"] = "zh_TW.UTF-8"
+        env["LC_ALL"] = "zh_TW.UTF-8"
+
+        def decode_stream(raw_bytes: bytes) -> str:
+            if not raw_bytes:
+                return ""
+            for enc in ("utf-8", "cp950", "cp936", "latin-1"):
+                try:
+                    return raw_bytes.decode(enc)
+                except UnicodeDecodeError:
+                    continue
+            return raw_bytes.decode("utf-8", errors="replace")
+
         if is_windows:
             # WinPE & Windows Execution: Prefer powershell with UTF-8 console encoding if available, fallback cleanly to cmd.exe
             if shutil.which("powershell.exe"):
                 try:
+                    ps_cmd = f"$OutputEncoding = [System.Text.Encoding]::UTF8; [Console]::OutputEncoding = [System.Text.Encoding]::UTF8; [Console]::InputEncoding = [System.Text.Encoding]::UTF8; {cmd}"
                     process = subprocess.run(
-                        ["powershell.exe", "-NoProfile", "-Command", f"[Console]::OutputEncoding = [System.Text.Encoding]::UTF8; {cmd}"],
+                        ["powershell.exe", "-NoProfile", "-Command", ps_cmd],
                         capture_output=True,
-                        text=True,
+                        text=False,
                         timeout=30,
-                        encoding="utf-8",
-                        errors="replace"
+                        env=env
                     )
                 except Exception:
                     process = None
@@ -265,35 +281,87 @@ def execute_shell(req: ShellRequest):
             if process is None:
                 # Native CMD execution (100% available in all WinPE builds)
                 process = subprocess.run(
-                    f'cmd.exe /c "{cmd}"',
+                    f'cmd.exe /c "chcp 65001 >nul 2>&1 && {cmd}"',
                     shell=True,
                     capture_output=True,
-                    text=True,
+                    text=False,
                     timeout=30,
-                    encoding="utf-8",
-                    errors="replace"
+                    env=env
                 )
         else:
             process = subprocess.run(
                 cmd,
                 shell=True,
                 capture_output=True,
-                text=True,
+                text=False,
                 timeout=30,
-                encoding="utf-8",
-                errors="replace"
+                env=env
             )
         
+        stdout_str = decode_stream(process.stdout)
+        stderr_str = decode_stream(process.stderr)
+
         return {
             "status": "success" if process.returncode == 0 else "error",
             "returncode": process.returncode,
-            "stdout": process.stdout,
-            "stderr": process.stderr
+            "stdout": stdout_str,
+            "stderr": stderr_str
         }
     except subprocess.TimeoutExpired:
         return {"status": "error", "error": "指令執行超時 (Timeout 30s)"}
     except Exception as e:
         return {"status": "error", "error": str(e)}
+
+class ScriptRunRequest(BaseModel):
+    code: str
+    language: Optional[str] = "py"
+
+@app.post("/tools/run_script")
+def run_script_endpoint(req: ScriptRunRequest):
+    code = req.code or ""
+    lang = (req.language or "py").lower()
+
+    if not code.strip():
+        return {"status": "error", "error": "腳本內容為空"}
+
+    ext_map = {"py": ".py", "python": ".py", "sh": ".sh", "bash": ".sh", "bat": ".bat", "cmd": ".bat", "ps1": ".ps1", "powershell": ".ps1"}
+    ext = ext_map.get(lang, ".py")
+
+    import tempfile
+    temp_path = None
+    try:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=ext, delete=False, encoding="utf-8") as f:
+            f.write(code)
+            temp_path = f.name
+
+        if ext == ".py":
+            cmd = [sys.executable, "-u", temp_path]
+        elif ext == ".sh":
+            cmd = ["bash", temp_path] if shutil.which("bash") else ["wsl", "bash", temp_path]
+        elif ext == ".bat":
+            cmd = ["cmd.exe", "/c", temp_path]
+        elif ext == ".ps1":
+            cmd = ["powershell.exe", "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", temp_path]
+        else:
+            cmd = [sys.executable, "-u", temp_path]
+
+        proc = subprocess.run(cmd, capture_output=True, text=True, timeout=30, encoding="utf-8", errors="replace")
+        return {
+            "status": "success" if proc.returncode == 0 else "error",
+            "returncode": proc.returncode,
+            "stdout": proc.stdout,
+            "stderr": proc.stderr
+        }
+    except subprocess.TimeoutExpired:
+        return {"status": "error", "error": "腳本執行超時 (Timeout 30s)"}
+    except Exception as e:
+        return {"status": "error", "error": str(e)}
+    finally:
+        if temp_path and os.path.exists(temp_path):
+            try:
+                os.remove(temp_path)
+            except Exception:
+                pass
 
 class SearchRequest(BaseModel):
     query: str
@@ -415,20 +483,69 @@ def parse_document(req: DocumentParseRequest):
         return {"status": "error", "error": f"Base64 解碼失敗: {e}"}
 
     text = ""
+    extracted_images = []
+    tables_count = 0
+
     try:
-        # ── PDF ──────────────────────────────────────────────
+        # ── PDF (高精度轉 Markdown、表格識別與圖片提取) ────────────
         if ext == ".pdf":
             try:
-                import io, pypdf
-                reader = pypdf.PdfReader(io.BytesIO(file_bytes))
-                text = "\n".join(p.extract_text() or "" for p in reader.pages)
-            except Exception as e:
-                try:
-                    import io, pdfminer.high_level as pm
-                    text = pm.extract_text(io.BytesIO(file_bytes))
-                except Exception as e2:
-                    return {"status": "error", "error": f"PDF 解析失敗: {e}"}
+                import pymupdf
+                import pymupdf4llm
 
+                doc = pymupdf.open(stream=file_bytes, filetype="pdf")
+
+                # 1. 識別表格與提取內嵌圖片
+                for page_idx in range(len(doc)):
+                    page = doc[page_idx]
+                    try:
+                        tabs = page.find_tables()
+                        tables_count += len(tabs.tables)
+                    except Exception:
+                        pass
+
+                    try:
+                        for img_info in page.get_images():
+                            if len(extracted_images) >= 15:
+                                break
+                            xref = img_info[0]
+                            base_img = doc.extract_image(xref)
+                            w, h = base_img.get("width", 0), base_img.get("height", 0)
+                            img_data = base_img.get("image", b"")
+                            img_ext = base_img.get("ext", "png")
+                            if w >= 25 and h >= 25 and len(img_data) > 80:
+                                b64 = f"data:image/{img_ext};base64," + base64.b64encode(img_data).decode("ascii")
+                                extracted_images.append(b64)
+                    except Exception:
+                        pass
+
+                # 2. 轉換為結構化 Markdown (包含標題、段落、清單與 Markdown 表格)
+                try:
+                    text = pymupdf4llm.to_markdown(doc, embed_images=True)
+                except Exception as llm_err:
+                    logging.warning(f"pymupdf4llm conversion warning: {llm_err}, falling back to PyMuPDF native markdown")
+                    page_parts = []
+                    for page in doc:
+                        p_txt = page.get_text("text").strip()
+                        try:
+                            tabs = page.find_tables()
+                            if tabs.tables:
+                                tab_mds = [t.to_markdown() for t in tabs.tables]
+                                p_txt += "\n\n" + "\n\n".join(tab_mds)
+                        except Exception:
+                            pass
+                        if p_txt:
+                            page_parts.append(p_txt)
+                    text = "\n\n---\n\n".join(page_parts)
+
+            except Exception as e:
+                logging.warning(f"PyMuPDF parse error: {e}, attempting pypdf fallback")
+                try:
+                    import io, pypdf
+                    reader = pypdf.PdfReader(io.BytesIO(file_bytes))
+                    text = "\n\n".join(p.extract_text() or "" for p in reader.pages)
+                except Exception as e2:
+                    return {"status": "error", "error": f"PDF 解析失敗: {e} ({e2})"}
 
         # ── Word (.docx) ──────────────────────────────────────
         elif ext in (".docx",):
@@ -441,9 +558,19 @@ def parse_document(req: DocumentParseRequest):
                     if para.text.strip():
                         parts.append(para.text)
                 for tbl in doc.tables:
+                    rows = []
                     for row in tbl.rows:
-                        parts.append("\t".join(cell.text for cell in row.cells))
-                text = "\n".join(parts)
+                        rows.append([cell.text.replace("\n", " ").strip() for cell in row.cells])
+                    if rows and any(rows[0]):
+                        header = rows[0]
+                        parts.append("\n| " + " | ".join(header) + " |")
+                        parts.append("| " + " | ".join(["---"] * len(header)) + " |")
+                        for r in rows[1:]:
+                            padded = r + [""] * (len(header) - len(r))
+                            parts.append("| " + " | ".join(padded[:len(header)]) + " |")
+                        parts.append("")
+                        tables_count += 1
+                text = "\n\n".join(parts)
             except ImportError:
                 return {"status": "error", "error": "解析 .docx 需要 python-docx 套件。\n請執行: pip install python-docx"}
 
@@ -472,12 +599,22 @@ def parse_document(req: DocumentParseRequest):
                 parts = []
                 for sheet_name in wb.sheetnames:
                     ws = wb[sheet_name]
-                    parts.append(f"=== 工作表: {sheet_name} ===")
+                    parts.append(f"### 工作表: {sheet_name}")
+                    sheet_rows = []
                     for row in ws.iter_rows(values_only=True):
-                        cells = [str(c) if c is not None else "" for c in row]
-                        if any(c.strip() for c in cells):
-                            parts.append("\t".join(cells))
-                text = "\n".join(parts)
+                        cells = [str(c).replace("\n", " ").strip() if c is not None else "" for c in row]
+                        if any(cells):
+                            sheet_rows.append(cells)
+                    if sheet_rows:
+                        header = sheet_rows[0]
+                        parts.append("| " + " | ".join(header) + " |")
+                        parts.append("| " + " | ".join(["---"] * len(header)) + " |")
+                        for r in sheet_rows[1:]:
+                            padded = r + [""] * (len(header) - len(r))
+                            parts.append("| " + " | ".join(padded[:len(header)]) + " |")
+                        parts.append("")
+                        tables_count += 1
+                text = "\n\n".join(parts)
             except ImportError:
                 return {"status": "error", "error": "解析 Excel 需要 openpyxl 套件。\n請執行: pip install openpyxl"}
 
@@ -489,11 +626,11 @@ def parse_document(req: DocumentParseRequest):
                 prs = Presentation(io.BytesIO(file_bytes))
                 parts = []
                 for i, slide in enumerate(prs.slides, 1):
-                    parts.append(f"=== 投影片 {i} ===")
+                    parts.append(f"### 投影片 {i}")
                     for shape in slide.shapes:
                         if hasattr(shape, "text") and shape.text.strip():
                             parts.append(shape.text)
-                text = "\n".join(parts)
+                text = "\n\n".join(parts)
             except ImportError:
                 return {"status": "error", "error": "解析 PowerPoint 需要 python-pptx 套件。\n請執行: pip install python-pptx"}
 
@@ -516,16 +653,20 @@ def parse_document(req: DocumentParseRequest):
                 return {"status": "error", "error": f"不支援的檔案格式: {ext}。支援格式: PDF, DOCX, XLSX, PPTX, SVG, HTML, JS, CSS, TXT, MD, CSV, JSON 等純文字與代碼檔案"}
 
         text = (text or "").strip()
-        if not text:
-            return {"status": "error", "error": "文件解析成功，但未能提取到任何文字內容（可能為掃描圖像 PDF 或空檔案）"}
+        if not text and not extracted_images:
+            return {"status": "error", "error": "文件解析成功，但未能提取到文字或圖片內容"}
 
         char_count = len(text)
         return {
             "status": "success",
             "filename": req.filename,
             "ext": ext,
+            "format": "markdown",
             "char_count": char_count,
-            "text": text  # 支援完整大文字/原始碼檔案 (包含 index.html 等完整內容)
+            "tables_count": tables_count,
+            "images_count": len(extracted_images),
+            "images": extracted_images,
+            "text": text
         }
 
     except Exception as e:
