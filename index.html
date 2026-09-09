@@ -6249,20 +6249,31 @@
         document.getElementById('file-rag-upload').addEventListener('change', async (e) => {
             const file = e.target.files[0];
             if (!file) return;
-            const isText = ['txt', 'md', 'markdown', 'json', 'jsonl', 'csv', 'tsv', 'log', 'svg', 'xml', 'html', 'htm', 'xhtml', 'js', 'jsx', 'ts', 'tsx', 'css', 'scss', 'less', 'py', 'bat', 'cmd', 'ps1', 'sh', 'bash', 'yaml', 'yml', 'ini', 'env', 'toml', 'conf', 'config', 'sql', 'c', 'cpp', 'h', 'hpp', 'cs', 'go', 'rs', 'java', 'kt', 'php', 'vue', 'svelte', 'r', 'rb'].includes(ext);
+            const ext = (file.name.split('.').pop() || '').toLowerCase();
+            const binaryOfficeExts = ['pdf', 'docx', 'doc', 'xlsx', 'xls', 'pptx', 'ppt'];
+            const isBinaryOffice = binaryOfficeExts.includes(ext);
 
-
-            if (isText) {
+            if (!isBinaryOffice) {
                 const reader = new FileReader();
                 reader.onload = (event) => {
+                    const resText = event.target.result || '';
+                    if (resText.slice(0, 1000).includes('\0')) {
+                        alert(currentLang === 'en' ? 'Unsupported binary file format.' : '不支援的二進位檔案格式，請上傳文字或支援的文件格式！');
+                        return;
+                    }
                     document.getElementById('rag-doc-title').value = file.name;
-                    document.getElementById('rag-doc-content').value = event.target.result;
+                    document.getElementById('rag-doc-content').value = resText;
                 };
-                reader.readAsText(file);
+                reader.readAsText(file, 'utf-8');
             } else {
-                const isDaemonOnline = document.getElementById('daemon-status-badge')?.textContent.includes('Online') || document.getElementById('daemon-status-badge')?.textContent.includes('已連線');
+                let isDaemonOnline = document.getElementById('daemon-status-badge')?.dataset.online === 'true' ||
+                    document.getElementById('daemon-status-badge')?.textContent.includes('Online') ||
+                    document.getElementById('daemon-status-badge')?.textContent.includes('已連線');
+                if (!isDaemonOnline && typeof checkDaemonHealth === 'function') {
+                    isDaemonOnline = await checkDaemonHealth();
+                }
                 if (!isDaemonOnline) {
-                    alert(currentLang === 'en' ? 'Parsing PDF/Office files requires Daemon (8001) to be running. Pure text files (.txt/.md/.json) can be loaded directly.' : '解析 PDF/Office 文件需常駐程式 (Daemon 8001) 運行中。純文字檔案 (.txt/.md/.json/.csv) 可直接載入。');
+                    alert(currentLang === 'en' ? 'Parsing PDF/Office files requires Daemon (8001) to be running. Pure text files (.txt/.md/.json/.csv) can be loaded directly.' : '解析 PDF/Office 文件需常駐程式 (Daemon 8001) 運行中。純文字與代碼檔案 (.txt/.md/.json/.csv 等) 可直接載入。');
                     e.target.value = '';
                     return;
                 }
@@ -11651,7 +11662,8 @@ Important guidelines:
                 const files = e.target.files;
                 if (!files || files.length === 0) return;
                 Array.from(files).forEach(file => {
-                    if (file.type.startsWith('image/')) {
+                    const isImg = file.type.startsWith('image/') || /\.(png|jpe?g|webp|gif|bmp|ico|svg|tiff?)$/i.test(file.name);
+                    if (isImg) {
                         const reader = new FileReader();
                         reader.onload = (evt) => {
                             attachedImages.push(evt.target.result);
@@ -11667,14 +11679,19 @@ Important guidelines:
         // ── 文件上傳 (PDF / Word / Excel / PPT / 純文字 / 完整原始碼與大檔案) ──
         async function processDocumentFile(file) {
             if (!file) return;
-            const ext = file.name.toLowerCase().split('.').pop();
-            const textExts = ['txt', 'md', 'markdown', 'json', 'jsonl', 'csv', 'tsv', 'log', 'svg', 'xml', 'html', 'htm', 'xhtml', 'js', 'jsx', 'ts', 'tsx', 'css', 'scss', 'less', 'py', 'bat', 'cmd', 'ps1', 'sh', 'bash', 'yaml', 'yml', 'ini', 'env', 'toml', 'conf', 'config', 'sql', 'c', 'cpp', 'h', 'hpp', 'cs', 'go', 'rs', 'java', 'kt', 'php', 'vue', 'svelte', 'r', 'rb', 'dockerfile', 'makefile', 'lock'];
-            const isTextFile = textExts.includes(ext) || file.type.startsWith('text/') || file.type.includes('json') || file.type.includes('javascript') || file.type.includes('html') || file.type.includes('xml');
+            const ext = (file.name.split('.').pop() || '').toLowerCase();
+            const binaryOfficeExts = ['pdf', 'docx', 'doc', 'xlsx', 'xls', 'pptx', 'ppt'];
+            const isBinaryOffice = binaryOfficeExts.includes(ext);
 
-            if (isTextFile) {
+            // 非二進位 Office 文件：瀏覽器本地直接讀取 (支援所有純文字、設定檔、原始碼)
+            if (!isBinaryOffice) {
                 const reader = new FileReader();
                 reader.onload = (evt) => {
                     const content = evt.target.result || '';
+                    if (content.slice(0, 1000).includes('\0')) {
+                        showUploadToast(`⚠️ 檔案 <b>${file.name}</b> 為不支援的二進位檔案格式`, true);
+                        return;
+                    }
                     const sizeKb = (file.size / 1024).toFixed(1);
                     const lineCount = content.split('\n').length;
                     const charCount = content.length;
@@ -11719,7 +11736,12 @@ Important guidelines:
             }
 
             // 非純文字二進位類 (PDF, DOCX, XLSX, PPTX)：透過 Daemon 解析
-            const isDaemonOnline = document.getElementById('daemon-status-badge')?.textContent.includes('Online') || document.getElementById('daemon-status-badge')?.textContent.includes('已連線');
+            let isDaemonOnline = document.getElementById('daemon-status-badge')?.dataset.online === 'true' ||
+                                 document.getElementById('daemon-status-badge')?.textContent.includes('Online') ||
+                                 document.getElementById('daemon-status-badge')?.textContent.includes('已連線');
+            if (!isDaemonOnline && typeof checkDaemonHealth === 'function') {
+                isDaemonOnline = await checkDaemonHealth();
+            }
             if (!isDaemonOnline) {
                 showUploadToast(`⚠️ 解析二進位文件 (${file.name}) 需要常駐程式 (Port 8001) 運行中。<br>純文字/程式碼檔案可直接讀取。`, true);
                 return;
@@ -11818,7 +11840,8 @@ Important guidelines:
                 const files = dt?.files;
                 if (!files || files.length === 0) return;
                 for (const file of Array.from(files)) {
-                    if (file.type.startsWith('image/')) {
+                    const isImg = file.type.startsWith('image/') || /\.(png|jpe?g|webp|gif|bmp|ico|svg|tiff?)$/i.test(file.name);
+                    if (isImg) {
                         const reader = new FileReader();
                         reader.onload = (evt) => {
                             attachedImages.push(evt.target.result);
@@ -11841,7 +11864,8 @@ Important guidelines:
                     if (item.kind === 'file') {
                         const file = item.getAsFile();
                         if (file) {
-                            if (file.type.startsWith('image/')) {
+                            const isImg = file.type.startsWith('image/') || /\.(png|jpe?g|webp|gif|bmp|ico|svg|tiff?)$/i.test(file.name);
+                            if (isImg) {
                                 e.preventDefault();
                                 const reader = new FileReader();
                                 reader.onload = (evt) => {
@@ -11917,6 +11941,7 @@ Important guidelines:
             try {
                 const res = await fetchWithTimeout(`${appSettings.daemonEndpoint}/health`, { timeout: 1800 });
                 if (res.ok) {
+                    badge.dataset.online = "true";
                     badge.className = "text-xs px-2 py-0.5 rounded bg-green-950/60 text-green-400 border border-green-700/50 flex items-center gap-1.5 font-medium transition-colors cursor-pointer";
                     badge.innerHTML = `<span class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span> ${t('daemonOnline')}`;
                     if (modalStatusText) {
@@ -11927,6 +11952,7 @@ Important guidelines:
                     throw new Error("Bad status");
                 }
             } catch (e) {
+                badge.dataset.online = "false";
                 badge.className = "text-xs px-2 py-0.5 rounded bg-red-950/60 text-red-400 border border-red-800/50 flex items-center gap-1.5 font-medium transition-colors cursor-pointer";
                 badge.innerHTML = `<span class="w-2 h-2 rounded-full bg-red-500"></span> ${t('daemonOffline')}`;
                 if (modalStatusText) {
