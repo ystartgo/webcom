@@ -732,19 +732,21 @@
 
                 <!-- 上傳按鈕：圖片 (Vision) -->
                 <button id="btn-upload-image" data-i18n-title="tooltipUploadImage" type="button"
-                    class="text-gray-400 hover:text-cyan-400 hover:bg-gray-800/80 p-2 rounded-lg transition shrink-0 flex items-center justify-center"
+                    onclick="document.getElementById('file-upload-image').click()"
+                    class="text-gray-400 hover:text-cyan-400 hover:bg-gray-800/80 p-2 rounded-lg transition shrink-0 flex items-center justify-center cursor-pointer"
                     title="上傳圖片 / 截圖 (或直接 Ctrl+V 貼上)">
-                    <i data-lucide="image" class="w-4 h-4"></i>
+                    <i data-lucide="image" class="w-4 h-4 pointer-events-none"></i>
                 </button>
                 <!-- 上傳按鈕：文件 (PDF / Word / Excel / PPT / 純文字) -->
                 <button id="btn-upload-doc" data-i18n-title="tooltipUploadDoc" type="button"
-                    class="text-gray-400 hover:text-amber-400 hover:bg-gray-800/80 p-2 rounded-lg transition shrink-0 flex items-center justify-center"
+                    onclick="document.getElementById('file-upload-doc').click()"
+                    class="text-gray-400 hover:text-amber-400 hover:bg-gray-800/80 p-2 rounded-lg transition shrink-0 flex items-center justify-center cursor-pointer"
                     title="上傳文件：PDF / Word / Excel / PPT / 純文字 / 代碼">
-                    <i data-lucide="file-text" class="w-4 h-4"></i>
+                    <i data-lucide="file-text" class="w-4 h-4 pointer-events-none"></i>
                 </button>
-                <input type="file" id="file-upload-image" accept="image/*" multiple class="hidden">
+                <input type="file" id="file-upload-image" accept="image/*,.pdf,.docx,.doc,.xlsx,.xls,.pptx,.ppt,.txt,.md,.json,.csv" multiple class="hidden">
                 <input type="file" id="file-upload-doc"
-                    accept=".pdf,.docx,.doc,.xlsx,.xls,.pptx,.ppt,.txt,.md,.markdown,.csv,.json,.jsonl,.py,.bat,.cmd,.ps1,.sh,.yaml,.yml,.xml,.html,.htm,.xhtml,.js,.jsx,.ts,.tsx,.css,.scss,.less,.sql,.log,.ini,.env,.toml,.conf,.c,.cpp,.h,.hpp,.cs,.go,.rs,.java,.kt,.php,.vue,.svelte,.r,.rb,text/*"
+                    accept="image/*,.pdf,.docx,.doc,.xlsx,.xls,.pptx,.ppt,.txt,.md,.markdown,.csv,.tsv,.json,.jsonl,.py,.bat,.cmd,.ps1,.sh,.yaml,.yml,.xml,.html,.htm,.xhtml,.js,.jsx,.ts,.tsx,.css,.scss,.less,.sql,.log,.ini,.env,.toml,.conf,.c,.cpp,.h,.hpp,.cs,.go,.rs,.java,.kt,.php,.vue,.svelte,.r,.rb,text/*,*/*"
                     multiple class="hidden">
 
 
@@ -11655,13 +11657,16 @@ Important guidelines:
 
         // ── 圖片上傳 (Vision) ──
         if (btnUploadImage && fileUploadImage) {
-            btnUploadImage.addEventListener('click', () => {
+            btnUploadImage.addEventListener('click', (e) => {
+                e.preventDefault();
                 fileUploadImage.click();
             });
-            fileUploadImage.addEventListener('change', (e) => {
+            fileUploadImage.addEventListener('change', async (e) => {
                 const files = e.target.files;
                 if (!files || files.length === 0) return;
-                Array.from(files).forEach(file => {
+                const fileList = Array.from(files);
+                fileUploadImage.value = '';
+                for (const file of fileList) {
                     const isImg = file.type.startsWith('image/') || /\.(png|jpe?g|webp|gif|bmp|ico|svg|tiff?)$/i.test(file.name);
                     if (isImg) {
                         const reader = new FileReader();
@@ -11670,9 +11675,11 @@ Important guidelines:
                             renderImagePreviews();
                         };
                         reader.readAsDataURL(file);
+                        showUploadToast(`🖼️ <b>${file.name}</b> 圖片已附加至預覽列`);
+                    } else {
+                        await processDocumentFile(file);
                     }
-                });
-                fileUploadImage.value = '';
+                }
             });
         }
 
@@ -11680,6 +11687,20 @@ Important guidelines:
         async function processDocumentFile(file) {
             if (!file) return;
             const ext = (file.name.split('.').pop() || '').toLowerCase();
+            const isImg = file.type.startsWith('image/') || /\.(png|jpe?g|webp|gif|bmp|ico|svg|tiff?)$/i.test(file.name);
+
+            // 若由文件上傳選取了圖片，自動轉入圖片預覽列
+            if (isImg) {
+                const reader = new FileReader();
+                reader.onload = (evt) => {
+                    attachedImages.push(evt.target.result);
+                    renderImagePreviews();
+                };
+                reader.readAsDataURL(file);
+                showUploadToast(`🖼️ <b>${file.name}</b> 圖片已附加至預覽列`);
+                return;
+            }
+
             const binaryOfficeExts = ['pdf', 'docx', 'doc', 'xlsx', 'xls', 'pptx', 'ppt'];
             const isBinaryOffice = binaryOfficeExts.includes(ext);
 
@@ -11728,6 +11749,9 @@ Important guidelines:
                     }
 
                     userInput.value = currentText ? `${currentText}\n\n${promptInjection}` : promptInjection;
+                    userInput.style.height = 'auto';
+                    userInput.style.height = Math.min(userInput.scrollHeight, 180) + 'px';
+                    userInput.focus();
                     userInput.dispatchEvent(new Event('input'));
                     showUploadToast(`📄 <b>${file.name}</b> (${sizeKb} KB, ${lineCount.toLocaleString()} 行) 已載入對話與 RAG 知識庫`);
                 };
@@ -11794,6 +11818,9 @@ Important guidelines:
                     const promptInjection = `【附件文件: ${file.name} (${sizeKb} KB, ${charCount.toLocaleString()} 字符已解析)】\n\`\`\`\n${snippet}\n\`\`\``;
 
                     userInput.value = currentText ? `${currentText}\n\n${promptInjection}` : promptInjection;
+                    userInput.style.height = 'auto';
+                    userInput.style.height = Math.min(userInput.scrollHeight, 180) + 'px';
+                    userInput.focus();
                     userInput.dispatchEvent(new Event('input'));
                     showUploadToast(`✅ <b>${file.name}</b> 解析成功 (${charCount.toLocaleString()} 字)，已載入 RAG 知識庫`);
                 } else {
@@ -11805,14 +11832,16 @@ Important guidelines:
         }
 
         if (btnUploadDoc && fileUploadDoc) {
-            btnUploadDoc.addEventListener('click', () => {
+            btnUploadDoc.addEventListener('click', (e) => {
+                e.preventDefault();
                 fileUploadDoc.click();
             });
             fileUploadDoc.addEventListener('change', async (e) => {
                 const files = e.target.files;
                 if (!files || files.length === 0) return;
+                const fileList = Array.from(files);
                 fileUploadDoc.value = '';
-                for (const file of Array.from(files)) {
+                for (const file of fileList) {
                     await processDocumentFile(file);
                 }
             });
@@ -11911,7 +11940,12 @@ Important guidelines:
 
             appendMessage('user', promptText, false, false, '', imagesToSend);
             if (chatHistory.length > 0 && chatHistory[chatHistory.length - 1].role === 'user') {
-                chatHistory[chatHistory.length - 1].content = effectivePrompt;
+                if (Array.isArray(chatHistory[chatHistory.length - 1].content)) {
+                    const textItem = chatHistory[chatHistory.length - 1].content.find(item => item.type === 'text');
+                    if (textItem) textItem.text = effectivePrompt;
+                } else {
+                    chatHistory[chatHistory.length - 1].content = effectivePrompt;
+                }
             }
 
             setGeneratingState(true);
