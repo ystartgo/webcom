@@ -1,10 +1,13 @@
 # Webcom — Dual-Engine AI Console
 
 > **繁體中文** ・ [English](#english)
+>
+> 🎯 **當前版本：`v1.0.2-Dual-Engine-WebGPU-RAG-Supervise`** ・ 釋出日期：`2026-09-09`
+> 📝 變更紀錄：見下方 [## 🕓 變更日誌 (Changelog)](#-變更日誌-changelog) / [English Changelog](#-changelog)
 
 **Webcom** 是一套單檔 `index.html` 就能啟動的 **雙引擎 AI 主控台**，整合 **多協定終端機（WSL / SSH / Telnet / Web Serial / 後端 Serial）**、**LM Studio / API** 與 **WebGPU 瀏覽器本地 LLM** 兩種推理引擎、**RAG 知識庫管理**、**MCP 協定工具面板**、**純斷網模擬**、**WinPE 開機自動執行** 等常見的現場維運／離線操作需求。
 
-採用 **GNU GPL v3.0** 開源授權（詳見內建手冊第 6 頁「版權 & 致謝」）。
+採用 **GNU GPL v3.0** 開源授權（詳見內建手冊第 6 頁「版權 & 致謝」或 [License & Credits 章節](#-license--credits)）。
 
 ---
 
@@ -370,6 +373,44 @@ Q1~Q3 請見內建手冊第 5 頁「常見問題」。以下為本次 v1.0.0 新
 
 ---
 
+## 🕓 變更日誌 (Changelog)
+
+### `v1.0.2-Dual-Engine-WebGPU-RAG-Supervise` — 2026-09-09
+- **🛡️ Supervise 模式升級為 SRE 故障排除流水線**（diag-1~4 完成）：
+  - Stage-C（修補工程師）強制 4 步驟：問題偵測 → 可執行 bash/cmd fence 修補 → A 盲點稽核 → 📋 固定 7 行診斷報告
+  - Stage-D（稽核 SRE）強制 3 步驟：Patch VERIFIED✅/NEEDS-EDIT⚠️/DANGEROUS❌ 逐段標註 → 殘留風險 → 🛡️ 5 節最終稽核報告
+  - Final Summary 強制擺 📊 A/B/C/D 全階段診斷表格（最差情境也有 log 報告，不會空白）
+  - CLARIFY_NEEDED 雙方短路：A/B 都說要問使用者 → 直接出 🟡 琥珀色待澄清卡，C/D 全跳
+- **stop-timer v26 12 層卡死防護鏈**：stageTimersRegistry + CustomEvent 穿透閉包 + settle 屏障 450ms + skip-D 閘（C TIMEOUT 時 D 絕不出現）
+- **Per-Stage 獨立 3 按鈕 footer**：🛑 停止 / 🔄 重試 / 📋 複製 body；user/assistant 氣泡也加 retry-copy
+- **ux 1/2/3 修補**：D 進度可視 tok@t/s + idle 秒數；footer DOM 流按鈕不再壓對話；chat-box 底部 88px 預留高度
+- **📦 ONNX Runtime + Transformers.js 文件化**：4 內建模型表 / CPU SIMD vs WebGPU 3 選硬體加速 / 首次啟動 HuggingFace 自動抓檔 / 自訂 onnx-community ID
+- **配對 ≥ 27 種**：api / webgpu / onnx 3 種 engine kind × Side-A/B 自由組合，新增 ONNX↔ONNX 純本地、Qwen3-VL↔GPT-4V 視覺交叉等 4 場景
+- **文件補齊**：新增「四頁系統設定分頁」表格、FAQ Q4/Q5/Q6（WebGPU exit1 / LM SSE 空 payload / 語系切換 token=0）、RAG PDF/Word/Excel/PPT 格式清單、終端機「匯出 LOG / 清除畫面」
+- **stuckD 根因修復**：WebGPU for-await 忽略 AbortSignal → chunks.return() + webllmEngine=null invalidate cache；0-tokens 15s fast abort；API idle watchdog
+
+### `v1.0.1-Dual-Engine-WebGPU-RAG` — 2026-08-30
+- 新增 **🛡️ Supervise Mode** 初版（Side-A/B 雙 LLM 4-Stage 流水線）
+- 新增 **Co-Think** 聯合思考混合模式
+- 修正 qc Row-1 排序（flex-nowrap + inline order 修復 Tailwind order class 失效）
+- 修正 rd API↔API 自動分派不同 Profile（ensureAltProfileDistinct + Modal 作用對象 A/B 切換列）
+- 修正 qa 視覺左右順序：A 永遠左 922px / B 永遠右
+- 修正 qb 切換 engineMode 後版面刷新（dualEngineSubMode 重置 + isSupervise 單一判斷）
+- 新增 de-nest 6 處巢狀 template literal，V8 parser 11/11 OK
+- 新增 ph Row-1 控制項搬移到 Router 右側、4 toggle 到 Row-2
+- 3 層防重複死循環 guard：END marker + maxTokens 1800 + 4-line sim≥0.92
+
+### `v1.0.0-Dual-Engine-WebGPU-RAG` — 2026-08-29
+- 初始公開版本：單檔 index.html 雙引擎主控台
+- 多協定終端機（WSL/SSH/Telnet/Web Serial/後端 Serial + 虛擬鍵盤）
+- LM Studio/API Router 設定（多 Profile + 匯入匯出 JSON）
+- WebGPU 5 模型 + ONNX 4 模型本地推理（雙後端 CPU/WebGPU）
+- RAG 知識庫：Chunk 分段 + 向量索引 + 即時檢索測試
+- MCP 工具面板 + WinPE 自動執行 batch + 純斷網模擬開關
+- 內建 6 頁 zh-TW / English 雙語使用手冊
+
+---
+
 ## 📜 License / 授權
 
 - **整體專案**：GNU GPL v3.0 （本軟體開源可修改，所有商業或衍生腳本 **必須保留此版權聲明與 GPLv3**）
@@ -382,9 +423,12 @@ Q1~Q3 請見內建手冊第 5 頁「常見問題」。以下為本次 v1.0.0 新
 <a id="english"></a>
 # Webcom — Dual-Engine AI Console (English)
 
+> 🎯 **Current Release:** `v1.0.2-Dual-Engine-WebGPU-RAG-Supervise` ・ **Released:** `2026-09-09`
+> 📝 **Changelog:** [Jump to Changelog ↓](#-changelog)
+
 **Webcom** is a single-file (`index.html`) **Dual-Engine AI Console** that combines a **multi-protocol terminal (WSL / SSH / Telnet / Web Serial / Backend Serial)**, **LM Studio / API** and **WebGPU browser-local LLM** inference engines, **RAG Knowledge Base**, **MCP tool panel**, **pure-offline simulation switch**, and **WinPE autorun** for real-world on-site / offline ops.
 
-Licensed under **GNU GPL v3.0**. See the built-in User Guide tab 6 *License & Credits* for full third-party acknowledgements.
+Licensed under **GNU GPL v3.0**. See the built-in User Guide tab 6 *License & Credits* or the [License & Credits section](#-license--credits) below for full third-party acknowledgements.
 
 ---
 
@@ -743,6 +787,45 @@ Q1~Q3 live inside the built-in User Guide Tab 5 *FAQ*. The Q4~Q6 below cover v1.
 > Supervise pipeline prompts contain fixed-format report headings; mixing a zh-format prompt template with an en UI can confuse the model. Recovery:
 > - After flipping the language picker, open Router Settings and hit **Save** (forces reload of the i18n-defaulted prompt templates);
 > - Or send `/reset` once inside Supervise mode to flush the per-session prompt cache.
+
+---
+
+<a id="changelog"></a>
+## 🕓 Changelog
+
+### `v1.0.2-Dual-Engine-WebGPU-RAG-Supervise` — 2026-09-09
+- **🛡️ Supervised-Mutual-Debug mode fully upgraded to 4-Stage SRE Troubleshooting Pipeline** (diag-1~4 complete):
+  - Stage-C (Patch Engineer) forced 4-step flow: Issue Detection → Executable bash/cmd fenced patches → Stage-A blind-spot audit → 📋 fixed 7-line Diagnostic Report
+  - Stage-D (Audit Sign-off SRE) forced 3-step flow: Per-patch VERIFIED✅/NEEDS-EDIT⚠️/DANGEROUS❌ tags → Residual risk scan → 🛡️ fixed 5-section Final Audit Report
+  - Final Summary card **always leads with** 📊 A/B/C/D full-stage Diagnostic Dashboard (worst-case failure guarantee: structured log is NEVER blank)
+  - CLARIFY_NEEDED both-sides short-circuit → 🟡 Amber Clarify Card emitted, Stage-C/D skipped entirely
+- **stop-timer v26 12-layer stuck-iterator kill chain**: stageTimersRegistry + CustomEvent cross-closure broadcast + 450ms settle barrier + skip-D gate (C TIMEOUT ⇒ D card never appears)
+- **Per-Stage independent 3-button footer**: 🛑 Stop / 🔄 Retry / 📋 Copy body; user+assistant chat bubbles also get retry+copy action bars
+- **UX fixes 1/2/3**: Stage-D progress visible (N tok @ X t/s + idle seconds); footer DOM-flow buttons never overlap body; chat-box 88 px bottom padding
+- **📦 ONNX Runtime + Transformers.js fully documented**: 4 built-in models table / CPU-SIMD vs WebGPU 3-way hardware picker / HuggingFace first-launch auto-fetch / custom onnx-community model ID
+- **≥ 27 pairing configurations**: api/webgpu/onnx 3 engine kinds × Side-A/B freely combined; 4 new recommended scenarios added (pure-ONNX dual-audit / Qwen3-VL ↔ GPT-4V cross-vision / …)
+- **Docs coverage**: 4 System Settings tabs table; FAQ Q4/Q5/Q6 (WebGPU exit-1 / LM Studio empty SSE payload / language-switch 0-token); RAG PDF/Word/Excel/PPT format list; terminal Export Log / Clear Buffer documented
+- **stuckD root-cause fixes**: WebGPU for-await AbortSignal ignored → explicit chunks.return() + webllmEngine=null cache invalidate; 0-tokens 15s fast-abort; API-side idle watchdog
+
+### `v1.0.1-Dual-Engine-WebGPU-RAG` — 2026-08-30
+- First **🛡️ Supervise Mode** draft (Side-A/B dual-LLM 4-stage pipeline)
+- Added **Co-Think** hybrid reasoning mode
+- Fixed qc Row-1 reordering (flex-nowrap + inline order resolves Tailwind `order-*` class JIT non-determinism)
+- Fixed rd API↔API distinct profile auto-assign (ensureAltProfileDistinct + Modal Target-slot A/B switch row)
+- Fixed qa visual left/right order (Side-A always left @ 922px / Side-B always right)
+- Fixed qb engine-mode-switch layout refresh (dualEngineSubMode reset + single isSupervise predicate)
+- De-nested 6 template literal sites; V8 HTML-inline parser 11/11 pass
+- Row-1 controls ph-movement: 4 controls to Router-right, 4 toggles to Row-2 gap
+- 3-tier anti-repeat / infinite-loop guard: END marker + maxTokens 1800 + 4-line sim≥0.92
+
+### `v1.0.0-Dual-Engine-WebGPU-RAG` — 2026-08-29
+- Initial public release: single-file `index.html` Dual-Engine AI Console
+- Multi-protocol terminal (WSL/SSH/Telnet/Web Serial/Backend Serial + virtual keypad)
+- LM Studio/API Router multi-Profile setup with JSON Import/Export
+- WebGPU 5 models + ONNX 4 models local inference (dual CPU/WebGPU backends)
+- RAG Knowledge Base: Chunked indexing + vector store + live retrieval test
+- MCP Tools panel + WinPE autorun batch + Offline simulation toggle
+- Built-in 6-page zh-TW / English bilingual User Guide
 
 ---
 
