@@ -2,7 +2,7 @@
 
 > **繁體中文** ・ [English](#english)
 >
-> 🎯 **當前版本：`v1.0.2-Dual-Engine-WebGPU-RAG-Supervise`** ・ 釋出日期：`2026-09-09`
+> 🎯 **當前版本：`v1.0.3-Dual-Engine-WebGPU-RAG-Supervise`** ・ 釋出日期：`2026-09-09`
 > 📝 變更紀錄：見下方 [## 🕓 變更日誌 (Changelog)](#-變更日誌-changelog) / [English Changelog](#-changelog)
 
 **Webcom** 是一套單檔 `index.html` 就能啟動的 **雙引擎 AI 主控台**，整合 **多協定終端機（WSL / SSH / Telnet / Web Serial / 後端 Serial）**、**LM Studio / API** 與 **WebGPU 瀏覽器本地 LLM** 兩種推理引擎、**RAG 知識庫管理**、**MCP 協定工具面板**、**純斷網模擬**、**WinPE 開機自動執行** 等常見的現場維運／離線操作需求。
@@ -375,6 +375,15 @@ Q1~Q3 請見內建手冊第 5 頁「常見問題」。以下為本次 v1.0.0 新
 
 ## 🕓 變更日誌 (Changelog)
 
+### `v1.0.3-Dual-Engine-WebGPU-RAG-Supervise` — 2026-09-09
+- **文件一致化維護釋出**（程式碼主體與 v1.0.2 功能相同，版本升級用於標記以下穩定凍結點）：
+  - 🛡️ Supervise SRE 4-Stage 流水線 12 層卡死防護鏈 + stop-timer v26 → 標記 **STABLE**
+  - 📦 ONNX Runtime 4 模型文件 / 3 選硬體加速 / 首次 HuggingFace 自動抓檔 → 標記 **STABLE**
+  - FAQ Q4/Q5/Q6（WebGPU exit1 / LM SSE 空 payload / 語系切換 0-token）解法與文件標記穩定
+  - 「四頁系統設定分頁」表格 / 「RAG PDF/Word/Excel/PPT 格式清單」/「終端機 匯出 LOG / 清除畫面」文件同步
+  - 內建手冊 4 處 License & Credits 頁籤版號、Footer Brand、ANSI 終端歡迎詞、JSON Demo payload **全部版號一致（v1.0.3）**
+  - 修復 v1.0.2 README 英文 Supervise § 多餘尾空白與 zh/en Changelog 行寬對齊
+
 ### `v1.0.2-Dual-Engine-WebGPU-RAG-Supervise` — 2026-09-09
 - **🛡️ Supervise 模式升級為 SRE 故障排除流水線**（diag-1~4 完成）：
   - Stage-C（修補工程師）強制 4 步驟：問題偵測 → 可執行 bash/cmd fence 修補 → A 盲點稽核 → 📋 固定 7 行診斷報告
@@ -423,7 +432,7 @@ Q1~Q3 請見內建手冊第 5 頁「常見問題」。以下為本次 v1.0.0 新
 <a id="english"></a>
 # Webcom — Dual-Engine AI Console (English)
 
-> 🎯 **Current Release:** `v1.0.2-Dual-Engine-WebGPU-RAG-Supervise` ・ **Released:** `2026-09-09`
+> 🎯 **Current Release:** `v1.0.3-Dual-Engine-WebGPU-RAG-Supervise` ・ **Released:** `2026-09-09`
 > 📝 **Changelog:** [Jump to Changelog ↓](#-changelog)
 
 **Webcom** is a single-file (`index.html`) **Dual-Engine AI Console** that combines a **multi-protocol terminal (WSL / SSH / Telnet / Web Serial / Backend Serial)**, **LM Studio / API** and **WebGPU browser-local LLM** inference engines, **RAG Knowledge Base**, **MCP tool panel**, **pure-offline simulation switch**, and **WinPE autorun** for real-world on-site / offline ops.
@@ -792,6 +801,15 @@ Q1~Q3 live inside the built-in User Guide Tab 5 *FAQ*. The Q4~Q6 below cover v1.
 
 <a id="changelog"></a>
 ## 🕓 Changelog
+
+### `v1.0.3-Dual-Engine-WebGPU-RAG-Supervise` — 2026-09-09
+- **Docs-consolidation maintenance release** (feature parity with v1.0.2; version bump marks the following **STABLE** freeze points):
+  - 🛡️ Supervised-Mutual-Debug 4-Stage SRE pipeline + stop-timer v26 12-layer stuck-kill chain → marked **STABLE**
+  - 📦 ONNX Runtime + Transformers.js: 4 built-in models doc / 3-way hardware picker / first-launch HuggingFace auto-fetch → marked **STABLE**
+  - FAQ Q4/Q5/Q6 (WebGPU exit-1 / LM Studio empty SSE payload / language-switch 0-token) resolution docs stabilized
+  - "4 System Settings tabs" table / "RAG PDF/Word/Excel/PPT format list" / "Terminal Export Log / Clear Buffer" docs fully synchronized
+  - Full version-string **consistency pass** (all 11 places — 4× License & Credits tabs / footer brand / 2× ANSI terminal welcome banner / JSON validator demo / HTML comment meta / `<title>` / Banner badge) bumped to `v1.0.3`
+  - Fixed v1.0.2 README trailing whitespace inside the English Supervise section and zh/en Changelog line-width alignment
 
 ### `v1.0.2-Dual-Engine-WebGPU-RAG-Supervise` — 2026-09-09
 - **🛡️ Supervised-Mutual-Debug mode fully upgraded to 4-Stage SRE Troubleshooting Pipeline** (diag-1~4 complete):
