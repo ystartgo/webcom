@@ -26,7 +26,7 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 import uvicorn
 
-app = FastAPI(title="Webcom Multi-Protocol Backend Daemon", version="1.0.0")
+app = FastAPI(title="Webcom Multi-Protocol Backend Daemon", version="1.0.6")
 
 app.add_middleware(
     CORSMiddleware,

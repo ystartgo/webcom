@@ -6,11 +6,11 @@
     作者 startgo (startgo@yia.app)
     授權預設 GPLv3
     時間戳記: 2026-09-11 09:00:00
-    版本號: v1.0.5-Dual-Engine-WebGPU-RAG-Supervise
+    版本號: v1.0.6-Dual-Engine-WebGPU-RAG-Supervise
     -->
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>雙引擎 AI 協同控制台 (Dual-Engine AI Console) - v1.0.5</title>
+    <title>雙引擎 AI 協同控制台 (Dual-Engine AI Console) - v1.0.6</title>
     <!-- 離線優先 Local-First 資源載入 (斷網零依賴 + CDN 自動容錯備援) -->
     <script src="./assets/tailwindcss.js"></script>
     <script>
@@ -261,7 +261,7 @@
                 </div>
                 <h1 class="text-base font-bold tracking-tight text-white flex items-center gap-2">
                     <span data-i18n="appTitle">雙引擎 AI 控制台</span>
-                    <span class="text-xs bg-purple-500/20 text-purple-300 px-2 py-0.5 rounded font-mono">v1.0.5</span>
+                    <span class="text-xs bg-purple-500/20 text-purple-300 px-2 py-0.5 rounded font-mono">v1.0.6</span>
                 </h1>
             </div>
             <div class="flex items-center gap-2">
@@ -2050,7 +2050,7 @@
                                 <div class="flex items-center gap-1.5">
                                     <i data-lucide="tag" class="w-3.5 h-3.5 text-indigo-400 shrink-0"></i>
                                     <span><strong class="text-gray-200">版本：</strong> <code
-                                            class="text-indigo-300">v1.0.5-Dual-Engine-WebGPU-RAG-Supervise</code></span>
+                                            class="text-indigo-300">v1.0.6-Dual-Engine-WebGPU-RAG-Supervise</code></span>
                                 </div>
                             </div>
                             <div class="space-y-1.5 text-[11px] text-gray-400">
@@ -2216,7 +2216,7 @@
                                 <div class="flex items-center gap-2">
                                     <i data-lucide="tag" class="w-3.5 h-3.5 text-indigo-400 shrink-0"></i>
                                     <span><strong class="text-gray-200">版本：</strong> <code
-                                            class="text-indigo-300">v1.0.5-Dual-Engine-WebGPU-RAG-Supervise</code></span>
+                                            class="text-indigo-300">v1.0.6-Dual-Engine-WebGPU-RAG-Supervise</code></span>
                                 </div>
                             </div>
                             <div class="space-y-2 text-[11px] text-gray-400">
@@ -2379,7 +2379,7 @@
             <div class="px-6 py-3 border-t border-gray-800 flex justify-between items-center bg-gray-950 shrink-0">
                 <div class="flex flex-col gap-0.5">
                     <span class="text-[11px] text-gray-400 font-mono font-semibold">Webcom Dual-Engine Console
-                        <span class="text-indigo-400">v1.0.5</span></span>
+                        <span class="text-indigo-400">v1.0.6</span></span>
                     <span class="text-[10px] text-gray-600">© 2026 startgo · Licensed under
                         <span class="text-green-600">GNU GPL v3.0</span> ·
                         <a href="mailto:startgo@yia.app"
@@ -3836,12 +3836,14 @@
                         <h3 class="font-bold text-sm text-white flex items-center gap-1.5">
                             <i data-lucide="play-circle" class="w-4 h-4 text-green-400"></i> Launch Daemon (Port 8001)
                         </h3>
-                        <p>Click top <strong>[▶ Launch Daemon]</strong> ➔ <strong>[Confirm Restart / Enable]</strong>. The daemon starts in the background and the modal auto-closes once connected, granting AI full terminal and device control.</p>
-                    <div class="p-4 bg-gray-950 rounded-xl border border-gray-800 space-y-2">
-                        <h3 class="font-bold text-sm text-white flex items-center gap-1.5">
-                            <i data-lucide="play-circle" class="w-4 h-4 text-green-400"></i> Launch Daemon (Port 8001)
+                        <p>Click top <strong>[▶ Launch Daemon]</strong> ➔ <strong>[Confirm Restart / Enable]</strong>. The daemon starts silently in the background and auto-closes once connected. Automatically prioritizes bundled portable Python (<code>python\python.exe</code>) with zero setup required.</p>
+                    </div>
+
+                    <div class="p-4 bg-amber-950/20 border border-amber-800/40 rounded-xl space-y-2">
+                        <h3 class="font-bold text-sm text-amber-300 flex items-center gap-1.5">
+                            <i data-lucide="file-text" class="w-4 h-4"></i> MarkItDown Document Conversion Center (PDF / Office to Markdown)
                         </h3>
-                        <p>Click top <strong>[▶ Launch Daemon]</strong> ➔ <strong>[Confirm Restart / Enable]</strong>. The daemon starts in the background and auto-closes once connected, granting AI full terminal and device control.</p>
+                        <p class="text-[11px] text-gray-300">Click the top <strong>[MarkItDown]</strong> button to automatically verify and wake up the Port 8001 daemon in background. Powered by Microsoft MarkItDown 0.1.7, rapidly converts PDF, DOCX, XLSX, PPTX, HTML, CSV, and EPUB into clean Markdown with live preview and one-click ZIP download.</p>
                     </div>
 
                     <div class="p-4 bg-rose-950/20 border border-rose-800/40 rounded-xl space-y-2">
@@ -3875,7 +3877,14 @@
                         <h3 class="font-bold text-sm text-white flex items-center gap-1.5">
                             <i data-lucide="play-circle" class="w-4 h-4 text-green-400"></i> 常駐程式 (Port 8001 Daemon) 啟動
                         </h3>
-                        <p>點擊頂部 <strong>[▶ 啟動常駐程式]</strong> ➔ <strong>[確認一鍵重啟 / 啟用]</strong>，系統將自動啟動後端，連線成功後視窗會<strong>自動關閉</strong>，並賦予 AI 控制本地終端機與硬體的能力。</p>
+                        <p>點擊頂部 <strong>[▶ 啟動常駐程式]</strong> ➔ <strong>[確認一鍵重啟 / 啟用]</strong>，系統將自動啟動後端，連線成功後視窗會<strong>自動關閉</strong>。v1.0.6 支援根目錄免安裝可攜版 Python，並支援 <code>webcom://</code> 前台一鍵無感靜默拉起服務。</p>
+                    </div>
+
+                    <div class="p-4 bg-amber-950/20 border border-amber-800/40 rounded-xl space-y-2">
+                        <h3 class="font-bold text-sm text-amber-300 flex items-center gap-1.5">
+                            <i data-lucide="file-text" class="w-4 h-4"></i> MarkItDown 文件轉換中心 (PDF / Office / 網頁 轉 Markdown)
+                        </h3>
+                        <p class="text-[11px] text-gray-300">點擊頂部導航列的 <strong>[MarkItDown]</strong> 按鈕即可一鍵智慧喚醒並開啟專用轉換介面。內建微軟 Microsoft MarkItDown 原生轉換核心，支援將 PDF、DOCX、XLSX、PPTX、HTML、CSV、EPUB 極速轉換為標準 Markdown，支援批次轉換、即時預覽與 ZIP 一鍵打包下載。</p>
                     </div>
 
                     <div class="p-4 bg-rose-950/20 border border-rose-800/40 rounded-xl space-y-2">
@@ -4262,6 +4271,24 @@
                             A: Small WebGPU models (3B/0.5B) get confused by mixed-language chat history (English + Chinese). Fixed: switching language now resets the model's context (chatHistory) while keeping the visual conversation display intact.
                         </p>
                     </div>
+
+                    <div class="p-3.5 bg-gray-950 rounded-xl border border-gray-800 space-y-1.5">
+                        <div class="font-bold text-amber-300 text-xs flex items-center gap-1.5">
+                            <i data-lucide="alert-triangle" class="w-4 h-4"></i> Q7: Launching Daemon (Port 8001) on a clean Windows PC without Python?
+                        </div>
+                        <p class="text-[11px] text-gray-400 leading-relaxed">
+                            A: In v1.0.6, <code>start_daemon.bat</code> is completely rewritten in pure ASCII with strict CRLF line endings to prevent cmd parser crashes. It automatically prioritizes the bundled portable Python (<code>python\python.exe</code>) without needing global Python. It also auto-registers the <code>webcom://</code> protocol so web buttons can silently wake up the service in the background!
+                        </p>
+                    </div>
+
+                    <div class="p-3.5 bg-gray-950 rounded-xl border border-gray-800 space-y-1.5">
+                        <div class="font-bold text-amber-300 text-xs flex items-center gap-1.5">
+                            <i data-lucide="alert-triangle" class="w-4 h-4"></i> Q8: How to use MarkItDown Multi-Format Document to Markdown Converter?
+                        </div>
+                        <p class="text-[11px] text-gray-400 leading-relaxed">
+                            A: Click the <strong>[MarkItDown]</strong> button in the top navigation bar. Webcom automatically checks and wakes up the Port 8001 daemon and launches the conversion app. Drag and drop any PDF, Word, Excel, PPTX, HTML, or CSV file to convert to standard Markdown at high speed, powered by the Microsoft MarkItDown engine.
+                        </p>
+                    </div>
                 ` : `
                     <div class="p-3.5 bg-gray-950 rounded-xl border border-gray-800 space-y-1.5">
                         <div class="font-bold text-amber-300 text-xs flex items-center gap-1.5">
@@ -4316,6 +4343,24 @@
                             A: 小型 WebGPU 模型（3B/0.5B）看到中英混雜的對話歷史（舊英文 + 新中文提問）會產生困惑並直接輸出停止 token。已修復：切換語系時自動重置模型 context (chatHistory)，畫面上的歷史對話仍正常顯示，不受影響。
                         </p>
                     </div>
+
+                    <div class="p-3.5 bg-gray-950 rounded-xl border border-gray-800 space-y-1.5">
+                        <div class="font-bold text-amber-300 text-xs flex items-center gap-1.5">
+                            <i data-lucide="alert-triangle" class="w-4 h-4"></i> Q7: 在無安裝 Python 的全新電腦上啟動常駐程式 (Port 8001)？
+                        </div>
+                        <p class="text-[11px] text-gray-400 leading-relaxed">
+                            A: v1.0.6 <code>start_daemon.bat</code> 全面重構！採用純 ASCII 與嚴格 CRLF，徹底根除 Windows cmd.exe 語法解析錯位錯誤。優先自動偵測專案根目錄自帶的 <code>python\python.exe</code>（可攜版免安裝），次選 <code>uv</code> 超高速執行器或全域 Python。同時自動在目前使用者註冊表寫入 <code>webcom://</code> 協定，網頁點擊按鈕即可完全於背景無感拉起服務！
+                        </p>
+                    </div>
+
+                    <div class="p-3.5 bg-gray-950 rounded-xl border border-gray-800 space-y-1.5">
+                        <div class="font-bold text-amber-300 text-xs flex items-center gap-1.5">
+                            <i data-lucide="alert-triangle" class="w-4 h-4"></i> Q8: MarkItDown 文件轉換器（PDF/Word/Excel/PPT 轉 Markdown）如何使用？
+                        </div>
+                        <p class="text-[11px] text-gray-400 leading-relaxed">
+                            A: 點擊頂部導航列的「MarkItDown」按鈕，系統會自動在線喚醒 8001 常駐服務並開啟文件轉換頁面。支援拖放或點擊上傳多個文件，後端由 Microsoft MarkItDown 核心進行極速轉換，支援純文字預覽、複製與一鍵打包下載 ZIP。
+                        </p>
+                    </div>
                 `;
             }
 
@@ -4341,7 +4386,7 @@
                                 </div>
                                 <div class="flex items-center gap-2">
                                     <i data-lucide="tag" class="w-3.5 h-3.5 text-indigo-400 shrink-0"></i>
-                                    <span><strong class="text-gray-200">Version:</strong> <code class="text-indigo-300">v1.0.5-Dual-Engine-WebGPU-RAG-Supervise</code></span>
+                                    <span><strong class="text-gray-200">Version:</strong> <code class="text-indigo-300">v1.0.6-Dual-Engine-WebGPU-RAG-Supervise</code></span>
                                 </div>
                             </div>
                             <div class="space-y-2 text-[11px] text-gray-400">
@@ -4460,6 +4505,14 @@
                                         <p class="text-[10px] text-gray-400 mt-0.5">Python Serial (COM / UART) Communication · <span class="text-green-600 font-semibold">BSD 3-Clause</span></p>
                                     </div>
                                 </div>
+                                <div class="flex items-start gap-2.5 p-2.5 bg-gray-900/60 rounded-lg border border-gray-800/60">
+                                    <span class="shrink-0 w-2 h-2 rounded-full bg-orange-500 mt-1"></span>
+                                    <div>
+                                        <a href="https://github.com/microsoft/markitdown" target="_blank" class="text-orange-400 hover:text-orange-300 font-bold text-[11px] underline">markitdown</a>
+                                        <span class="text-[10px] text-gray-500 ml-1">— Microsoft</span>
+                                        <p class="text-[10px] text-gray-400 mt-0.5">Multi-Format Document to Markdown Conversion Core · <span class="text-green-600 font-semibold">MIT</span></p>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -4482,7 +4535,7 @@
                                 </div>
                                 <div class="flex items-center gap-2">
                                     <i data-lucide="tag" class="w-3.5 h-3.5 text-indigo-400 shrink-0"></i>
-                                    <span><strong class="text-gray-200">版本：</strong> <code class="text-indigo-300">v1.0.5-Dual-Engine-WebGPU-RAG-Supervise</code></span>
+                                    <span><strong class="text-gray-200">版本：</strong> <code class="text-indigo-300">v1.0.6-Dual-Engine-WebGPU-RAG-Supervise</code></span>
                                 </div>
                             </div>
                             <div class="space-y-2 text-[11px] text-gray-400">
@@ -4599,6 +4652,14 @@
                                         <a href="https://github.com/pyserial/pyserial" target="_blank" class="text-amber-400 hover:text-amber-300 font-bold text-[11px] underline">pyserial</a>
                                         <span class="text-[10px] text-gray-500 ml-1">— Chris Liechti</span>
                                         <p class="text-[10px] text-gray-400 mt-0.5">Python 串口 (COM / UART) 通訊 · <span class="text-green-600 font-semibold">BSD 3-Clause</span></p>
+                                    </div>
+                                </div>
+                                <div class="flex items-start gap-2.5 p-2.5 bg-gray-900/60 rounded-lg border border-gray-800/60">
+                                    <span class="shrink-0 w-2 h-2 rounded-full bg-orange-500 mt-1"></span>
+                                    <div>
+                                        <a href="https://github.com/microsoft/markitdown" target="_blank" class="text-orange-400 hover:text-orange-300 font-bold text-[11px] underline">markitdown</a>
+                                        <span class="text-[10px] text-gray-500 ml-1">— Microsoft</span>
+                                        <p class="text-[10px] text-gray-400 mt-0.5">全能多格式文件轉 Markdown 核心引擎 (PDF/Office/HTML) · <span class="text-green-600 font-semibold">MIT</span></p>
                                     </div>
                                 </div>
                             </div>
@@ -7577,11 +7638,11 @@ The system will automatically merge all parts into a single completed file witho
 
                 const termIsEn = currentLang === 'en';
                 const bannerRaw = termIsEn ? [
-                    "\x1b[1;36mWebcom Multi-Protocol Terminal v1.0.5\x1b[0m  \x1b[33m(Powered by Vercel Labs wterm)\x1b[0m",
+                    "\x1b[1;36mWebcom Multi-Protocol Terminal v1.0.6\x1b[0m  \x1b[33m(Powered by Vercel Labs wterm)\x1b[0m",
                     "\x1b[32m● WASM Core (~12KB)\x1b[0m   \x1b[32m● DOM Native Rendering\x1b[0m   \x1b[32m● 24-bit True Color\x1b[0m",
                     "\x1b[90mSupports: Local Shell (WSL) / SSH / Telnet / Web Serial (Direct)\x1b[0m"
                 ] : [
-                    "\x1b[1;36mWebcom 多協定終端機 v1.0.5\x1b[0m  \x1b[33m(Powered by Vercel Labs wterm)\x1b[0m",
+                    "\x1b[1;36mWebcom 多協定終端機 v1.0.6\x1b[0m  \x1b[33m(Powered by Vercel Labs wterm)\x1b[0m",
                     "\x1b[32m● WASM 核心 (~12KB)\x1b[0m   \x1b[32m● DOM 原生渲染\x1b[0m   \x1b[32m● 24-bit 真彩色\x1b[0m",
                     "\x1b[90m支援：本地 Shell (WSL) / SSH / Telnet / Web Serial (直連)\x1b[0m"
                 ];
@@ -12907,7 +12968,7 @@ if __name__ == "__main__":
 </head>
 <body>
   <h2>📦 JSON 格式化與驗證工具</h2>
-  <textarea id="box">{\n  "project": "Webcom",\n  "version": "1.0.5",\n  "features": ["Artifact", "AppLibrary", "Agent"]\n}</textarea>
+  <textarea id="box">{\n  "project": "Webcom",\n  "version": "1.0.6",\n  "features": ["Artifact", "AppLibrary", "Agent"]\n}</textarea>
   <div class="btn-row">
     <button onclick="formatJson()">格式化 (2 空格)</button>
     <button onclick="minifyJson()">壓縮 (Minify)</button>

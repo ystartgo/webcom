@@ -2,7 +2,7 @@
 
 > **繁體中文** ・ [English](#english)
 >
-> 🎯 **當前版本：`v1.0.5-Dual-Engine-WebGPU-RAG-Supervise`** ・ 釋出日期：`2026-09-11`
+> 🎯 **當前版本：`v1.0.6-Dual-Engine-WebGPU-RAG-Supervise`** ・ 釋出日期：`2026-09-11`
 > 📝 變更紀錄：見下方 [## 🕓 變更日誌 (Changelog)](#-變更日誌-changelog) / [English Changelog](#-changelog)
 
 **Webcom** 是一套單檔 `index.html` 就能啟動的 **雙引擎 AI 主控台**，整合 **多協定終端機（WSL / SSH / Telnet / Web Serial / 後端 Serial）**、**LM Studio / API** 與 **WebGPU 瀏覽器本地 LLM** 兩種推理引擎、**RAG 知識庫管理**、**MCP 協定工具面板**、**純斷網模擬**、**WinPE 開機自動執行** 等常見的現場維運／離線操作需求。
@@ -375,6 +375,22 @@ Q1~Q3 請見內建手冊第 5 頁「常見問題」。以下為本次 v1.0.0 新
 
 ## 🕓 變更日誌 (Changelog)
 
+### `v1.0.6-Dual-Engine-WebGPU-RAG-Supervise` — 2026-09-11 **功能整合與跨平台相容性釋出 (Feature & Compatibility Release)**
+> 🚀 重大更新：完整整合 MarkItDown 本地文件轉換中心 ＋ 徹底根治 Windows 批次檔跨機執行語法崩潰（純 ASCII ＋ 嚴格 CRLF）
+
+- **📄 完整整合 MarkItDown 本地文件轉換中心**：
+  1. **零安裝開箱即用**：獨立打包 1.8MB 完整 Web 應用置於 `webcom/markitdown/`，免裝 Docker、免裝 Node.js、免全域 Python 環境。
+  2. **原生轉檔支援**：由 Microsoft MarkItDown 0.1.7 原生核心支援（`/api/convert`），秒級轉換 PDF、DOCX、XLSX、PPTX、HTML、CSV、EPUB 為標準 Markdown。
+  3. **頂部導航智慧喚醒**：頁首導航列新增 `[MarkItDown]` 捷徑按鈕，具備「智慧健康探測」，未啟動 8001 後端時自動觸發 `webcom://` 背景靜默拉起，無縫開啟轉檔頁面。
+  4. **雙向無縫穿梭**：MarkItDown 頁面頂部常駐「返回 Webcom 主控台」捷徑，流暢切換終端、AI 諮詢與文件轉換任務。
+  5. **Service Worker 動態子路徑修正**：補強 `sw.js` 預載機制與 `manifest.json`，精準支援 `/markitdown/` 子目錄代理，杜絕 404 資源錯誤與註冊失敗。
+- **🛡️ Windows 跨機批次檔啟動器重構（純 ASCII ＋ 嚴格 CRLF）**：
+  1. **徹底解決 cmd.exe 緩衝區位元偏移崩潰**：根除因 Unix LF 換行搭配全形破折號等多位元組字元引發的 cmd 區塊讀取位移（導致 `REM` 變 `'M'`、`setlocal` 變 `'tlocal'`、`cd /d` 變 `'/d'`）。
+  2. **配置 `.gitattributes`**：強制所有 `*.bat`、`*.cmd`、`*.vbs`、`*.ps1`、`*.reg` 採用 `eol=crlf`，防範 git clone 時換行符號跑位。
+  3. **四層環境智慧探測與扁平化架構**：以純 ASCII 與扁平 `goto` 架構重寫 `start_daemon.bat`，**優先使用根目錄 `%~dp0python\python.exe` 綠色便攜環境**（無 Python 環境之新電腦也能直接執行），依序 fallback `uv`、系統 `python`、`py -3`。
+  4. **全自動 URL 協議註冊**：啟動時自動在 `HKCU` 註冊 `webcom://` 協定（免管理員權限），賦予瀏覽器按鈕直接喚醒後端之能力。
+- **🧾 全面升級版本號 v1.0.5 → v1.0.6**：同步更新 `index.html` 內全數 11 處版號標記、雙語手冊操作指引、版權致謝與雙語 `README.md`。
+
 ### `v1.0.5-Dual-Engine-WebGPU-RAG-Supervise` — 2026-09-11 **版本升級維護釋出 (Maintenance)**
 > 🔖 版本凍結標記：v1.0.4 所有 daemon.py / webcom:// / silent_daemon 修正通過穩定性驗證，正式升版
 - **🧾 版號全面升級 v1.0.4 → v1.0.5**：`index.html` 內 10 處版本字串（Meta/Title/Badge/Footer/雙語手冊/ANSI 歡迎詞/JSON Demo）、`README.md` 雙語 Banner 與 Changelog 標題全部統一為 `v1.0.5`
@@ -453,7 +469,7 @@ Q1~Q3 請見內建手冊第 5 頁「常見問題」。以下為本次 v1.0.0 新
 <a id="english"></a>
 # Webcom — Dual-Engine AI Console (English)
 
-> 🎯 **Current Release:** `v1.0.5-Dual-Engine-WebGPU-RAG-Supervise` ・ **Released:** `2026-09-11`
+> 🎯 **Current Release:** `v1.0.6-Dual-Engine-WebGPU-RAG-Supervise` ・ **Released:** `2026-09-11`
 > 📝 **Changelog:** [Jump to Changelog ↓](#-changelog)
 
 **Webcom** is a single-file (`index.html`) **Dual-Engine AI Console** that combines a **multi-protocol terminal (WSL / SSH / Telnet / Web Serial / Backend Serial)**, **LM Studio / API** and **WebGPU browser-local LLM** inference engines, **RAG Knowledge Base**, **MCP tool panel**, **pure-offline simulation switch**, and **WinPE autorun** for real-world on-site / offline ops.
@@ -822,6 +838,22 @@ Q1~Q3 live inside the built-in User Guide Tab 5 *FAQ*. The Q4~Q6 below cover v1.
 
 <a id="changelog"></a>
 ## 🕓 Changelog
+
+### `v1.0.6-Dual-Engine-WebGPU-RAG-Supervise` — 2026-09-11 **Feature & Cross-Platform Compatibility Release**
+> 🚀 Major update: Self-contained MarkItDown document conversion center + Ultimate fix for Windows batch launcher crashes (Pure ASCII & CRLF)
+
+- **📄 Integrated MarkItDown Document Conversion Center**:
+  1. **Self-Contained Bundle**: Zero Docker / zero Node.js / zero global Python requirement. Complete 1.8MB web app bundled directly under `webcom/markitdown/` for out-of-the-box readiness.
+  2. **Native Conversion Engine**: Backed directly by Microsoft MarkItDown 0.1.7 (`/api/convert`), rapidly converting PDF, DOCX, XLSX, PPTX, HTML, CSV, and EPUB into clean, standard Markdown.
+  3. **Smart Auto-Wakeup Header Button**: Dedicated `[MarkItDown]` button in the top navigation bar automatically verifies Port 8001 daemon health, silently wakes up the service in background via `webcom://` if stopped, and automatically opens the converter tab.
+  4. **Seamless Two-Way Navigation**: Quick link back to "Webcom Console" from the MarkItDown header for smooth multitasking.
+  5. **Service Worker Dynamic Subpath Fix**: Enhanced `sw.js` precaching and `manifest.json` to dynamically resolve `/markitdown/` subpath hosting without 404 asset errors.
+- **🛡️ Windows Cross-Machine Batch Launcher Overhaul (Pure ASCII & Strict CRLF)**:
+  1. **Fixed cmd.exe Buffer Byte-Shift Parsing Crash**: Eliminated the infamous Windows cmd block-read offset bug triggered by Unix LF line endings combined with multibyte UTF-8 em-dashes (which clipped `REM` -> `'M'`, `setlocal` -> `'tlocal'`, `cd /d` -> `'/d'`).
+  2. **Added `.gitattributes`**: Explicitly enforces `eol=crlf` for all `*.bat`, `*.cmd`, `*.vbs`, `*.ps1`, and `*.reg` files.
+  3. **Multi-Tier Python Detection & Flat Architecture**: Rewrote `start_daemon.bat` in pure ASCII with flat `goto` control flow, **prioritizing the root `%~dp0python\python.exe` portable environment** (runs out-of-the-box on clean PCs with no system Python installed), followed by `uv`, system `python`, and `py -3`.
+  4. **Auto Protocol Registration**: Automatically registers the `webcom://` URL protocol in `HKCU` on startup (no admin rights required), allowing browser buttons to wake up daemon silently.
+- **🧾 Global Version Bump v1.0.5 → v1.0.6**: Unified all 11 occurrences in `index.html`, bilingual `README.md` banners, user guides, and acknowledgements.
 
 ### `v1.0.5-Dual-Engine-WebGPU-RAG-Supervise` — 2026-09-11 **Version-Bump Maintenance Release**
 > 🔖 Stability freeze: all v1.0.4 fixes (daemon.py / webcom:// / silent_daemon) have been validated and formally promoted
