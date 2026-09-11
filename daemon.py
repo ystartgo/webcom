@@ -620,8 +620,8 @@ class DocumentParseRequest(BaseModel):
 @app.post("/tools/parse_document")
 def parse_document(req: DocumentParseRequest):
     """
-    接收 Base64 編碼的文件，根據副檔名使用對應解析器轉換為純文字。
-    支援: .pdf, .docx, .doc, .xlsx, .xls, .pptx, .ppt, .txt, .md, .csv, .json
+    接收 Base64 編碼的文件，優先使用 Microsoft MarkItDown 轉換為結構化 Markdown。
+    支援: .pdf, .docx, .doc, .xlsx, .xls, .pptx, .ppt, .epub, .html, .htm, .csv, .tsv, .txt, .md 等。
     """
     ext = os.path.splitext(req.filename.lower())[1]
     try:
@@ -636,24 +636,42 @@ def parse_document(req: DocumentParseRequest):
     text = ""
     extracted_images = []
     tables_count = 0
+    engine_used = "fallback"
 
     try:
-        # ── PDF (高精度轉 Markdown、表格識別與圖片提取) ────────────
+        # ── 1. 優先使用 Microsoft MarkItDown 進行全格式原生 Markdown 轉檔 ────────
+        # 支援 PDF, Word (.docx/.doc), Excel (.xlsx/.xls), PPT (.pptx/.ppt), EPUB, HTML, CSV 等
+        try:
+            from markitdown import MarkItDown
+            temp_path = None
+            try:
+                with tempfile.NamedTemporaryFile(suffix=ext, delete=False) as f:
+                    f.write(file_bytes)
+                    temp_path = f.name
+                md_engine = MarkItDown()
+                result = md_engine.convert(temp_path)
+                md_text = (result.text_content or "").strip()
+                if md_text:
+                    text = md_text
+                    engine_used = "markitdown"
+            finally:
+                if temp_path and os.path.exists(temp_path):
+                    try: os.remove(temp_path)
+                    except Exception: pass
+        except Exception as md_err:
+            logging.warning(f"MarkItDown conversion attempt warning: {md_err}")
+
+        # ── 2. 若為 PDF，仍額外提取內嵌圖片與表格供 Vision 多模態 LLM 使用 ────────
         if ext == ".pdf":
             try:
                 import pymupdf
-                import pymupdf4llm
-
                 doc = pymupdf.open(stream=file_bytes, filetype="pdf")
-
-                # 1. 識別表格與提取內嵌圖片
                 for page_idx in range(len(doc)):
                     page = doc[page_idx]
                     try:
                         tabs = page.find_tables()
                         tables_count += len(tabs.tables)
-                    except Exception:
-                        pass
+                    except Exception: pass
 
                     try:
                         for img_info in page.get_images():
@@ -667,157 +685,91 @@ def parse_document(req: DocumentParseRequest):
                             if w >= 25 and h >= 25 and len(img_data) > 80:
                                 b64 = f"data:image/{img_ext};base64," + base64.b64encode(img_data).decode("ascii")
                                 extracted_images.append(b64)
+                    except Exception: pass
+
+                # 若 MarkItDown 未成功輸出文字，使用 PyMuPDF4LLM 作為 PDF 備援
+                if not text:
+                    try:
+                        import pymupdf4llm
+                        text = pymupdf4llm.to_markdown(doc, embed_images=True)
                     except Exception:
-                        pass
+                        page_parts = [p.get_text("text").strip() for p in doc if p.get_text("text").strip()]
+                        text = "\n\n---\n\n".join(page_parts)
+            except Exception as pdf_err:
+                logging.warning(f"PyMuPDF parse warning: {pdf_err}")
+                if not text:
+                    try:
+                        import io, pypdf
+                        reader = pypdf.PdfReader(io.BytesIO(file_bytes))
+                        text = "\n\n".join(p.extract_text() or "" for p in reader.pages)
+                    except Exception: pass
 
-                # 2. 轉換為結構化 Markdown (包含標題、段落、清單與 Markdown 表格)
+        # ── 3. 其他格式之備援解析器 (當 MarkItDown 未啟用或失敗時) ─────────────
+        elif not text:
+            # Word (.docx)
+            if ext in (".docx",):
                 try:
-                    text = pymupdf4llm.to_markdown(doc, embed_images=True)
-                except Exception as llm_err:
-                    logging.warning(f"pymupdf4llm conversion warning: {llm_err}, falling back to PyMuPDF native markdown")
-                    page_parts = []
-                    for page in doc:
-                        p_txt = page.get_text("text").strip()
-                        try:
-                            tabs = page.find_tables()
-                            if tabs.tables:
-                                tab_mds = [t.to_markdown() for t in tabs.tables]
-                                p_txt += "\n\n" + "\n\n".join(tab_mds)
-                        except Exception:
-                            pass
-                        if p_txt:
-                            page_parts.append(p_txt)
-                    text = "\n\n---\n\n".join(page_parts)
+                    import docx, io
+                    doc = docx.Document(io.BytesIO(file_bytes))
+                    parts = [p.text for p in doc.paragraphs if p.text.strip()]
+                    text = "\n\n".join(parts)
+                except Exception: pass
 
-            except Exception as e:
-                logging.warning(f"PyMuPDF parse error: {e}, attempting pypdf fallback")
+            # Excel (.xlsx, .xls)
+            elif ext in (".xlsx", ".xls"):
                 try:
-                    import io, pypdf
-                    reader = pypdf.PdfReader(io.BytesIO(file_bytes))
-                    text = "\n\n".join(p.extract_text() or "" for p in reader.pages)
-                except Exception as e2:
-                    return {"status": "error", "error": f"PDF 解析失敗: {e} ({e2})"}
+                    import openpyxl, io
+                    wb = openpyxl.load_workbook(io.BytesIO(file_bytes), read_only=True, data_only=True)
+                    parts = []
+                    for sheet_name in wb.sheetnames:
+                        ws = wb[sheet_name]
+                        parts.append(f"### 工作表: {sheet_name}")
+                        for row in ws.iter_rows(values_only=True):
+                            cells = [str(c).replace("\n", " ").strip() if c is not None else "" for c in row]
+                            if any(cells):
+                                parts.append("| " + " | ".join(cells) + " |")
+                    text = "\n\n".join(parts)
+                except Exception: pass
 
-        # ── Word (.docx) ──────────────────────────────────────
-        elif ext in (".docx",):
-            try:
-                import docx
-                import io
-                doc = docx.Document(io.BytesIO(file_bytes))
-                parts = []
-                for para in doc.paragraphs:
-                    if para.text.strip():
-                        parts.append(para.text)
-                for tbl in doc.tables:
-                    rows = []
-                    for row in tbl.rows:
-                        rows.append([cell.text.replace("\n", " ").strip() for cell in row.cells])
-                    if rows and any(rows[0]):
-                        header = rows[0]
-                        parts.append("\n| " + " | ".join(header) + " |")
-                        parts.append("| " + " | ".join(["---"] * len(header)) + " |")
-                        for r in rows[1:]:
-                            padded = r + [""] * (len(header) - len(r))
-                            parts.append("| " + " | ".join(padded[:len(header)]) + " |")
-                        parts.append("")
-                        tables_count += 1
-                text = "\n\n".join(parts)
-            except ImportError:
-                return {"status": "error", "error": "解析 .docx 需要 python-docx 套件。\n請執行: pip install python-docx"}
+            # PowerPoint (.pptx, .ppt)
+            elif ext in (".pptx", ".ppt"):
+                try:
+                    from pptx import Presentation
+                    import io
+                    prs = Presentation(io.BytesIO(file_bytes))
+                    parts = []
+                    for i, slide in enumerate(prs.slides, 1):
+                        parts.append(f"### 投影片 {i}")
+                        for shape in slide.shapes:
+                            if hasattr(shape, "text") and shape.text.strip():
+                                parts.append(shape.text)
+                    text = "\n\n".join(parts)
+                except Exception: pass
 
-        # ── Word (.doc 舊格式) ─────────────────────────────────
-        elif ext == ".doc":
-            try:
-                with tempfile.NamedTemporaryFile(suffix=".doc", delete=False) as tmp:
-                    tmp.write(file_bytes)
-                    tmp_path = tmp.name
-                result = subprocess.run(
-                    ["antiword", tmp_path], capture_output=True, text=True, timeout=15
-                )
-                os.unlink(tmp_path)
-                text = result.stdout or result.stderr
-                if not text.strip():
-                    return {"status": "error", "error": "舊版 .doc 格式請安裝 antiword 或改用 .docx 格式"}
-            except FileNotFoundError:
-                return {"status": "error", "error": "解析舊版 .doc 需要 antiword 工具，或請將文件另存為 .docx"}
-
-        # ── Excel ─────────────────────────────────────────────
-        elif ext in (".xlsx", ".xls"):
-            try:
-                import openpyxl
-                import io
-                wb = openpyxl.load_workbook(io.BytesIO(file_bytes), read_only=True, data_only=True)
-                parts = []
-                for sheet_name in wb.sheetnames:
-                    ws = wb[sheet_name]
-                    parts.append(f"### 工作表: {sheet_name}")
-                    sheet_rows = []
-                    for row in ws.iter_rows(values_only=True):
-                        cells = [str(c).replace("\n", " ").strip() if c is not None else "" for c in row]
-                        if any(cells):
-                            sheet_rows.append(cells)
-                    if sheet_rows:
-                        header = sheet_rows[0]
-                        parts.append("| " + " | ".join(header) + " |")
-                        parts.append("| " + " | ".join(["---"] * len(header)) + " |")
-                        for r in sheet_rows[1:]:
-                            padded = r + [""] * (len(header) - len(r))
-                            parts.append("| " + " | ".join(padded[:len(header)]) + " |")
-                        parts.append("")
-                        tables_count += 1
-                text = "\n\n".join(parts)
-            except ImportError:
-                return {"status": "error", "error": "解析 Excel 需要 openpyxl 套件。\n請執行: pip install openpyxl"}
-
-        # ── PowerPoint ────────────────────────────────────────
-        elif ext in (".pptx", ".ppt"):
-            try:
-                from pptx import Presentation
-                import io
-                prs = Presentation(io.BytesIO(file_bytes))
-                parts = []
-                for i, slide in enumerate(prs.slides, 1):
-                    parts.append(f"### 投影片 {i}")
-                    for shape in slide.shapes:
-                        if hasattr(shape, "text") and shape.text.strip():
-                            parts.append(shape.text)
-                text = "\n\n".join(parts)
-            except ImportError:
-                return {"status": "error", "error": "解析 PowerPoint 需要 python-pptx 套件。\n請執行: pip install python-pptx"}
-
-        # ── 純文字、網頁與各類原始碼程式檔案 ───────
-        elif ext in (
-            ".txt", ".md", ".markdown", ".csv", ".tsv", ".log", ".json", ".jsonl", ".svg", ".xml",
-            ".html", ".htm", ".xhtml", ".js", ".jsx", ".ts", ".tsx", ".css", ".scss", ".less",
-            ".py", ".bat", ".cmd", ".ps1", ".sh", ".bash", ".yaml", ".yml", ".ini", ".env",
-            ".toml", ".conf", ".config", ".sql", ".c", ".cpp", ".h", ".hpp", ".cs", ".go",
-            ".rs", ".java", ".kt", ".php", ".vue", ".svelte", ".r", ".rb", ".dockerfile", ".makefile"
-        ):
-            text = file_bytes.decode("utf-8", errors="replace")
-
-        else:
-            # 嘗試作為通用 UTF-8 純文字讀取，若無亂碼則直接支援
-            try:
-                decoded = file_bytes.decode("utf-8")
-                text = decoded
-            except Exception:
-                return {"status": "error", "error": f"不支援的檔案格式: {ext}。支援格式: PDF, DOCX, XLSX, PPTX, SVG, HTML, JS, CSS, TXT, MD, CSV, JSON 等純文字與代碼檔案"}
+            # 純文字 / 程式碼 / HTML / CSV 通用 UTF-8 解碼
+            else:
+                try:
+                    text = file_bytes.decode("utf-8")
+                except Exception:
+                    text = file_bytes.decode("latin1", errors="replace")
 
         text = (text or "").strip()
         if not text and not extracted_images:
-            return {"status": "error", "error": "文件解析成功，但未能提取到文字或圖片內容"}
+            return {"status": "error", "error": f"文件 ({req.filename}) 解析成功，但未能提取到文字或圖片內容"}
 
         char_count = len(text)
         return {
             "status": "success",
             "filename": req.filename,
             "ext": ext,
+            "engine": engine_used,
             "format": "markdown",
             "char_count": char_count,
             "tables_count": tables_count,
             "images_count": len(extracted_images),
             "images": extracted_images,
-            "text": text
+            "text": text,
+            "markdown": text
         }
 
     except Exception as e:

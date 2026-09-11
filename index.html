@@ -680,6 +680,12 @@
                         <i data-lucide="help-circle" class="w-3.5 h-3.5"></i> <span data-i18n="btnUserGuide">操作說明</span>
                     </button>
 
+                    <button id="btn-chat-open-markitdown"
+                        class="text-xs bg-orange-950/60 hover:bg-orange-900/80 text-orange-300 px-2 py-1 rounded-md border border-orange-700/50 flex items-center gap-1 font-medium transition shadow-sm"
+                        title="開啟 MarkItDown 文件轉換中心" data-i18n-title="tooltipOpenMarkItDown">
+                        <i data-lucide="file-text" class="w-3.5 h-3.5"></i> <span data-i18n="btnMarkItDownCenter">MarkItDown</span>
+                    </button>
+
                     <button id="btn-open-rag"
                         class="text-xs bg-emerald-950/60 hover:bg-emerald-900/80 text-emerald-300 px-2 py-1 rounded-md border border-emerald-700/50 flex items-center gap-1 font-medium transition"
                         title="開啟 RAG 知識庫管理" data-i18n-title="tooltipOpenRag">
@@ -735,6 +741,11 @@
                 </div>
             </div>
 
+            <!-- 文件附加與 MarkItDown 轉檔預覽列 -->
+            <div id="doc-attachment-container"
+                class="hidden mb-2 p-2 bg-gray-900/95 border border-orange-800/50 rounded-xl flex items-center gap-2 overflow-x-auto shrink-0 shadow-lg">
+            </div>
+
             <!-- 圖片預覽列 (上傳/貼上圖片時顯示) -->
             <div id="image-preview-container"
                 class="hidden mb-2 p-2 bg-gray-900/95 border border-cyan-800/50 rounded-xl flex items-center gap-2 overflow-x-auto shrink-0 shadow-lg">
@@ -751,16 +762,22 @@
                     title="上傳圖片 / 截圖 (或直接 Ctrl+V 貼上)">
                     <i data-lucide="image" class="w-4 h-4 pointer-events-none"></i>
                 </button>
-                <!-- 上傳按鈕：文件 (PDF / Word / Excel / PPT / 純文字) -->
+                <!-- 上傳按鈕：文件 (Microsoft MarkItDown 原生轉檔：PDF / Word / Excel / PPT / HTML / EPUB / 純文字 / 代碼) -->
                 <button id="btn-upload-doc" data-i18n-title="tooltipUploadDoc" type="button"
                     onclick="document.getElementById('file-upload-doc').click()"
-                    class="text-gray-400 hover:text-amber-400 hover:bg-gray-800/80 p-2 rounded-lg transition shrink-0 flex items-center justify-center cursor-pointer"
-                    title="上傳文件：PDF / Word / Excel / PPT / 純文字 / 代碼">
+                    class="text-gray-400 hover:text-orange-400 hover:bg-gray-800/80 p-2 rounded-lg transition shrink-0 flex items-center justify-center cursor-pointer"
+                    title="上傳文件：Microsoft MarkItDown 轉檔 (PDF / Word / Excel / PPT / HTML / EPUB / CSV / 代碼)">
                     <i data-lucide="file-text" class="w-4 h-4 pointer-events-none"></i>
+                </button>
+                <!-- 捷徑：直接開啟 MarkItDown 轉檔中心分頁 -->
+                <button id="btn-chat-markitdown" data-i18n-title="tooltipOpenMarkItDown" type="button"
+                    class="text-orange-400 hover:text-orange-300 hover:bg-orange-950/40 p-2 rounded-lg transition shrink-0 flex items-center justify-center cursor-pointer border border-orange-500/30 hover:border-orange-500/60"
+                    title="開啟 MarkItDown 轉檔中心 (支援多檔批次轉換、即時預覽與 ZIP 下載)">
+                    <i data-lucide="file-code" class="w-4 h-4 pointer-events-none"></i>
                 </button>
                 <input type="file" id="file-upload-image" accept="image/*,.pdf,.docx,.doc,.xlsx,.xls,.pptx,.ppt,.txt,.md,.json,.csv" multiple class="hidden">
                 <input type="file" id="file-upload-doc"
-                    accept="image/*,.pdf,.docx,.doc,.xlsx,.xls,.pptx,.ppt,.txt,.md,.markdown,.csv,.tsv,.json,.jsonl,.py,.bat,.cmd,.ps1,.sh,.yaml,.yml,.xml,.html,.htm,.xhtml,.js,.jsx,.ts,.tsx,.css,.scss,.less,.sql,.log,.ini,.env,.toml,.conf,.c,.cpp,.h,.hpp,.cs,.go,.rs,.java,.kt,.php,.vue,.svelte,.r,.rb,text/*,*/*"
+                    accept=".pdf,.docx,.doc,.xlsx,.xls,.pptx,.ppt,.epub,.html,.htm,.xhtml,.csv,.tsv,.txt,.md,.markdown,.json,.jsonl,.py,.bat,.cmd,.ps1,.sh,.yaml,.yml,.xml,.js,.jsx,.ts,.tsx,.css,.scss,.less,.sql,.log,.ini,.env,.toml,.conf,.c,.cpp,.h,.hpp,.cs,.go,.rs,.java,.kt,.php,.vue,.svelte,text/*,*/*"
                     multiple class="hidden">
 
 
@@ -2620,7 +2637,9 @@
                 tooltipOpenRag: "開啟 RAG 知識庫管理",
                 tooltipOpenMcp: "開啟 MCP 伺服器與工具設定",
                 tooltipUploadImage: "上傳圖片 / 截圖 (或直接 Ctrl+V 貼上)",
-                tooltipUploadDoc: "上傳文件：PDF / Word / Excel / PPT / 純文字 / 代碼",
+                tooltipUploadDoc: "上傳文件：Microsoft MarkItDown 轉檔 (PDF / Word / Excel / PPT / HTML / EPUB / CSV / 代碼)",
+            tooltipOpenMarkItDown: "開啟 MarkItDown 轉檔中心 (支援多檔批次轉換、即時預覽與 ZIP 下載)",
+            btnMarkItDownCenter: "MarkItDown",
                 tooltipStopGen: "停止生成",
                 tooltipSendMessage: "發送指令",
                 tooltipDownloadDaemonBat: "下載可獨立執行的 start_daemon.bat",
@@ -3058,7 +3077,9 @@
                 tooltipOpenRag: "Open RAG Knowledge Base Manager",
                 tooltipOpenMcp: "Open MCP Server & Tool Settings",
                 tooltipUploadImage: "Upload Image / Screenshot (or Ctrl+V to paste)",
-                tooltipUploadDoc: "Upload Document: PDF / Word / Excel / PPT / Text / Code",
+                tooltipUploadDoc: "Upload Document: Microsoft MarkItDown (PDF / Word / Excel / PPT / HTML / EPUB / CSV / Code)",
+            tooltipOpenMarkItDown: "Open MarkItDown Conversion Center (Batch convert / Live preview / ZIP export)",
+            btnMarkItDownCenter: "MarkItDown",
                 tooltipStopGen: "Stop Generation",
                 tooltipSendMessage: "Send Message",
                 tooltipDownloadDaemonBat: "Download standalone start_daemon.bat",
@@ -6485,10 +6506,10 @@
             const file = e.target.files[0];
             if (!file) return;
             const ext = (file.name.split('.').pop() || '').toLowerCase();
-            const binaryOfficeExts = ['pdf', 'docx', 'doc', 'xlsx', 'xls', 'pptx', 'ppt'];
-            const isBinaryOffice = binaryOfficeExts.includes(ext);
+            const markitdownExts = ['pdf', 'docx', 'doc', 'xlsx', 'xls', 'pptx', 'ppt', 'epub', 'html', 'htm', 'csv', 'tsv'];
+            const isMarkitdownDoc = markitdownExts.includes(ext);
 
-            if (!isBinaryOffice) {
+            if (!isMarkitdownDoc) {
                 const reader = new FileReader();
                 reader.onload = (event) => {
                     const resText = event.target.result || '';
@@ -6501,14 +6522,18 @@
                 };
                 reader.readAsText(file, 'utf-8');
             } else {
-                let isDaemonOnline = document.getElementById('daemon-status-badge')?.dataset.online === 'true' ||
-                    document.getElementById('daemon-status-badge')?.textContent.includes('Online') ||
-                    document.getElementById('daemon-status-badge')?.textContent.includes('已連線');
-                if (!isDaemonOnline && typeof checkDaemonHealth === 'function') {
-                    isDaemonOnline = await checkDaemonHealth();
+                let isDaemonOnline = await checkDaemonHealth();
+                if (!isDaemonOnline) {
+                    showUploadToast(currentLang === 'en' ? 'Waking up daemon via webcom:// for MarkItDown conversion...' : '正在透過 webcom:// 智慧喚醒後端常駐服務進行 MarkItDown 轉檔...');
+                    triggerWebcomProtocol();
+                    for (let i = 0; i < 15; i++) {
+                        await new Promise(r => setTimeout(r, 400));
+                        isDaemonOnline = await checkDaemonHealth();
+                        if (isDaemonOnline) break;
+                    }
                 }
                 if (!isDaemonOnline) {
-                    alert(currentLang === 'en' ? 'Parsing PDF/Office files requires Daemon (8001) to be running. Pure text files (.txt/.md/.json/.csv) can be loaded directly.' : '解析 PDF/Office 文件需常駐程式 (Daemon 8001) 運行中。純文字與代碼檔案 (.txt/.md/.json/.csv 等) 可直接載入。');
+                    alert(currentLang === 'en' ? 'Parsing document requires Daemon (Port 8001). Please launch daemon first.' : '解析文件需要常駐服務 (Port 8001) 運行中，請先啟動常駐程式。');
                     e.target.value = '';
                     return;
                 }
@@ -6519,17 +6544,20 @@
                         reader.onerror = rej;
                         reader.readAsDataURL(file);
                     });
+                    showUploadToast(`⏳ 正在由 Microsoft MarkItDown 轉檔 <b>${file.name}</b>...`);
                     const res = await fetchWithTimeout(`${appSettings.daemonEndpoint}/tools/parse_document`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ filename: file.name, data_base64: b64 }),
-                        timeout: 30000
+                        timeout: 45000
                     });
                     if (!res.ok) throw new Error(`HTTP ${res.status}`);
                     const data = await res.json();
                     if (data.status === 'success') {
+                        const mdText = data.text || data.markdown || '';
                         document.getElementById('rag-doc-title').value = file.name;
-                        document.getElementById('rag-doc-content').value = data.text || '';
+                        document.getElementById('rag-doc-content').value = mdText;
+                        showUploadToast(`✅ <b>${file.name}</b> 已由 MarkItDown 轉為 Markdown (${(data.char_count || mdText.length).toLocaleString()} 字) 並填入知識庫！`);
                     } else {
                         alert(`❌ ${file.name} 解析失敗: ${data.error}`);
                     }
@@ -6539,7 +6567,6 @@
             }
             e.target.value = '';
         });
-
 
         document.getElementById('btn-add-rag-doc').addEventListener('click', () => {
             const title = document.getElementById('rag-doc-title').value.trim() || 'Untitled Document';
@@ -11834,20 +11861,26 @@ Important guidelines:
             }
         }
 
-        // --- Image Attachment & Vision Support ---
+        // --- Image & Document Attachment with Microsoft MarkItDown Integration ---
         const imagePreviewContainer = document.getElementById('image-preview-container');
+        const docAttachmentContainer = document.getElementById('doc-attachment-container');
         const btnUploadImage = document.getElementById('btn-upload-image');
         const fileUploadImage = document.getElementById('file-upload-image');
         const btnUploadDoc = document.getElementById('btn-upload-doc');
         const fileUploadDoc = document.getElementById('file-upload-doc');
+        const btnChatMarkitdown = document.getElementById('btn-chat-markitdown');
+        const btnChatOpenMarkitdown = document.getElementById('btn-chat-open-markitdown');
         let attachedImages = [];
+            attachedDocs = [];
+            renderDocAttachments();
+        let attachedDocs = [];
 
         function showUploadToast(msg, isError = false) {
             const toast = document.createElement('div');
             toast.className = `fixed bottom-20 right-6 z-[200] px-4 py-2.5 rounded-xl text-xs font-mono shadow-2xl flex items-center gap-2 border transition-all duration-300 ${
                 isError 
                 ? 'bg-red-950/90 border-red-700/60 text-red-300' 
-                : 'bg-gray-900/95 border-cyan-600/60 text-cyan-300 shadow-cyan-950/50'
+                : 'bg-gray-900/95 border-orange-500/60 text-orange-200 shadow-orange-950/50'
             }`;
             toast.innerHTML = msg;
             document.body.appendChild(toast);
@@ -11888,6 +11921,82 @@ Important guidelines:
             });
         }
 
+        function renderDocAttachments() {
+            if (!docAttachmentContainer) return;
+            docAttachmentContainer.innerHTML = '';
+            if (attachedDocs.length === 0) {
+                docAttachmentContainer.classList.add('hidden');
+                return;
+            }
+            docAttachmentContainer.classList.remove('hidden');
+            attachedDocs.forEach((doc, idx) => {
+                const pill = document.createElement('div');
+                pill.className = "flex items-center gap-2 bg-gray-800/90 border border-orange-500/50 rounded-lg px-2.5 py-1 text-xs text-orange-200 shrink-0 shadow";
+                pill.innerHTML = `
+                    <span class="text-orange-400 font-bold flex items-center gap-1"><i data-lucide="file-text" class="w-3.5 h-3.5"></i> ${escapeHtml(doc.name)}</span>
+                    <span class="text-[10px] text-gray-400">(${doc.sizeKb} KB · ${doc.charCount.toLocaleString()} 字)</span>
+                    <span class="text-[9px] bg-orange-950 text-orange-300 border border-orange-800/80 px-1 py-0.5 rounded font-mono font-bold">MarkItDown</span>
+                    <button type="button" class="btn-preview-doc text-[11px] text-cyan-400 hover:text-cyan-300 hover:underline flex items-center gap-0.5 ml-1" title="在 MarkItDown 中開啟預覽與檢視完整排版">
+                        <i data-lucide="external-link" class="w-3 h-3"></i> 轉檔中心
+                    </button>
+                    <button type="button" class="btn-remove-doc text-gray-400 hover:text-red-400 p-0.5 ml-0.5" title="移除此文件附件">
+                        <i data-lucide="x" class="w-3 h-3"></i>
+                    </button>
+                `;
+                pill.querySelector('.btn-preview-doc').addEventListener('click', (e) => {
+                    e.preventDefault();
+                    openMarkItDownCenter();
+                });
+                pill.querySelector('.btn-remove-doc').addEventListener('click', (e) => {
+                    e.preventDefault();
+                    attachedDocs.splice(idx, 1);
+                    renderDocAttachments();
+                    showUploadToast(`已移除附件 ${doc.name}`);
+                });
+                docAttachmentContainer.appendChild(pill);
+            });
+            if (window.lucide) lucide.createIcons();
+        }
+
+        // ── 智慧開啟 MarkItDown 轉檔中心 (自動背景喚醒 8001 後端) ──
+        async function openMarkItDownCenter() {
+            const markitdownUrl = `${appSettings.daemonEndpoint}/markitdown/`;
+            const isOnline = await checkDaemonHealth();
+            if (isOnline) {
+                window.open(markitdownUrl, '_blank');
+                return;
+            }
+
+            showUploadToast('⏳ 正在透過 webcom:// 喚醒後端並開啟 MarkItDown 轉檔中心...');
+            triggerWebcomProtocol();
+
+            let attempts = 0;
+            const poll = setInterval(async () => {
+                attempts++;
+                const ok = await checkDaemonHealth();
+                if (ok) {
+                    clearInterval(poll);
+                    window.open(markitdownUrl, '_blank');
+                } else if (attempts >= 12) {
+                    clearInterval(poll);
+                    openDaemonModal();
+                }
+            }, 350);
+        }
+
+        if (btnChatMarkitdown) {
+            btnChatMarkitdown.addEventListener('click', (e) => {
+                e.preventDefault();
+                openMarkItDownCenter();
+            });
+        }
+        if (btnChatOpenMarkitdown) {
+            btnChatOpenMarkitdown.addEventListener('click', (e) => {
+                e.preventDefault();
+                openMarkItDownCenter();
+            });
+        }
+
         // ── 圖片上傳 (Vision) ──
         if (btnUploadImage && fileUploadImage) {
             btnUploadImage.addEventListener('click', (e) => {
@@ -11916,7 +12025,7 @@ Important guidelines:
             });
         }
 
-        // ── 文件上傳 (PDF / Word / Excel / PPT / 純文字 / 完整原始碼與大檔案) ──
+        // ── 文件上傳：全格式 Microsoft MarkItDown 整合 ──
         async function processDocumentFile(file) {
             if (!file) return;
             const ext = (file.name.split('.').pop() || '').toLowerCase();
@@ -11934,11 +12043,11 @@ Important guidelines:
                 return;
             }
 
-            const binaryOfficeExts = ['pdf', 'docx', 'doc', 'xlsx', 'xls', 'pptx', 'ppt'];
-            const isBinaryOffice = binaryOfficeExts.includes(ext);
+            const markitdownExts = ['pdf', 'docx', 'doc', 'xlsx', 'xls', 'pptx', 'ppt', 'epub', 'html', 'htm', 'csv', 'tsv'];
+            const isMarkitdownDoc = markitdownExts.includes(ext);
 
-            // 非二進位 Office 文件：瀏覽器本地直接讀取 (支援所有純文字、設定檔、原始碼)
-            if (!isBinaryOffice) {
+            // 非二進位 Office/文件：純文字、代碼、配置檔直接本地讀取
+            if (!isMarkitdownDoc) {
                 const reader = new FileReader();
                 reader.onload = (evt) => {
                     const content = evt.target.result || '';
@@ -11950,7 +12059,7 @@ Important guidelines:
                     const lineCount = content.split('\n').length;
                     const charCount = content.length;
 
-                    // 1. 自動同步切塊加入 RAG 知識庫，以支援大檔案全域高精確檢索
+                    // 1. 自動同步切塊加入 RAG 知識庫
                     try {
                         const chunkSize = parseInt(document.getElementById('rag-chunk-size')?.value) || 400;
                         const chunks = chunkText(content, chunkSize);
@@ -11973,10 +12082,8 @@ Important guidelines:
                     const currentText = userInput.value.trim();
                     let promptInjection = '';
                     if (content.length <= 15000) {
-                        // 適合直接完整放入對話框的尺寸
                         promptInjection = `【附件文件: ${file.name} (${sizeKb} KB, ${lineCount} 行)】\n\`\`\`${ext}\n${content}\n\`\`\``;
                     } else {
-                        // 超長文本檔案 (如 index.html ~650KB)
                         const snippet = content.slice(0, 12000);
                         promptInjection = `【附加長文本文件: ${file.name} (${sizeKb} KB / ${lineCount.toLocaleString()} 行 / ${charCount.toLocaleString()} 字)】\n> 💡 此檔案已自動同步建立 RAG 向量索引庫，可直接提問、重構或分析！\n\`\`\`${ext}\n${snippet}\n\n... (其餘 ${(charCount - 12000).toLocaleString()} 字符已載入 RAG 知識庫與記憶體，可精準檢索回答)\n\`\`\``;
                     }
@@ -11986,25 +12093,31 @@ Important guidelines:
                     userInput.style.height = Math.min(userInput.scrollHeight, 180) + 'px';
                     userInput.focus();
                     userInput.dispatchEvent(new Event('input'));
+                    attachedDocs.push({ name: file.name, sizeKb, charCount, markdown: content });
+                    renderDocAttachments();
                     showUploadToast(`📄 <b>${file.name}</b> (${sizeKb} KB, ${lineCount.toLocaleString()} 行) 已載入對話與 RAG 知識庫`);
                 };
                 reader.readAsText(file, 'utf-8');
                 return;
             }
 
-            // 非純文字二進位類 (PDF, DOCX, XLSX, PPTX)：透過 Daemon 解析
-            let isDaemonOnline = document.getElementById('daemon-status-badge')?.dataset.online === 'true' ||
-                                 document.getElementById('daemon-status-badge')?.textContent.includes('Online') ||
-                                 document.getElementById('daemon-status-badge')?.textContent.includes('已連線');
-            if (!isDaemonOnline && typeof checkDaemonHealth === 'function') {
-                isDaemonOnline = await checkDaemonHealth();
+            // MarkItDown 原生文件類 (PDF, Word, Excel, PPT, EPUB, HTML, CSV)：透過 Daemon 智慧轉檔
+            let isDaemonOnline = await checkDaemonHealth();
+            if (!isDaemonOnline) {
+                showUploadToast(`⏳ 正在透過 webcom:// 智慧喚醒後端常駐服務進行 MarkItDown 轉檔...`);
+                triggerWebcomProtocol();
+                for (let i = 0; i < 15; i++) {
+                    await new Promise(r => setTimeout(r, 400));
+                    isDaemonOnline = await checkDaemonHealth();
+                    if (isDaemonOnline) break;
+                }
             }
             if (!isDaemonOnline) {
-                showUploadToast(`⚠️ 解析二進位文件 (${file.name}) 需要常駐程式 (Port 8001) 運行中。<br>純文字/程式碼檔案可直接讀取。`, true);
+                showUploadToast(`⚠️ 常駐服務 (Port 8001) 喚醒超時，請點擊頂部 [▶ 啟動常駐程式] 後再試。`, true);
                 return;
             }
 
-            showUploadToast(`⏳ 正在透過 Daemon 解析 <b>${file.name}</b>...`);
+            showUploadToast(`⏳ 正在透過 Microsoft MarkItDown 解析 <b>${file.name}</b>...`);
 
             try {
                 const reader = new FileReader();
@@ -12025,7 +12138,7 @@ Important guidelines:
                 const data = await res.json();
 
                 if (data.status === 'success') {
-                    const parsedText = data.text || '';
+                    const parsedText = data.text || data.markdown || '';
                     const charCount = data.char_count || parsedText.length;
                     const sizeKb = (file.size / 1024).toFixed(1);
 
@@ -12037,7 +12150,11 @@ Important guidelines:
                         renderImagePreviews();
                     }
 
-                    // 2. 自動加入 RAG
+                    // 2. 加入附件欄
+                    attachedDocs.push({ name: file.name, sizeKb, charCount, markdown: parsedText });
+                    renderDocAttachments();
+
+                    // 3. 自動加入 RAG
                     if (parsedText.length > 0) {
                         const chunkSize = parseInt(document.getElementById('rag-chunk-size')?.value) || 400;
                         const chunks = chunkText(parsedText, chunkSize);
@@ -12054,21 +12171,20 @@ Important guidelines:
                         saveSettingsToLocal();
                     }
 
-                    // 3. 注入 Markdown 與提示詞至對話輸入框
+                    // 4. 注入 Markdown 與提示詞至對話輸入框
                     const currentText = userInput.value.trim();
                     const snippet = parsedText.length <= 15000 ? parsedText : parsedText.slice(0, 12000) + `\n\n... (其餘 ${(charCount - 12000).toLocaleString()} 字符已同步加入 RAG 知識庫)`;
-                    const imgNote = (data.images && data.images.length > 0) ? `\n> 🖼️ 已從文件提取 ${data.images.length} 張圖片/圖表附加至 Vision 對話！` : '';
-                    const tableNote = (data.tables_count > 0) ? `\n> 📊 已自動識別並轉為 Markdown 表格 (${data.tables_count} 個)` : '';
-                    const isMd = ext === 'pdf' || ext === 'md' || ext === 'markdown' || data.format === 'markdown';
-                    const formattedBody = isMd ? snippet : `\`\`\`${ext}\n${snippet}\n\`\`\``;
-                    const promptInjection = `【附件文件: ${file.name} (${sizeKb} KB / Markdown 格式)】${imgNote}${tableNote}\n\n${formattedBody}`;
+                    const imgNote = (data.images && data.images.length > 0) ? `\n> 🖼️ 已從文件提取 ${data.images.length} 張圖片附加至 Vision 對話！` : '';
+                    const tableNote = (data.tables_count > 0) ? `\n> 📊 已識別並轉為 Markdown 表格 (${data.tables_count} 個)` : '';
+                    const engineBadge = data.engine === 'markitdown' ? 'Microsoft MarkItDown' : '原生引擎';
+                    const promptInjection = `【📄 MarkItDown 轉檔附件: ${file.name} (${sizeKb} KB / Markdown 結構化 / 由 ${engineBadge} 轉換)】${imgNote}${tableNote}\n\n${snippet}`;
 
                     userInput.value = currentText ? `${currentText}\n\n${promptInjection}` : promptInjection;
                     userInput.style.height = 'auto';
                     userInput.style.height = Math.min(userInput.scrollHeight, 180) + 'px';
                     userInput.focus();
                     userInput.dispatchEvent(new Event('input'));
-                    showUploadToast(`✅ <b>${file.name}</b> 已轉為 Markdown (${charCount.toLocaleString()} 字${data.images && data.images.length ? ` / ${data.images.length} 張圖片` : ''}${data.tables_count ? ` / ${data.tables_count} 個表格` : ''})`);
+                    showUploadToast(`✅ <b>${file.name}</b> 已由 MarkItDown 轉為 Markdown (${charCount.toLocaleString()} 字${data.images && data.images.length ? ` / ${data.images.length} 張圖片` : ''}${data.tables_count ? ` / ${data.tables_count} 個表格` : ''})，已載入對話與 RAG！`);
                 } else {
                     showUploadToast(`❌ ${file.name} 解析失敗: ${data.error}`, true);
                 }
@@ -12100,14 +12216,14 @@ Important guidelines:
                 inputContainer.addEventListener(eventName, (e) => {
                     e.preventDefault();
                     e.stopPropagation();
-                    inputContainer.classList.add('border-cyan-500', 'bg-gray-800/80');
+                    inputContainer.classList.add('border-orange-500', 'bg-gray-800/80');
                 }, false);
             });
             ['dragleave', 'drop'].forEach(eventName => {
                 inputContainer.addEventListener(eventName, (e) => {
                     e.preventDefault();
                     e.stopPropagation();
-                    inputContainer.classList.remove('border-cyan-500', 'bg-gray-800/80');
+                    inputContainer.classList.remove('border-orange-500', 'bg-gray-800/80');
                 }, false);
             });
             inputContainer.addEventListener('drop', async (e) => {
@@ -12149,97 +12265,12 @@ Important guidelines:
                                 };
                                 reader.readAsDataURL(file);
                             } else {
-                                e.preventDefault();
                                 await processDocumentFile(file);
                             }
                         }
                     }
                 }
             });
-        }
-
-        async function handleSend() {
-            const text = userInput.value.trim();
-            if (!text && attachedImages.length === 0) return;
-            if (isGenerating) return;
-
-            const imagesToSend = [...attachedImages];
-            attachedImages = [];
-            renderImagePreviews();
-
-            const promptText = text || (imagesToSend.length > 0 ? (currentLang === 'en' ? 'Please analyze the attached image' : '請分析這張圖片內容並回答') : '');
-
-            userInput.value = '';
-            userInput.style.height = 'auto';
-            slashMenu.classList.remove('active');
-
-            const welcome = chatBox.querySelector('.text-center.py-12');
-            if (welcome) welcome.remove();
-
-            let effectivePrompt = promptText;
-            const matchedCmd = slashCommands.find(c => c.cmd.toLowerCase() === promptText.trim().toLowerCase());
-            if (matchedCmd && matchedCmd.payload) {
-                effectivePrompt = matchedCmd.payload;
-            } else if (promptText.startsWith('/')) {
-                effectivePrompt = promptText.replace(/^\//, '請');
-            }
-
-            appendMessage('user', promptText, false, false, '', imagesToSend);
-            if (chatHistory.length > 0 && chatHistory[chatHistory.length - 1].role === 'user') {
-                if (Array.isArray(chatHistory[chatHistory.length - 1].content)) {
-                    const textItem = chatHistory[chatHistory.length - 1].content.find(item => item.type === 'text');
-                    if (textItem) textItem.text = effectivePrompt;
-                } else {
-                    chatHistory[chatHistory.length - 1].content = effectivePrompt;
-                }
-            }
-
-            setGeneratingState(true);
-            try {
-                await streamAgentLoop(effectivePrompt);
-            } catch (err) {
-                console.error('[Send Error]', err);
-                appendMessage('assistant', `⚠️ 執行發生錯誤: ${err.message || err}`, false);
-            } finally {
-                setGeneratingState(false);
-            }
-        }
-
-        function handleSendMessage() {
-            handleSend();
-        }
-
-        document.getElementById('btn-send')?.addEventListener('click', handleSend);
-        document.getElementById('btn-clear')?.addEventListener('click', () => {
-            chatHistory = [];
-            chatBox.innerHTML = '';
-        });
-        async function checkDaemonHealth() {
-            const badge = document.getElementById('daemon-status-badge');
-            const modalStatusText = document.getElementById('daemon-modal-status-text');
-            if (!badge) return false;
-            try {
-                const res = await fetchWithTimeout(`${appSettings.daemonEndpoint}/health`, { timeout: 1800 });
-                if (res.ok) {
-                    badge.dataset.online = "true";
-                    badge.className = "text-xs px-2 py-0.5 rounded bg-green-950/60 text-green-400 border border-green-700/50 flex items-center gap-1.5 font-medium transition-colors cursor-pointer";
-                    badge.innerHTML = `<span class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span> ${t('daemonOnline')}`;
-                    if (modalStatusText) {
-                        modalStatusText.innerHTML = `<span class="w-2.5 h-2.5 rounded-full bg-green-500 animate-pulse"></span> <span class="text-green-400">常駐程式已就緒 (Port 8001 連線中)</span>`;
-                    }
-                    return true;
-                } else {
-                    throw new Error("Bad status");
-                }
-            } catch (e) {
-                badge.dataset.online = "false";
-                badge.className = "text-xs px-2 py-0.5 rounded bg-red-950/60 text-red-400 border border-red-800/50 flex items-center gap-1.5 font-medium transition-colors cursor-pointer";
-                badge.innerHTML = `<span class="w-2 h-2 rounded-full bg-red-500"></span> ${t('daemonOffline')}`;
-                if (modalStatusText) {
-                    modalStatusText.innerHTML = `<span class="w-2.5 h-2.5 rounded-full bg-red-500"></span> <span class="text-red-400">常駐程式未連線 (Port 8001 離線)</span>`;
-                }
-                return false;
-            }
         }
 
         // Daemon Launcher & Reset Modal Logic
@@ -12268,43 +12299,9 @@ Important guidelines:
         // Open MarkItDown with Auto-Wakeup Daemon
         const btnOpenMarkitdown = document.getElementById('btn-open-markitdown');
         if (btnOpenMarkitdown) {
-            btnOpenMarkitdown.addEventListener('click', async (e) => {
+            btnOpenMarkitdown.addEventListener('click', (e) => {
                 e.preventDefault();
-                const markitdownUrl = `${appSettings.daemonEndpoint}/markitdown/`;
-
-                // 1. Check if daemon is already online
-                const isOnline = await checkDaemonHealth();
-                if (isOnline) {
-                    window.open(markitdownUrl, '_blank');
-                    return;
-                }
-
-                // 2. If daemon is not running, wake up daemon
-                btnOpenMarkitdown.classList.add('animate-pulse');
-                const origHtml = btnOpenMarkitdown.innerHTML;
-                btnOpenMarkitdown.innerHTML = `<i data-lucide="loader-2" class="w-3.5 h-3.5 animate-spin"></i> <span>喚醒服務中...</span>`;
-                if (window.lucide) lucide.createIcons();
-
-                triggerWebcomProtocol();
-
-                let attempts = 0;
-                const poll = setInterval(async () => {
-                    attempts++;
-                    const ok = await checkDaemonHealth();
-                    if (ok) {
-                        clearInterval(poll);
-                        btnOpenMarkitdown.classList.remove('animate-pulse');
-                        btnOpenMarkitdown.innerHTML = origHtml;
-                        if (window.lucide) lucide.createIcons();
-                        window.open(markitdownUrl, '_blank');
-                    } else if (attempts >= 12) {
-                        clearInterval(poll);
-                        btnOpenMarkitdown.classList.remove('animate-pulse');
-                        btnOpenMarkitdown.innerHTML = origHtml;
-                        if (window.lucide) lucide.createIcons();
-                        openDaemonModal();
-                    }
-                }, 300);
+                openMarkItDownCenter();
             });
         }
 
