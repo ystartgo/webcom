@@ -265,19 +265,19 @@
                 </h1>
             </div>
             <div class="flex items-center gap-2">
-                <button id="btn-open-markitdown"
-                    class="text-xs px-2.5 py-1 rounded-md bg-amber-950/70 hover:bg-amber-900 text-amber-300 border border-amber-700/60 flex items-center gap-1.5 font-semibold transition shadow-sm cursor-pointer"
+                <a id="btn-open-markitdown" href="http://127.0.0.1:8001/markitdown/" target="_blank"
+                    class="text-xs px-2.5 py-1 rounded-md bg-amber-950/70 hover:bg-amber-900 text-amber-300 border border-amber-700/60 flex items-center gap-1.5 font-semibold transition shadow-sm cursor-pointer no-underline select-none"
                     title="開啟 MarkItDown 文件轉換器 (PDF/Word/Excel/PPT 轉 Markdown)">
                     <i data-lucide="file-text" class="w-3.5 h-3.5"></i> <span>MarkItDown</span>
-                </button>
-                <button id="btn-launch-daemon"
-                    class="text-xs px-2.5 py-1 rounded-md bg-purple-950/70 hover:bg-purple-900 text-purple-300 border border-purple-700/60 flex items-center gap-1.5 font-semibold transition shadow-sm"
+                </a>
+                <button id="btn-launch-daemon" type="button" onclick="openDaemonModal()"
+                    class="text-xs px-2.5 py-1 rounded-md bg-purple-950/70 hover:bg-purple-900 text-purple-300 border border-purple-700/60 flex items-center gap-1.5 font-semibold transition shadow-sm cursor-pointer select-none"
                     title="一鍵呼叫 start_daemon.bat 啟動常駐程式" data-i18n-title="tooltipLaunchDaemon">
                     <i data-lucide="play" class="w-3.5 h-3.5 fill-current"></i> <span
                         data-i18n="btnLaunchDaemon">啟動常駐程式</span>
                 </button>
-                <span id="daemon-status-badge"
-                    class="text-xs px-2 py-0.5 rounded bg-gray-800 text-gray-400 border border-gray-700 flex items-center gap-1.5 font-medium transition-colors cursor-pointer"
+                <span id="daemon-status-badge" onclick="openDaemonModal()"
+                    class="text-xs px-2 py-0.5 rounded bg-gray-800 text-gray-400 border border-gray-700 flex items-center gap-1.5 font-medium transition-colors cursor-pointer select-none"
                     title="點擊檢視連線狀態與啟動指引" data-i18n-title="tooltipDaemonBadge">
                     <span class="w-2 h-2 rounded-full bg-gray-500"></span> <span data-i18n="daemonChecking">常駐程式 (8001):
                         檢查中...</span>
@@ -749,18 +749,18 @@
                 class="input-container relative bg-gray-900 border border-gray-800 rounded-xl p-2.5 flex items-end gap-2 shrink-0">
                 <div id="slash-menu" class="slash-menu"></div>
 
-                <!-- 上傳按鈕 1：圖片 (Vision / 截圖) -->
-                <button id="btn-upload-image" data-i18n-title="tooltipUploadImage" type="button"
-                    class="text-gray-400 hover:text-cyan-400 hover:bg-gray-800/80 p-2 rounded-lg transition shrink-0 flex items-center justify-center cursor-pointer"
+                <!-- 上傳按鈕 1：圖片 (Vision / 截圖 - 原生 Label 保證點擊即開啟檔案選擇器) -->
+                <label for="file-upload-image" id="btn-upload-image" data-i18n-title="tooltipUploadImage"
+                    class="text-gray-400 hover:text-cyan-400 hover:bg-gray-800/80 p-2 rounded-lg transition shrink-0 flex items-center justify-center cursor-pointer select-none"
                     title="上傳圖片 / 截圖 (或直接 Ctrl+V 貼上)">
                     <i data-lucide="image" class="w-4 h-4 pointer-events-none"></i>
-                </button>
-                <!-- 上傳按鈕 2：文件 (Microsoft MarkItDown 轉檔：PDF / Word / Excel / PPT / HTML / EPUB / 純文字 / 代碼) -->
-                <button id="btn-upload-doc" data-i18n-title="tooltipUploadDoc" type="button"
-                    class="text-gray-400 hover:text-orange-400 hover:bg-gray-800/80 p-2 rounded-lg transition shrink-0 flex items-center justify-center cursor-pointer"
+                </label>
+                <!-- 上傳按鈕 2：文件 (Microsoft MarkItDown 轉檔 - 原生 Label 保證點擊即開啟檔案選擇器) -->
+                <label for="file-upload-doc" id="btn-upload-doc" data-i18n-title="tooltipUploadDoc"
+                    class="text-gray-400 hover:text-orange-400 hover:bg-gray-800/80 p-2 rounded-lg transition shrink-0 flex items-center justify-center cursor-pointer select-none"
                     title="上傳文件：Microsoft MarkItDown 轉檔 (PDF / Word / Excel / PPT / HTML / EPUB / CSV / 代碼)">
                     <i data-lucide="file-text" class="w-4 h-4 pointer-events-none"></i>
-                </button>
+                </label>
                 <input type="file" id="file-upload-image" accept="image/*,.pdf,.docx,.doc,.xlsx,.xls,.pptx,.ppt,.txt,.md,.json,.csv" multiple class="hidden">
                 <input type="file" id="file-upload-doc"
                     accept=".pdf,.docx,.doc,.xlsx,.xls,.pptx,.ppt,.epub,.html,.htm,.xhtml,.csv,.tsv,.txt,.md,.markdown,.json,.jsonl,.py,.bat,.cmd,.ps1,.sh,.yaml,.yml,.xml,.js,.jsx,.ts,.tsx,.css,.scss,.less,.sql,.log,.ini,.env,.toml,.conf,.c,.cpp,.h,.hpp,.cs,.go,.rs,.java,.kt,.php,.vue,.svelte,text/*,*/*"
@@ -12256,8 +12256,11 @@ Important guidelines:
 
         function openDaemonModal() {
             checkDaemonHealth();
-            daemonModal.classList.remove('hidden');
+            const m = document.getElementById('daemon-modal');
+            if (m) m.classList.remove('hidden');
         }
+        window.openDaemonModal = openDaemonModal;
+        window.openMarkItDownCenter = openMarkItDownCenter;
 
         // Open MarkItDown with Auto-Wakeup Daemon (Header Nav)
         const btnOpenMarkitdown = document.getElementById('btn-open-markitdown');
