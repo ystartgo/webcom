@@ -680,12 +680,6 @@
                         <i data-lucide="help-circle" class="w-3.5 h-3.5"></i> <span data-i18n="btnUserGuide">操作說明</span>
                     </button>
 
-                    <button id="btn-chat-open-markitdown"
-                        class="text-xs bg-orange-950/60 hover:bg-orange-900/80 text-orange-300 px-2 py-1 rounded-md border border-orange-700/50 flex items-center gap-1 font-medium transition shadow-sm"
-                        title="開啟 MarkItDown 文件轉換中心" data-i18n-title="tooltipOpenMarkItDown">
-                        <i data-lucide="file-text" class="w-3.5 h-3.5"></i> <span data-i18n="btnMarkItDownCenter">MarkItDown</span>
-                    </button>
-
                     <button id="btn-open-rag"
                         class="text-xs bg-emerald-950/60 hover:bg-emerald-900/80 text-emerald-300 px-2 py-1 rounded-md border border-emerald-700/50 flex items-center gap-1 font-medium transition"
                         title="開啟 RAG 知識庫管理" data-i18n-title="tooltipOpenRag">
@@ -11860,7 +11854,6 @@ Important guidelines:
         const fileUploadImage = document.getElementById('file-upload-image');
         const btnUploadDoc = document.getElementById('btn-upload-doc');
         const fileUploadDoc = document.getElementById('file-upload-doc');
-        const btnChatOpenMarkitdown = document.getElementById('btn-chat-open-markitdown');
         let attachedImages = [];
         let attachedDocs = [];
 
@@ -11965,12 +11958,7 @@ Important guidelines:
             });
         }
 
-        if (btnChatOpenMarkitdown) {
-            btnChatOpenMarkitdown.onclick = (e) => {
-                e.preventDefault();
-                openMarkItDownCenter();
-            };
-        }
+
 
         // ── 圖片上傳 (Vision) ──
         if (btnUploadImage && fileUploadImage) {
