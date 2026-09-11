@@ -1,0 +1,160 @@
+/**
+ * sw.js — Service Worker
+ *
+ * 快取策略：
+ *   UI 資源（HTML/CSS/JS/圖片）→ stale-while-revalidate
+ *   /pyodide/**                 → cache-first（版本固定）
+ *   /wheels/*.whl               → cache-first（版本固定）
+ *   /wheels/manifest.json       → stale-while-revalidate（隨部署更新）
+ *
+ * 更新方式：修改 CACHE_VERSION 即可強制所有客戶端清除舊快取。
+ */
+
+const CACHE_VERSION = 'v10';
+
+// 靜態資源版本號：與 index.html 的 APP_VERSION 保持一致
+const APP_VERSION = '1.3.2';
+
+const CACHE_NAMES = {
+  ui:      `ui-${CACHE_VERSION}`,
+  pyodide: `pyodide-${CACHE_VERSION}`,
+  wheels:  `wheels-${CACHE_VERSION}`,
+};
+
+// 安裝時預快取的 UI 靜態資源
+const UI_PRECACHE = [
+  '/',
+  `/css/style.css?v=${APP_VERSION}`,
+  `/js/main.js?v=${APP_VERSION}`,
+  '/js/converter.worker.js',
+  `/js/lib/jszip.min.js?v=${APP_VERSION}`,
+  `/images/favicon.svg?v=${APP_VERSION}`,
+  `/images/icon-192.png?v=${APP_VERSION}`,
+  `/images/icon-512.png?v=${APP_VERSION}`,
+  `/images/icon-180.png?v=${APP_VERSION}`,
+  '/manifest.json',
+];
+
+// ── Install ────────────────────────────────────────────────────────────────
+
+self.addEventListener('install', (event) => {
+  event.waitUntil(
+    caches.open(CACHE_NAMES.ui)
+      .then((cache) => cache.addAll(UI_PRECACHE))
+      .then(() => self.skipWaiting())
+  );
+});
+
+// ── Activate ───────────────────────────────────────────────────────────────
+
+self.addEventListener('activate', (event) => {
+  event.waitUntil(
+    (async () => {
+      // 立即接管所有分頁，不等待重新整理
+      await self.clients.claim();
+
+      // 清除不屬於當前版本的舊快取
+      const currentCacheNames = Object.values(CACHE_NAMES);
+      const allCacheNames = await caches.keys();
+      await Promise.all(
+        allCacheNames
+          .filter((name) => !currentCacheNames.includes(name))
+          .map((name) => caches.delete(name))
+      );
+    })()
+  );
+});
+
+// ── Fetch ──────────────────────────────────────────────────────────────────
+
+self.addEventListener('fetch', (event) => {
+  const { request } = event;
+  const url = new URL(request.url);
+
+  // 只處理同源請求（忽略 browser-sync 的 WebSocket 等）
+  if (url.origin !== self.location.origin) return;
+
+  // 連線偵測請求：略過所有快取，讓瀏覽器直接存取網路
+  // 離線時 fetch 會拋出錯誤，供 main.js 的 checkConnectivity() 判斷
+  if (url.searchParams.has('_sw_bypass')) return;
+
+  const path = url.pathname;
+
+  // API 請求：不快取，直接放行
+  if (path.startsWith('/api/')) return;
+
+  if (path.startsWith('/pyodide/')) {
+    event.respondWith(cacheFirst(request, CACHE_NAMES.pyodide));
+  } else if (path.endsWith('/manifest.json') && path.startsWith('/wheels/')) {
+    // manifest.json 隨部署更新，使用 stale-while-revalidate。
+    // 前端以時間戳破壞 HTTP 快取（?_t=…），但 SW 快取用不帶查詢參數的
+    // URL 作為 key，確保離線時仍能命中快取。
+    event.respondWith(staleWhileRevalidateStripQuery(request, CACHE_NAMES.ui));
+  } else if (path.startsWith('/wheels/')) {
+    event.respondWith(cacheFirst(request, CACHE_NAMES.wheels));
+  } else {
+    event.respondWith(staleWhileRevalidate(request, CACHE_NAMES.ui));
+  }
+});
+
+// ── 快取策略函式 ────────────────────────────────────────────────────────────
+
+/**
+ * Cache-first：快取命中直接回傳，未命中才請求網路並寫入快取。
+ * 適用於版本固定、不會變動的大型資源（pyodide、wheels）。
+ */
+async function cacheFirst(request, cacheName) {
+  const cache = await caches.open(cacheName);
+  const cached = await cache.match(request);
+  if (cached) return cached;
+
+  try {
+    const response = await fetch(request);
+    if (response.ok) {
+      cache.put(request, response.clone()).catch(() => {});
+    }
+    return response;
+  } catch {
+    return new Response('Network error', { status: 503 });
+  }
+}
+
+/**
+ * Stale-while-revalidate（忽略查詢參數）：
+ * 快取 key 使用不帶查詢參數的 URL，網路請求保留原始 URL（含時間戳）。
+ * 適用於 manifest.json 等需要破壞 HTTP 快取但仍需離線可用的資源。
+ */
+async function staleWhileRevalidateStripQuery(request, cacheName) {
+  const cache = await caches.open(cacheName);
+  const cacheKey = new Request(new URL(request.url).pathname, { method: request.method });
+  const cached = await cache.match(cacheKey);
+
+  const networkFetch = fetch(request).then((response) => {
+    if (response.ok) {
+      cache.put(cacheKey, response.clone()).catch(() => {});
+    }
+    return response;
+  }).catch(() => null);
+
+  return cached ?? await networkFetch ?? new Response('Offline', { status: 503 });
+}
+
+/**
+ * Stale-while-revalidate：立即回傳快取（若有），同時背景更新快取。
+ * 適用於 UI 資源（需要即時可用，但也要接收更新）。
+ */
+async function staleWhileRevalidate(request, cacheName) {
+  const cache = await caches.open(cacheName);
+  const cached = await cache.match(request);
+
+  // 背景更新（不 await，不阻塞回傳）
+  const networkFetch = fetch(request).then((response) => {
+    if (response.ok) {
+      cache.put(request, response.clone()).catch(() => {});
+    }
+    return response;
+  }).catch(() => null);
+
+  // 有快取就立即回傳，否則等網路；兩者皆無則回傳 503
+  return cached ?? await networkFetch ?? new Response('Offline', { status: 503 });
+}

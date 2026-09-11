@@ -1,0 +1,193 @@
+# MarkItDown Website
+
+[![GitHub](https://img.shields.io/badge/GitHub-GoneTone%2Fmarkitdown--website-181717?logo=github)](https://github.com/GoneTone/markitdown-website)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Docker Hub](https://img.shields.io/badge/Docker%20Hub-gonetone%2Fmarkitdown--website-2496ED?logo=docker&logoColor=white)](https://hub.docker.com/r/gonetone/markitdown-website)
+
+在瀏覽器中將文件轉換為 Markdown。**檔案轉換完全在本機端進行，不會上傳任何資料至伺服器**；網址轉換時，網頁內容會經由伺服器代理取得。
+
+本專案以 MIT License 開源於 [GitHub](https://github.com/GoneTone/markitdown-website)，歡迎提交 Issue 或 Pull Request。
+
+由 [Microsoft MarkItDown](https://github.com/microsoft/markitdown) 提供轉換核心，透過 [Pyodide](https://pyodide.org/)（Python WebAssembly）在瀏覽器中直接執行 Python。
+
+## 功能特色
+
+- **隱私優先**：檔案在瀏覽器內處理，完全離線可用，零伺服器傳輸
+- **網址批次轉換**：一次輸入多個網址（每行一個，最多 10 個），依序抓取並各自轉換為 Markdown；無效網址會於清單中顯示錯誤狀態。經由伺服器端 Headless Chrome 取得完整渲染內容（支援 JavaScript 渲染頁面）後在瀏覽器中轉換。抓取過程中以圓形進度條即時顯示下載進度
+- **免安裝**：使用者只需一個瀏覽器，無需安裝任何軟體
+- **多格式支援**：PDF、DOCX、XLSX、PPTX、HTML、CSV、EPUB
+- **離線可用**：首次初始化後，無需網路即可使用（Service Worker 快取）
+- **拖放上傳**：支援拖放或點擊選擇檔案
+- **即時預覽**：轉換完成後可直接預覽 Markdown 內容並下載 `.md` 檔案
+
+## 線上使用
+
+本專案也部署在伺服器上，可以直接使用：<https://markitdown.reh.tw/>
+
+## 快速開始
+
+### 使用 Docker（推薦）
+
+下載 [docker-compose.yml](docker-compose.yml) 後執行：
+
+```bash
+# 啟動（首次會自動從 Docker Hub 拉取映像檔）
+docker compose up
+
+# 背景執行
+docker compose up -d
+
+# 停止
+docker compose down
+```
+
+`docker-compose.yml` 內容如下，可依需求調整 port：
+
+```yaml
+services:
+  markitdown:
+    image: gonetone/markitdown-website:latest
+    container_name: markitdown-website
+    ports:
+      - "8080:80"
+    restart: unless-stopped
+```
+
+啟動後開啟瀏覽器前往 [http://localhost:8080](http://localhost:8080)
+
+### 本地開發
+
+**環境需求：** Python 3.10+、Docker
+
+```bash
+# 1. 下載 Pyodide runtime 及 wheel 套件（僅需執行一次，約 400MB）
+python scripts/download_wheels.py
+
+# 2. 啟動開發伺服器（Nginx + Node.js 代理）
+docker compose -f docker-compose-dev.yml up
+
+# 3. 開啟瀏覽器前往 http://localhost:3000
+```
+
+修改檔案後，手動重新整理瀏覽器即可看到變更。
+
+## 技術架構
+
+```
+瀏覽器
+├── index.html               UI 介面（兩態設計：上傳 / 結果）
+├── css/style.css            深色主題樣式
+└── js/
+    ├── main.js              UI 邏輯、拖放事件、狀態管理、URL 抓取
+    └── converter.worker.js  Web Worker（背景執行緒）
+            │
+            ├── Pyodide 0.26.4（Python WASM）
+            ├── markitdown（純 Python wheel）
+            └── 依賴套件：pdfminer.six、python-docx、openpyxl、python-pptx…
+
+伺服器（Node.js + Headless Chrome）
+└── server/
+    ├── index.js             Express 入口（Rate Limiting、Health Check、Browser 生命週期）
+    ├── fetch-url.js         URL 抓取（Puppeteer 渲染 + 二進位直接下載分流）
+    ├── browser.js           Chrome Headless 生命週期管理（啟動、重連、關閉）
+    ├── semaphore.js         並行頁面數量控制（預設上限 5）
+    └── semaphore-instance.js 共享 Semaphore 實例
+            │
+            └── Nginx 反向代理 /api/ → Node.js :3002
+```
+
+### 關鍵技術決策
+
+| 技術                        | 說明                                         |
+|---------------------------|--------------------------------------------|
+| **Pyodide**               | 在瀏覽器中執行 Python，免伺服器                        |
+| **Web Worker**            | 將 Python 執行移至背景執行緒，避免凍結 UI                 |
+| **micropip + deps=False** | 安裝本地 wheel 並跳過 PyPI 依賴解析                   |
+| **COOP/COEP 標頭**          | SharedArrayBuffer 的瀏覽器安全要求                 |
+| **magika stub**           | 取代無 WASM 版的 magika，讓 markitdown 回退至副檔名推斷路徑 |
+| **Service Worker + Web App Manifest** | 實現離線快取與 PWA 可安裝性，瀏覽器自動提示安裝 |
+| **Headless Chrome + Puppeteer** | 伺服器端使用 chrome-headless-shell 渲染 JS 頁面，二進位檔案直接下載 |
+| **Node.js URL Proxy**     | Express 代理，含 SSRF 防護、速率限制、並行控制（Semaphore）       |
+
+## 支援格式
+
+| 格式         | 說明                                  |
+|------------|-------------------------------------|
+| PDF        | 透過 pdfminer.six 解析文字                |
+| DOCX       | Microsoft Word 文件                   |
+| XLSX       | Microsoft Excel 試算表（轉為 Markdown 表格） |
+| PPTX       | Microsoft PowerPoint 簡報             |
+| HTML / HTM | 網頁原始碼                               |
+| CSV        | 逗號分隔值（轉為 Markdown 表格）               |
+| EPUB       | 電子書格式                               |
+
+## 專案結構
+
+```
+markitdown-website/
+├── index.html                    主頁面
+├── sw.js                         Service Worker（離線快取）
+├── manifest.json                 PWA Web App Manifest
+├── images/
+│   ├── favicon.svg               網站圖示
+│   ├── og-image.svg              社群分享預覽圖（svg）
+│   ├── og-image.png              社群分享預覽圖（png）
+│   ├── icon-192.png              PWA 圖示（192×192）
+│   ├── icon-512.png              PWA 圖示（512×512）
+│   ├── icon-180.png              PWA 圖示（iOS，180×180）
+│   ├── screenshot-desktop.png    PWA 安裝截圖（桌面，1280×800）
+│   └── screenshot-mobile.png     PWA 安裝截圖（行動，390×844）
+├── css/
+│   └── style.css                 樣式表
+├── js/
+│   ├── main.js                   UI 邏輯
+│   └── converter.worker.js       轉換 Web Worker
+├── server/
+│   ├── index.js                  Node.js Express 入口（Browser 生命週期）
+│   ├── fetch-url.js              URL 抓取路由（Puppeteer + SSRF 防護）
+│   ├── browser.js                Chrome Headless 生命週期管理
+│   ├── semaphore.js              並行控制 Semaphore
+│   ├── semaphore-instance.js     共享 Semaphore 實例
+│   ├── package.json
+│   └── __tests__/
+│       ├── fetch-url.test.js     URL 抓取單元測試
+│       ├── browser.test.js       Browser 管理單元測試
+│       └── semaphore.test.js     Semaphore 單元測試
+├── scripts/
+│   └── download_wheels.py        建置腳本（下載 Pyodide + wheels）
+├── docker/
+│   ├── nginx.conf                Docker 用 Nginx 設定（正式環境）
+│   ├── nginx-dev.conf            Docker 用 Nginx 設定（開發環境）
+│   ├── start.sh                  容器啟動腳本（Node.js + Nginx）
+│   └── Dockerfile.dev-proxy      開發環境 proxy Dockerfile（含 Chrome）
+├── examples/
+│   └── nginx-reverse-proxy.conf  Nginx 反向代理範本（Docker + SSL）
+├── .github/
+│   └── workflows/
+│       └── docker-publish.yml    CI/CD：自動建置並推送至 Docker Hub
+├── Dockerfile                    多階段 Docker 建置（Debian slim + Chrome）
+├── docker-compose.yml            Docker Compose 設定（正式環境）
+├── docker-compose-dev.yml        Docker Compose 設定（本地開發）
+├── .dockerignore
+└── .gitignore
+```
+
+> `pyodide/` 和 `wheels/` 目錄由建置腳本產生，不納入版本控制。
+
+## 反向代理（Docker + SSL）
+
+若需要 HTTPS 或在同一台伺服器上架設多個服務，可在 Docker 容器前加一層 Nginx 反向代理。
+
+參考 [examples/nginx-reverse-proxy.conf](examples/nginx-reverse-proxy.conf)，修改 `server_name` 和 SSL 憑證路徑後套用即可。
+
+> COOP/COEP 安全標頭已由容器內的 Nginx 設定，反向代理層直接透傳，**不需要重複設定**。
+
+## 授權
+
+本專案以 [MIT License](LICENSE) 授權。
+
+轉換核心由 [Microsoft MarkItDown](https://github.com/microsoft/markitdown) 提供，遵循其原始授權條款。
+
+---
+
+❤️使用 [Claude Code](https://github.com/anthropics/claude-code) 開發❤️

@@ -86,7 +86,12 @@ if os.path.exists(assets_dir):
     app.mount("/assets", StaticFiles(directory=assets_dir), name="assets")
 
 # 掛載 MarkItDown Website (提供 http://127.0.0.1:8001/markitdown/)
-markitdown_dir = os.path.abspath(os.path.join(webcom_dir, "..", "markitdown-website"))
+markitdown_dir = os.path.join(webcom_dir, "markitdown")
+if not os.path.exists(markitdown_dir):
+    markitdown_dir = os.path.abspath(os.path.join(webcom_dir, "..", "markitdown-website"))
+if not os.path.exists(markitdown_dir):
+    markitdown_dir = r"C:\Apps\markitdown-website"
+
 if os.path.exists(markitdown_dir):
     import mimetypes
     mimetypes.add_type("application/wasm", ".wasm")

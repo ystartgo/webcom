@@ -1,0 +1,1063 @@
+/**
+ * main.js — UI 邏輯
+ *
+ * 職責：
+ * - 管理 Web Worker 的生命週期
+ * - 處理拖放與多檔案選擇
+ * - 控制 UI 狀態（上傳 / 清單）
+ * - 管理轉換佇列（依序轉換）
+ * - 觸發 Markdown 檔案下載與 ZIP 打包
+ */
+
+// ── DOM 元素 ──────────────────────────────────────────────────────────────
+
+const engineStatus      = document.getElementById('engine-status');
+const engineStatusText  = document.getElementById('engine-status-text');
+const dropZone          = document.getElementById('drop-zone');
+const fileInput         = document.getElementById('file-input');
+const errorBanner       = document.getElementById('error-banner');
+const errorMessage      = document.getElementById('error-message');
+const btnErrorDismiss   = document.getElementById('btn-error-dismiss');
+const engineProgressBar = document.getElementById('engine-progress-bar');
+const engineProgressText = document.getElementById('engine-progress-text');
+const fileList           = document.getElementById('file-list');
+const listProgressText   = document.getElementById('list-progress-text');
+const btnDownloadZip        = document.getElementById('btn-download-zip');
+const btnDownloadZipFooter       = document.getElementById('btn-download-zip-footer');
+const listProgressTextFooter     = document.getElementById('list-progress-text-footer');
+const btnRestart            = document.getElementById('btn-restart');
+const btnRestartFooter      = document.getElementById('btn-restart-footer');
+const urlInput         = document.getElementById('url-input');
+const btnFetchUrl      = document.getElementById('btn-fetch-url');
+const urlOfflineHint   = document.getElementById('url-offline-hint');
+const urlLimitError    = document.getElementById('url-limit-error');
+const urlInputHint     = document.getElementById('url-input-hint');
+
+// ── 狀態管理 ──────────────────────────────────────────────────────────────
+
+const STATES = {
+  UPLOAD: 'state-upload',
+  LIST:   'state-list',
+};
+
+let currentState = STATES.UPLOAD;
+
+function showState(stateName) {
+  currentState = stateName;
+  Object.values(STATES).forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.classList.toggle('state-section--active', id === stateName);
+  });
+}
+
+// ── Web Worker 管理 ───────────────────────────────────────────────────────
+
+let worker = null;
+let isEngineReady = false;
+let isOnline      = false;
+let fileQueue    = [];   // FileItem[]
+let currentIndex = -1;  // 目前正在轉換的索引
+let currentFetchController = null; // URL 抓取的 AbortController
+
+let useServerEngine = false;
+let backendApiBase = '';
+const currentPath = window.location.pathname;
+const basePath = currentPath.endsWith('/') 
+  ? currentPath 
+  : currentPath.substring(0, currentPath.lastIndexOf('/') + 1);
+
+// ── Webcom 後端伺服器檢測與原生轉換 ──────────────────────────────────────────
+async function checkBackendHealth() {
+  const candidateEndpoints = [
+    '/health',
+    'http://127.0.0.1:8001/health',
+    'http://127.0.0.1:8002/health'
+  ];
+  for (const ep of candidateEndpoints) {
+    try {
+      const res = await fetch(ep);
+      if (res.ok) {
+        const data = await res.json();
+        if (data && (data.service || data.status === 'online')) {
+          backendApiBase = ep.replace('/health', '');
+          console.log('[Webcom] 後端服務連線成功:', ep, data);
+          useServerEngine = true;
+          isEngineReady = true;
+          setEngineStatus('ready', 'Webcom 原生核心 (就緒)');
+          dropZone.classList.remove('drop-zone--disabled');
+          urlInput.disabled = false;
+          const statusEl = document.getElementById('upload-engine-status');
+          if (statusEl) statusEl.hidden = true;
+          return true;
+        }
+      }
+    } catch (e) {}
+  }
+  return false;
+}
+
+// 頁面載入時即時檢查 Webcom 後端
+checkBackendHealth();
+
+async function convertWithServer(buffer, filename) {
+  const bytes = new Uint8Array(buffer);
+  let binary = '';
+  const len = bytes.byteLength;
+  const chunkSize = 8192;
+  for (let i = 0; i < len; i += chunkSize) {
+    binary += String.fromCharCode.apply(null, bytes.subarray(i, Math.min(i + chunkSize, len)));
+  }
+  const b64 = btoa(binary);
+  const convertUrl = (backendApiBase || '') + '/api/convert';
+  const resp = await fetch(convertUrl, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ filename, data_base64: b64 })
+  });
+  if (!resp.ok) {
+    const err = await resp.json().catch(() => ({ detail: '轉換失敗' }));
+    throw new Error(err.detail || '轉換失敗');
+  }
+  const data = await resp.json();
+  return data.markdown || '';
+}
+
+function createWorker() {
+  try {
+    worker = new Worker(basePath + 'js/converter.worker.js');
+  } catch (e) {
+    console.warn('Worker 建立失敗，啟用 Webcom 後端模式:', e);
+    useServerEngine = true;
+    checkBackendHealth();
+    return;
+  }
+
+  worker.onmessage = (event) => {
+    const { type, message, markdown, percent } = event.data;
+
+    switch (type) {
+      case 'ready':
+        isEngineReady = true;
+        useServerEngine = false; // Pyodide WASM 已就緒，以客戶端為主
+        setEngineStatus('ready', '雙引擎就緒 (WASM / 原生)');
+        // 等進度條 100% 的 transition（0.5s）播完後，同步顯示文件框並隱藏進度條
+        setTimeout(() => {
+          dropZone.classList.remove('drop-zone--disabled');
+          if (isOnline) {
+            urlInput.disabled = false;
+            // 按鈕保持禁用，待 textarea 有有效輸入後由 input 事件啟用
+          }
+          document.getElementById('upload-engine-status').hidden = true;
+        }, 600);
+        break;
+
+      case 'progress':
+        if (!isEngineReady) {
+          if (engineProgressText) engineProgressText.textContent = message;
+          if (engineProgressBar && typeof percent === 'number') {
+            engineProgressBar.style.width = `${percent}%`;
+          }
+        }
+        break;
+
+      case 'result': {
+        const item = fileQueue[currentIndex];
+        if (item) {
+          item.status = 'done';
+          item.markdown = markdown;
+          item.charCount = markdown.length;
+          item.lineCount = markdown.split('\n').length;
+          item.duration = Date.now() - item._startTime;
+          updateFileItem(item);
+          updateListHeader();
+        }
+        processNextFile();
+        break;
+      }
+
+      case 'error': {
+        if (!isEngineReady) {
+          // 若 Pyodide 尚未下載套件，檢查是否有 Webcom 後端可用
+          checkBackendHealth().then(hasBackend => {
+            if (hasBackend) {
+              useServerEngine = true;
+              isEngineReady = true;
+              setEngineStatus('ready', 'Webcom 原生核心 (就緒)');
+              dropZone.classList.remove('drop-zone--disabled');
+              urlInput.disabled = false;
+              const statusEl = document.getElementById('upload-engine-status');
+              if (statusEl) statusEl.hidden = true;
+            } else {
+              showError(message || '未知錯誤', '初始化失敗');
+              setEngineStatus('error', '引擎錯誤');
+              document.getElementById('upload-engine-status').hidden = true;
+            }
+          });
+        } else {
+          // 轉換階段的錯誤：更新對應檔案項目
+          const item = fileQueue[currentIndex];
+          if (item) {
+            item.status = 'error';
+            item.errorMessage = message || '轉換失敗';
+            updateFileItem(item);
+            updateListHeader();
+          }
+          processNextFile();
+        }
+        break;
+      }
+    }
+  };
+
+  worker.onerror = (err) => {
+    checkBackendHealth().then(hasBackend => {
+      if (hasBackend) {
+        useServerEngine = true;
+        isEngineReady = true;
+        setEngineStatus('ready', 'Webcom 原生核心 (就緒)');
+        dropZone.classList.remove('drop-zone--disabled');
+        urlInput.disabled = false;
+        const statusEl = document.getElementById('upload-engine-status');
+        if (statusEl) statusEl.hidden = true;
+      } else {
+        showError(`Worker 發生錯誤：${err.message}`, '初始化失敗');
+        setEngineStatus('error', '引擎錯誤');
+        document.getElementById('upload-engine-status').hidden = true;
+        showState(STATES.UPLOAD);
+      }
+    });
+  };
+}
+
+/** 更新引擎狀態指示器 */
+function setEngineStatus(state, text) {
+  engineStatus.className = `engine-status engine-status--${state}`;
+  engineStatusText.textContent = text;
+}
+
+
+/** 安全解碼 URI，失敗時回傳原始字串 */
+function safeDecodeURI(str) {
+  try { return decodeURIComponent(str); } catch { return str; }
+}
+
+// ── 檔案處理 ──────────────────────────────────────────────────────────────
+
+const SUPPORTED_EXTENSIONS = new Set([
+  'pdf', 'docx', 'xlsx', 'pptx',
+  'html', 'htm', 'csv', 'epub',
+]);
+
+/** Content-Type → 副檔名對應表 */
+const MIME_TO_EXT = {
+  'text/html': '.html',
+  'application/pdf': '.pdf',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document': '.docx',
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': '.xlsx',
+  'application/vnd.openxmlformats-officedocument.presentationml.presentation': '.pptx',
+  'text/csv': '.csv',
+  'application/epub+zip': '.epub',
+};
+
+/**
+ * 從 Content-Type header 取得 MIME type（忽略 charset 等參數）
+ * @param {string} contentType
+ * @returns {string}
+ */
+function parseMimeType(contentType) {
+  return (contentType || '').split(';')[0].trim().toLowerCase();
+}
+
+/**
+ * 清理字串使其可作為檔名（移除檔案系統不允許的字元）
+ * @param {string} name
+ * @returns {string}
+ */
+function sanitizeFilename(name) {
+  return name.replace(/[<>:"/\\|?*\x00-\x1f]/g, '').trim();
+}
+
+/**
+ * 從 URL、Content-Type 及可選的頁面標題產生檔名
+ * @param {string} urlString
+ * @param {string} mimeType - 已解析的 MIME type
+ * @param {string} [pageTitle] - 頁面 <title>（可選）
+ * @returns {string|null}
+ */
+function generateFilename(urlString, mimeType, pageTitle) {
+  const ext = MIME_TO_EXT[mimeType];
+  if (!ext) return null; // 不支援的類型
+
+  // 優先使用頁面標題
+  if (pageTitle) {
+    const sanitized = sanitizeFilename(pageTitle);
+    if (sanitized) return sanitized + ext;
+  }
+
+  let baseName;
+  try {
+    const url = new URL(urlString);
+    const pathSegments = url.pathname.split('/').filter(Boolean);
+    const lastSegment = pathSegments[pathSegments.length - 1] || '';
+
+    if (lastSegment) {
+      // 去除原有副檔名
+      const dotIndex = lastSegment.lastIndexOf('.');
+      baseName = dotIndex > 0 ? lastSegment.slice(0, dotIndex) : lastSegment;
+    } else {
+      baseName = url.hostname;
+    }
+  } catch {
+    baseName = 'page';
+  }
+
+  return baseName + ext;
+}
+
+/** 驗證副檔名是否支援 */
+function isSupportedFile(filename) {
+  const ext = filename.split('.').pop()?.toLowerCase() ?? '';
+  return SUPPORTED_EXTENSIONS.has(ext);
+}
+
+/**
+ * 若 filename 已存在於 existingNames，
+ * 在主檔名後附加 (1)、(2)… 直到不重複為止。
+ * @param {string} filename
+ * @param {Set<string>} existingNames
+ * @returns {string}
+ */
+function deduplicateFilename(filename, existingNames) {
+  if (!existingNames.has(filename)) return filename;
+  const lastDot = filename.lastIndexOf('.');
+  const base = lastDot !== -1 ? filename.slice(0, lastDot) : filename;
+  const ext  = lastDot !== -1 ? filename.slice(lastDot) : '';
+  let n = 1;
+  let candidate;
+  do { candidate = `${base} (${n++})${ext}`; } while (existingNames.has(candidate));
+  return candidate;
+}
+
+const MAX_URLS = 10;
+
+/**
+ * 解析 textarea 文字為 URL 物件陣列
+ * @param {string} text - textarea 內容
+ * @returns {{ entries: Array<{url: string, valid: boolean}>, error: string|null }}
+ */
+function parseUrls(text) {
+  const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
+  if (lines.length === 0) return { entries: [], error: null };
+
+  // 去重（保留第一個出現的）
+  const unique = [...new Set(lines)];
+
+  // 上限檢查
+  if (unique.length > MAX_URLS) {
+    return { entries: [], error: `已輸入 ${unique.length} 個網址，最多 ${MAX_URLS} 個` };
+  }
+
+  // 驗證每個 URL
+  const entries = unique.map(url => ({
+    url,
+    valid: /^https?:\/\//i.test(url),
+  }));
+
+  return { entries, error: null };
+}
+
+/**
+ * 建立 FileItem 物件
+ * @param {File} file
+ * @param {Set<string>} existingNames - 已使用的檔名集合（用於去重）
+ * @returns {Object}
+ */
+function createFileItem(file, existingNames = new Set()) {
+  const filename  = deduplicateFilename(file.name, existingNames);
+  const ext       = file.name.split('.').pop()?.toLowerCase() ?? '';
+  const supported = isSupportedFile(file.name);
+  return {
+    id: crypto.randomUUID(),
+    file,
+    filename,
+    status: supported ? 'queued' : 'error',
+    errorMessage: supported ? '' : `不支援的格式：.${ext}`,
+    markdown: '',
+    charCount: 0,
+    lineCount: 0,
+    duration: 0,
+    _startTime: 0,
+    expanded: false,
+  };
+}
+
+/**
+ * 從多個 URL 逐一抓取內容並建立虛擬 FileItem 送入轉換佇列
+ * @param {Array<{url: string, valid: boolean}>} urlEntries
+ */
+async function fetchAndConvertMultiple(urlEntries) {
+  // 取消前一次尚未完成的批次（防禦性）
+  currentFetchController?.abort();
+  currentFetchController = new AbortController();
+  const signal = currentFetchController.signal;
+
+  // 建立所有 FileItem
+  const items = urlEntries.map(entry => ({
+    id: crypto.randomUUID(),
+    file: null,
+    arrayBuffer: null,
+    filename: entry.url,
+    status: entry.valid ? 'queued' : 'error',
+    errorMessage: entry.valid ? '' : '網址格式無效',
+    markdown: '',
+    charCount: 0,
+    lineCount: 0,
+    duration: 0,
+    _startTime: 0,
+    expanded: false,
+    fetchProgress: null,
+  }));
+
+  // 切換到列表視圖
+  fileQueue = items;
+  currentIndex = -1;
+  urlInput.value = '';
+  showState(STATES.LIST);
+  renderFileList();
+
+  // 逐一抓取有效的 URL
+  for (const item of items) {
+    if (item.status !== 'queued') continue;
+    if (signal.aborted) break;
+
+    // 更新為 fetching 狀態
+    item.status = 'fetching';
+    item._startTime = Date.now();
+    updateFileItem(item);
+    updateListHeader();
+
+    try {
+      const itemController = new AbortController();
+      const fetchTimer = setTimeout(() => itemController.abort(), 90000);
+      // 批次取消時也取消單一請求
+      const onBatchAbort = () => itemController.abort();
+      signal.addEventListener('abort', onBatchAbort, { once: true });
+
+      let response;
+      try {
+        response = await fetch(
+          `${backendApiBase || ''}/api/fetch-url?url=${encodeURIComponent(item.filename)}`,
+          { signal: itemController.signal }
+        );
+      } catch (err) {
+        // 判斷是批次取消還是單一超時
+        if (signal.aborted) throw err; // 往外拋給批次 abort 處理
+        throw new Error('請求超時（20 秒）');
+      } finally {
+        clearTimeout(fetchTimer);
+        signal.removeEventListener('abort', onBatchAbort);
+      }
+
+      // 檢查 item 是否仍在佇列中
+      if (!fileQueue.includes(item)) continue;
+
+      if (!response.ok) {
+        let errMsg = `抓取失敗（${response.status}）`;
+        try {
+          const errData = await response.json();
+          if (errData.error) errMsg = errData.error;
+        } catch { /* ignore parse error */ }
+        item.status = 'error';
+        item.errorMessage = errMsg;
+        updateFileItem(item);
+        updateListHeader();
+        continue;
+      }
+
+      const contentType = response.headers.get('content-type') || '';
+      const mimeType = parseMimeType(contentType);
+      const rawTitle = response.headers.get('x-page-title');
+      const pageTitle = rawTitle ? decodeURIComponent(rawTitle) : '';
+      const filename = generateFilename(item.filename, mimeType, pageTitle);
+
+      if (!filename) {
+        item.status = 'error';
+        item.errorMessage = `不支援的內容類型：${mimeType || '未知'}`;
+        updateFileItem(item);
+        updateListHeader();
+        continue;
+      }
+
+      // ── 逐塊讀取 response body，追蹤下載進度 ──
+      const contentLength = parseInt(response.headers.get('content-length') || '0', 10);
+      item.fetchProgress = { loaded: 0, total: contentLength, percent: contentLength > 0 ? 0 : -1 };
+      if (contentLength > 0) {
+        updateFileItem(item); // 切換為確定進度模式，需重建 DOM
+      }
+
+      const reader = response.body.getReader();
+      const chunks = [];
+      let loaded = 0;
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        chunks.push(value);
+        loaded += value.length;
+        item.fetchProgress.loaded = loaded;
+        if (contentLength > 0) {
+          item.fetchProgress.percent = Math.min(Math.round((loaded / contentLength) * 100), 100);
+        }
+        updateFetchProgress(item);
+      }
+
+      // 再次檢查 item 是否仍在佇列中
+      if (!fileQueue.includes(item)) continue;
+
+      // 合併 chunks 為 ArrayBuffer
+      const totalLength = chunks.reduce((sum, c) => sum + c.length, 0);
+      const merged = new Uint8Array(totalLength);
+      let offset = 0;
+      for (const chunk of chunks) {
+        merged.set(chunk, offset);
+        offset += chunk.length;
+      }
+      const arrayBuffer = merged.buffer;
+
+      // ── 完成過渡：顯示 100% 停留 0.5 秒 ──
+      item.fetchProgress.percent = 100;
+      updateFetchProgress(item);
+      await new Promise(r => setTimeout(r, 500));
+
+      // 更新 FileItem 並進入轉換流程
+      const usedNames = new Set(fileQueue.filter(i => i !== item).map(i => i.filename));
+      item.filename = deduplicateFilename(filename, usedNames);
+      item.arrayBuffer = arrayBuffer;
+      item.status = 'waiting';
+      updateFileItem(item);
+      processNextFile();
+    } catch (err) {
+      if (err.name === 'AbortError') break;
+      if (!fileQueue.includes(item)) continue;
+      item.status = 'error';
+      item.errorMessage = `抓取時發生錯誤：${err.message}`;
+      updateFileItem(item);
+      updateListHeader();
+    }
+  }
+
+  // 整個迴圈結束後才清除 controller
+  currentFetchController = null;
+}
+
+/**
+ * 接收選取的檔案，初始化佇列並切換至清單狀態。
+ * @param {FileList|File[]} files
+ */
+function handleFiles(files) {
+  if (!isEngineReady) {
+    showError('請等待轉換引擎完成載入後再上傳檔案。');
+    return;
+  }
+  const seen = new Set();
+  fileQueue = Array.from(files).map(file => {
+    const item = createFileItem(file, seen);
+    seen.add(item.filename);
+    return item;
+  });
+  currentIndex = -1;
+  showState(STATES.LIST);
+  renderFileList();
+  processNextFile();
+}
+
+
+// ── 下載功能 ──────────────────────────────────────────────────────────────
+
+/**
+ * 下載單一 FileItem 的 Markdown 輸出
+ * @param {Object} item - FileItem (status === 'done')
+ */
+function downloadFile(item) {
+  const filename = safeDecodeURI(item.filename).replace(/\.[^.]+$/, '.md');
+  const blob = new Blob([item.markdown], { type: 'text/markdown;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+/** 將所有 done 項目打包成 ZIP 下載 */
+async function downloadAllZip() {
+  const doneItems = fileQueue.filter(i => i.status === 'done');
+  if (doneItems.length === 0) return;
+
+  const zip = new JSZip();
+  doneItems.forEach(item => {
+    const filename = safeDecodeURI(item.filename).replace(/\.[^.]+$/, '.md');
+    zip.file(filename, item.markdown);
+  });
+
+  const blob = await zip.generateAsync({ type: 'blob' });
+  const now = new Date();
+  const ts = now.getFullYear().toString()
+    + String(now.getMonth() + 1).padStart(2, '0')
+    + String(now.getDate()).padStart(2, '0')
+    + '-'
+    + String(now.getHours()).padStart(2, '0')
+    + String(now.getMinutes()).padStart(2, '0')
+    + String(now.getSeconds()).padStart(2, '0');
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `markitdown_${ts}.zip`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+// ── 錯誤顯示 ──────────────────────────────────────────────────────────────
+
+function showError(message, title = '轉換失敗') {
+  document.getElementById('error-title').textContent = title;
+  errorMessage.textContent = message;
+  errorBanner.removeAttribute('hidden');
+}
+
+function dismissError() {
+  errorBanner.setAttribute('hidden', '');
+  errorMessage.textContent = '';
+}
+
+// ── 清單渲染 ──────────────────────────────────────────────────────────────
+
+function escapeHtml(str) {
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+/**
+ * 根據 FileItem 建立 <li> 元素
+ * @param {Object} item - FileItem
+ * @returns {HTMLLIElement}
+ */
+function createFileItemEl(item) {
+  const li = document.createElement('li');
+  li.className = `file-item file-item--${item.status}`;
+  li.dataset.id = item.id;
+
+  const iconContent = (item.status === 'converting' || item.status === 'fetching')
+    ? '<div class="spinner-small"></div>'
+    : '';
+
+  const metaText = item.status === 'done'
+    ? `${item.charCount.toLocaleString()} 字 · ${(item.duration / 1000).toFixed(1)}s`
+    : item.status === 'error'
+      ? escapeHtml(item.errorMessage)
+      : item.status === 'fetching'
+        ? '抓取中...'
+        : item.status === 'converting'
+          ? '轉換中...'
+          : item.status === 'queued'
+            ? '排隊中'
+            : '';
+
+  const CIRCUMFERENCE = 2 * Math.PI * 11; // r=11, ≈ 69.115
+  let progressRingHtml = '';
+  if (item.status === 'fetching') {
+    const p = item.fetchProgress;
+    const percent = p ? p.percent : -1;
+    const isIndeterminate = percent < 0;
+    const offset = isIndeterminate ? 0 : CIRCUMFERENCE * (1 - percent / 100);
+    const dasharray = isIndeterminate ? '25 44' : CIRCUMFERENCE.toFixed(2);
+    const pctText = isIndeterminate ? '' : `${percent}%`;
+    progressRingHtml = `
+      <span class="progress-ring${isIndeterminate ? ' progress-ring--indeterminate' : ''}">
+        <svg width="28" height="28" viewBox="0 0 28 28">
+          <circle class="progress-ring__track" cx="14" cy="14" r="11"
+            fill="none" stroke="var(--color-border)" stroke-width="2.5"/>
+          <circle class="progress-ring__bar" cx="14" cy="14" r="11"
+            fill="none" stroke="var(--color-highlight)" stroke-width="2.5" stroke-linecap="round"
+            stroke-dasharray="${dasharray}" stroke-dashoffset="${offset.toFixed(2)}"/>
+        </svg>
+        <span class="progress-ring__pct">${pctText}</span>
+      </span>`;
+  }
+
+  const isDone = item.status === 'done';
+  const previewLabel = item.expanded ? '收起' : '預覽';
+  const previewContent = item.expanded ? escapeHtml(item.markdown) : '';
+
+  li.innerHTML = `
+    <div class="file-item__row">
+      <span class="file-item__icon" aria-hidden="true">${iconContent}</span>
+      <span class="file-item__name" title="${escapeHtml(safeDecodeURI(item.filename))}">${escapeHtml(safeDecodeURI(item.filename))}</span>
+      <span class="file-item__meta">${metaText}${progressRingHtml}</span>
+      <button class="file-item__btn-preview" type="button"${isDone ? '' : ' hidden'}>${previewLabel}</button>
+      <button class="file-item__btn-download" type="button"${isDone ? '' : ' hidden'}>下載</button>
+    </div>
+    <div class="file-item__preview"${item.expanded ? '' : ' hidden'}>
+      <pre><code>${previewContent}</code></pre>
+    </div>
+  `;
+  return li;
+}
+
+/**
+ * 以最新 item 資料替換 fileList 中既有的 <li>，
+ * 若不存在則附加至末尾。
+ * @param {Object} item - FileItem
+ */
+function updateFileItem(item) {
+  const existing = fileList.querySelector(`[data-id="${item.id}"]`);
+  const newEl = createFileItemEl(item);
+  if (existing) {
+    existing.replaceWith(newEl);
+  } else {
+    fileList.appendChild(newEl);
+  }
+}
+
+/**
+ * 輕量更新抓取進度 — 只修改 SVG 屬性和百分比文字，不重建 DOM。
+ * @param {Object} item - FileItem
+ */
+function updateFetchProgress(item) {
+  const el = fileList.querySelector(`[data-id="${item.id}"]`);
+  if (!el) return;
+  const ring = el.querySelector('.progress-ring');
+  const bar = el.querySelector('.progress-ring__bar');
+  const pct = el.querySelector('.progress-ring__pct');
+  if (!ring || !bar || !pct) return;
+
+  const p = item.fetchProgress;
+  if (!p || p.percent < 0) return;
+
+  const CIRCUMFERENCE = 2 * Math.PI * 11;
+  if (ring.classList.contains('progress-ring--indeterminate')) {
+    ring.classList.remove('progress-ring--indeterminate');
+    bar.setAttribute('stroke-dasharray', CIRCUMFERENCE.toFixed(2));
+  }
+  bar.style.strokeDashoffset = (CIRCUMFERENCE * (1 - p.percent / 100)).toFixed(2);
+  pct.textContent = `${p.percent}%`;
+}
+
+function updateListHeader() {
+  const total  = fileQueue.length;
+  const done   = fileQueue.filter(i => i.status === 'done').length;
+  const failed = fileQueue.filter(i => i.status === 'error').length;
+
+  const isProcessing = fileQueue.some(i => i.status === 'queued' || i.status === 'fetching' || i.status === 'converting' || i.status === 'waiting');
+  const failedNote = failed > 0 ? `（${failed} 個失敗）` : '';
+  const progressText = `${done} / ${total} 完成${failedNote}`;
+  listProgressText.textContent = progressText;
+  listProgressTextFooter.textContent = progressText;
+  const zipDisabled = done === 0 || isProcessing;
+  btnDownloadZip.disabled = zipDisabled;
+  btnDownloadZipFooter.disabled = zipDisabled;
+  btnRestart.disabled = isProcessing;
+  btnRestartFooter.disabled = isProcessing;
+}
+
+function renderFileList() {
+  fileList.innerHTML = '';
+  fileQueue.forEach(item => fileList.appendChild(createFileItemEl(item)));
+  updateListHeader();
+}
+
+/**
+ * 找出佇列中下一個 waiting 項目並送給 Worker 轉換。
+ * 若無則更新 header 後結束。
+ */
+function processNextFile() {
+  const nextIndex = fileQueue.findIndex(
+    (item, i) => i > currentIndex && (item.status === 'waiting' || (item.status === 'queued' && item.file))
+  );
+
+  if (nextIndex === -1) {
+    updateListHeader();
+    return;
+  }
+
+  currentIndex = nextIndex;
+  const item = fileQueue[currentIndex];
+  item.status = 'converting';
+  if (!item._startTime) item._startTime = Date.now();
+  updateFileItem(item);
+
+  // 若使用 Webcom 後端原生引擎
+  if (useServerEngine || !worker) {
+    const handleServerConvert = async (buffer) => {
+      try {
+        const md = await convertWithServer(buffer, item.filename);
+        item.status = 'done';
+        item.markdown = md;
+        item.charCount = md.length;
+        item.lineCount = md.split('\n').length;
+        item.duration = Date.now() - item._startTime;
+        updateFileItem(item);
+        updateListHeader();
+        processNextFile();
+      } catch (err) {
+        item.status = 'error';
+        item.errorMessage = err.message || 'Webcom 後端轉換失敗';
+        updateFileItem(item);
+        updateListHeader();
+        processNextFile();
+      }
+    };
+
+    if (item.arrayBuffer) {
+      const buffer = item.arrayBuffer;
+      item.arrayBuffer = null;
+      handleServerConvert(buffer);
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (e) => handleServerConvert(e.target.result);
+    reader.onerror = () => {
+      item.status = 'error';
+      item.errorMessage = '無法讀取檔案';
+      updateFileItem(item);
+      updateListHeader();
+      processNextFile();
+    };
+    reader.readAsArrayBuffer(item.file);
+    return;
+  }
+
+  // URL 抓取的虛擬 FileItem 已有 arrayBuffer，直接送入 Worker
+  if (item.arrayBuffer) {
+    const buffer = item.arrayBuffer;
+    item.arrayBuffer = null; // 轉移後釋放參考
+    try {
+      worker.postMessage(
+        { type: 'convert', file: buffer, filename: item.filename },
+        [buffer]
+      );
+    } catch (err) {
+      item.status = 'error';
+      item.errorMessage = '無法傳送檔案至 Worker';
+      updateFileItem(item);
+      updateListHeader();
+      processNextFile();
+    }
+    return;
+  }
+
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    worker.postMessage(
+      { type: 'convert', file: e.target.result, filename: item.filename },
+      [e.target.result]
+    );
+  };
+  reader.onerror = () => {
+    item.status = 'error';
+    item.errorMessage = '無法讀取檔案';
+    updateFileItem(item);
+    updateListHeader();
+    processNextFile();
+  };
+  reader.readAsArrayBuffer(item.file);
+}
+
+// ── 拖放事件 ──────────────────────────────────────────────────────────────
+
+dropZone.addEventListener('dragover', (e) => {
+  e.preventDefault();
+  if (!dropZone.classList.contains('drop-zone--disabled')) {
+    dropZone.classList.add('drop-zone--dragging');
+  }
+});
+
+dropZone.addEventListener('dragleave', (e) => {
+  if (!dropZone.contains(e.relatedTarget)) {
+    dropZone.classList.remove('drop-zone--dragging');
+  }
+});
+
+dropZone.addEventListener('drop', (e) => {
+  e.preventDefault();
+  e.stopPropagation();
+  dropZone.classList.remove('drop-zone--dragging');
+  const files = e.dataTransfer?.files;
+  if (files?.length) handleFiles(files);
+});
+
+dropZone.addEventListener('click', () => {
+  if (!dropZone.classList.contains('drop-zone--disabled')) {
+    fileInput.click();
+  }
+});
+
+dropZone.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' || e.key === ' ') {
+    e.preventDefault();
+    if (!dropZone.classList.contains('drop-zone--disabled')) {
+      fileInput.click();
+    }
+  }
+});
+
+fileInput.addEventListener('change', () => {
+  const files = fileInput.files;
+  if (!files?.length) return;
+  handleFiles(files);
+  fileInput.value = '';
+});
+
+// ── 按鈕事件 ──────────────────────────────────────────────────────────────
+
+/** 重置所有狀態，回到初始上傳畫面 */
+function resetToUpload() {
+  currentFetchController?.abort();
+  currentFetchController = null;
+  fileQueue = [];
+  currentIndex = -1;
+  fileList.innerHTML = '';
+  urlInput.value = '';
+  fileInput.value = '';
+  dismissError();
+  urlLimitError.setAttribute('hidden', '');
+  urlInputHint.textContent = `每行一個網址，最多 ${MAX_URLS} 個`;
+  urlInputHint.removeAttribute('hidden');
+  urlInput.disabled = !(isOnline && isEngineReady);
+  btnFetchUrl.disabled = true;
+  btnFetchUrl.textContent = '轉換';
+  if (isEngineReady) {
+    dropZone.classList.remove('drop-zone--disabled');
+  }
+  fileInput.disabled = false;
+  showState(STATES.UPLOAD);
+}
+
+btnRestart.addEventListener('click', resetToUpload);
+btnRestartFooter.addEventListener('click', resetToUpload);
+btnErrorDismiss.addEventListener('click', dismissError);
+
+// 清單項目互動（下載、預覽切換）
+fileList.addEventListener('click', (e) => {
+  const li = e.target.closest('[data-id]');
+  if (!li) return;
+  const item = fileQueue.find(i => i.id === li.dataset.id);
+  if (!item) return;
+
+  if (e.target.closest('.file-item__btn-download')) {
+    downloadFile(item);
+  } else if (e.target.closest('.file-item__btn-preview')) {
+    item.expanded = !item.expanded;
+    updateFileItem(item);
+  }
+});
+
+btnDownloadZip.addEventListener('click', downloadAllZip);
+btnDownloadZipFooter.addEventListener('click', downloadAllZip);
+
+// URL 輸入即時計數
+urlInput.addEventListener('input', () => {
+  const lines = urlInput.value.split('\n').map(l => l.trim()).filter(Boolean);
+  const count = [...new Set(lines)].length;
+  if (count === 0) {
+    urlInputHint.textContent = `每行一個網址，最多 ${MAX_URLS} 個`;
+    urlLimitError.setAttribute('hidden', '');
+    urlInputHint.removeAttribute('hidden');
+    btnFetchUrl.disabled = true;
+  } else if (count > MAX_URLS) {
+    urlLimitError.textContent = `已輸入 ${count} 個網址，最多 ${MAX_URLS} 個`;
+    urlInputHint.setAttribute('hidden', '');
+    urlLimitError.removeAttribute('hidden');
+    btnFetchUrl.disabled = true;
+  } else {
+    urlInputHint.textContent = `已輸入 ${count} 個網址，最多 ${MAX_URLS} 個`;
+    urlLimitError.setAttribute('hidden', '');
+    urlInputHint.removeAttribute('hidden');
+    btnFetchUrl.disabled = false;
+  }
+});
+
+// URL 批次抓取
+btnFetchUrl.addEventListener('click', () => {
+  const text = urlInput.value.trim();
+  if (!text) return;
+
+  // 重置提示狀態
+  urlLimitError.setAttribute('hidden', '');
+  urlInputHint.removeAttribute('hidden');
+
+  const { entries, error } = parseUrls(text);
+
+  if (error) {
+    urlInputHint.setAttribute('hidden', '');
+    urlLimitError.textContent = error;
+    urlLimitError.removeAttribute('hidden');
+    return;
+  }
+
+  if (entries.length === 0) return;
+
+  fetchAndConvertMultiple(entries);
+});
+
+// ── 離線狀態偵測 ──────────────────────────────────────────────────────────
+
+const offlineBanner = document.getElementById('offline-banner');
+
+/**
+ * 透過實際 fetch 確認真實連線狀態。
+ *
+ * 不使用 navigator.onLine：在 iOS Safari 等行動瀏覽器上，
+ * 即使完全離線也可能回傳 true，不可靠。
+ *
+ * 請求帶 _sw_bypass 參數，SW 會略過快取直接打網路；
+ * 離線時 fetch 拋出錯誤，即可確認為離線狀態。
+ */
+async function checkConnectivity() {
+  try {
+    await fetch(`${basePath}sw.js?_sw_bypass=1&_t=${Date.now()}`, {
+      method: 'HEAD',
+      cache: 'no-store',
+    });
+    isOnline = true;
+    offlineBanner.setAttribute('hidden', '');
+    urlOfflineHint.setAttribute('hidden', '');
+    if (isEngineReady) {
+      urlInput.disabled = false;
+      // 按鈕依 textarea 內容決定，觸發 input 事件重新判斷
+      urlInput.dispatchEvent(new Event('input'));
+    }
+  } catch {
+    isOnline = false;
+    offlineBanner.removeAttribute('hidden');
+    urlOfflineHint.removeAttribute('hidden');
+    urlInput.disabled = true;
+    btnFetchUrl.disabled = true;
+  }
+}
+
+window.addEventListener('online', checkConnectivity);
+window.addEventListener('offline', checkConnectivity);
+
+// 手機切換 app 或螢幕解鎖後回到前景時重新檢查
+// （mobile 瀏覽器在背景時可能不觸發 offline/online 事件）
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') checkConnectivity();
+});
+
+// 定時輪詢：補足行動瀏覽器 offline/online 事件不可靠的問題
+// 頁面不可見時跳過，避免浪費資源
+setInterval(() => {
+  if (document.visibilityState === 'visible') checkConnectivity();
+}, 5000);
+
+checkConnectivity();
+
+// ── 初始化 ────────────────────────────────────────────────────────────────
+
+// 啟動 Web Worker
+createWorker();

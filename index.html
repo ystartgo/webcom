@@ -265,11 +265,11 @@
                 </h1>
             </div>
             <div class="flex items-center gap-2">
-                <a href="/markitdown/" target="_blank" id="btn-open-markitdown"
-                    class="text-xs px-2.5 py-1 rounded-md bg-amber-950/70 hover:bg-amber-900 text-amber-300 border border-amber-700/60 flex items-center gap-1.5 font-semibold transition shadow-sm"
+                <button id="btn-open-markitdown"
+                    class="text-xs px-2.5 py-1 rounded-md bg-amber-950/70 hover:bg-amber-900 text-amber-300 border border-amber-700/60 flex items-center gap-1.5 font-semibold transition shadow-sm cursor-pointer"
                     title="開啟 MarkItDown 文件轉換器 (PDF/Word/Excel/PPT 轉 Markdown)">
                     <i data-lucide="file-text" class="w-3.5 h-3.5"></i> <span>MarkItDown</span>
-                </a>
+                </button>
                 <button id="btn-launch-daemon"
                     class="text-xs px-2.5 py-1 rounded-md bg-purple-950/70 hover:bg-purple-900 text-purple-300 border border-purple-700/60 flex items-center gap-1.5 font-semibold transition shadow-sm"
                     title="一鍵呼叫 start_daemon.bat 啟動常駐程式" data-i18n-title="tooltipLaunchDaemon">
@@ -12202,6 +12202,49 @@ Important guidelines:
         function openDaemonModal() {
             checkDaemonHealth();
             daemonModal.classList.remove('hidden');
+        }
+
+        // Open MarkItDown with Auto-Wakeup Daemon
+        const btnOpenMarkitdown = document.getElementById('btn-open-markitdown');
+        if (btnOpenMarkitdown) {
+            btnOpenMarkitdown.addEventListener('click', async (e) => {
+                e.preventDefault();
+                const markitdownUrl = `${appSettings.daemonEndpoint}/markitdown/`;
+
+                // 1. Check if daemon is already online
+                const isOnline = await checkDaemonHealth();
+                if (isOnline) {
+                    window.open(markitdownUrl, '_blank');
+                    return;
+                }
+
+                // 2. If daemon is not running, wake up daemon
+                btnOpenMarkitdown.classList.add('animate-pulse');
+                const origHtml = btnOpenMarkitdown.innerHTML;
+                btnOpenMarkitdown.innerHTML = `<i data-lucide="loader-2" class="w-3.5 h-3.5 animate-spin"></i> <span>喚醒服務中...</span>`;
+                if (window.lucide) lucide.createIcons();
+
+                triggerWebcomProtocol();
+
+                let attempts = 0;
+                const poll = setInterval(async () => {
+                    attempts++;
+                    const ok = await checkDaemonHealth();
+                    if (ok) {
+                        clearInterval(poll);
+                        btnOpenMarkitdown.classList.remove('animate-pulse');
+                        btnOpenMarkitdown.innerHTML = origHtml;
+                        if (window.lucide) lucide.createIcons();
+                        window.open(markitdownUrl, '_blank');
+                    } else if (attempts >= 12) {
+                        clearInterval(poll);
+                        btnOpenMarkitdown.classList.remove('animate-pulse');
+                        btnOpenMarkitdown.innerHTML = origHtml;
+                        if (window.lucide) lucide.createIcons();
+                        openDaemonModal();
+                    }
+                }, 300);
+            });
         }
 
         btnLaunchDaemon.addEventListener('click', openDaemonModal);
