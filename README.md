@@ -36,6 +36,12 @@
   - **知識庫管理**：RAG Chunk 設定 + 上傳 + 分塊數檢視 + 單詞檢索測試
   - **MCP 工具**：MCP Servers 設定 / 掃描 / 瀏覽已就緒工具
   - **常駐程式**：Port 8001 連線狀態 + **一鍵重啟（自動斷開舊進程 + 重啟）** + 查看日誌 + 下載 .bat
+- 🩺 **雙模自我檢測工具**（Dual-Mode Self-Diagnostics）：
+  - **CLI 自動化檢測**：`diagnose_system.py` 與 `self_test.bat` 一鍵全自動 32 項檢驗（硬體環境、Python 依賴、8001/8002 埠、前後端語法、檔案雜湊一致性）。
+  - **瀏覽器視覺化診斷**：頂部導航列 `[🩺 自我檢測]` Modal 視窗，即時檢查 WebGPU、Daemon、MarkItDown 引擎與 API Router 連線狀態。
+- 📄 **Microsoft MarkItDown 智慧文件上傳與轉檔**：
+  - 對話列右下角精簡為 2 顆核心按鈕（【上傳文件】與【清除對話】）。
+  - 上傳 PDF、Word (DOCX)、Excel (XLSX)、PPTX、HTML、CSV、EPUB 時，自動調用後端原生 Microsoft MarkItDown 核心精準提取結構化 Markdown 餵入 LLM，支援萬字長文件智慧分塊與提問。
 - 🛜 **純斷網模擬開關**：一鍵封鎖所有非 `127.0.0.1` 外部請求，免拔網路線測試離線情境
 - 🖹 **6 頁完整使用手冊**（雙語 zh-TW / EN）：快速上手、終端機協定、AI + RAG、離線 WinPE、常見問題、**版權 & 致謝**
 - 🌍 **完整 zh-TW / English 雙語 UI**：頂部語言切換鈕即時生效
@@ -60,6 +66,8 @@ webcom/
 ├── download_offline_models.py
 │
 ├── WinPE_Autorun.bat           ← WinPE 環境自動啟動腳本
+├── diagnose_system.py          ← 32 項全方位硬體、相依性與完整性自我檢測工具 (CLI)
+├── self_test.bat               ← Windows 一鍵執行系統自我檢測批次檔
 ├── mcp/
 │   └── mcp_servers.json        ← MCP Server 設定
 └── assets/                     ← 前端依賴（不含 *.wasm 引擎，見下方說明）
@@ -375,20 +383,29 @@ Q1~Q3 請見內建手冊第 5 頁「常見問題」。以下為本次 v1.0.0 新
 
 ## 🕓 變更日誌 (Changelog)
 
-### `v1.0.6-Dual-Engine-WebGPU-RAG-Supervise` — 2026-09-11 **功能整合與跨平台相容性釋出 (Feature & Compatibility Release)**
-> 🚀 重大更新：完整整合 MarkItDown 本地文件轉換中心 ＋ 徹底根治 Windows 批次檔跨機執行語法崩潰（純 ASCII ＋ 嚴格 CRLF）
+#### `v1.0.6-Dual-Engine-WebGPU-RAG-Supervise` — 2026-09-11 **功能整合、自我檢測與跨平台相容性釋出 (Feature & Compatibility Release)**
+> 🚀 重大更新：完整整合 Microsoft MarkItDown 本地文件轉換與上傳 ＋ 雙模全自動自我檢測系統 ＋ Windows 批次檔跨機相容性重構 ＋ 介面按鈕精簡與終端機修復
 
-- **📄 完整整合 MarkItDown 本地文件轉換中心**：
-  1. **零安裝開箱即用**：獨立打包 1.8MB 完整 Web 應用置於 `webcom/markitdown/`，免裝 Docker、免裝 Node.js、免全域 Python 環境。
-  2. **原生轉檔支援**：由 Microsoft MarkItDown 0.1.7 原生核心支援（`/api/convert`），秒級轉換 PDF、DOCX、XLSX、PPTX、HTML、CSV、EPUB 為標準 Markdown。
-  3. **頂部導航智慧喚醒**：頁首導航列新增 `[MarkItDown]` 捷徑按鈕，具備「智慧健康探測」，未啟動 8001 後端時自動觸發 `webcom://` 背景靜默拉起，無縫開啟轉檔頁面。
-  4. **雙向無縫穿梭**：MarkItDown 頁面頂部常駐「返回 Webcom 主控台」捷徑，流暢切換終端、AI 諮詢與文件轉換任務。
-  5. **Service Worker 動態子路徑修正**：補強 `sw.js` 預載機制與 `manifest.json`，精準支援 `/markitdown/` 子目錄代理，杜絕 404 資源錯誤與註冊失敗。
+- **📄 完整整合 Microsoft MarkItDown 本地文件轉換中心**：
+  1. **右下角文件上傳調用 MarkItDown 轉檔**：對話列右下角精簡為 2 顆核心按鈕（【上傳文件】與【清除對話】）。上傳 PDF、DOCX、XLSX、PPTX、HTML、CSV、EPUB 自動調用 Microsoft MarkItDown 核心提取結構化 Markdown 餵入 LLM，支援長篇文件自動分塊提問。
+  2. **零安裝獨立轉檔中心**：獨立打包 1.8MB 完整 Web 應用置於 `webcom/markitdown/`，免裝 Docker、免裝 Node.js、免全域 Python 環境。
+  3. **原生轉檔支援**：由 Microsoft MarkItDown 0.1.7 原生核心支援（`/api/convert`），秒級轉換所有主流文件為標準 Markdown。
+  4. **頂部導航智慧喚醒**：頁首導航列新增 `[MarkItDown]` 捷徑按鈕，具備「智慧健康探測」，未啟動 8001 後端時自動觸發 `webcom://` 背景靜默拉起，無縫開啟轉檔頁面。
+  5. **雙向無縫穿梭**：MarkItDown 頁面頂部常駐「返回 Webcom 主控台」捷徑，流暢切換終端、AI 諮詢與文件轉換任務。
+  6. **Service Worker 動態子路徑修正**：補強 `sw.js` 預載機制與 `manifest.json`，精準支援 `/markitdown/` 子目錄代理，杜絕 404 資源錯誤與註冊失敗。
+- **🩺 雙模系統自我檢測工具 (Dual-Mode Self-Diagnostics)**：
+  1. **CLI 全方位檢測工具 (`diagnose_system.py` / `self_test.bat`)**：全自動 32 項自動化測試，覆蓋系統硬體、Python 依賴套件、8001/8002 埠連線、前後端語法編譯檢查、以及工作區與 github 倉庫檔案一致性。
+  2. **前端即時檢測 Modal (`[🩺 自我檢測]`)**：點擊頂部導航列即可彈出視覺化自我診斷面板，即時探測 WebGPU 支援、Daemon 狀態、MarkItDown 引擎可用性與 API Router 狀態。
+- **🩹 介面按鈕優化、終端機初始化與常駐程式檢測燈號修復**：
+  1. **按鈕觸發機制防護**：修正上傳與工具列按鈕的原生觸發與點擊穿透，避免合成事件遭到攔截。
+  2. **常駐程式指示燈**：修正 Daemon 連線狀態即時輪詢與視覺化狀態燈號邏輯。
+  3. **WTerm 終端機初始化修復**：修正終端機在部分瀏覽器環境中初始載入與視窗大小計算異常。
 - **🛡️ Windows 跨機批次檔啟動器重構（純 ASCII ＋ 嚴格 CRLF）**：
   1. **徹底解決 cmd.exe 緩衝區位元偏移崩潰**：根除因 Unix LF 換行搭配全形破折號等多位元組字元引發的 cmd 區塊讀取位移（導致 `REM` 變 `'M'`、`setlocal` 變 `'tlocal'`、`cd /d` 變 `'/d'`）。
   2. **配置 `.gitattributes`**：強制所有 `*.bat`、`*.cmd`、`*.vbs`、`*.ps1`、`*.reg` 採用 `eol=crlf`，防範 git clone 時換行符號跑位。
   3. **四層環境智慧探測與扁平化架構**：以純 ASCII 與扁平 `goto` 架構重寫 `start_daemon.bat`，**優先使用根目錄 `%~dp0python\python.exe` 綠色便攜環境**（無 Python 環境之新電腦也能直接執行），依序 fallback `uv`、系統 `python`、`py -3`。
   4. **全自動 URL 協議註冊**：啟動時自動在 `HKCU` 註冊 `webcom://` 協定（免管理員權限），賦予瀏覽器按鈕直接喚醒後端之能力。
+- **⚖️ 開源版權與致謝補齊**：於雙語手冊、關於抽屜與 `README.md` 完整補充 Microsoft MarkItDown 與 GoneTone/markitdown-website 開源授權聲明。
 - **🧾 全面升級版本號 v1.0.5 → v1.0.6**：同步更新 `index.html` 內全數 11 處版號標記、雙語手冊操作指引、版權致謝與雙語 `README.md`。
 
 ### `v1.0.5-Dual-Engine-WebGPU-RAG-Supervise` — 2026-09-11 **版本升級維護釋出 (Maintenance)**
@@ -852,20 +869,29 @@ Q1~Q3 live inside the built-in User Guide Tab 5 *FAQ*. The Q4~Q6 below cover v1.
 <a id="changelog"></a>
 ## 🕓 Changelog
 
-### `v1.0.6-Dual-Engine-WebGPU-RAG-Supervise` — 2026-09-11 **Feature & Cross-Platform Compatibility Release**
-> 🚀 Major update: Self-contained MarkItDown document conversion center + Ultimate fix for Windows batch launcher crashes (Pure ASCII & CRLF)
+### `v1.0.6-Dual-Engine-WebGPU-RAG-Supervise` — 2026-09-11 **Feature, Self-Diagnostics & Cross-Platform Compatibility Release**
+> 🚀 Major update: Microsoft MarkItDown full document conversion & upload integration + Dual-mode self-diagnostic suite + Windows batch launcher overhaul + UI button optimization & terminal fixes
 
-- **📄 Integrated MarkItDown Document Conversion Center**:
-  1. **Self-Contained Bundle**: Zero Docker / zero Node.js / zero global Python requirement. Complete 1.8MB web app bundled directly under `webcom/markitdown/` for out-of-the-box readiness.
-  2. **Native Conversion Engine**: Backed directly by Microsoft MarkItDown 0.1.7 (`/api/convert`), rapidly converting PDF, DOCX, XLSX, PPTX, HTML, CSV, and EPUB into clean, standard Markdown.
-  3. **Smart Auto-Wakeup Header Button**: Dedicated `[MarkItDown]` button in the top navigation bar automatically verifies Port 8001 daemon health, silently wakes up the service in background via `webcom://` if stopped, and automatically opens the converter tab.
-  4. **Seamless Two-Way Navigation**: Quick link back to "Webcom Console" from the MarkItDown header for smooth multitasking.
-  5. **Service Worker Dynamic Subpath Fix**: Enhanced `sw.js` precaching and `manifest.json` to dynamically resolve `/markitdown/` subpath hosting without 404 asset errors.
+- **📄 Integrated Microsoft MarkItDown Document Conversion Center & Upload**:
+  1. **Bottom-Right Upload Conversion to LLM**: Compacted bottom-right action bar to 2 core buttons (Upload Document & Clear Chat). Uploading PDF, DOCX, XLSX, PPTX, HTML, CSV, or EPUB automatically triggers Microsoft MarkItDown backend parsing to feed structured Markdown directly to the LLM, with smart chunking for long documents.
+  2. **Self-Contained Conversion Center Bundle**: Zero Docker / zero Node.js / zero global Python requirement. Complete 1.8MB web app bundled directly under `webcom/markitdown/` for out-of-the-box readiness.
+  3. **Native Conversion Engine**: Backed directly by Microsoft MarkItDown 0.1.7 (`/api/convert`), rapidly converting PDF, DOCX, XLSX, PPTX, HTML, CSV, and EPUB into clean, standard Markdown.
+  4. **Smart Auto-Wakeup Header Button**: Dedicated `[MarkItDown]` button in the top navigation bar automatically verifies Port 8001 daemon health, silently wakes up the service in background via `webcom://` if stopped, and automatically opens the converter tab.
+  5. **Seamless Two-Way Navigation**: Quick link back to "Webcom Console" from the MarkItDown header for smooth multitasking.
+  6. **Service Worker Dynamic Subpath Fix**: Enhanced `sw.js` precaching and `manifest.json` to dynamically resolve `/markitdown/` subpath hosting without 404 asset errors.
+- **🩺 Dual-Mode Self-Diagnostic System (CLI & In-Browser)**:
+  1. **CLI Full-Suite Automation (`diagnose_system.py` / `self_test.bat`)**: Automated 32-point diagnostic covering hardware environment, Python dependencies, 8001/8002 port bindings, frontend/backend syntax checks, and file hash parity.
+  2. **In-Browser Interactive Modal (`[🩺 自我檢測]`)**: Dedicated header button triggers a visual diagnostic popup checking WebGPU support, daemon connectivity, MarkItDown engine readiness, and API router health in real time.
+- **🩹 UI Button Hardening, Terminal Init & Daemon Indicator Fixes**:
+  1. **Button Trigger Hardening**: Hardened file upload and toolbar controls using native elements to prevent synthetic click events from being blocked.
+  2. **Daemon Status Indicator**: Restored real-time polling and visual indicator lights for daemon health.
+  3. **WTerm Terminal Init**: Fixed terminal initialization and canvas sizing quirks across modern Chromium-based browsers.
 - **🛡️ Windows Cross-Machine Batch Launcher Overhaul (Pure ASCII & Strict CRLF)**:
   1. **Fixed cmd.exe Buffer Byte-Shift Parsing Crash**: Eliminated the infamous Windows cmd block-read offset bug triggered by Unix LF line endings combined with multibyte UTF-8 em-dashes (which clipped `REM` -> `'M'`, `setlocal` -> `'tlocal'`, `cd /d` -> `'/d'`).
   2. **Added `.gitattributes`**: Explicitly enforces `eol=crlf` for all `*.bat`, `*.cmd`, `*.vbs`, `*.ps1`, and `*.reg` files.
   3. **Multi-Tier Python Detection & Flat Architecture**: Rewrote `start_daemon.bat` in pure ASCII with flat `goto` control flow, **prioritizing the root `%~dp0python\python.exe` portable environment** (runs out-of-the-box on clean PCs with no system Python installed), followed by `uv`, system `python`, and `py -3`.
   4. **Auto Protocol Registration**: Automatically registers the `webcom://` URL protocol in `HKCU` on startup (no admin rights required), allowing browser buttons to wake up daemon silently.
+- **⚖️ Open-Source License & Acknowledgements**: Full attribution for Microsoft MarkItDown and GoneTone/markitdown-website across bilingual guides, drawer panels, and `README.md`.
 - **🧾 Global Version Bump v1.0.5 → v1.0.6**: Unified all 11 occurrences in `index.html`, bilingual `README.md` banners, user guides, and acknowledgements.
 
 ### `v1.0.5-Dual-Engine-WebGPU-RAG-Supervise` — 2026-09-11 **Version-Bump Maintenance Release**
