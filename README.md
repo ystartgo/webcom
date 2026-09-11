@@ -460,7 +460,20 @@ Q1~Q3 請見內建手冊第 5 頁「常見問題」。以下為本次 v1.0.0 新
 ## 📜 License / 授權
 
 - **整體專案**：GNU GPL v3.0 （本軟體開源可修改，所有商業或衍生腳本 **必須保留此版權聲明與 GPLv3**）
-- 第三方套件致謝清單：請見程式內 **⚖️ 版權 & 致謝** 頁（含前端 5 套件、後端 4 套件個別授權：Apache 2.0 / MIT / ISC / BSD-3-Clause / LGPL 2.1）
+- **第三方套件致謝清單**（請見程式內 **⚖️ 版權 & 致謝** 頁，所有套件各自保留原授權）：
+  - **前端 (Frontend)**：
+    - [wterm](https://github.com/vercel-labs/wterm) (Vercel Labs, Apache 2.0) — 瀏覽器 DOM + WASM 終端模擬器
+    - [@mlc-ai/web-llm](https://github.com/mlc-ai/web-llm) (MLC AI, Apache 2.0) — 瀏覽器 WebGPU 本機推論引擎
+    - [Tailwind CSS](https://github.com/tailwindlabs/tailwindcss) (Tailwind Labs, MIT) — Utility-First CSS 框架
+    - [Lucide Icons](https://github.com/lucide-icons/lucide) (Lucide Contributors, ISC) — 開源 SVG 圖示庫
+    - [marked.js](https://github.com/markedjs/marked) (markedjs, MIT) — Markdown 解析與渲染
+    - [markitdown-website](https://github.com/GoneTone/markitdown-website) (GoneTone, MIT) — 線上文件轉 Markdown Web 應用 (雙欄預覽、批次轉換、ZIP 打包)
+  - **後端 (Backend · Python)**：
+    - [FastAPI](https://github.com/fastapi/fastapi) (Sebastián Ramírez, MIT) — 高效能 Python Web API 框架
+    - [uvicorn](https://github.com/encode/uvicorn) (Encode, BSD 3-Clause) — ASGI 超高速 HTTP 伺服器
+    - [Paramiko](https://github.com/paramiko/paramiko) (Jeff Forcier et al., LGPL 2.1) — Python SSH2 通訊協定實作
+    - [pyserial](https://github.com/pyserial/pyserial) (Chris Liechti, BSD 3-Clause) — Python 串口 (COM / UART) 通訊
+    - [markitdown](https://github.com/microsoft/markitdown) (Microsoft, MIT) — 全能多格式文件轉 Markdown 核心引擎 (PDF/Office/HTML/CSV)
 
 ---
 
@@ -924,4 +937,17 @@ Q1~Q3 live inside the built-in User Guide Tab 5 *FAQ*. The Q4~Q6 below cover v1.
 ## 📜 License / Credits
 
 - **Project as a whole**: **GNU GPL v3.0** — open-source, remixable; any commercial/derivative scripts **must retain this copyright notice and GPLv3**.
-- Third-party package acknowledgements: open the app and navigate to **⚖️ License & Credits** tab (front-end 5 libs, back-end 4 libs — Apache 2.0 / MIT / ISC / BSD-3-Clause / LGPL 2.1 individually).
+- **Third-Party Acknowledgements** (see in-app **⚖️ License & Credits** tab, all packages retain original licenses):
+  - **Frontend**:
+    - [wterm](https://github.com/vercel-labs/wterm) (Vercel Labs, Apache 2.0) — Browser DOM + WASM terminal emulator
+    - [@mlc-ai/web-llm](https://github.com/mlc-ai/web-llm) (MLC AI, Apache 2.0) — In-browser WebGPU local LLM inference
+    - [Tailwind CSS](https://github.com/tailwindlabs/tailwindcss) (Tailwind Labs, MIT) — Utility-First CSS framework
+    - [Lucide Icons](https://github.com/lucide-icons/lucide) (Lucide Contributors, ISC) — Open-source SVG icon library
+    - [marked.js](https://github.com/markedjs/marked) (markedjs, MIT) — Markdown parser & renderer
+    - [markitdown-website](https://github.com/GoneTone/markitdown-website) (GoneTone, MIT) — In-browser Document to Markdown Web Application (Live Preview / Batch Zip)
+  - **Backend (Python)**:
+    - [FastAPI](https://github.com/fastapi/fastapi) (Sebastián Ramírez, MIT) — High-performance Python Web API framework
+    - [uvicorn](https://github.com/encode/uvicorn) (Encode, BSD 3-Clause) — Lightning-fast ASGI HTTP server
+    - [Paramiko](https://github.com/paramiko/paramiko) (Jeff Forcier et al., LGPL 2.1) — Python SSH2 protocol implementation
+    - [pyserial](https://github.com/pyserial/pyserial) (Chris Liechti, BSD 3-Clause) — Python serial (COM / UART) communication
+    - [markitdown](https://github.com/microsoft/markitdown) (Microsoft, MIT) — Multi-format Document to Markdown conversion core (PDF/Office/HTML/CSV)

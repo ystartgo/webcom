@@ -243,7 +243,7 @@ def test_markitdown_conversions():
 
 def test_sync():
     print(f"\n{CYAN}{BOLD}【7. 雙目錄檔案一致性同步比對】{RESET}")
-    files_to_check = ['index.html', 'daemon.py', 'start_daemon.bat']
+    files_to_check = ['index.html', 'daemon.py', 'start_daemon.bat', 'README.md', 'diagnose_system.py', 'self_test.bat']
 
     for fn in files_to_check:
         p1 = os.path.join(BASE_DIR, fn)
