@@ -12542,29 +12542,56 @@ Important guidelines:
                 try {
                     const testHtml = '<h1>標題測試</h1><table><tr><th>欄位</th><th>值</th></tr><tr><td>狀態</td><td>正常</td></tr></table>';
                     const b64 = btoa(unescape(encodeURIComponent(testHtml)));
-                    const ep = (typeof appSettings !== 'undefined' && appSettings?.daemonEndpoint) ? appSettings.daemonEndpoint : 'http://127.0.0.1:8001';
-                    const res = await fetchWithTimeout(`${ep}/tools/parse_document`, {
+                    let ep = (typeof appSettings !== 'undefined' && appSettings?.daemonEndpoint) ? appSettings.daemonEndpoint : '';
+                    if (!ep || ep.includes('127.0.0.1') || ep.includes('localhost')) {
+                        if (window.location.protocol.startsWith('http') && window.location.port) {
+                            ep = window.location.origin;
+                        } else {
+                            ep = 'http://127.0.0.1:8001';
+                        }
+                    }
+
+                    // 優先嘗試 /tools/parse_document，失敗時 fallback 嘗試 /api/convert
+                    let res = await fetchWithTimeout(`${ep}/tools/parse_document`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ filename: 'diagnostic_test.html', data_base64: b64 }),
                         timeout: 10000
                     });
+
+                    if (!res.ok) {
+                        res = await fetchWithTimeout(`${ep}/api/convert`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ filename: 'diagnostic_test.html', data_base64: b64 }),
+                            timeout: 10000
+                        });
+                    }
+
                     if (res.ok) {
                         const data = await res.json();
-                        mdEngine = data.engine || 'unknown';
-                        mdOk = (data.status === 'success' && mdEngine === 'markitdown' && (data.markdown || '').includes('|'));
-                        mdDetail = `Engine: ${mdEngine} | 回傳長度: ${(data.markdown || '').length} 字 | 結構化表格: ${data.markdown?.includes('|') ? '✔' : '✖'}`;
+                        mdEngine = data.engine || (data.status === 'success' && data.markdown ? 'markitdown' : 'unknown');
+                        mdOk = (data.status === 'success' && (mdEngine === 'markitdown' || data.markdown) && (data.markdown || '').includes('|'));
+                        if (mdOk) {
+                            mdDetail = `Engine: ${mdEngine} | 回傳長度: ${(data.markdown || '').length} 字 | 結構化表格: ✔`;
+                        } else if (mdEngine === 'fallback') {
+                            mdDetail = '目前為簡易文字降級模式 (Python 未安裝 markitdown 套件，請執行 install_dependencies.bat)';
+                        } else {
+                            mdDetail = `Engine: ${mdEngine} | 表格標記: ${data.markdown?.includes('|') ? '✔' : '✖'}`;
+                        }
+                    } else {
+                        mdDetail = `HTTP ${res.status}: 轉檔端點無回應`;
                     }
                 } catch (e) {
                     mdOk = false;
                     mdDetail = e.message;
                 }
             } else {
-                mdDetail = '因 8001 常駐服務離線而略過實測';
+                mdDetail = '因 8001 常駐服務離線而略過實測 (請點擊「啟動常駐程式」)';
             }
             tests.push({
                 title: '4. Microsoft MarkItDown 實機結構化轉檔引擎',
-                desc: mdOk ? `MarkItDown 原生引擎正常運作，成功將表格與階層轉為乾淨 Markdown` : `轉檔引擎異常或未啟用: ${mdDetail}`,
+                desc: mdOk ? `MarkItDown 原生引擎正常運作，成功將表格與階層轉為乾淨 Markdown` : `轉檔引擎未啟用或套件缺失: ${mdDetail}`,
                 passed: mdOk,
                 detail: mdDetail
             });

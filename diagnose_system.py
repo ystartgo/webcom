@@ -39,9 +39,20 @@ CYAN = '\033[96m'
 BOLD = '\033[1m'
 RESET = '\033[0m'
 
-BASE_DIR = r'C:\Apps\Webcom'
+# 動態偵測工作目錄，相容跨機、可攜式 USB 或非 C:\Apps\Webcom 部署環境
+_current_script_dir = os.path.dirname(os.path.abspath(__file__))
+if os.path.basename(_current_script_dir).lower() == 'github':
+    BASE_DIR = os.path.dirname(_current_script_dir)
+else:
+    BASE_DIR = _current_script_dir
+
 GITHUB_DIR = os.path.join(BASE_DIR, 'github')
 INDEX_HTML = os.path.join(BASE_DIR, 'index.html')
+
+# 優先載入本機可攜式 Python 套件庫 (若存在，免全域 pip install)
+_portable_sp = os.path.join(BASE_DIR, "python", "Lib", "site-packages")
+if os.path.exists(_portable_sp) and _portable_sp not in sys.path:
+    sys.path.insert(0, _portable_sp)
 
 results = []
 
@@ -173,7 +184,7 @@ def test_python_deps():
             __import__(mod)
             record("Dependencies", f"{mod} ({desc})", True, "已正確安裝")
         except ImportError:
-            record("Dependencies", f"{mod} ({desc})", False, f"未安裝，請執行: pip install {mod}")
+            record("Dependencies", f"{mod} ({desc})", False, f"未安裝，請執行: pip install -r requirements.txt (或執行 install_dependencies.bat)")
 
 def test_daemon_service():
     print(f"\n{CYAN}{BOLD}【5. 常駐服務 (Port 8001) 即時健康檢測】{RESET}")
@@ -243,6 +254,10 @@ def test_markitdown_conversions():
 
 def test_sync():
     print(f"\n{CYAN}{BOLD}【7. 雙目錄檔案一致性同步比對】{RESET}")
+    if not os.path.exists(GITHUB_DIR):
+        print(f"  {YELLOW}ℹ 獨立部署環境（未包含 github 子目錄），跳過雙目錄一致性比對{RESET}")
+        return
+
     files_to_check = ['index.html', 'daemon.py', 'start_daemon.bat', 'README.md', 'diagnose_system.py', 'self_test.bat']
 
     for fn in files_to_check:

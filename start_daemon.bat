@@ -79,7 +79,13 @@ echo  [OK] Protocol    : webcom:// registered
 echo  [OK] Status      : Starting on http://127.0.0.1:8001 ...
 echo  Press Ctrl+C to stop.
 echo ============================================================
-echo.
+if defined PY (
+    "%PY%" -c "import fastapi, markitdown" >nul 2>&1
+    if errorlevel 1 (
+        echo [INFO] 偵測到尚未安裝完整依賴，正在自動從 requirements.txt 安裝...
+        "%PY%" -m pip install -r "%~dp0requirements.txt"
+    )
+)
 
 if defined PY_CMD (
     %PY_CMD% "%~dp0daemon.py"
