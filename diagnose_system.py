@@ -252,8 +252,36 @@ def test_markitdown_conversions():
     except Exception as e:
         record("MarkItDown", "Word (.docx) 原生 Markdown 標題與表格", False, f"測試異常: {e}")
 
+def test_multimodal_vision():
+    print(f"\n{CYAN}{BOLD}【7. 多模態視覺 (Multimodal Vision) 與歷史記錄防禦檢測】{RESET}")
+    if not os.path.exists(INDEX_HTML):
+        record("Vision", "index.html 存在性", False, "找不到 index.html")
+        return
+    with open(INDEX_HTML, 'r', encoding='utf-8', errors='ignore') as f:
+        html_code = f.read()
+
+    # 1. handleSend 多模態內容保護 (不得將含 image_url 的陣列覆寫為純字串)
+    has_mm_guard = "Array.isArray(lastUserMsg.content)" in html_code and "textItem.text = effectivePrompt" in html_code
+    record("Vision", "handleSend 多模態圖文結構保護", has_mm_guard,
+           "使用者附帶圖片時不會被純文字覆寫遺失" if has_mm_guard else "尚未實作圖文陣列保護邏輯")
+
+    # 2. Gemma-4 原生多模態 Token 映射 (<|image|>)
+    has_gemma4_img_tok = "<|image|>" in html_code and "<|turn>" in html_code
+    record("Vision", "Gemma-4 ONNX 圖像 Token 映射 (<|image|>)", has_gemma4_img_tok,
+           "Gemma-4 原生視覺 Token 與輪次標記完整映射" if has_gemma4_img_tok else "缺少 Gemma-4 影像 Token 標記")
+
+    # 3. Transformers.js RawImage 影像解碼加載
+    has_raw_image = "RawImageClass.read" in html_code and "loadedRawImages" in html_code
+    record("Vision", "Transformers.js RawImage 影像解碼管線", has_raw_image,
+           "支援 Base64/URL 轉 RawImage 供視覺模型解碼" if has_raw_image else "缺少 RawImage 影像解碼整合")
+
+    # 4. 純文字模型附圖引導提示
+    has_text_warning = "onnx-community/gemma-4-E2B-it-ONNX" in html_code and ("不支援圖片視覺識別" in html_code or "does not support image" in html_code)
+    record("Vision", "純文字模型防呆與切換 Gemma-4 提示", has_text_warning,
+           "選用純文字模型上傳圖片時提供切換 Gemma-4 友善指引" if has_text_warning else "缺少純文字附圖引導")
+
 def test_sync():
-    print(f"\n{CYAN}{BOLD}【7. 雙目錄檔案一致性同步比對】{RESET}")
+    print(f"\n{CYAN}{BOLD}【8. 雙目錄檔案一致性同步比對】{RESET}")
     if not os.path.exists(GITHUB_DIR):
         print(f"  {YELLOW}ℹ 獨立部署環境（未包含 github 子目錄），跳過雙目錄一致性比對{RESET}")
         return
@@ -286,6 +314,7 @@ def main():
     test_python_deps()
     test_daemon_service()
     test_markitdown_conversions()
+    test_multimodal_vision()
     test_sync()
 
     print(f"\n{BOLD}================================================================{RESET}")

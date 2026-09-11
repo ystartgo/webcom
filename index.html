@@ -5834,6 +5834,7 @@
                     return {
                         _isDirectModel: true,
                         isGemma: true,
+                        _isGemma4: true,
                         processor: processor,
                         model: model,
                         tokenizer: processor.tokenizer,
@@ -5847,7 +5848,25 @@
                     ? (onnxTransformersModule.Qwen3VLForConditionalGeneration || onnxTransformersModule.AutoModelForVision2Seq || onnxTransformersModule.AutoModelForCausalLM || onnxTransformersModule.default?.AutoModelForVision2Seq)
                     : (onnxTransformersModule.AutoModelForCausalLM || onnxTransformersModule.AutoModel || onnxTransformersModule.default?.AutoModelForCausalLM);
 
-                const tokenizer = await TokClass.from_pretrained(modelName, { progress_callback: progressCallback });
+                let processor = null;
+                let tokenizer = null;
+                if (isQwen3VL) {
+                    const ProcClass = onnxTransformersModule.AutoProcessor || onnxTransformersModule.default?.AutoProcessor;
+                    if (ProcClass) {
+                        try {
+                            processor = await ProcClass.from_pretrained(modelName, { progress_callback: progressCallback });
+                            tokenizer = processor.tokenizer;
+                        } catch (e) {
+                            console.warn('[Qwen3VL AutoProcessor load failed, using AutoTokenizer]', e);
+                        }
+                    }
+                }
+                if (!tokenizer) {
+                    tokenizer = await TokClass.from_pretrained(modelName, { progress_callback: progressCallback });
+                }
+                if (!processor) {
+                    processor = { tokenizer };
+                }
                 let modelDtype = useGpu ? 'q4f16' : 'q4';
                 if (modelName.includes('Bonsai')) {
                     modelDtype = 'q4';
@@ -5876,7 +5895,8 @@
                 return {
                     _isDirectModel: true,
                     isGemma: false,
-                    processor: { tokenizer },
+                    _isQwen3VL: isQwen3VL,
+                    processor: processor,
                     model: model,
                     tokenizer: tokenizer,
                     actualDevice: useGpu ? 'webgpu' : 'cpu'
@@ -10401,23 +10421,106 @@ Important guidelines:
                         // ── 全面統一直調推論路徑 (model.generate + TextStreamer) ──
                         if (generator._isDirectModel || generator._isGemma4 || generator._isQwen3VL || generator._isQwen35 || (generator.model && typeof generator.model.generate === 'function')) {
                             try {
-                                const isG4 = !!(generator.isGemma || generator._isGemma4);
+                                const isG4 = !!(generator.isGemma || generator._isGemma4 || targetModel.includes('gemma-4') || targetModel.includes('Gemma4'));
+                                const isQ3VL = !!(generator._isQwen3VL || targetModel.includes('Qwen3-VL') || targetModel.includes('Qwen3VL'));
+                                const isVisionModel = isG4 || isQ3VL;
                                 const proc = generator.processor;
                                 const model = generator.model;
 
+                                // 提取使用者上傳之圖像 (Base64 或 URL)
+                                const userImages = [];
+                                for (const m of chatHistory) {
+                                    if (m.role === 'user') {
+                                        if (Array.isArray(m.content)) {
+                                            for (const part of m.content) {
+                                                if (part.type === 'image_url' && part.image_url && part.image_url.url) {
+                                                    userImages.push(part.image_url.url);
+                                                } else if (part.type === 'image' && (part.image || part.url)) {
+                                                    userImages.push(part.image || part.url);
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+
+                                // 若使用純文字模型卻上傳圖片，在對話開頭主動提示可切換為 Gemma-4 多模態模型
+                                if (userImages.length > 0 && !isVisionModel) {
+                                    const tipMsg = currentLang === 'en'
+                                        ? '> ⚠️ **Notice**: The active ONNX model is text-only. To analyze and recognize images, please switch to **`onnx-community/gemma-4-E2B-it-ONNX`** in the top model dropdown.\n\n'
+                                        : '> ⚠️ **提示**：目前選用的 ONNX 模型為純文字架構，不支援圖片視覺識別。如需解析上傳的圖片，請於上方模型選單切換至 **`onnx-community/gemma-4-E2B-it-ONNX`** 視覺多模態模型。\n\n';
+                                    fullAiResponse = tipMsg;
+                                    textBlock.innerHTML = renderMarkdown(fullAiResponse);
+                                }
+
+                                // 預先加載 RawImage 物件供 Vision 模型使用
+                                const loadedRawImages = [];
+                                const RawImageClass = onnxTransformersModule?.RawImage || onnxTransformersModule?.default?.RawImage || window.RawImage;
+                                if (RawImageClass && userImages.length > 0 && isVisionModel) {
+                                    for (const imgUrl of userImages) {
+                                        try {
+                                            let rImg = null;
+                                            if (typeof RawImageClass.read === 'function') {
+                                                rImg = await RawImageClass.read(imgUrl);
+                                            } else if (typeof RawImageClass.fromURL === 'function') {
+                                                rImg = await RawImageClass.fromURL(imgUrl);
+                                            }
+                                            if (!rImg) {
+                                                const res = await fetch(imgUrl);
+                                                const blob = await res.blob();
+                                                if (typeof RawImageClass.fromBlob === 'function') {
+                                                    rImg = await RawImageClass.fromBlob(blob);
+                                                } else if (typeof RawImageClass.read === 'function') {
+                                                    rImg = await RawImageClass.read(blob);
+                                                }
+                                            }
+                                            if (rImg) loadedRawImages.push(rImg);
+                                        } catch (imgLoadErr) {
+                                            console.error('[ONNX RawImage load failed]', imgLoadErr);
+                                        }
+                                    }
+                                }
+
                                 let promptStr = '';
                                 if (isG4) {
-                                    // Gemma-4 原生格式
+                                    // Gemma-4 原生多模態格式 (<|turn> 與 <|image|>)
                                     promptStr = '<bos>';
                                     for (const m of chatHistory) {
-                                        const role = m.role === 'assistant' ? 'model' : m.role;
-                                        const text = typeof m.content === 'string' ? m.content :
-                                            (Array.isArray(m.content) ? m.content.map(c => c.text || '').join('') : String(m.content || ''));
-                                        promptStr += `<start_of_turn>${role}\n${text.trim()}<end_of_turn>\n`;
+                                        const role = m.role === 'assistant' ? 'model' : (m.role === 'developer' ? 'system' : m.role);
+                                        promptStr += `<|turn>${role}\n`;
+                                        if (Array.isArray(m.content)) {
+                                            for (const part of m.content) {
+                                                if (part.type === 'image_url' || part.type === 'image') {
+                                                    promptStr += '<|image|>\n';
+                                                } else if (part.type === 'text' && part.text) {
+                                                    promptStr += `${part.text.trim()}\n`;
+                                                }
+                                            }
+                                        } else {
+                                            promptStr += `${String(m.content || '').trim()}\n`;
+                                        }
+                                        promptStr += '<turn|>\n';
                                     }
-                                    promptStr += '<start_of_turn>model\n';
+                                    promptStr += '<|turn>model\n';
+                                } else if (isQ3VL) {
+                                    // Qwen3-VL 視覺格式
+                                    for (const m of chatHistory) {
+                                        promptStr += `<|im_start|>${m.role}\n`;
+                                        if (Array.isArray(m.content)) {
+                                            for (const part of m.content) {
+                                                if (part.type === 'image_url' || part.type === 'image') {
+                                                    promptStr += '<|vision_start|><|image_pad|><|vision_end|>\n';
+                                                } else if (part.type === 'text' && part.text) {
+                                                    promptStr += `${part.text.trim()}\n`;
+                                                }
+                                            }
+                                        } else {
+                                            promptStr += `${String(m.content || '').trim()}\n`;
+                                        }
+                                        promptStr += '<|im_end|>\n';
+                                    }
+                                    promptStr += '<|im_start|>assistant\n';
                                 } else {
-                                    // Qwen3-VL ChatML 格式
+                                    // Qwen 純文字 ChatML 格式
                                     for (const m of chatHistory) {
                                         const text = typeof m.content === 'string' ? m.content :
                                             (Array.isArray(m.content) ? m.content.map(c => c.text || '').join('') : String(m.content || ''));
@@ -10426,16 +10529,35 @@ Important guidelines:
                                     promptStr += '<|im_start|>assistant\n';
                                 }
 
-                                let inputs;
+                                let inputs = null;
                                 const tok = proc.tokenizer || proc;
-                                try {
-                                    // 純文字對話優先使用 tokenizer，避免 AutoProcessor 尋找影像維度
-                                    inputs = await tok(promptStr, { return_tensors: 'pt', add_special_tokens: false });
-                                } catch (pErr1) {
+
+                                if (loadedRawImages.length > 0 && isVisionModel) {
+                                    const singleOrList = loadedRawImages.length === 1 ? loadedRawImages[0] : loadedRawImages;
                                     try {
-                                        inputs = await proc(promptStr);
-                                    } catch (pErr2) {
-                                        inputs = tok(promptStr);
+                                        inputs = await proc(promptStr, singleOrList);
+                                    } catch (e1) {
+                                        try {
+                                            inputs = await proc(singleOrList, promptStr);
+                                        } catch (e2) {
+                                            try {
+                                                inputs = await proc({ text: promptStr, images: singleOrList });
+                                            } catch (e3) {
+                                                console.warn('[Vision Processor with images failed, falling back to tokenizer]', e1, e2, e3);
+                                            }
+                                        }
+                                    }
+                                }
+
+                                if (!inputs) {
+                                    try {
+                                        inputs = await tok(promptStr, { return_tensors: 'pt', add_special_tokens: false });
+                                    } catch (pErr1) {
+                                        try {
+                                            inputs = await proc(promptStr);
+                                        } catch (pErr2) {
+                                            inputs = tok(promptStr);
+                                        }
                                     }
                                 }
 
@@ -10559,8 +10681,15 @@ Important guidelines:
                         let chunks = null;
                         let tokStep = 0;
                         try {
+                            const webllmMsgs = chatHistory.map(m => {
+                                if (Array.isArray(m.content)) {
+                                    const textParts = m.content.filter(c => c.type === 'text').map(c => c.text).join('\n');
+                                    return { ...m, content: textParts || (currentLang === 'en' ? "Please analyze this image" : "請分析這張圖片") };
+                                }
+                                return m;
+                            });
                             chunks = await engine.chat.completions.create({
-                                messages: chatHistory,
+                                messages: webllmMsgs,
                                 temperature: 0.6,
                                 top_p: 0.85,
                                 presence_penalty: 0.3,
@@ -12398,7 +12527,17 @@ Important guidelines:
 
             appendMessage('user', promptText, false, false, '', imagesToSend);
             if (chatHistory.length > 0 && chatHistory[chatHistory.length - 1].role === 'user') {
-                chatHistory[chatHistory.length - 1].content = effectivePrompt;
+                const lastUserMsg = chatHistory[chatHistory.length - 1];
+                if (Array.isArray(lastUserMsg.content)) {
+                    const textItem = lastUserMsg.content.find(c => c.type === 'text');
+                    if (textItem) {
+                        textItem.text = effectivePrompt;
+                    } else {
+                        lastUserMsg.content.unshift({ type: 'text', text: effectivePrompt });
+                    }
+                } else {
+                    lastUserMsg.content = effectivePrompt;
+                }
             }
 
             setGeneratingState(true);
