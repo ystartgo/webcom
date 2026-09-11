@@ -20,7 +20,7 @@ if sys.stdout is None or sys.stderr is None:
 if os.path.dirname(os.path.abspath(__file__)) not in sys.path:
     sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from typing import Optional
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
@@ -34,7 +34,18 @@ app.add_middleware(
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+    expose_headers=["Content-Type", "X-Original-Url"],
 )
+
+@app.middleware("http")
+async def add_security_headers_middleware(request: Request, call_next):
+    response: Response = await call_next(request)
+    path = request.url.path
+    if path.startswith("/markitdown") or path.startswith("/api/fetch-url"):
+        response.headers["Cross-Origin-Opener-Policy"] = "same-origin"
+        response.headers["Cross-Origin-Embedder-Policy"] = "require-corp"
+        response.headers["Cross-Origin-Resource-Policy"] = "cross-origin"
+    return response
 
 models_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "models")
 os.makedirs(models_dir, exist_ok=True)
@@ -73,6 +84,116 @@ def serve_index():
 assets_dir = os.path.join(webcom_dir, "assets")
 if os.path.exists(assets_dir):
     app.mount("/assets", StaticFiles(directory=assets_dir), name="assets")
+
+# 掛載 MarkItDown Website (提供 http://127.0.0.1:8001/markitdown/)
+markitdown_dir = os.path.abspath(os.path.join(webcom_dir, "..", "markitdown-website"))
+if os.path.exists(markitdown_dir):
+    import mimetypes
+    mimetypes.add_type("application/wasm", ".wasm")
+    mimetypes.add_type("application/octet-stream", ".whl")
+    app.mount("/markitdown", StaticFiles(directory=markitdown_dir, html=True), name="markitdown")
+
+# ── URL 代理與 SSRF 防護 (/api/fetch-url) ──────────────────────────────────
+import ipaddress, socket, urllib.request, urllib.parse
+
+def _is_private_ip(ip: str) -> bool:
+    try:
+        addr = ipaddress.ip_address(ip)
+        return addr.is_private or addr.is_loopback or addr.is_link_local or addr.is_reserved or addr.is_multicast
+    except Exception:
+        return True
+
+@app.get("/api/fetch-url")
+def fetch_url(url: str):
+    if not url:
+        raise HTTPException(status_code=400, detail="缺少 url 參數")
+    parsed = urllib.parse.urlparse(url)
+    if parsed.scheme not in ["http", "https"]:
+        raise HTTPException(status_code=400, detail="只允許 http 與 https 協定")
+    hostname = parsed.hostname
+    if not hostname:
+        raise HTTPException(status_code=400, detail="無效的網址")
+    try:
+        addrinfo = socket.getaddrinfo(hostname, None)
+        for ai in addrinfo:
+            if _is_private_ip(ai[4][0]):
+                raise HTTPException(status_code=403, detail="禁止存取內部或私有網路位址 (SSRF 防護)")
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"網址解析失敗: {e}")
+
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36 MarkItDown-Proxy/1.0",
+        "Accept": "*/*",
+    }
+    try:
+        req = urllib.request.Request(url, headers=headers)
+        with urllib.request.urlopen(req, timeout=30) as resp:
+            content_type = resp.headers.get("Content-Type", "application/octet-stream")
+            content = resp.read()
+            if len(content) > 50 * 1024 * 1024:
+                raise HTTPException(status_code=413, detail="檔案超過 50MB 上限")
+            return Response(
+                content=content,
+                media_type=content_type,
+                headers={
+                    "Content-Type": content_type,
+                    "X-Original-Url": url,
+                    "Access-Control-Expose-Headers": "Content-Type, X-Original-Url"
+                }
+            )
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=f"抓取網址失敗: {e}")
+
+# ── Microsoft MarkItDown 轉檔 API ──────────────────────────────────────────
+class MarkItDownConvertRequest(BaseModel):
+    filename: str
+    data_base64: str
+
+@app.post("/api/convert")
+@app.post("/api/convert_markitdown")
+def convert_markitdown(req: MarkItDownConvertRequest):
+    try:
+        from markitdown import MarkItDown
+    except ImportError:
+        raise HTTPException(status_code=500, detail="本地未安裝 markitdown 套件")
+
+    raw_b64 = req.data_base64
+    if "base64," in raw_b64:
+        raw_b64 = raw_b64.split("base64,", 1)[1]
+    try:
+        file_bytes = base64.b64decode(raw_b64)
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Base64 解碼失敗: {e}")
+
+    ext = os.path.splitext(req.filename)[1] or ".txt"
+    temp_path = None
+    try:
+        with tempfile.NamedTemporaryFile(suffix=ext, delete=False) as f:
+            f.write(file_bytes)
+            temp_path = f.name
+        md_engine = MarkItDown()
+        result = md_engine.convert(temp_path)
+        markdown_text = result.text_content or ""
+        title = getattr(result, "title", None) or os.path.splitext(req.filename)[0]
+        return {
+            "status": "success",
+            "filename": req.filename,
+            "title": title,
+            "markdown": markdown_text,
+            "charCount": len(markdown_text),
+            "lineCount": len(markdown_text.splitlines())
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"MarkItDown 轉換失敗: {e}")
+    finally:
+        if temp_path and os.path.exists(temp_path):
+            try: os.remove(temp_path)
+            except Exception: pass
+
 
 @app.get("/api/local_models")
 def get_local_models():
@@ -926,24 +1047,49 @@ def call_mcp_tool(req: MCPCallRequest):
 if __name__ == "__main__":
     import time
     try:
-        import socket, psutil
+        import socket
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         res = s.connect_ex(('127.0.0.1', 8001))
         s.close()
         if res == 0:
             current_pid = os.getpid()
-            for proc in psutil.process_iter(['pid', 'name']):
-                if proc.info['pid'] != current_pid:
-                    try:
-                        for conn in proc.connections(kind='inet'):
-                            if conn.laddr.port == 8001 and conn.status == 'LISTEN':
-                                print(f"[info] 釋放被佔用之 8001 埠 (終止舊行程 PID: {proc.info['pid']})...")
-                                proc.kill()
-                                time.sleep(0.8)
-                    except Exception:
-                        pass
+            # Try psutil first
+            try:
+                import psutil
+                for proc in psutil.process_iter(['pid', 'name']):
+                    if proc.info['pid'] != current_pid:
+                        try:
+                            for conn in proc.connections(kind='inet'):
+                                if conn.laddr.port == 8001 and conn.status == 'LISTEN':
+                                    print(f"[info] 釋放被佔用之 8001 埠 (終止舊行程 PID: {proc.info['pid']})...")
+                                    proc.kill()
+                                    time.sleep(0.8)
+                        except Exception:
+                            pass
+            except Exception:
+                pass
+
+            # Windows netstat fallback if port is still bound
+            if sys.platform == 'win32':
+                try:
+                    s2 = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                    res2 = s2.connect_ex(('127.0.0.1', 8001))
+                    s2.close()
+                    if res2 == 0:
+                        lines = subprocess.check_output('netstat -ano | findstr :8001', shell=True, text=True, stderr=subprocess.DEVNULL).splitlines()
+                        for line in lines:
+                            parts = line.strip().split()
+                            if len(parts) >= 5 and 'LISTENING' in parts:
+                                pid = int(parts[-1])
+                                if pid != current_pid and pid > 0:
+                                    print(f"[info] 透過 netstat 釋放佔用 8001 埠之行程 (PID: {pid})...")
+                                    subprocess.run(f"taskkill /F /PID {pid}", shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                                    time.sleep(0.5)
+                except Exception:
+                    pass
     except Exception:
         pass
     print("Webcom Daemon 正在啟動於 http://127.0.0.1:8001 ...")
     uvicorn.run(app, host="127.0.0.1", port=8001)
+
 

@@ -5,7 +5,7 @@ title Webcom Offline Assets Downloader
 cd /d "%~dp0"
 
 echo ===================================================
-echo   Webcom Offline Assets Downloader (離線資源下載器)
+echo   Webcom Offline Assets Downloader
 echo ===================================================
 
 if exist "%~dp0python\python.exe" (

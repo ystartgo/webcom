@@ -1,0 +1,20 @@
+# Auto detect text files and perform LF normalization
+* text=auto
+
+# Windows shell & script files MUST always have CRLF
+*.bat text eol=crlf
+*.cmd text eol=crlf
+*.vbs text eol=crlf
+*.ps1 text eol=crlf
+*.reg text eol=crlf
+
+# Binary files
+*.whl binary
+*.zip binary
+*.exe binary
+*.dll binary
+*.pyd binary
+*.wasm binary
+*.png binary
+*.jpg binary
+*.ico binary
