@@ -1,12 +1,12 @@
 # Auto detect text files and perform LF normalization
 * text=auto
 
-# Windows shell & script files MUST always have CRLF
-*.bat text eol=crlf
-*.cmd text eol=crlf
-*.vbs text eol=crlf
-*.ps1 text eol=crlf
-*.reg text eol=crlf
+# Windows batch, shell and script files MUST preserve CRLF (never convert to LF)
+*.bat -text
+*.cmd -text
+*.vbs -text
+*.ps1 -text
+*.reg -text
 
 # Binary files
 *.whl binary

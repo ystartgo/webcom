@@ -28,16 +28,39 @@ if not errorlevel 1 (
     goto :python_found
 )
 
-for /f "delims=" %%i in ('where python 2^>nul') do (
-    if not defined PY set "PY=%%i"
+where python >nul 2>&1
+if not errorlevel 1 (
+    set "PY=python"
+    goto :python_found
 )
-if defined PY goto :python_found
 
 where py >nul 2>&1
 if not errorlevel 1 (
     set "PY_CMD=py -3"
     goto :python_found
 )
+
+REM Check common Python installation paths if not in system PATH
+for %%P in (
+    "%LocalAppData%\Programs\Python\Python313\python.exe"
+    "%LocalAppData%\Programs\Python\Python312\python.exe"
+    "%LocalAppData%\Programs\Python\Python311\python.exe"
+    "%LocalAppData%\Programs\Python\Python310\python.exe"
+    "%ProgramFiles%\Python313\python.exe"
+    "%ProgramFiles%\Python312\python.exe"
+    "%ProgramFiles%\Python311\python.exe"
+    "%ProgramFiles%\Python310\python.exe"
+    "%SystemDrive%\Python312\python.exe"
+    "%SystemDrive%\Python311\python.exe"
+    "%SystemDrive%\Python310\python.exe"
+    "%UserProfile%\miniconda3\python.exe"
+    "%UserProfile%\anaconda3\python.exe"
+) do (
+    if exist %%P (
+        if not defined PY set "PY=%%~fP"
+    )
+)
+if defined PY goto :python_found
 
 goto :python_missing
 
