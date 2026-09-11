@@ -755,25 +755,17 @@
                 class="input-container relative bg-gray-900 border border-gray-800 rounded-xl p-2.5 flex items-end gap-2 shrink-0">
                 <div id="slash-menu" class="slash-menu"></div>
 
-                <!-- 上傳按鈕：圖片 (Vision) -->
+                <!-- 上傳按鈕 1：圖片 (Vision / 截圖) -->
                 <button id="btn-upload-image" data-i18n-title="tooltipUploadImage" type="button"
-                    onclick="document.getElementById('file-upload-image').click()"
                     class="text-gray-400 hover:text-cyan-400 hover:bg-gray-800/80 p-2 rounded-lg transition shrink-0 flex items-center justify-center cursor-pointer"
                     title="上傳圖片 / 截圖 (或直接 Ctrl+V 貼上)">
                     <i data-lucide="image" class="w-4 h-4 pointer-events-none"></i>
                 </button>
-                <!-- 上傳按鈕：文件 (Microsoft MarkItDown 原生轉檔：PDF / Word / Excel / PPT / HTML / EPUB / 純文字 / 代碼) -->
+                <!-- 上傳按鈕 2：文件 (Microsoft MarkItDown 轉檔：PDF / Word / Excel / PPT / HTML / EPUB / 純文字 / 代碼) -->
                 <button id="btn-upload-doc" data-i18n-title="tooltipUploadDoc" type="button"
-                    onclick="document.getElementById('file-upload-doc').click()"
                     class="text-gray-400 hover:text-orange-400 hover:bg-gray-800/80 p-2 rounded-lg transition shrink-0 flex items-center justify-center cursor-pointer"
                     title="上傳文件：Microsoft MarkItDown 轉檔 (PDF / Word / Excel / PPT / HTML / EPUB / CSV / 代碼)">
                     <i data-lucide="file-text" class="w-4 h-4 pointer-events-none"></i>
-                </button>
-                <!-- 捷徑：直接開啟 MarkItDown 轉檔中心分頁 -->
-                <button id="btn-chat-markitdown" data-i18n-title="tooltipOpenMarkItDown" type="button"
-                    class="text-orange-400 hover:text-orange-300 hover:bg-orange-950/40 p-2 rounded-lg transition shrink-0 flex items-center justify-center cursor-pointer border border-orange-500/30 hover:border-orange-500/60"
-                    title="開啟 MarkItDown 轉檔中心 (支援多檔批次轉換、即時預覽與 ZIP 下載)">
-                    <i data-lucide="file-code" class="w-4 h-4 pointer-events-none"></i>
                 </button>
                 <input type="file" id="file-upload-image" accept="image/*,.pdf,.docx,.doc,.xlsx,.xls,.pptx,.ppt,.txt,.md,.json,.csv" multiple class="hidden">
                 <input type="file" id="file-upload-doc"
@@ -11868,11 +11860,8 @@ Important guidelines:
         const fileUploadImage = document.getElementById('file-upload-image');
         const btnUploadDoc = document.getElementById('btn-upload-doc');
         const fileUploadDoc = document.getElementById('file-upload-doc');
-        const btnChatMarkitdown = document.getElementById('btn-chat-markitdown');
         const btnChatOpenMarkitdown = document.getElementById('btn-chat-open-markitdown');
         let attachedImages = [];
-            attachedDocs = [];
-            renderDocAttachments();
         let attachedDocs = [];
 
         function showUploadToast(msg, isError = false) {
@@ -11958,51 +11947,37 @@ Important guidelines:
             if (window.lucide) lucide.createIcons();
         }
 
-        // ── 智慧開啟 MarkItDown 轉檔中心 (自動背景喚醒 8001 後端) ──
-        async function openMarkItDownCenter() {
-            const markitdownUrl = `${appSettings.daemonEndpoint}/markitdown/`;
-            const isOnline = await checkDaemonHealth();
-            if (isOnline) {
-                window.open(markitdownUrl, '_blank');
+        // ── 智慧開啟 MarkItDown 轉檔中心 (同步開啟保證 100% 繞過彈出封鎖，自動背景喚醒 8001 後端) ──
+        function openMarkItDownCenter() {
+            const base = appSettings.daemonEndpoint || 'http://127.0.0.1:8001';
+            const markitdownUrl = `${base}/markitdown/`;
+            // 同步呼叫 window.open，確保瀏覽器視為使用者原生點擊手勢而不被快顯攔截
+            const win = window.open(markitdownUrl, '_blank');
+            if (!win) {
+                window.location.href = markitdownUrl;
                 return;
             }
-
-            showUploadToast('⏳ 正在透過 webcom:// 喚醒後端並開啟 MarkItDown 轉檔中心...');
-            triggerWebcomProtocol();
-
-            let attempts = 0;
-            const poll = setInterval(async () => {
-                attempts++;
-                const ok = await checkDaemonHealth();
-                if (ok) {
-                    clearInterval(poll);
-                    window.open(markitdownUrl, '_blank');
-                } else if (attempts >= 12) {
-                    clearInterval(poll);
-                    openDaemonModal();
+            checkDaemonHealth().then(isOnline => {
+                if (!isOnline) {
+                    showUploadToast('⏳ 正在透過 webcom:// 喚醒後端常駐服務...');
+                    triggerWebcomProtocol();
                 }
-            }, 350);
+            });
         }
 
-        if (btnChatMarkitdown) {
-            btnChatMarkitdown.addEventListener('click', (e) => {
-                e.preventDefault();
-                openMarkItDownCenter();
-            });
-        }
         if (btnChatOpenMarkitdown) {
-            btnChatOpenMarkitdown.addEventListener('click', (e) => {
+            btnChatOpenMarkitdown.onclick = (e) => {
                 e.preventDefault();
                 openMarkItDownCenter();
-            });
+            };
         }
 
         // ── 圖片上傳 (Vision) ──
         if (btnUploadImage && fileUploadImage) {
-            btnUploadImage.addEventListener('click', (e) => {
+            btnUploadImage.onclick = (e) => {
                 e.preventDefault();
                 fileUploadImage.click();
-            });
+            };
             fileUploadImage.addEventListener('change', async (e) => {
                 const files = e.target.files;
                 if (!files || files.length === 0) return;
@@ -12194,10 +12169,10 @@ Important guidelines:
         }
 
         if (btnUploadDoc && fileUploadDoc) {
-            btnUploadDoc.addEventListener('click', (e) => {
+            btnUploadDoc.onclick = (e) => {
                 e.preventDefault();
                 fileUploadDoc.click();
-            });
+            };
             fileUploadDoc.addEventListener('change', async (e) => {
                 const files = e.target.files;
                 if (!files || files.length === 0) return;
@@ -12296,13 +12271,13 @@ Important guidelines:
             daemonModal.classList.remove('hidden');
         }
 
-        // Open MarkItDown with Auto-Wakeup Daemon
+        // Open MarkItDown with Auto-Wakeup Daemon (Header Nav)
         const btnOpenMarkitdown = document.getElementById('btn-open-markitdown');
         if (btnOpenMarkitdown) {
-            btnOpenMarkitdown.addEventListener('click', (e) => {
+            btnOpenMarkitdown.onclick = (e) => {
                 e.preventDefault();
                 openMarkItDownCenter();
-            });
+            };
         }
 
         btnLaunchDaemon.addEventListener('click', openDaemonModal);
