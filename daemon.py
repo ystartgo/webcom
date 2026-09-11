@@ -22,8 +22,14 @@ if os.path.dirname(os.path.abspath(__file__)) not in sys.path:
 
 # 確保載入 Webcom 可攜式環境的 site-packages (支援 markitdown、mammoth、pdfminer 等)
 _portable_sp = os.path.join(os.path.dirname(os.path.abspath(__file__)), "python", "Lib", "site-packages")
-if os.path.exists(_portable_sp) and _portable_sp not in sys.path:
-    sys.path.insert(0, _portable_sp)
+if os.path.exists(_portable_sp):
+    if _portable_sp not in sys.path:
+        sys.path.insert(0, _portable_sp)
+    try:
+        import site
+        site.addsitedir(_portable_sp)
+    except Exception:
+        pass
 from typing import Optional
 from fastapi import FastAPI, HTTPException, Request, Response
 from fastapi.middleware.cors import CORSMiddleware

@@ -8,6 +8,13 @@ echo   Webcom AI 控制台 — Python 核心相依套件一鍵安裝
 echo ===================================================
 echo.
 
+REM 自動補正內嵌 Python 之 ._pth 設定檔 (確保啟用 site-packages 載入)
+if exist "%~dp0python" (
+    for %%F in ("%~dp0python\*._pth") do (
+        powershell -NoProfile -Command "$c = Get-Content '%%~fF' -Raw; if ($c -notmatch 'import site') { $c = $c -replace '#import site', 'import site'; if ($c -notmatch 'import site') { $c += "`nimport site`n" } }; if ($c -notmatch 'site-packages') { $c += "`nLib\site-packages`n" }; Set-Content '%%~fF' -Value $c.Trim() -Encoding ASCII" >nul 2>&1
+    )
+)
+
 set "PY="
 if exist "%~dp0python\python.exe" (
     "%~dp0python\python.exe" -m pip --version >nul 2>&1
@@ -21,9 +28,9 @@ where uv >nul 2>&1
 if not errorlevel 1 (
     echo [INFO] 偵測到 uv 套件管理器，正在透過 uv 快速安裝...
     if exist "%~dp0python\python.exe" (
-        uv pip install --target="%~dp0python\Lib\site-packages" -r "%~dp0requirements.txt"
+        uv pip install --upgrade --target="%~dp0python\Lib\site-packages" -r "%~dp0requirements.txt"
     ) else (
-        uv pip install --system -r "%~dp0requirements.txt"
+        uv pip install --upgrade --system -r "%~dp0requirements.txt"
     )
     if not errorlevel 1 goto :done
 )
@@ -63,9 +70,9 @@ exit /b 1
 :run_install
 echo [INFO] 使用解譯器: %PY%
 if exist "%~dp0python\python.exe" (
-    "%PY%" -m pip install --target="%~dp0python\Lib\site-packages" -r "%~dp0requirements.txt"
+    "%PY%" -m pip install --upgrade --target="%~dp0python\Lib\site-packages" -r "%~dp0requirements.txt"
 ) else (
-    "%PY%" -m pip install -r "%~dp0requirements.txt"
+    "%PY%" -m pip install --upgrade -r "%~dp0requirements.txt"
 )
 
 if errorlevel 1 (

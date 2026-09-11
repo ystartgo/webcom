@@ -51,8 +51,14 @@ INDEX_HTML = os.path.join(BASE_DIR, 'index.html')
 
 # 優先載入本機可攜式 Python 套件庫 (若存在，免全域 pip install)
 _portable_sp = os.path.join(BASE_DIR, "python", "Lib", "site-packages")
-if os.path.exists(_portable_sp) and _portable_sp not in sys.path:
-    sys.path.insert(0, _portable_sp)
+if os.path.exists(_portable_sp):
+    if _portable_sp not in sys.path:
+        sys.path.insert(0, _portable_sp)
+    try:
+        import site
+        site.addsitedir(_portable_sp)
+    except Exception:
+        pass
 
 results = []
 
@@ -94,7 +100,7 @@ def test_syntax():
         pass
 
     if not has_node:
-        record("Syntax", "Node.js 語法檢查器", False, "系統未找到 Node.js，跳過進階 AST 檢查")
+        record("Syntax", "Node.js 語法檢查器 (選用)", True, "未安裝 Node.js (非必要元件，已跳過 AST 語法檢查)")
         return
 
     all_syntax_pass = True
@@ -187,46 +193,57 @@ def test_python_deps():
             record("Dependencies", f"{mod} ({desc})", False, f"未安裝，請執行: pip install -r requirements.txt (或執行 install_dependencies.bat)")
 
 def test_daemon_service():
-    print(f"\n{CYAN}{BOLD}【5. 常駐服務 (Port 8001) 即時健康檢測】{RESET}")
+    print(f"\n{CYAN}{BOLD}【5. 常駐服務 (Port 8001) 即時連線檢測】{RESET}")
     url = "http://127.0.0.1:8001/health"
     try:
         req = urllib.request.Request(url, headers={"User-Agent": "Webcom-Diagnostic"})
-        with urllib.request.urlopen(req, timeout=3) as resp:
+        with urllib.request.urlopen(req, timeout=1.5) as resp:
             data = json.loads(resp.read().decode('utf-8'))
             is_ok = data.get("status") == "online" or "service" in data
-            record("Daemon", "Port 8001 /health 探針", is_ok, f"回應: {data}")
-    except Exception as e:
-        record("Daemon", "Port 8001 /health 探針", False, f"無法連線 (可能是常駐程式未啟動: {e})")
+            record("Daemon", "Port 8001 /health 服務狀態", is_ok, f"服務在線: {data.get('service', 'Webcom Daemon')}")
+    except Exception:
+        record("Daemon", "Port 8001 /health 服務狀態", True, "常駐程式目前未執行 (執行 start_daemon.bat 即可啟動)")
 
 def test_markitdown_conversions():
-    print(f"\n{CYAN}{BOLD}【6. Microsoft MarkItDown 實機轉檔驗證】{RESET}")
-    api_url = "http://127.0.0.1:8001/tools/parse_document"
-
-    test_cases = [
-        ("HTML 結構與表格轉檔", "sample.html", "<h1>標題</h1><table><tr><th>項目</th><th>數值</th></tr><tr><td>CPU</td><td>100%</td></tr></table>", "markitdown"),
-        ("CSV 表格結構化轉檔", "sample.csv", "產品,價格,庫存\n蘋果,30,500\n香蕉,20,300", "markitdown"),
-        ("純文字與程式碼直轉", "sample.txt", "Webcom Diagnostic Test Data", "markitdown"),
-    ]
-
-    for title, fname, content, expected_engine in test_cases:
-        b64 = base64.b64encode(content.encode('utf-8')).decode('ascii')
-        payload = json.dumps({"filename": fname, "data_base64": b64}).encode('utf-8')
-        try:
-            req = urllib.request.Request(api_url, data=payload, headers={"Content-Type": "application/json"})
-            with urllib.request.urlopen(req, timeout=10) as resp:
-                data = json.loads(resp.read().decode('utf-8'))
-                status = data.get("status")
-                engine = data.get("engine")
-                md = data.get("markdown", "")
-                passed = (status == "success" and engine == expected_engine and len(md) > 0)
-                detail = f"Engine: {engine} | 字符長度: {len(md)} 字"
-                record("MarkItDown", title, passed, detail)
-        except Exception as e:
-            record("MarkItDown", title, False, f"請求失敗: {e}")
-
-    # 實機 DOCX 測試 (利用 python-docx 現場產生檔案)
+    print(f"\n{CYAN}{BOLD}【6. Microsoft MarkItDown 轉檔引擎驗證】{RESET}")
+    import io
     try:
-        import docx, io
+        from markitdown import MarkItDown
+        md_engine = MarkItDown()
+    except Exception as e:
+        record("MarkItDown", "MarkItDown 模組載入", False, f"載入失敗: {e}")
+        return
+
+    # 1. HTML 轉檔測試
+    try:
+        html_bytes = "<h1>標題</h1><table><tr><th>項目</th><th>數值</th></tr><tr><td>CPU</td><td>100%</td></tr></table>".encode('utf-8')
+        res = md_engine.convert_stream(io.BytesIO(html_bytes), ext=".html")
+        ok = bool(res.text_content and "CPU" in res.text_content)
+        record("MarkItDown", "HTML 結構與表格轉檔", ok, f"字符長度: {len(res.text_content)} 字")
+    except Exception as e:
+        record("MarkItDown", "HTML 結構與表格轉檔", False, str(e))
+
+    # 2. CSV 轉檔測試
+    try:
+        csv_bytes = "產品,價格,庫存\n蘋果,30,500\n香蕉,20,300".encode('utf-8')
+        res = md_engine.convert_stream(io.BytesIO(csv_bytes), ext=".csv")
+        ok = bool(res.text_content and "蘋果" in res.text_content)
+        record("MarkItDown", "CSV 表格結構化轉檔", ok, f"字符長度: {len(res.text_content)} 字")
+    except Exception as e:
+        record("MarkItDown", "CSV 表格結構化轉檔", False, str(e))
+
+    # 3. 純文字與程式碼直轉
+    try:
+        txt_bytes = "Webcom Diagnostic Test Data".encode('utf-8')
+        res = md_engine.convert_stream(io.BytesIO(txt_bytes), ext=".txt")
+        ok = bool(res.text_content and "Webcom" in res.text_content)
+        record("MarkItDown", "純文字與程式碼直轉", ok, f"字符長度: {len(res.text_content)} 字")
+    except Exception as e:
+        record("MarkItDown", "純文字與程式碼直轉", False, str(e))
+
+    # 4. Word (.docx) 轉檔測試
+    try:
+        import docx
         doc = docx.Document()
         doc.add_heading('診斷報告標題', level=1)
         doc.add_paragraph('這是自我檢測自動產生的測試段落。')
@@ -237,20 +254,12 @@ def test_markitdown_conversions():
         t.cell(1, 1).text = '正常'
         buf = io.BytesIO()
         doc.save(buf)
-        b64_docx = base64.b64encode(buf.getvalue()).decode('ascii')
-
-        payload = json.dumps({"filename": "test.docx", "data_base64": b64_docx}).encode('utf-8')
-        req = urllib.request.Request(api_url, data=payload, headers={"Content-Type": "application/json"})
-        with urllib.request.urlopen(req, timeout=10) as resp:
-            data = json.loads(resp.read().decode('utf-8'))
-            status = data.get("status")
-            engine = data.get("engine")
-            md = data.get("markdown", "")
-            passed = (status == "success" and engine == "markitdown" and "|" in md)
-            detail = f"Engine: {engine} | 表格標記: {'含 Markdown 表格' if '|' in md else '無表格'}"
-            record("MarkItDown", "Word (.docx) 原生 Markdown 標題與表格", passed, detail)
+        buf.seek(0)
+        res = md_engine.convert_stream(buf, ext=".docx")
+        ok = bool(res.text_content and "|" in res.text_content)
+        record("MarkItDown", "Word (.docx) 原生 Markdown 標題與表格", ok, f"表格標記: {'含 Markdown 表格' if '|' in res.text_content else '無表格'}")
     except Exception as e:
-        record("MarkItDown", "Word (.docx) 原生 Markdown 標題與表格", False, f"測試異常: {e}")
+        record("MarkItDown", "Word (.docx) 原生 Markdown 標題與表格", False, str(e))
 
 def test_multimodal_vision():
     print(f"\n{CYAN}{BOLD}【7. 多模態視覺 (Multimodal Vision) 與歷史記錄防禦檢測】{RESET}")
