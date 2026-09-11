@@ -19,6 +19,11 @@ if sys.stdout is None or sys.stderr is None:
         pass
 if os.path.dirname(os.path.abspath(__file__)) not in sys.path:
     sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
+# 確保載入 Webcom 可攜式環境的 site-packages (支援 markitdown、mammoth、pdfminer 等)
+_portable_sp = os.path.join(os.path.dirname(os.path.abspath(__file__)), "python", "Lib", "site-packages")
+if os.path.exists(_portable_sp) and _portable_sp not in sys.path:
+    sys.path.insert(0, _portable_sp)
 from typing import Optional
 from fastapi import FastAPI, HTTPException, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
@@ -775,6 +780,29 @@ def parse_document(req: DocumentParseRequest):
     except Exception as e:
         logging.exception(f"Document parse error ({req.filename}): {e}")
         return {"status": "error", "error": f"文件解析異常: {str(e)}"}
+
+
+@app.post("/api/convert")
+def api_convert_document(req: DocumentParseRequest):
+    """
+    相容 MarkItDown Website 的原生極速轉檔介面。
+    呼叫 Microsoft MarkItDown 原生核心進行轉檔，回傳標準 Markdown。
+    """
+    res = parse_document(req)
+    if res.get("status") == "success":
+        md = res.get("markdown") or res.get("text") or ""
+        title = os.path.splitext(req.filename)[0]
+        return {
+            "status": "success",
+            "filename": req.filename,
+            "title": title,
+            "markdown": md,
+            "charCount": len(md),
+            "lineCount": len(md.splitlines())
+        }
+    else:
+        err = res.get("error") or "文件轉換失敗"
+        raise HTTPException(status_code=500, detail=err)
 
 
 @app.get("/api/rag/list")
