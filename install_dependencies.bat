@@ -68,6 +68,15 @@ if exist "%~dp0python\python.exe" (
     "%PY%" -m pip install -r "%~dp0requirements.txt"
 )
 
+if errorlevel 1 (
+    echo.
+    echo ===================================================
+    echo   [警告] 部分套件安裝失敗，請檢查上方錯誤訊息。
+    echo ===================================================
+    pause
+    exit /b 1
+)
+
 :done
 echo.
 echo ===================================================

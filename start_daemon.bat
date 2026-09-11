@@ -24,7 +24,7 @@ if exist "%~dp0python\python.exe" (
 
 where uv >nul 2>&1
 if not errorlevel 1 (
-    set "PY_CMD=uv run --with fastapi --with uvicorn --with pydantic --with markitdown[all] python"
+    set "PY_CMD=uv run --with fastapi --with uvicorn --with pydantic --with markitdown python"
     goto :python_found
 )
 

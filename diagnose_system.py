@@ -286,7 +286,7 @@ def test_sync():
         print(f"  {YELLOW}ℹ 獨立部署環境（未包含 github 子目錄），跳過雙目錄一致性比對{RESET}")
         return
 
-    files_to_check = ['index.html', 'daemon.py', 'start_daemon.bat', 'README.md', 'diagnose_system.py', 'self_test.bat']
+    files_to_check = ['index.html', 'daemon.py', 'start_daemon.bat', 'README.md', 'diagnose_system.py', 'self_test.bat', 'requirements.txt', 'install_dependencies.bat']
 
     for fn in files_to_check:
         p1 = os.path.join(BASE_DIR, fn)
