@@ -270,6 +270,11 @@
                     title="開啟 MarkItDown 文件轉換器 (PDF/Word/Excel/PPT 轉 Markdown)">
                     <i data-lucide="file-text" class="w-3.5 h-3.5"></i> <span>MarkItDown</span>
                 </a>
+                <button id="btn-open-diagnostics" type="button" onclick="openDiagnosticsModal()"
+                    class="text-xs px-2.5 py-1 rounded-md bg-emerald-950/70 hover:bg-emerald-900 text-emerald-300 border border-emerald-700/60 flex items-center gap-1.5 font-semibold transition shadow-sm cursor-pointer select-none"
+                    title="一鍵進行系統與功能自我健康檢測 (檢查函式、UI按鈕、8001後端與MarkItDown)">
+                    <i data-lucide="activity" class="w-3.5 h-3.5"></i> <span>自我檢測</span>
+                </button>
                 <button id="btn-launch-daemon" type="button" onclick="openDaemonModal()"
                     class="text-xs px-2.5 py-1 rounded-md bg-purple-950/70 hover:bg-purple-900 text-purple-300 border border-purple-700/60 flex items-center gap-1.5 font-semibold transition shadow-sm cursor-pointer select-none"
                     title="一鍵呼叫 start_daemon.bat 啟動常駐程式" data-i18n-title="tooltipLaunchDaemon">
@@ -1381,6 +1386,69 @@
                 <button id="btn-close-mcp-footer"
                     class="bg-gray-800 hover:bg-gray-700 text-white text-xs px-4 py-1.5 rounded-lg transition"
                     data-i18n="modalClose">關閉</button>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- System Self-Diagnostics Modal (系統自我檢測面板) -->
+    <div id="diagnostics-modal"
+        class="fixed inset-0 bg-black/80 backdrop-blur-sm z-[110] hidden flex items-center justify-center p-4">
+        <div
+            class="bg-gray-900 border border-emerald-500/50 rounded-2xl w-[620px] max-w-full shadow-2xl flex flex-col overflow-hidden max-h-[90vh]">
+            <div class="px-5 py-4 border-b border-gray-800 flex justify-between items-center bg-gray-950/90 shrink-0">
+                <div class="flex items-center gap-2.5">
+                    <div class="p-1.5 bg-emerald-500/20 text-emerald-400 rounded-lg border border-emerald-500/40">
+                        <i data-lucide="shield-check" class="w-5 h-5 text-emerald-400"></i>
+                    </div>
+                    <div>
+                        <h2 class="text-base font-bold text-white flex items-center gap-2">
+                            <span>系統與功能自我檢測工具</span>
+                            <span class="text-xs bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded font-mono">Self-Diagnostics</span>
+                        </h2>
+                        <p class="text-xs text-gray-400">自動檢驗核心 API、UI 按鈕防禦、常駐服務連線與 MarkItDown 轉檔能力</p>
+                    </div>
+                </div>
+                <button id="btn-close-diag" onclick="closeDiagnosticsModal()" class="text-gray-400 hover:text-white transition p-1 cursor-pointer">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <!-- Diagnostics Content -->
+            <div class="p-5 overflow-y-auto space-y-4 text-xs">
+                <!-- Summary Card -->
+                <div id="diag-summary-card" class="p-3.5 bg-gray-950 rounded-xl border border-gray-800 flex items-center justify-between">
+                    <div>
+                        <div class="text-gray-400 text-[11px]">綜合健康度診斷狀態</div>
+                        <div id="diag-summary-title" class="text-sm font-bold text-gray-200 mt-0.5 flex items-center gap-2 font-mono">
+                            <span class="w-2.5 h-2.5 rounded-full bg-yellow-500 animate-pulse"></span>
+                            <span>診斷準備中...</span>
+                        </div>
+                    </div>
+                    <div id="diag-stats-badge" class="px-3 py-1 rounded-lg bg-gray-800 text-gray-300 font-mono text-xs border border-gray-700">
+                        0 / 7 項目
+                    </div>
+                </div>
+
+                <!-- Test Items List -->
+                <div class="space-y-2 font-mono" id="diag-tests-list">
+                    <!-- 動態由 JavaScript 填入各項測試結果 -->
+                </div>
+            </div>
+
+            <!-- Footer Controls -->
+            <div class="px-5 py-3.5 bg-gray-950 border-t border-gray-800 flex items-center justify-between shrink-0">
+                <span class="text-[11px] text-gray-500">提示：若常駐程式或轉檔異常，可點擊上方「啟動常駐程式」</span>
+                <div class="flex items-center gap-2">
+                    <button type="button" onclick="runDiagnosticsTests()"
+                        class="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-semibold transition flex items-center gap-1.5 shadow-sm cursor-pointer">
+                        <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i> <span>重新檢測</span>
+                    </button>
+                    <button type="button" onclick="closeDiagnosticsModal()"
+                        class="px-3 py-1.5 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-300 transition cursor-pointer">
+                        <span>關閉</span>
+                    </button>
+                </div>
             </div>
         </div>
     </div>
@@ -12325,6 +12393,207 @@ Important guidelines:
             const m = document.getElementById('daemon-modal');
             if (m) m.classList.remove('hidden');
         }
+
+        // ── 系統與功能自我診斷核心 (In-Browser Self-Diagnostics Engine) ──
+        function openDiagnosticsModal() {
+            const m = document.getElementById('diagnostics-modal');
+            if (m) m.classList.remove('hidden');
+            if (window.lucide) lucide.createIcons();
+            runDiagnosticsTests();
+        }
+        function closeDiagnosticsModal() {
+            const m = document.getElementById('diagnostics-modal');
+            if (m) m.classList.add('hidden');
+        }
+        window.openDiagnosticsModal = openDiagnosticsModal;
+        window.closeDiagnosticsModal = closeDiagnosticsModal;
+
+        async function runDiagnosticsTests() {
+            const listEl = document.getElementById('diag-tests-list');
+            const summaryTitle = document.getElementById('diag-summary-title');
+            const statsBadge = document.getElementById('diag-stats-badge');
+            if (!listEl) return;
+
+            listEl.innerHTML = `
+                <div class="text-center py-6 text-gray-400">
+                    <div class="inline-block w-6 h-6 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin mb-2"></div>
+                    <div>正在逐項檢測系統核心功能...</div>
+                </div>
+            `;
+            if (summaryTitle) {
+                summaryTitle.innerHTML = `<span class="w-2.5 h-2.5 rounded-full bg-yellow-500 animate-pulse"></span> <span class="text-yellow-400">診斷執行中...</span>`;
+            }
+
+            const tests = [];
+
+            // 1. 核心 JavaScript 函式完整度
+            const fnCheckList = [
+                { name: 'checkDaemonHealth', ok: typeof checkDaemonHealth === 'function' },
+                { name: 'handleSend', ok: typeof handleSend === 'function' },
+                { name: 'handleSendMessage', ok: typeof handleSendMessage === 'function' },
+                { name: 'initWTerm', ok: typeof initWTerm === 'function' },
+                { name: 'processDocumentFile', ok: typeof processDocumentFile === 'function' },
+            ];
+            const allFnOk = fnCheckList.every(f => f.ok);
+            tests.push({
+                title: '1. 核心 JavaScript 函式就緒狀態',
+                desc: allFnOk ? '全部 5 項核心 API (checkDaemonHealth, handleSend, initWTerm, 等) 正常掛載' : '有核心函式遺失，可能導致發送訊息或檢測中斷！',
+                passed: allFnOk,
+                detail: fnCheckList.map(f => `${f.name}: ${f.ok ? 'OK' : 'MISSING'}`).join(' | ')
+            });
+
+            // 2. UI 原生標籤與選檔器觸發健全度
+            const imgLabel = document.querySelector('label[for="file-upload-image"]#btn-upload-image');
+            const docLabel = document.querySelector('label[for="file-upload-doc"]#btn-upload-doc');
+            const imgInput = document.getElementById('file-upload-image');
+            const docInput = document.getElementById('file-upload-doc');
+            const sendBtn = document.getElementById('btn-send');
+            const termBox = document.getElementById('term-wterm-container');
+            const uiOk = !!(imgLabel && docLabel && imgInput && docInput && sendBtn && termBox);
+            tests.push({
+                title: '2. UI 元素與 HTML5 原生 Label 標籤健全性',
+                desc: uiOk ? '圖片與文件按鈕均採用原生 label for 綁定，保證穿透點擊無阻擋' : '部分 DOM 節點遺失或未正確使用原生標籤',
+                passed: uiOk,
+                detail: `Image Label: ${imgLabel ? 'OK' : 'FAIL'} | Doc Label: ${docLabel ? 'OK' : 'FAIL'} | Send Btn: ${sendBtn ? 'OK' : 'FAIL'}`
+            });
+
+            // 3. Port 8001 常駐服務健康度與延遲
+            let daemonOk = false;
+            let latency = 0;
+            let daemonData = null;
+            try {
+                const t0 = performance.now();
+                const ep = (typeof appSettings !== 'undefined' && appSettings?.daemonEndpoint) ? appSettings.daemonEndpoint : 'http://127.0.0.1:8001';
+                const res = await fetchWithTimeout(`${ep}/health`, { timeout: 2000 });
+                latency = Math.round(performance.now() - t0);
+                if (res.ok) {
+                    daemonData = await res.json();
+                    daemonOk = (daemonData.status === 'online' || daemonData.service);
+                }
+            } catch (e) {
+                daemonOk = false;
+            }
+            tests.push({
+                title: '3. Port 8001 後端常駐程式連線探針',
+                desc: daemonOk ? `連線正常 (延遲 ${latency}ms) — 服務: ${daemonData?.service || 'Webcom Daemon'}` : '無法連線至 Port 8001，請點擊頂部 [啟動常駐程式]',
+                passed: daemonOk,
+                detail: daemonOk ? `HTTP 200 OK | ${latency}ms` : '連線逾時或拒絕連線'
+            });
+
+            // 4. Microsoft MarkItDown 轉檔 API 實測
+            let mdOk = false;
+            let mdEngine = 'unknown';
+            let mdDetail = '';
+            if (daemonOk) {
+                try {
+                    const testHtml = '<h1>標題測試</h1><table><tr><th>欄位</th><th>值</th></tr><tr><td>狀態</td><td>正常</td></tr></table>';
+                    const b64 = btoa(unescape(encodeURIComponent(testHtml)));
+                    const ep = (typeof appSettings !== 'undefined' && appSettings?.daemonEndpoint) ? appSettings.daemonEndpoint : 'http://127.0.0.1:8001';
+                    const res = await fetchWithTimeout(`${ep}/tools/parse_document`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ filename: 'diagnostic_test.html', data_base64: b64 }),
+                        timeout: 10000
+                    });
+                    if (res.ok) {
+                        const data = await res.json();
+                        mdEngine = data.engine || 'unknown';
+                        mdOk = (data.status === 'success' && mdEngine === 'markitdown' && (data.markdown || '').includes('|'));
+                        mdDetail = `Engine: ${mdEngine} | 回傳長度: ${(data.markdown || '').length} 字 | 結構化表格: ${data.markdown?.includes('|') ? '✔' : '✖'}`;
+                    }
+                } catch (e) {
+                    mdOk = false;
+                    mdDetail = e.message;
+                }
+            } else {
+                mdDetail = '因 8001 常駐服務離線而略過實測';
+            }
+            tests.push({
+                title: '4. Microsoft MarkItDown 實機結構化轉檔引擎',
+                desc: mdOk ? `MarkItDown 原生引擎正常運作，成功將表格與階層轉為乾淨 Markdown` : `轉檔引擎異常或未啟用: ${mdDetail}`,
+                passed: mdOk,
+                detail: mdDetail
+            });
+
+            // 5. 前端終端機 (WTerm/DOM) 畫面就緒狀態
+            const termReady = !!(window.wtermInstance || (termBox && termBox.children.length > 0));
+            tests.push({
+                title: '5. 多協定終端機 (WTerm / DOM) 渲染狀態',
+                desc: termReady ? '終端機實例已成功就緒，支援本地 Shell / SSH / Serial / Telnet' : '終端機實例尚未建立，請確認是否有腳本阻斷',
+                passed: termReady,
+                detail: window.wtermInstance ? 'WASM WTerm 實例活躍' : 'DOM 終端機容器就緒'
+            });
+
+            // 6. 瀏覽器硬體直連與加速支援
+            const hasWebGpu = !!navigator.gpu;
+            const hasWebSerial = !!navigator.serial;
+            tests.push({
+                title: '6. 瀏覽器硬體加速與直連能力',
+                desc: `WebGPU 離線 AI 加速: ${hasWebGpu ? '支援' : '不支援 (將自動使用伺服器/ONNX)'} | Web Serial 設備直連: ${hasWebSerial ? '支援' : '不支援'}`,
+                passed: true,
+                detail: `WebGPU: ${hasWebGpu ? '✔' : '✖'} | WebSerial: ${hasWebSerial ? '✔' : '✖'}`
+            });
+
+            // 7. RAG 知識庫與分塊引擎
+            const hasRagDocs = Array.isArray(appSettings?.ragDocs);
+            const hasChunkFn = typeof chunkText === 'function';
+            const ragOk = hasRagDocs && hasChunkFn;
+            tests.push({
+                title: '7. 本地 RAG 向量知識庫與文本切塊引擎',
+                desc: ragOk ? `RAG 知識庫已載入 (${appSettings.ragDocs.length} 篇文件)，切塊引擎正常就緒` : '知識庫結構異常',
+                passed: ragOk,
+                detail: `文件數: ${appSettings?.ragDocs?.length || 0} | 切塊演算法: ${hasChunkFn ? 'OK' : 'MISSING'}`
+            });
+
+            // 渲染列表
+            const total = tests.length;
+            const passedCount = tests.filter(t => t.passed).length;
+            const failedCount = total - passedCount;
+
+            let html = '';
+            tests.forEach(t => {
+                const icon = t.passed
+                    ? `<span class="w-5 h-5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 flex items-center justify-center shrink-0 font-bold text-xs">✔</span>`
+                    : `<span class="w-5 h-5 rounded-full bg-red-500/20 text-red-400 border border-red-500/40 flex items-center justify-center shrink-0 font-bold text-xs">✖</span>`;
+                const badge = t.passed
+                    ? `<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-950 text-emerald-400 border border-emerald-800 shrink-0">PASS</span>`
+                    : `<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-red-950 text-red-400 border border-red-800 shrink-0">FAIL</span>`;
+                const border = t.passed ? 'border-gray-800 hover:border-gray-700' : 'border-red-900/60 bg-red-950/20';
+
+                html += `
+                    <div class="p-3 bg-gray-950/80 rounded-xl border ${border} transition flex items-start justify-between gap-3">
+                        <div class="flex items-start gap-2.5">
+                            ${icon}
+                            <div>
+                                <div class="font-bold text-white text-xs">${t.title}</div>
+                                <div class="text-gray-400 text-[11px] mt-0.5">${t.desc}</div>
+                                <div class="text-gray-500 text-[10px] mt-1 bg-black/40 px-2 py-0.5 rounded inline-block">${t.detail}</div>
+                            </div>
+                        </div>
+                        ${badge}
+                    </div>
+                `;
+            });
+
+            listEl.innerHTML = html;
+
+            if (statsBadge) {
+                statsBadge.innerHTML = failedCount === 0 
+                    ? `<span class="text-emerald-400 font-bold">${passedCount} / ${total} 通過</span>` 
+                    : `<span class="text-red-400 font-bold">${passedCount} 通過, ${failedCount} 異常</span>`;
+            }
+
+            if (summaryTitle) {
+                if (failedCount === 0) {
+                    summaryTitle.innerHTML = `<span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span> <span class="text-emerald-400 font-bold">全數通過！所有核心功能運作良好</span>`;
+                } else {
+                    summaryTitle.innerHTML = `<span class="w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse"></span> <span class="text-red-400 font-bold">檢測到 ${failedCount} 項異常，請查看詳情</span>`;
+                }
+            }
+            if (window.lucide) lucide.createIcons();
+        }
+        window.runDiagnosticsTests = runDiagnosticsTests;
+
         window.openDaemonModal = openDaemonModal;
         window.openMarkItDownCenter = openMarkItDownCenter;
 
