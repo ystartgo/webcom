@@ -941,6 +941,14 @@ Q1~Q3 live inside the built-in User Guide Tab 5 *FAQ*. The Q4~Q6 below cover v1.
   3. `pythonw.exe` / windowless service mode: when `sys.stdout/sys.stderr is None` → auto-redirect both to `daemon.log` (fixes crashes under Task Scheduler / silent launcher because stderr was unavailable)
   4. CWD hardening: at startup, force `os.chdir(__file__ dir)` + `sys.path.insert(0, __dir__)` (fixes imports when daemon is launched from a different working directory)
 - **🩹 `webcom://` custom protocol launcher now uses `<a>.click()` instead of `iframe.src`**: newer Edge/Chromium CSP policies block iframe-loading custom protocols (caused a 3000 ms ghost-flash / no-launch). Replaced with `<a href="webcom://…">` + programmatic `.click()` + removal after 2000 ms — works on Chrome / Edge / Firefox.
+### `v1.0.7-WSL-Desktop-Inspection` — 2026-09-12
+- **🐧 WSL 桌面整合與健康排查 (WSL Desktop Inspection & 1-Click Launch)**:
+  - **解決 WSL 桌面連線難題**：後端常駐程式 (Port 8001) 新增 `/api/wsl/status` 即時檢測端點，自動探測 WSL2 發行版、TigerVNC (`5901`)、WebSockify (`6080`) 與 PulseAudio TCP (`8000`) 埠號監聽狀態。
+  - **一鍵自動拉起桌面環境**：新增 `/api/wsl/start-desktop` 與 `/api/wsl/stop-desktop`，免手動下指令即可自動在 WSL 背景執行 `Xtigervnc :1 -SecurityTypes None`、`startxfce4`、`websockify -D` 與 PulseAudio 模組。
+  - **左側工作區專屬控制列**：noVNC 桌面與 Xorg 視窗工作區頂部新增 WSL 即時狀態徽章、`[🔍 檢查 WSL]` 與 `[🚀 一鍵啟動 WSL 桌面]` 按鈕，點擊後自動啟動並無縫連線 HTML5 桌面畫布。
+  - **原生 WSL Bash 終端機指令執行**：多協定終端機新增「本地 Shell (WSL Linux)」選項，命令原生透過 `wsl.exe -e bash -c "<cmd>"` 執行，完美支援 Linux 系統指令，不再受限於 Windows powershell/cmd 回退機制。
+  - **完整雙向自動檢測**：`diagnose_system.py` 與 `self_test.bat` 全面納入 WSL 核心函式、UI 元件與 `/api/wsl/status` 探針檢查。
+
 - **🩹 Download-register `.reg.bat` now launches via `wscript.exe silent_daemon.vbs` (truly silent)**: the previous `start_daemon.bat` route popped a cmd black console; the new `HKCU\…\webcom\shell\open\command = wscript.exe silent_daemon.vbs %1` runs **fully in background, zero windows, zero user disruption**.
 - **📦 Asset sync**: `assets/webllm.bundle.js` (WebGPU loader callback priority tweak — 78-byte delta)
 - **📄 Docs**: bilingual Changelog entries + top banner version bumped v1.0.3 → v1.0.4

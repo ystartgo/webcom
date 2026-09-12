@@ -325,6 +325,90 @@ def proxy_audio_stream(url: str = "http://127.0.0.1:8000/audio"):
         raise HTTPException(status_code=502, detail=f"Audio proxy failed: {e}")
 
 
+def _is_tcp_port_open(port: int, host: str = "127.0.0.1") -> bool:
+    import socket
+    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    s.settimeout(0.6)
+    try:
+        err = s.connect_ex((host, int(port)))
+        return err == 0
+    except Exception:
+        return False
+    finally:
+        try:
+            s.close()
+        except Exception:
+            pass
+
+
+@app.get("/api/wsl/status")
+def get_wsl_desktop_status():
+    """檢查 WSL 運行狀態、Linux 發行版以及 VNC/websockify/音訊埠狀態"""
+    has_wsl = False
+    distro = "None"
+    if shutil.which("wsl.exe"):
+        try:
+            p = subprocess.run(["wsl.exe", "-l", "-q"], capture_output=True, text=True, timeout=5)
+            if p.returncode == 0 and p.stdout.strip():
+                has_wsl = True
+                distro = p.stdout.replace('\x00', '').strip().splitlines()[0]
+        except Exception:
+            pass
+            
+    vnc_open = _is_tcp_port_open(5901)
+    ws_open = _is_tcp_port_open(6080)
+    audio_open = _is_tcp_port_open(8000)
+
+    return {
+        "status": "ok",
+        "has_wsl": has_wsl,
+        "distro": distro,
+        "vnc_open": vnc_open,
+        "vnc_port": 5901,
+        "websockify_open": ws_open,
+        "websockify_port": 6080,
+        "audio_open": audio_open,
+        "audio_port": 8000,
+        "ready": (vnc_open and ws_open)
+    }
+
+
+@app.post("/api/wsl/start-desktop")
+def start_wsl_desktop_service():
+    """一鍵於 WSL 背景拉起 TigerVNC、XFCE 桌面、websockify 與音訊轉發"""
+    if not shutil.which("wsl.exe"):
+        raise HTTPException(status_code=400, detail="本地未偵測到 WSL 環境")
+    
+    import time
+    # 1. 確保 VNC 桌面服務在 :1 (5901) 運行
+    if not _is_tcp_port_open(5901):
+        subprocess.run(["wsl.exe", "-e", "sh", "-c", "Xtigervnc :1 -geometry 1920x1080 -depth 24 -SecurityTypes None >/dev/null 2>&1 &"], capture_output=True)
+        time.sleep(0.5)
+        subprocess.run(["wsl.exe", "-e", "sh", "-c", "DISPLAY=:1 dbus-run-session -- startxfce4 >/dev/null 2>&1 &"], capture_output=True)
+        time.sleep(0.5)
+
+    # 2. 確保 websockify 在 6080 運行
+    if not _is_tcp_port_open(6080):
+        subprocess.run(["wsl.exe", "-e", "sh", "-c", "websockify -D --web /usr/share/novnc 6080 localhost:5901"], capture_output=True)
+        time.sleep(0.5)
+
+    # 3. 確保 PulseAudio 串流在 8000 運行
+    if not _is_tcp_port_open(8000):
+        subprocess.run(["wsl.exe", "-e", "sh", "-c", "pulseaudio --start --exit-idle-time=-1 >/dev/null 2>&1; pactl load-module module-simple-protocol-tcp rate=48000 format=s16le channels=2 source=@DEFAULT_SOURCE@ record=true port=8000 listen=0.0.0.0 >/dev/null 2>&1 &"], capture_output=True)
+
+    return get_wsl_desktop_status()
+
+
+@app.post("/api/wsl/stop-desktop")
+def stop_wsl_desktop_service():
+    """停止 WSL 背景的 VNC 與 websockify 桌面服務"""
+    if shutil.which("wsl.exe"):
+        subprocess.run(["wsl.exe", "-e", "sh", "-c", "pkill -f websockify; pkill -f Xtigervnc; pkill -f startxfce4; pactl unload-module module-simple-protocol-tcp >/dev/null 2>&1"], capture_output=True)
+        import time
+        time.sleep(0.5)
+    return get_wsl_desktop_status()
+
+
 import logging
 import threading
 import urllib.request
@@ -433,6 +517,8 @@ def get_daemon_logs(lines: int = 100):
 
 class ShellRequest(BaseModel):
     command: str
+    protocol: Optional[str] = "shell"
+    target: Optional[str] = None
 
 class FileReadRequest(BaseModel):
     filepath: str
@@ -514,13 +600,12 @@ def execute_shell(req: ShellRequest):
                     continue
             return raw_bytes.decode("utf-8", errors="replace")
 
-        if is_windows:
-            # WinPE & Windows Execution: Prefer powershell with UTF-8 console encoding if available, fallback cleanly to cmd.exe
-            if shutil.which("powershell.exe"):
+        if is_windows and (req.protocol == "wsl" or req.target == "wsl" or cmd.startswith("wsl ")):
+            if shutil.which("wsl.exe"):
+                actual_cmd = cmd[4:].strip() if cmd.startswith("wsl ") else cmd
                 try:
-                    ps_cmd = f"$OutputEncoding = [System.Text.Encoding]::UTF8; [Console]::OutputEncoding = [System.Text.Encoding]::UTF8; [Console]::InputEncoding = [System.Text.Encoding]::UTF8; {cmd}"
                     process = subprocess.run(
-                        ["powershell.exe", "-NoProfile", "-Command", ps_cmd],
+                        ["wsl.exe", "-e", "bash", "-c", actual_cmd],
                         capture_output=True,
                         text=False,
                         timeout=30,
@@ -529,25 +614,41 @@ def execute_shell(req: ShellRequest):
                 except Exception:
                     process = None
 
-            if process is None:
-                # Native CMD execution (100% available in all WinPE builds)
+        if process is None:
+            if is_windows:
+                # WinPE & Windows Execution: Prefer powershell with UTF-8 console encoding if available, fallback cleanly to cmd.exe
+                if shutil.which("powershell.exe"):
+                    try:
+                        ps_cmd = f"$OutputEncoding = [System.Text.Encoding]::UTF8; [Console]::OutputEncoding = [System.Text.Encoding]::UTF8; [Console]::InputEncoding = [System.Text.Encoding]::UTF8; {cmd}"
+                        process = subprocess.run(
+                            ["powershell.exe", "-NoProfile", "-Command", ps_cmd],
+                            capture_output=True,
+                            text=False,
+                            timeout=30,
+                            env=env
+                        )
+                    except Exception:
+                        process = None
+
+                if process is None:
+                    # Native CMD execution (100% available in all WinPE builds)
+                    process = subprocess.run(
+                        f'cmd.exe /c "chcp 65001 >nul 2>&1 && {cmd}"',
+                        shell=True,
+                        capture_output=True,
+                        text=False,
+                        timeout=30,
+                        env=env
+                    )
+            else:
                 process = subprocess.run(
-                    f'cmd.exe /c "chcp 65001 >nul 2>&1 && {cmd}"',
+                    cmd,
                     shell=True,
                     capture_output=True,
                     text=False,
                     timeout=30,
                     env=env
                 )
-        else:
-            process = subprocess.run(
-                cmd,
-                shell=True,
-                capture_output=True,
-                text=False,
-                timeout=30,
-                env=env
-            )
         
         stdout_str = decode_stream(process.stdout)
         stderr_str = decode_stream(process.stderr)

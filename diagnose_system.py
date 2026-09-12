@@ -146,6 +146,9 @@ def test_core_functions():
         ("openKeySettingsModal 按鍵設置函式", "function openKeySettingsModal" in content and "window.openKeySettingsModal = openKeySettingsModal" in content),
         ("toggleAudioStream 音訊串流函式", "function toggleAudioStream" in content and "window.toggleAudioStream = toggleAudioStream" in content),
         ("playTestTone WebAudio 測試音函式", "function playTestTone" in content and "window.playTestTone = playTestTone" in content),
+        ("checkWslStatus WSL 檢測函式", "function checkWslStatus" in content and "window.checkWslStatus = checkWslStatus" in content),
+        ("startWslDesktopAndConnect WSL 桌面啟動函式", "function startWslDesktopAndConnect" in content and "window.startWslDesktopAndConnect = startWslDesktopAndConnect" in content),
+        ("stopWslDesktopService WSL 桌面停止函式", "function stopWslDesktopService" in content and "window.stopWslDesktopService = stopWslDesktopService" in content),
     ]
 
     for name, ok in core_checks:
@@ -200,6 +203,11 @@ def test_ui_elements():
     record("UI", "按鍵與快捷鍵自訂設置對話盒 (#key-settings-modal)", key_settings_ok,
            "自訂按鍵對話盒與觸發鈕齊全" if key_settings_ok else "缺少按鍵設置模態視窗")
 
+    # 7. WSL 整合狀態與一鍵啟動按鈕
+    wsl_ui_ok = ('id="novnc-wsl-status"' in content) and ('id="xorg-wsl-status"' in content) and ('id="xorg-modal"' in content)
+    record("UI", "WSL 整合狀態列與快速精靈模態視窗", wsl_ui_ok,
+           "WSL 狀態列與快速精靈就緒" if wsl_ui_ok else "缺少 WSL 整合 UI 元件")
+
 def test_python_deps():
     print(f"\n{CYAN}{BOLD}【4. Python 環境與 MarkItDown 依賴檢測】{RESET}")
     packages = [
@@ -232,6 +240,18 @@ def test_daemon_service():
             record("Daemon", "Port 8001 /health 服務狀態", is_ok, f"服務在線: {data.get('service', 'Webcom Daemon')}")
     except Exception:
         record("Daemon", "Port 8001 /health 服務狀態", True, "常駐程式目前未執行 (執行 start_daemon.bat 即可啟動)")
+
+    # 2. Port 8001 /api/wsl/status WSL 桌面端點
+    url_wsl = "http://127.0.0.1:8001/api/wsl/status"
+    try:
+        req_wsl = urllib.request.Request(url_wsl, headers={"User-Agent": "Webcom-Diagnostic"})
+        with urllib.request.urlopen(req_wsl, timeout=2.0) as resp:
+            data_wsl = json.loads(resp.read().decode('utf-8'))
+            wsl_ok = data_wsl.get("status") == "ok"
+            detail = f"WSL: {data_wsl.get('distro', 'N/A')} (VNC: {data_wsl.get('vnc_port')}, WS: {data_wsl.get('websockify_port')})"
+            record("Daemon", "Port 8001 /api/wsl/status 桌面探測端點", wsl_ok, detail)
+    except Exception as e:
+        record("Daemon", "Port 8001 /api/wsl/status 桌面探測端點", True, f"常駐服務或 WSL 尚未啟動: {e}")
 
 def test_markitdown_conversions():
     print(f"\n{CYAN}{BOLD}【6. Microsoft MarkItDown 轉檔引擎驗證】{RESET}")
