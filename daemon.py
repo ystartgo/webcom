@@ -380,30 +380,49 @@ def start_wsl_desktop_service():
         raise HTTPException(status_code=400, detail="本地未偵測到 WSL 環境")
     
     import time
-    # 1. 確保 VNC 桌面服務在 :1 (5901) 運行
-    if not _is_tcp_port_open(5901):
-        subprocess.run(["wsl.exe", "-e", "sh", "-c", "Xtigervnc :1 -geometry 1920x1080 -depth 24 -SecurityTypes None >/dev/null 2>&1 &"], capture_output=True)
-        time.sleep(0.5)
-        subprocess.run(["wsl.exe", "-e", "sh", "-c", "DISPLAY=:1 dbus-run-session -- startxfce4 >/dev/null 2>&1 &"], capture_output=True)
-        time.sleep(0.5)
+    # 0. 確保 /tmp/.X11-unix 在 WSL2 下可讀寫 (WSLg 預設為唯讀)
+    subprocess.run(["wsl.exe", "-u", "root", "-e", "bash", "-c", "mount -o remount,rw /tmp/.X11-unix 2>/dev/null; chmod 1777 /tmp/.X11-unix 2>/dev/null; chmod 1777 /tmp/.ICE-unix 2>/dev/null"], capture_output=False, timeout=5)
 
-    # 2. 確保 websockify 在 6080 運行
+    # 1. 確保 VNC 桌面服務在 :1 (5901) 運行 (使用 Xvfb + x11vnc -noxrandr -noxdamage，強制解除 WAYLAND_DISPLAY 防止黑畫面)
+    if not _is_tcp_port_open(5901):
+        # 清理舊鎖與建立使用者目錄
+        subprocess.run(["wsl.exe", "-e", "bash", "-c", "rm -f /tmp/.X1-lock /tmp/.X11-unix/X1 2>/dev/null; mkdir -p ~/.vnc"], capture_output=False, timeout=5)
+        # 啟動 Xvfb :1 虛擬顯示器
+        subprocess.run(["wsl.exe", "-e", "bash", "-c", "nohup Xvfb :1 -screen 0 1920x1080x24 -ac </dev/null >~/.vnc/xvfb.log 2>&1 &"], capture_output=False, timeout=5)
+        time.sleep(0.5)
+        # 啟動 x11vnc (守護進程模式 -bg 運行，帶 -noxrandr -noxdamage 消除 SIGHUP 與 XIO 問題)
+        subprocess.run(["wsl.exe", "-e", "bash", "-c", "env -u WAYLAND_DISPLAY x11vnc -display :1 -rfbport 5901 -nopw -listen 0.0.0.0 -forever -shared -bg -noxrandr -noxdamage -o ~/.vnc/x11vnc.log"], capture_output=False, timeout=5)
+        time.sleep(0.5)
+        # 啟動 XFCE4 桌面會話 (強制指定 GDK_BACKEND=x11 與 DISPLAY=:1)
+        start_desktop_cmd = (
+            "nohup env -u WAYLAND_DISPLAY GDK_BACKEND=x11 DISPLAY=:1 "
+            "XDG_SESSION_TYPE=x11 XDG_CURRENT_DESKTOP=XFCE DESKTOP_SESSION=xfce QT_QPA_PLATFORM=xcb "
+            "dbus-run-session -- xfce4-session </dev/null >~/.vnc/xfce.log 2>&1 &"
+        )
+        subprocess.run(["wsl.exe", "-e", "bash", "-c", start_desktop_cmd], capture_output=False, timeout=5)
+        time.sleep(1.0)
+        # 確保 xfdesktop (桌面壁紙圖示) 與 xfce4-panel (工作列) 雙雙就緒
+        subprocess.run(["wsl.exe", "-e", "bash", "-c", "pgrep -f xfdesktop >/dev/null || nohup env -u WAYLAND_DISPLAY GDK_BACKEND=x11 DISPLAY=:1 xfdesktop </dev/null >/dev/null 2>&1 &"], capture_output=False, timeout=5)
+        subprocess.run(["wsl.exe", "-e", "bash", "-c", "pgrep -f xfce4-panel >/dev/null || nohup env -u WAYLAND_DISPLAY GDK_BACKEND=x11 DISPLAY=:1 xfce4-panel </dev/null >/dev/null 2>&1 &"], capture_output=False, timeout=5)
+
+    # 2. 確保 websockify 在 6080 運行 (提供 noVNC HTML5 WebSocket 與 Web 伺服器)
     if not _is_tcp_port_open(6080):
-        subprocess.run(["wsl.exe", "-e", "sh", "-c", "websockify -D --web /usr/share/novnc 6080 localhost:5901"], capture_output=True)
+        subprocess.run(["wsl.exe", "-e", "bash", "-c", "pkill -9 -f websockify 2>/dev/null || true; nohup websockify -D --web /usr/share/novnc 6080 localhost:5901 </dev/null >~/.vnc/websockify.log 2>&1 &"], capture_output=False, timeout=5)
         time.sleep(0.5)
 
     # 3. 確保 PulseAudio 串流在 8000 運行
     if not _is_tcp_port_open(8000):
-        subprocess.run(["wsl.exe", "-e", "sh", "-c", "pulseaudio --start --exit-idle-time=-1 >/dev/null 2>&1; pactl load-module module-simple-protocol-tcp rate=48000 format=s16le channels=2 source=@DEFAULT_SOURCE@ record=true port=8000 listen=0.0.0.0 >/dev/null 2>&1 &"], capture_output=True)
+        subprocess.run(["wsl.exe", "-e", "bash", "-c", "pulseaudio --start --exit-idle-time=-1 >/dev/null 2>&1; pactl load-module module-simple-protocol-tcp rate=48000 format=s16le channels=2 source=@DEFAULT_SOURCE@ record=true port=8000 listen=0.0.0.0 >/dev/null 2>&1 &"], capture_output=False, timeout=5)
 
     return get_wsl_desktop_status()
 
 
 @app.post("/api/wsl/stop-desktop")
 def stop_wsl_desktop_service():
-    """停止 WSL 背景的 VNC 與 websockify 桌面服務"""
+    """停止 WSL 背景的 VNC、Xvfb、XFCE 與 websockify 桌面服務"""
     if shutil.which("wsl.exe"):
-        subprocess.run(["wsl.exe", "-e", "sh", "-c", "pkill -f websockify; pkill -f Xtigervnc; pkill -f startxfce4; pactl unload-module module-simple-protocol-tcp >/dev/null 2>&1"], capture_output=True)
+        stop_cmd = "pkill -9 -f websockify; pkill -9 -f x11vnc; pkill -9 -f Xvfb; pkill -9 -f Xtigervnc; pkill -9 -f xfce4; pkill -9 -f xfwm4; pkill -9 -f xfdesktop; pactl unload-module module-simple-protocol-tcp >/dev/null 2>&1; rm -f /tmp/.X1-lock /tmp/.X11-unix/X1"
+        subprocess.run(["wsl.exe", "-e", "bash", "-c", stop_cmd], capture_output=False, timeout=5)
         import time
         time.sleep(0.5)
     return get_wsl_desktop_status()
