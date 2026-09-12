@@ -149,6 +149,7 @@ def test_core_functions():
         ("checkWslStatus WSL 檢測函式", "function checkWslStatus" in content and "window.checkWslStatus = checkWslStatus" in content),
         ("startWslDesktopAndConnect WSL 桌面啟動函式", "function startWslDesktopAndConnect" in content and "window.startWslDesktopAndConnect = startWslDesktopAndConnect" in content),
         ("stopWslDesktopService WSL 桌面停止函式", "function stopWslDesktopService" in content and "window.stopWslDesktopService = stopWslDesktopService" in content),
+        ("launchWslApp WSL GUI 應用程式啟動函式", "function launchWslApp" in content and "window.launchWslApp = launchWslApp" in content),
     ]
 
     for name, ok in core_checks:

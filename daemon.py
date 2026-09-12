@@ -428,6 +428,32 @@ def stop_wsl_desktop_service():
     return get_wsl_desktop_status()
 
 
+class LaunchAppRequest(BaseModel):
+    cmd: str
+    display: Optional[str] = ":1"
+
+
+@app.post("/api/wsl/launch-app")
+def launch_wsl_app(req: LaunchAppRequest):
+    """在 WSL 虛擬 X11 顯示器 (預設 :1) 啟動指定的 Linux GUI 應用程式"""
+    if not shutil.which("wsl.exe"):
+        raise HTTPException(status_code=400, detail="本地未偵測到 WSL 環境")
+    
+    clean_cmd = req.cmd.strip()
+    if not clean_cmd:
+        raise HTTPException(status_code=400, detail="指令不能為空")
+
+    # 確保桌面服務處於運行狀態，若未啟動則先自動啟動
+    if not _is_tcp_port_open(5901) or not _is_tcp_port_open(6080):
+        start_wsl_desktop_service()
+
+    import time
+    display = (req.display or ":1").strip() or ":1"
+    run_cmd = f"setsid env -u WAYLAND_DISPLAY GDK_BACKEND=x11 DISPLAY={display} QT_QPA_PLATFORM=xcb {clean_cmd} </dev/null >/dev/null 2>&1 & sleep 0.2"
+    subprocess.run(["wsl.exe", "-e", "bash", "-c", run_cmd], capture_output=False, timeout=5)
+    return {"status": "ok", "cmd": clean_cmd, "display": display}
+
+
 import logging
 import threading
 import urllib.request

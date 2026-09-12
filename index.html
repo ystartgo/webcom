@@ -645,7 +645,7 @@
             <div class="bg-gray-900/90 px-3 py-2 flex flex-wrap items-center gap-2 border-b border-gray-800 text-xs shrink-0">
                 <div class="flex items-center gap-1 bg-black/60 px-2 py-1 rounded border border-gray-800">
                     <span class="text-emerald-400 font-bold font-mono">DISPLAY:</span>
-                    <input id="xorg-display-num" type="text" value=":0" class="bg-transparent text-emerald-300 w-12 font-mono font-bold focus:outline-none" placeholder=":0">
+                    <input id="xorg-display-num" type="text" value=":1" class="bg-transparent text-emerald-300 w-12 font-mono font-bold focus:outline-none" placeholder=":1">
                 </div>
                 <div class="flex items-center gap-1 bg-black/60 px-2 py-1 rounded border border-gray-800">
                     <span class="text-gray-400 font-mono">Port:</span>
@@ -664,10 +664,9 @@
                 <div class="flex items-center gap-1 bg-black/60 px-2 py-1 rounded border border-gray-800">
                     <span class="text-gray-400 font-mono">環境:</span>
                     <select id="xorg-wm" class="bg-transparent text-white text-xs font-mono focus:outline-none cursor-pointer">
-                        <option value="fluxbox" selected>Fluxbox (極速輕量)</option>
-                        <option value="xfce4">XFCE4 (完整桌面)</option>
-                        <option value="openbox">Openbox</option>
+                        <option value="xfce4" selected>XFCE4 (完整桌面)</option>
                         <option value="standalone">單一 App (Direct)</option>
+                        <option value="fluxbox">Fluxbox (極速輕量)</option>
                     </select>
                 </div>
 
@@ -707,9 +706,54 @@
                     </button>
                 </div>
                 <div class="text-[11px] text-gray-400 font-mono flex items-center gap-2">
-                    <span class="text-emerald-400/80">WSL2 DISPLAY=:1</span>
+                    <span class="text-emerald-400/80 font-bold">WSL2 DISPLAY=:1</span>
                     <span class="text-gray-600">|</span>
                     <span>Port 6080</span>
+                </div>
+            </div>
+
+            <!-- Xorg 快速應用程式啟動列 (Quick App Launcher Bar) -->
+            <div class="bg-gray-900/50 px-3 py-1.5 flex flex-wrap items-center justify-between gap-2 border-b border-gray-800 text-xs shrink-0 select-none">
+                <div class="flex items-center gap-1.5 flex-wrap">
+                    <span class="text-gray-400 font-mono text-[11px] flex items-center gap-1">
+                        <i data-lucide="sparkles" class="w-3.5 h-3.5 text-yellow-400"></i>
+                        <span>啟動 App:</span>
+                    </span>
+                    <button type="button" onclick="launchWslApp('xfce4-terminal --disable-server')"
+                        class="px-2 py-0.5 rounded bg-gray-800 hover:bg-gray-700 text-emerald-300 border border-emerald-700/50 flex items-center gap-1 text-[11px] cursor-pointer transition shadow-sm"
+                        title="在 Xorg 視窗啟動 XFCE 終端機">
+                        <i data-lucide="terminal" class="w-3 h-3 text-emerald-400"></i> <span>終端機</span>
+                    </button>
+                    <button type="button" onclick="launchWslApp('thunar')"
+                        class="px-2 py-0.5 rounded bg-gray-800 hover:bg-gray-700 text-blue-300 border border-blue-700/50 flex items-center gap-1 text-[11px] cursor-pointer transition shadow-sm"
+                        title="在 Xorg 視窗啟動 Thunar 檔案總管">
+                        <i data-lucide="folder" class="w-3 h-3 text-blue-400"></i> <span>檔案總管</span>
+                    </button>
+                    <button type="button" onclick="launchWslApp('mousepad')"
+                        class="px-2 py-0.5 rounded bg-gray-800 hover:bg-gray-700 text-purple-300 border border-purple-700/50 flex items-center gap-1 text-[11px] cursor-pointer transition shadow-sm"
+                        title="在 Xorg 視窗啟動 Mousepad 文字編輯器">
+                        <i data-lucide="file-text" class="w-3 h-3 text-purple-400"></i> <span>編輯器</span>
+                    </button>
+                    <button type="button" onclick="launchWslApp('xcalc')"
+                        class="px-2 py-0.5 rounded bg-gray-800 hover:bg-gray-700 text-amber-300 border border-amber-700/50 flex items-center gap-1 text-[11px] cursor-pointer transition shadow-sm"
+                        title="在 Xorg 視窗啟動 X11 計算機">
+                        <i data-lucide="calculator" class="w-3 h-3 text-amber-400"></i> <span>計算機</span>
+                    </button>
+                    <button type="button" onclick="launchWslApp('xeyes')"
+                        class="px-2 py-0.5 rounded bg-gray-800 hover:bg-gray-700 text-cyan-300 border border-cyan-700/50 flex items-center gap-1 text-[11px] cursor-pointer transition shadow-sm"
+                        title="在 Xorg 視窗啟動 xeyes">
+                        <i data-lucide="eye" class="w-3 h-3 text-cyan-400"></i> <span>xeyes</span>
+                    </button>
+                </div>
+                <!-- 自訂指令輸入框 -->
+                <div class="flex items-center gap-1">
+                    <input id="xorg-custom-cmd" type="text" placeholder="指令 (如: gedit, firefox)"
+                        class="bg-black/60 text-white text-[11px] font-mono px-2 py-0.5 rounded border border-gray-700 focus:outline-none focus:border-emerald-500 w-36 sm:w-44"
+                        onkeydown="if(event.key==='Enter') launchWslCustomApp()">
+                    <button type="button" onclick="launchWslCustomApp()"
+                        class="px-2 py-0.5 rounded bg-emerald-700 hover:bg-emerald-600 text-white text-[11px] font-medium flex items-center gap-1 cursor-pointer transition shadow-sm">
+                        <i data-lucide="play" class="w-2.5 h-2.5 fill-current"></i> <span>執行</span>
+                    </button>
                 </div>
             </div>
 
@@ -758,7 +802,7 @@
             <!-- Xorg 狀態與快捷鍵列 (Status & Shortcut Bar) -->
             <div class="px-3 py-1 bg-black/40 border-b border-gray-800/80 text-[11px] font-mono flex items-center justify-between text-gray-400 shrink-0">
                 <span id="xorg-status" class="flex items-center gap-1.5">
-                    <span class="w-2 h-2 rounded-full bg-gray-500"></span> <span>Xorg 視窗伺服器未連線 (DISPLAY=:0)</span>
+                    <span class="w-2 h-2 rounded-full bg-gray-500"></span> <span>Xorg 視窗伺服器未連線 (DISPLAY=:1)</span>
                 </span>
                 <div class="flex items-center gap-2">
                     <span class="text-gray-500">視窗快捷鍵:</span>
@@ -775,16 +819,16 @@
                         <div class="w-16 h-16 rounded-full bg-gray-900 border border-gray-800 flex items-center justify-center mx-auto mb-3 text-emerald-400">
                             <i data-lucide="layout-grid" class="w-8 h-8"></i>
                         </div>
-                        <h3 class="text-sm font-bold text-gray-300 mb-1">Xorg GUI 虛擬視窗環境 (DISPLAY=:0)</h3>
+                        <h3 class="text-sm font-bold text-gray-300 mb-1">Xorg GUI 虛擬視窗環境 (DISPLAY=:1)</h3>
                         <p class="text-xs text-gray-500 leading-relaxed mb-4">
-                            可於 Windows/WSL2 或 Docker 中無縫執行 Linux GUI 圖形化程式（如 Firefox, VS Code, GIMP, XFCE4 桌面），並透過 HTML5 零延遲畫布呈現。
+                            可於 Windows/WSL2 或 Docker 中無縫執行 Linux GUI 圖形化程式（如 終端機、Thunar 檔案總管、Mousepad、Firefox 等），並透過 HTML5 零延遲畫布呈現。
                         </p>
                         <div class="flex items-center justify-center gap-2">
                             <button type="button" onclick="openXorgWizardModal()" class="px-3.5 py-1.5 bg-emerald-700 hover:bg-emerald-600 text-white text-xs font-semibold rounded-lg transition shadow-md inline-flex items-center gap-1.5 cursor-pointer">
                                 <i data-lucide="terminal" class="w-3.5 h-3.5"></i> 查看 WSL 啟動指令
                             </button>
                             <button type="button" onclick="handleXorgConnect()" class="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold rounded-lg transition shadow-md inline-flex items-center gap-1.5 cursor-pointer">
-                                <i data-lucide="play" class="w-3.5 h-3.5 fill-current"></i> 連線 DISPLAY:0
+                                <i data-lucide="play" class="w-3.5 h-3.5 fill-current"></i> 連線 DISPLAY:1
                             </button>
                         </div>
                     </div>
@@ -2901,10 +2945,10 @@
                             <button type="button" onclick="checkWslStatus(true)" class="px-2 py-0.5 rounded bg-gray-800 hover:bg-gray-700 text-teal-300 border border-teal-700/40 text-[11px] cursor-pointer">
                                 重新檢測
                             </button>
-                            <button type="button" onclick="startWslDesktopAndConnect('novnc')" class="px-2.5 py-0.5 rounded bg-teal-800 hover:bg-teal-700 text-white font-medium text-[11px] cursor-pointer shadow">
+                            <button type="button" onclick="startWslDesktopAndConnect('xorg')" class="px-2.5 py-0.5 rounded bg-teal-800 hover:bg-teal-700 text-white font-medium text-[11px] cursor-pointer shadow">
                                 一鍵啟動桌面
                             </button>
-                            <button type="button" onclick="stopWslDesktopService('novnc')" class="px-2 py-0.5 rounded bg-rose-950 hover:bg-rose-900 text-rose-300 border border-rose-800 text-[11px] cursor-pointer">
+                            <button type="button" onclick="stopWslDesktopService('xorg')" class="px-2 py-0.5 rounded bg-rose-950 hover:bg-rose-900 text-rose-300 border border-rose-800 text-[11px] cursor-pointer">
                                 停止桌面
                             </button>
                         </div>
@@ -2919,21 +2963,25 @@
                         <i data-lucide="info" class="w-4 h-4"></i> 工作原理說明
                     </div>
                     <p class="text-gray-400 leading-relaxed text-[11px]">
-                        WSL2 桌面運作方式：透過 <strong>TigerVNC / Xtigervnc</strong> 在 WSL 內啟動 <code>:1</code> 虛擬顯示器並運行 <strong>XFCE4</strong> 輕量桌面，監聽 5901 埠；同時透過 <strong>websockify</strong> 橋接為 WebSocket (6080) 與 HTTP 伺服器，前端即可透過 HTML5 Canvas 零延遲順暢操控！
+                        WSL2 桌面運作方式：透過 <strong>Xvfb + x11vnc</strong> 在 WSL 內啟動 <code>:1</code> 虛擬顯示器並運行 <strong>XFCE4</strong> 視窗管理與桌面，監聽 5901 埠；同時透過 <strong>websockify</strong> 橋接為 WebSocket (6080) 與 HTTP 伺服器，前端即可透過 HTML5 Canvas 零延遲順暢操控！
                     </p>
                 </div>
 
                 <div class="p-4 bg-emerald-950/20 rounded-xl border border-emerald-800/40 space-y-2.5">
                     <div class="flex items-center justify-between font-bold text-white">
                         <span class="flex items-center gap-1.5 text-emerald-300">
-                            <i data-lucide="terminal" class="w-4 h-4"></i> 方案一：完整桌面 (XFCE4 + TigerVNC + websockify)
+                            <i data-lucide="terminal" class="w-4 h-4"></i> 方案一：完整桌面服務 (Xvfb + x11vnc + XFCE4 + websockify)
                         </span>
                         <button type="button" onclick="copyXorgCommands('fluxbox')" class="text-xs px-2 py-0.5 rounded bg-emerald-800/60 hover:bg-emerald-700 text-emerald-200 border border-emerald-600/40 cursor-pointer">複製指令</button>
                     </div>
-                    <pre id="code-xorg-fluxbox" class="bg-black/70 p-3 rounded-lg border border-gray-800 font-mono text-[11px] text-gray-200 overflow-x-auto select-all"># 啟動 TigerVNC 與 XFCE4 桌面 (DISPLAY=:1)
-Xtigervnc :1 -geometry 1920x1080 -depth 24 -SecurityTypes None >/dev/null 2>&1 &
-DISPLAY=:1 dbus-run-session -- startxfce4 >/dev/null 2>&1 &
-# 啟動 WebSocket 橋接器 (Port 6080 -> 5901)
+                    <pre id="code-xorg-fluxbox" class="bg-black/70 p-3 rounded-lg border border-gray-800 font-mono text-[11px] text-gray-200 overflow-x-auto select-all"># 1. 確保 /tmp/.X11-unix 具備讀寫權限
+sudo mount -o remount,rw /tmp/.X11-unix
+# 2. 啟動 Xvfb :1 與 x11vnc (DISPLAY=:1, Port: 5901)
+nohup Xvfb :1 -screen 0 1920x1080x24 -ac </dev/null >~/.vnc/xvfb.log 2>&1 &
+env -u WAYLAND_DISPLAY x11vnc -display :1 -rfbport 5901 -nopw -listen 0.0.0.0 -forever -shared -bg -noxrandr
+# 3. 啟動 XFCE4 桌面會話 (指定 X11 與 DISPLAY=:1)
+nohup env -u WAYLAND_DISPLAY GDK_BACKEND=x11 DISPLAY=:1 QT_QPA_PLATFORM=xcb dbus-run-session -- xfce4-session </dev/null >~/.vnc/xfce.log 2>&1 &
+# 4. 啟動 WebSocket 橋接 (Port 6080 -> 5901)
 websockify -D --web /usr/share/novnc 6080 localhost:5901</pre>
                     <div class="flex items-center gap-2 pt-1">
                         <button type="button" onclick="runXorgCommandsInTerm('fluxbox')" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg font-semibold flex items-center gap-1.5 cursor-pointer shadow">
@@ -2949,9 +2997,12 @@ websockify -D --web /usr/share/novnc 6080 localhost:5901</pre>
                         </span>
                         <button type="button" onclick="copyXorgCommands('singleapp')" class="text-xs px-2 py-0.5 rounded bg-gray-800 hover:bg-gray-700 text-gray-300 border border-gray-700 cursor-pointer">複製指令</button>
                     </div>
-                    <pre id="code-xorg-singleapp" class="bg-black/70 p-3 rounded-lg border border-gray-800 font-mono text-[11px] text-gray-200 overflow-x-auto select-all">export DISPLAY=:1
-# 啟動 Linux 圖形程式 (例如: thunar, gedit, firefox)
-thunar &</pre>
+                    <pre id="code-xorg-singleapp" class="bg-black/70 p-3 rounded-lg border border-gray-800 font-mono text-[11px] text-gray-200 overflow-x-auto select-all"># 於 WSL 終端機中，直接將任意 Linux GUI 程式指向 DISPLAY=:1
+export DISPLAY=:1
+# 啟動終端機、檔案管理員或文字編輯器
+xfce4-terminal &
+thunar &
+mousepad &</pre>
                 </div>
             </div>
             <div class="px-5 py-3 bg-gray-900 border-t border-gray-800 flex justify-between items-center shrink-0">
@@ -14229,7 +14280,17 @@ Important guidelines:
 
             if (window.lucide) lucide.createIcons();
             if (mode === 'novnc' || mode === 'xorg') {
-                if (typeof checkWslStatus === 'function') checkWslStatus(false);
+                if (typeof checkWslStatus === 'function') {
+                    checkWslStatus(false).then(status => {
+                        if (status && status.ready) {
+                            if (mode === 'xorg' && !rfbXorgInstance) {
+                                handleXorgConnect();
+                            } else if (mode === 'novnc' && !rfbNovncInstance) {
+                                handleNoVncConnect();
+                            }
+                        }
+                    }).catch(() => {});
+                }
             }
         }
         window.switchLeftMode = switchLeftMode;
@@ -14427,9 +14488,9 @@ Important guidelines:
 
         // ── Xorg GUI 視窗連線核心 ────────────────────────────────────────────────
         async function handleXorgConnect() {
-            const dpy = (document.getElementById('xorg-display-num')?.value || ':0').trim();
+            const dpy = (document.getElementById('xorg-display-num')?.value || ':1').trim();
             const port = parseInt(document.getElementById('xorg-port')?.value || '6080');
-            const host = '127.0.0.1';
+            const host = (document.getElementById('novnc-host')?.value || '127.0.0.1').trim();
             const statusEl = document.getElementById('xorg-status');
             const btnConn = document.getElementById('btn-xorg-connect');
             const btnDisc = document.getElementById('btn-xorg-disconnect');
@@ -14453,9 +14514,19 @@ Important guidelines:
                     rfbXorgInstance = null;
                 }
 
+                // 清理舊有的殘留 canvas 元素
+                if (canvasContainer) {
+                    const existingCanvases = canvasContainer.querySelectorAll('canvas, div[style*="position"]');
+                    existingCanvases.forEach(el => {
+                        if (el.id !== 'xorg-placeholder' && !el.closest('#xorg-placeholder')) {
+                            try { el.remove(); } catch(e) {}
+                        }
+                    });
+                }
+
                 rfbXorgInstance = new RFB(canvasContainer, url, { shared: true });
                 rfbXorgInstance.scaleViewport = true;
-                rfbXorgInstance.resizeSession = true;
+                rfbXorgInstance.resizeSession = false; // 避免伺服器拒絕 resize 警告
 
                 rfbXorgInstance.addEventListener('connect', () => {
                     if (statusEl) {
@@ -14467,18 +14538,22 @@ Important guidelines:
 
                 rfbXorgInstance.addEventListener('disconnect', (e) => {
                     if (statusEl) {
-                        statusEl.innerHTML = `<span class="w-2 h-2 rounded-full bg-rose-500"></span> <span class="text-rose-400">Xorg 連線已斷開 ${e.detail?.clean ? '' : '(請確認 x11vnc/websockify 運作中)'}</span>`;
+                        statusEl.innerHTML = `<span class="w-2 h-2 rounded-full bg-rose-500"></span> <span class="text-rose-400">Xorg 連線已斷開 ${e.detail?.clean ? '' : '(請確認 WSL 桌面服務運作中)'}</span>`;
                     }
                     if (btnConn) btnConn.classList.remove('hidden');
                     if (btnDisc) btnDisc.classList.add('hidden');
                     if (placeholder) placeholder.classList.remove('hidden');
+                });
+
+                rfbXorgInstance.addEventListener('securityfailure', (e) => {
+                    alert('Xorg 連線認證失敗：' + (e.detail?.reason || '握手失敗'));
                 });
             } catch (err) {
                 if (statusEl) {
                     statusEl.innerHTML = `<span class="w-2 h-2 rounded-full bg-rose-500"></span> <span class="text-rose-400">連線失敗: ${err.message}</span>`;
                 }
                 if (placeholder) placeholder.classList.remove('hidden');
-                alert('Xorg 連線失敗：' + err.message + '\n請點擊「查看 WSL 啟動指令」檢視一鍵架設步驟。');
+                alert('Xorg 連線失敗：' + err.message + '\n請點擊「查看 WSL 啟動指令」或「一鍵啟動 WSL 桌面」。');
             }
         }
         window.handleXorgConnect = handleXorgConnect;
@@ -14500,6 +14575,51 @@ Important guidelines:
             }
         }
         window.handleXorgDisconnect = handleXorgDisconnect;
+
+        // ── 在 Xorg DISPLAY 一鍵啟動 Linux GUI 應用程式 ──────────────────────────
+        async function launchWslApp(cmd) {
+            const ep = (typeof appSettings !== 'undefined' && appSettings?.daemonEndpoint) ? appSettings.daemonEndpoint : 'http://127.0.0.1:8001';
+            const dpy = (document.getElementById('xorg-display-num')?.value || ':1').trim();
+            const statusEl = document.getElementById('xorg-status');
+            if (statusEl) {
+                statusEl.innerHTML = `<span class="w-2 h-2 rounded-full bg-teal-400 animate-pulse"></span> <span>正在啟動 ${cmd}...</span>`;
+            }
+            try {
+                const res = await fetch(`${ep}/api/wsl/launch-app`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ cmd: cmd, display: dpy })
+                });
+                if (!res.ok) {
+                    const errData = await res.json().catch(() => ({}));
+                    throw new Error(errData.detail || `HTTP ${res.status}`);
+                }
+                // 若尚未連線，則自動建立連線
+                if (!rfbXorgInstance) {
+                    await handleXorgConnect();
+                } else if (statusEl) {
+                    statusEl.innerHTML = `<span class="w-2 h-2 rounded-full bg-emerald-500"></span> <span class="text-emerald-400">已啟動 ${cmd} (DISPLAY=${dpy})</span>`;
+                }
+            } catch (err) {
+                alert('啟動應用程式失敗：' + err.message);
+                if (statusEl) {
+                    statusEl.innerHTML = `<span class="w-2 h-2 rounded-full bg-rose-500"></span> <span class="text-rose-400">啟動失敗: ${err.message}</span>`;
+                }
+            }
+        }
+        window.launchWslApp = launchWslApp;
+
+        function launchWslCustomApp() {
+            const input = document.getElementById('xorg-custom-cmd');
+            const cmd = input?.value?.trim();
+            if (!cmd) {
+                alert('請輸入要執行的 Linux GUI 指令 (例如: thunar, xcalc, gedit, firefox)');
+                input?.focus();
+                return;
+            }
+            launchWslApp(cmd);
+        }
+        window.launchWslCustomApp = launchWslCustomApp;
 
         function sendXorgKeyCombo(combo) {
             if (!rfbXorgInstance) {
