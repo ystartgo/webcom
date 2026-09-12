@@ -698,7 +698,7 @@
                     </button>
                     <button id="btn-xorg-wsl-start" type="button" onclick="startWslDesktopAndConnect('xorg')"
                         class="px-2.5 py-0.5 rounded bg-emerald-900/80 hover:bg-emerald-800 text-emerald-200 border border-emerald-600/50 text-[11px] font-medium flex items-center gap-1 cursor-pointer shadow-sm transition">
-                        <i data-lucide="rocket" class="w-3 h-3 text-emerald-400"></i> <span>一鍵啟動 WSL 桌面</span>
+                        <i data-lucide="rocket" class="w-3 h-3 text-emerald-400"></i> <span data-i18n="wslBtnStart">一鍵啟動 WSL 桌面</span>
                     </button>
                     <button id="btn-xorg-wsl-stop" type="button" onclick="stopWslDesktopService('xorg')"
                         class="px-2 py-0.5 rounded bg-rose-950/60 hover:bg-rose-900 text-rose-300 border border-rose-800/40 text-[11px] flex items-center gap-1 cursor-pointer transition">
@@ -4399,6 +4399,9 @@ mousepad &</pre>
                     if (modalStatusText) {
                         modalStatusText.innerHTML = `<span class="w-2.5 h-2.5 rounded-full bg-green-500 animate-pulse"></span> <span class="text-green-400 font-semibold">常駐程式已就緒 (Port 8001 連線中)</span>`;
                     }
+                    if (typeof checkWslStatus === 'function' && (typeof lastWslStatus === 'undefined' || lastWslStatus === null)) {
+                        checkWslStatus(false).catch(() => {});
+                    }
                     return true;
                 } else {
                     throw new Error("Bad status");
@@ -5895,17 +5898,21 @@ mousepad &</pre>
             }
 
             // ── WSL 狀態徽章雙語更新 ──
-            ['wsl-status-badge', 'wsl-status-badge-xorg'].forEach(id => {
-                const el = document.getElementById(id);
-                if (el) {
-                    const txt = el.textContent.trim();
-                    if (txt.includes('檢查中') || txt.includes('Checking')) el.textContent = t('wslStatusChecking');
-                    else if (txt.includes('運行中') || txt.includes('Running')) el.textContent = t('wslStatusRunning');
-                    else if (txt.includes('未啟動') || txt.includes('Stopped')) el.textContent = t('wslStatusStopped');
-                    else if (txt.includes('未安裝') || txt.includes('Not Installed')) el.textContent = t('wslStatusNotInstalled');
-                    else if (txt.includes('尚未檢測') || txt.includes('Not Checked')) el.textContent = t('wslStatusUnknown');
-                }
-            });
+            if (typeof renderWslStatusUI === 'function') {
+                renderWslStatusUI(typeof lastWslStatus !== 'undefined' ? lastWslStatus : null, lang === 'en');
+            } else {
+                ['novnc-wsl-status', 'xorg-wsl-status', 'term-wsl-badge', 'modal-wsl-status', 'wsl-status-badge', 'wsl-status-badge-xorg'].forEach(id => {
+                    const el = document.getElementById(id);
+                    if (el) {
+                        const txt = el.textContent.trim();
+                        if (txt.includes('檢查中') || txt.includes('Checking')) el.textContent = t('wslStatusChecking');
+                        else if (txt.includes('運行中') || txt.includes('Running')) el.textContent = t('wslStatusRunning');
+                        else if (txt.includes('未啟動') || txt.includes('Stopped')) el.textContent = t('wslStatusStopped');
+                        else if (txt.includes('未安裝') || txt.includes('Not Installed')) el.textContent = t('wslStatusNotInstalled');
+                        else if (txt.includes('尚未檢測') || txt.includes('Not Checked')) el.textContent = t('wslStatusUnknown');
+                    }
+                });
+            }
 
             // ── 音訊按鈕與狀態雙語更新 ──
             ['btn-audio-stream-text', 'btn-audio-stream-text-xorg'].forEach(id => {
@@ -14964,6 +14971,41 @@ Important guidelines:
         // ── WSL 狀態檢查與桌面管理函式 ───────────────────────────────────────
         let lastWslStatus = null;
 
+        function renderWslStatusUI(data, isEn = (typeof currentLang !== 'undefined' && currentLang === 'en')) {
+            const badgeNovnc = document.getElementById('novnc-wsl-status');
+            const badgeXorg = document.getElementById('xorg-wsl-status');
+            const badgeTerm = document.getElementById('term-wsl-badge');
+            const modalStatus = document.getElementById('modal-wsl-status');
+            
+            const setStatusText = (htmlContent) => {
+                if (badgeNovnc) badgeNovnc.innerHTML = htmlContent;
+                if (badgeXorg) badgeXorg.innerHTML = htmlContent;
+                if (badgeTerm) badgeTerm.innerHTML = htmlContent;
+                if (modalStatus) modalStatus.innerHTML = htmlContent;
+            };
+
+            if (!data) {
+                setStatusText(`<span class="w-2 h-2 rounded-full bg-gray-500"></span> <span>${isEn ? 'WSL: Not Checked' : 'WSL: 尚未檢測'}</span>`);
+                return;
+            }
+
+            if (!data.has_wsl) {
+                setStatusText(`<span class="w-2 h-2 rounded-full bg-rose-500"></span> <span class="text-rose-400">${isEn ? 'WSL environment not detected' : '未偵測到 WSL 環境'}</span>`);
+                return;
+            }
+
+            const distro = data.distro || 'Debian';
+            if (data.ready) {
+                setStatusText(`<span class="w-2 h-2 rounded-full bg-emerald-500"></span> <span class="text-emerald-300">${isEn ? `WSL (${distro}): Desktop running (VNC:5901, WS:6080)` : `WSL (${distro}): 桌面運行中 (VNC:5901, WS:6080)`}</span>`);
+            } else {
+                const statusDetail = [];
+                if (!data.vnc_open) statusDetail.push(isEn ? 'VNC (5901) Off' : 'VNC (5901) 關閉');
+                if (!data.websockify_open) statusDetail.push(isEn ? 'WebSockify (6080) Off' : 'WebSockify (6080) 關閉');
+                setStatusText(`<span class="w-2 h-2 rounded-full bg-amber-500"></span> <span class="text-amber-300">${isEn ? `WSL (${distro}): Desktop stopped (${statusDetail.join(', ')})` : `WSL (${distro}): 桌面未啟動 (${statusDetail.join(', ')})`}</span>`);
+            }
+        }
+        window.renderWslStatusUI = renderWslStatusUI;
+
         async function checkWslStatus(showAlert = false) {
             const ep = (typeof appSettings !== 'undefined' && appSettings?.daemonEndpoint) ? appSettings.daemonEndpoint : 'http://127.0.0.1:8001';
             const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en');
@@ -14987,23 +15029,17 @@ Important guidelines:
                 if (!res.ok) throw new Error(`HTTP ${res.status}`);
                 const data = await res.json();
                 lastWslStatus = data;
+                renderWslStatusUI(data, isEn);
 
-                if (!data.has_wsl) {
-                    setStatusText(`<span class="w-2 h-2 rounded-full bg-rose-500"></span> <span class="text-rose-400">${isEn ? 'WSL environment not detected' : '未偵測到 WSL 環境'}</span>`);
-                    if (showAlert) alert(isEn ? 'WSL environment not detected. Please install WSL2 first (e.g. wsl --install -d Debian).' : '未偵測到 WSL 環境。請先於 Windows 安裝 WSL2 (例如: wsl --install -d Debian)。');
-                    return data;
-                }
-
-                const distro = data.distro || 'Debian';
-                if (data.ready) {
-                    setStatusText(`<span class="w-2 h-2 rounded-full bg-emerald-500"></span> <span class="text-emerald-300">${isEn ? `WSL (${distro}): Desktop running (VNC:5901, WS:6080)` : `WSL (${distro}): 桌面運行中 (VNC:5901, WS:6080)`}</span>`);
-                    if (showAlert) alert(isEn ? `WSL Desktop is ready!\nDistro: ${distro}\n- VNC (5901): Active\n- WebSockify (6080): Active\n- Audio (8000): ${data.audio_open ? 'Active' : 'Off'}\nClick 'Connect' to enter!` : `WSL 桌面環境已就緒！\n發行版: ${distro}\n- x11vnc (5901): 監聽中\n- WebSockify (6080): 監聽中\n- 音訊串流 (8000): ${data.audio_open ? '監聽中' : '關閉'}\n可直接點擊「連線桌面」進入！`);
-                } else {
-                    const statusDetail = [];
-                    if (!data.vnc_open) statusDetail.push(isEn ? 'VNC (5901) Off' : 'VNC (5901) 關閉');
-                    if (!data.websockify_open) statusDetail.push(isEn ? 'WebSockify (6080) Off' : 'WebSockify (6080) 關閉');
-                    setStatusText(`<span class="w-2 h-2 rounded-full bg-amber-500"></span> <span class="text-amber-300">${isEn ? `WSL (${distro}): Desktop stopped (${statusDetail.join(', ')})` : `WSL (${distro}): 桌面未啟動 (${statusDetail.join(', ')})`}</span>`);
-                    if (showAlert) alert(isEn ? `WSL (${distro}) detected, but desktop services are stopped.\nClick 'Start WSL Desktop' to launch!` : `WSL 系統已偵測到 (${distro})，但桌面服務尚未啟動。\n請點擊「一鍵啟動 WSL 桌面」自動拉起服務！`);
+                if (!data.has_wsl && showAlert) {
+                    alert(isEn ? 'WSL environment not detected. Please install WSL2 first (e.g. wsl --install -d Debian).' : '未偵測到 WSL 環境。請先於 Windows 安裝 WSL2 (例如: wsl --install -d Debian)。');
+                } else if (data.has_wsl && showAlert) {
+                    const distro = data.distro || 'Debian';
+                    if (data.ready) {
+                        alert(isEn ? `WSL Desktop is ready!\nDistro: ${distro}\n- VNC (5901): Active\n- WebSockify (6080): Active\n- Audio (8000): ${data.audio_open ? 'Active' : 'Off'}\nClick 'Connect' to enter!` : `WSL 桌面環境已就緒！\n發行版: ${distro}\n- x11vnc (5901): 監聽中\n- WebSockify (6080): 監聽中\n- 音訊串流 (8000): ${data.audio_open ? '監聽中' : '關閉'}\n可直接點擊「連線桌面」進入！`);
+                    } else {
+                        alert(isEn ? `WSL (${distro}) detected, but desktop services are stopped.\nClick 'Start WSL Desktop' to launch!` : `WSL 系統已偵測到 (${distro})，但桌面服務尚未啟動。\n請點擊「一鍵啟動 WSL 桌面」自動拉起服務！`);
+                    }
                 }
                 return data;
             } catch (err) {
@@ -15016,12 +15052,28 @@ Important guidelines:
 
         async function startWslDesktopAndConnect(targetMode = 'novnc') {
             const ep = (typeof appSettings !== 'undefined' && appSettings?.daemonEndpoint) ? appSettings.daemonEndpoint : 'http://127.0.0.1:8001';
+            const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en');
             
             const statusNovnc = document.getElementById('novnc-status');
             const statusXorg = document.getElementById('xorg-status');
-            const msgHtml = '<span class="w-2 h-2 rounded-full bg-teal-400 animate-pulse"></span> <span class="text-teal-300">正在一鍵啟動 WSL 桌面環境 (TigerVNC + XFCE4 + WebSockify)...</span>';
-            if (targetMode === 'xorg' && statusXorg) statusXorg.innerHTML = msgHtml;
-            else if (statusNovnc) statusNovnc.innerHTML = msgHtml;
+            const startMsg = isEn 
+                ? '<span class="w-2 h-2 rounded-full bg-teal-400 animate-pulse"></span> <span class="text-teal-300">Launching WSL Desktop (TigerVNC + XFCE4 + WebSockify)...</span>'
+                : '<span class="w-2 h-2 rounded-full bg-teal-400 animate-pulse"></span> <span class="text-teal-300">正在一鍵啟動 WSL 桌面環境 (TigerVNC + XFCE4 + WebSockify)...</span>';
+            
+            if (targetMode === 'xorg') {
+                if (statusXorg) statusXorg.innerHTML = startMsg;
+            } else {
+                if (statusNovnc) statusNovnc.innerHTML = startMsg;
+            }
+
+            const badgeNovnc = document.getElementById('novnc-wsl-status');
+            const badgeXorg = document.getElementById('xorg-wsl-status');
+            const startingBadge = `<span class="w-2 h-2 rounded-full bg-yellow-500 animate-ping"></span> <span>${isEn ? 'Starting WSL desktop...' : 'WSL 桌面啟動中...'}</span>`;
+            if (badgeNovnc) badgeNovnc.innerHTML = startingBadge;
+            if (badgeXorg) badgeXorg.innerHTML = startingBadge;
+
+            const startBtns = [document.getElementById('btn-novnc-wsl-start'), document.getElementById('btn-xorg-wsl-start')];
+            startBtns.forEach(btn => { if (btn) { btn.disabled = true; btn.classList.add('opacity-50', 'cursor-not-allowed'); } });
 
             try {
                 const res = await fetch(`${ep}/api/wsl/start-desktop`, { method: 'POST' });
@@ -15032,7 +15084,7 @@ Important guidelines:
                 const data = await res.json();
                 lastWslStatus = data;
 
-                await new Promise(r => setTimeout(r, 1000));
+                await new Promise(r => setTimeout(r, 600));
                 await checkWslStatus(false);
 
                 if (targetMode === 'xorg') {
@@ -15049,27 +15101,45 @@ Important guidelines:
                     handleNoVncConnect();
                 }
             } catch (err) {
-                alert('啟動 WSL 桌面失敗：' + err.message);
-                if (statusNovnc) statusNovnc.innerHTML = `<span class="w-2 h-2 rounded-full bg-rose-500"></span> <span class="text-rose-400">啟動 WSL 桌面失敗: ${err.message}</span>`;
+                const errMsg = isEn ? `Failed to start WSL desktop: ${err.message}` : `啟動 WSL 桌面失敗：${err.message}`;
+                alert(errMsg);
+                const failHtml = `<span class="w-2 h-2 rounded-full bg-rose-500"></span> <span class="text-rose-400">${errMsg}</span>`;
+                if (statusNovnc) statusNovnc.innerHTML = failHtml;
+                if (statusXorg) statusXorg.innerHTML = failHtml;
+                await checkWslStatus(false);
+            } finally {
+                startBtns.forEach(btn => { if (btn) { btn.disabled = false; btn.classList.remove('opacity-50', 'cursor-not-allowed'); } });
             }
         }
         window.startWslDesktopAndConnect = startWslDesktopAndConnect;
 
         async function stopWslDesktopService(targetMode = 'novnc') {
-            if (!confirm('確定要停止 WSL 背景運行的 TigerVNC、XFCE 與 WebSockify 桌面服務嗎？')) return;
+            const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en');
+            const confirmMsg = isEn 
+                ? 'Are you sure you want to stop background WSL desktop services (TigerVNC, XFCE4, WebSockify)?'
+                : '確定要停止 WSL 背景運行的 TigerVNC、XFCE 與 WebSockify 桌面服務嗎？';
+            if (!confirm(confirmMsg)) return;
+
             const ep = (typeof appSettings !== 'undefined' && appSettings?.daemonEndpoint) ? appSettings.daemonEndpoint : 'http://127.0.0.1:8001';
             
             if (targetMode === 'xorg') handleXorgDisconnect();
             else handleNoVncDisconnect();
+
+            const badgeNovnc = document.getElementById('novnc-wsl-status');
+            const badgeXorg = document.getElementById('xorg-wsl-status');
+            const stoppingBadge = `<span class="w-2 h-2 rounded-full bg-yellow-500 animate-ping"></span> <span>${isEn ? 'Stopping WSL desktop...' : '正在停止 WSL 桌面...'}</span>`;
+            if (badgeNovnc) badgeNovnc.innerHTML = stoppingBadge;
+            if (badgeXorg) badgeXorg.innerHTML = stoppingBadge;
 
             try {
                 const res = await fetch(`${ep}/api/wsl/stop-desktop`, { method: 'POST' });
                 const data = await res.json();
                 lastWslStatus = data;
                 await checkWslStatus(false);
-                alert('已停止 WSL 桌面服務。');
+                alert(isEn ? 'WSL desktop service stopped.' : '已停止 WSL 桌面服務。');
             } catch (err) {
-                alert('停止 WSL 桌面失敗：' + err.message);
+                alert((isEn ? 'Failed to stop WSL desktop: ' : '停止 WSL 桌面失敗：') + err.message);
+                await checkWslStatus(false);
             }
         }
         window.stopWslDesktopService = stopWslDesktopService;

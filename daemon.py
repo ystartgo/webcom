@@ -328,7 +328,7 @@ def proxy_audio_stream(url: str = "http://127.0.0.1:8000/audio"):
 def _is_tcp_port_open(port: int, host: str = "127.0.0.1") -> bool:
     import socket
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    s.settimeout(0.6)
+    s.settimeout(0.2)
     try:
         err = s.connect_ex((host, int(port)))
         return err == 0
@@ -348,10 +348,11 @@ def get_wsl_desktop_status():
     distro = "None"
     if shutil.which("wsl.exe"):
         try:
-            p = subprocess.run(["wsl.exe", "-l", "-q"], capture_output=True, text=True, timeout=5)
-            if p.returncode == 0 and p.stdout.strip():
+            out = subprocess.run(["wsl.exe", "-l", "-q"], capture_output=True, text=True, timeout=3)
+            distros = [d.replace('\x00', '').strip() for d in out.stdout.splitlines() if d.replace('\x00', '').strip()]
+            if distros:
                 has_wsl = True
-                distro = p.stdout.replace('\x00', '').strip().splitlines()[0]
+                distro = distros[0]
         except Exception:
             pass
             
@@ -380,39 +381,63 @@ def start_wsl_desktop_service():
         raise HTTPException(status_code=400, detail="本地未偵測到 WSL 環境")
     
     import time
-    # 0. 確保 /tmp/.X11-unix 在 WSL2 下可讀寫 (WSLg 預設為唯讀)
-    subprocess.run(["wsl.exe", "-u", "root", "-e", "bash", "-c", "mount -o remount,rw /tmp/.X11-unix 2>/dev/null; chmod 1777 /tmp/.X11-unix 2>/dev/null; chmod 1777 /tmp/.ICE-unix 2>/dev/null"], capture_output=False, timeout=5)
-
-    # 1. 確保 VNC 桌面服務在 :1 (5901) 運行 (使用 Xvfb + x11vnc -noxrandr -noxdamage，強制解除 WAYLAND_DISPLAY 防止黑畫面)
-    if not _is_tcp_port_open(5901):
-        # 清理舊鎖與建立使用者目錄
-        subprocess.run(["wsl.exe", "-e", "bash", "-c", "rm -f /tmp/.X1-lock /tmp/.X11-unix/X1 2>/dev/null; mkdir -p ~/.vnc"], capture_output=False, timeout=5)
-        # 啟動 Xvfb :1 虛擬顯示器
-        subprocess.run(["wsl.exe", "-e", "bash", "-c", "nohup Xvfb :1 -screen 0 1920x1080x24 -ac </dev/null >~/.vnc/xvfb.log 2>&1 &"], capture_output=False, timeout=5)
-        time.sleep(0.5)
-        # 啟動 x11vnc (守護進程模式 -bg 運行，帶 -noxrandr -noxdamage 消除 SIGHUP 與 XIO 問題)
-        subprocess.run(["wsl.exe", "-e", "bash", "-c", "env -u WAYLAND_DISPLAY x11vnc -display :1 -rfbport 5901 -nopw -listen 0.0.0.0 -forever -shared -bg -noxrandr -noxdamage -o ~/.vnc/x11vnc.log"], capture_output=False, timeout=5)
-        time.sleep(0.5)
-        # 啟動 XFCE4 桌面會話 (強制指定 GDK_BACKEND=x11 與 DISPLAY=:1)
-        start_desktop_cmd = (
-            "nohup env -u WAYLAND_DISPLAY GDK_BACKEND=x11 DISPLAY=:1 "
-            "XDG_SESSION_TYPE=x11 XDG_CURRENT_DESKTOP=XFCE DESKTOP_SESSION=xfce QT_QPA_PLATFORM=xcb "
-            "dbus-run-session -- xfce4-session </dev/null >~/.vnc/xfce.log 2>&1 &"
+    try:
+        # 0. 確保 /tmp/.X11-unix 在 WSL2 下可讀寫 (WSLg 預設可能掛載為唯讀)
+        subprocess.run(
+            ["wsl.exe", "-u", "root", "-e", "bash", "-c",
+             "mount -o remount,rw /tmp/.X11-unix 2>/dev/null || true; chmod 1777 /tmp/.X11-unix 2>/dev/null || true; chmod 1777 /tmp/.ICE-unix 2>/dev/null || true"],
+            capture_output=True, timeout=5
         )
-        subprocess.run(["wsl.exe", "-e", "bash", "-c", start_desktop_cmd], capture_output=False, timeout=5)
-        time.sleep(1.0)
-        # 確保 xfdesktop (桌面壁紙圖示) 與 xfce4-panel (工作列) 雙雙就緒
-        subprocess.run(["wsl.exe", "-e", "bash", "-c", "pgrep -f xfdesktop >/dev/null || nohup env -u WAYLAND_DISPLAY GDK_BACKEND=x11 DISPLAY=:1 xfdesktop </dev/null >/dev/null 2>&1 &"], capture_output=False, timeout=5)
-        subprocess.run(["wsl.exe", "-e", "bash", "-c", "pgrep -f xfce4-panel >/dev/null || nohup env -u WAYLAND_DISPLAY GDK_BACKEND=x11 DISPLAY=:1 xfce4-panel </dev/null >/dev/null 2>&1 &"], capture_output=False, timeout=5)
 
-    # 2. 確保 websockify 在 6080 運行 (提供 noVNC HTML5 WebSocket 與 Web 伺服器)
-    if not _is_tcp_port_open(6080):
-        subprocess.run(["wsl.exe", "-e", "bash", "-c", "pkill -9 -f websockify 2>/dev/null || true; nohup websockify -D --web /usr/share/novnc 6080 localhost:5901 </dev/null >~/.vnc/websockify.log 2>&1 &"], capture_output=False, timeout=5)
-        time.sleep(0.5)
+        # 1. 確保 VNC 桌面服務在 :1 (5901) 運行 (使用 Xvfb + x11vnc -noxrandr -noxdamage，解除 WAYLAND_DISPLAY 防止黑畫面)
+        if not _is_tcp_port_open(5901):
+            # 清理可能殘留的舊服務與鎖
+            cleanup_cmd = (
+                "systemctl --user stop webcom-xvfb webcom-x11vnc 2>/dev/null || true; "
+                "systemctl --user reset-failed 2>/dev/null || true; "
+                "pkill -9 -x Xvfb 2>/dev/null || true; "
+                "pkill -9 -x x11vnc 2>/dev/null || true; "
+                "rm -f /tmp/.X1-lock /tmp/.X11-unix/X1 2>/dev/null || true"
+            )
+            subprocess.run(["wsl.exe", "-e", "bash", "-c", cleanup_cmd], capture_output=True, timeout=5)
 
-    # 3. 確保 PulseAudio 串流在 8000 運行
-    if not _is_tcp_port_open(8000):
-        subprocess.run(["wsl.exe", "-e", "bash", "-c", "pulseaudio --start --exit-idle-time=-1 >/dev/null 2>&1; pactl load-module module-simple-protocol-tcp rate=48000 format=s16le channels=2 source=@DEFAULT_SOURCE@ record=true port=8000 listen=0.0.0.0 >/dev/null 2>&1 &"], capture_output=False, timeout=5)
+            # 啟動 Xvfb :1 虛擬顯示器
+            xvfb_cmd = "mkdir -p ~/.vnc && systemd-run --user --unit=webcom-xvfb Xvfb :1 -screen 0 1920x1080x24 -ac"
+            subprocess.run(["wsl.exe", "-e", "bash", "-c", xvfb_cmd], capture_output=True, timeout=5)
+
+            # 等待虛擬顯示器 socket 建立
+            subprocess.run(
+                ["wsl.exe", "-e", "bash", "-c", "for i in {1..20}; do [ -e /tmp/.X11-unix/X1 ] && break; sleep 0.05; done"],
+                capture_output=True, timeout=5
+            )
+
+            # 啟動 x11vnc
+            x11vnc_cmd = "systemd-run --user --unit=webcom-x11vnc env -u WAYLAND_DISPLAY x11vnc -display :1 -rfbport 5901 -nopw -listen 0.0.0.0 -forever -shared -noxrandr -noxdamage"
+            subprocess.run(["wsl.exe", "-e", "bash", "-c", x11vnc_cmd], capture_output=True, timeout=5)
+
+            # 啟動 XFCE4 桌面會話
+            xfce_cmd = "systemd-run --user --unit=webcom-xfce env -u WAYLAND_DISPLAY GDK_BACKEND=x11 DISPLAY=:1 XDG_SESSION_TYPE=x11 XDG_CURRENT_DESKTOP=XFCE DESKTOP_SESSION=xfce QT_QPA_PLATFORM=xcb dbus-run-session -- xfce4-session"
+            subprocess.run(["wsl.exe", "-e", "bash", "-c", xfce_cmd], capture_output=True, timeout=5)
+
+        # 2. 確保 websockify 在 6080 運行 (提供 noVNC HTML5 WebSocket 與 Web 伺服器)
+        if not _is_tcp_port_open(6080):
+            subprocess.run(["wsl.exe", "-e", "bash", "-c", "systemctl --user stop webcom-websockify 2>/dev/null || true; systemctl --user reset-failed 2>/dev/null || true"], capture_output=True, timeout=5)
+            ws_cmd = "systemd-run --user --unit=webcom-websockify websockify --web /usr/share/novnc 6080 localhost:5901"
+            subprocess.run(["wsl.exe", "-e", "bash", "-c", ws_cmd], capture_output=True, timeout=5)
+
+        # 3. 確保 PulseAudio 串流在 8000 運行
+        if not _is_tcp_port_open(8000):
+            audio_cmd = "pulseaudio --start --exit-idle-time=-1 >/dev/null 2>&1; pactl load-module module-simple-protocol-tcp rate=48000 format=s16le channels=2 source=@DEFAULT_SOURCE@ record=true port=8000 listen=0.0.0.0 >/dev/null 2>&1 || true"
+            subprocess.run(["wsl.exe", "-e", "bash", "-c", audio_cmd], capture_output=True, timeout=5)
+
+        # 輪詢等待連接埠就緒 (最多 3 秒)
+        for _ in range(15):
+            if _is_tcp_port_open(5901) and _is_tcp_port_open(6080):
+                break
+            time.sleep(0.2)
+
+    except Exception as e:
+        logging.warning(f"WSL 啟動桌面服務時產生警告/異常: {e}")
 
     return get_wsl_desktop_status()
 
@@ -421,10 +446,22 @@ def start_wsl_desktop_service():
 def stop_wsl_desktop_service():
     """停止 WSL 背景的 VNC、Xvfb、XFCE 與 websockify 桌面服務"""
     if shutil.which("wsl.exe"):
-        stop_cmd = "pkill -9 -f websockify; pkill -9 -f x11vnc; pkill -9 -f Xvfb; pkill -9 -f Xtigervnc; pkill -9 -f xfce4; pkill -9 -f xfwm4; pkill -9 -f xfdesktop; pactl unload-module module-simple-protocol-tcp >/dev/null 2>&1; rm -f /tmp/.X1-lock /tmp/.X11-unix/X1"
-        subprocess.run(["wsl.exe", "-e", "bash", "-c", stop_cmd], capture_output=False, timeout=5)
         import time
-        time.sleep(0.5)
+        try:
+            stop_cmd = (
+                "systemctl --user stop webcom-xvfb webcom-x11vnc webcom-websockify webcom-xfce 2>/dev/null || true; "
+                "systemctl --user reset-failed 2>/dev/null || true; "
+                "pkill -9 -x Xvfb 2>/dev/null || true; "
+                "pkill -9 -x x11vnc 2>/dev/null || true; "
+                "pactl unload-module module-simple-protocol-tcp 2>/dev/null || true; "
+                "rm -f /tmp/.X1-lock /tmp/.X11-unix/X1 2>/dev/null || true"
+            )
+            subprocess.run(["wsl.exe", "-e", "bash", "-c", stop_cmd], capture_output=True, timeout=5)
+            subprocess.run(["wsl.exe", "-u", "root", "-e", "bash", "-c", stop_cmd], capture_output=True, timeout=5)
+            time.sleep(0.3)
+        except Exception as e:
+            logging.warning(f"WSL 停止桌面服務時產生警告/異常: {e}")
+
     return get_wsl_desktop_status()
 
 
@@ -449,8 +486,11 @@ def launch_wsl_app(req: LaunchAppRequest):
 
     import time
     display = (req.display or ":1").strip() or ":1"
-    run_cmd = f"setsid env -u WAYLAND_DISPLAY GDK_BACKEND=x11 DISPLAY={display} QT_QPA_PLATFORM=xcb {clean_cmd} </dev/null >/dev/null 2>&1 & sleep 0.2"
-    subprocess.run(["wsl.exe", "-e", "bash", "-c", run_cmd], capture_output=False, timeout=5)
+    run_cmd = f"setsid env -u WAYLAND_DISPLAY GDK_BACKEND=x11 DISPLAY={display} QT_QPA_PLATFORM=xcb {clean_cmd} </dev/null >/dev/null 2>&1 &"
+    try:
+        subprocess.run(["wsl.exe", "-e", "bash", "-c", run_cmd], capture_output=True, timeout=5)
+    except Exception as e:
+        logging.warning(f"WSL 啟動應用程式異常: {e}")
     return {"status": "ok", "cmd": clean_cmd, "display": display}
 
 
