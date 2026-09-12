@@ -267,13 +267,13 @@
             <div class="flex items-center gap-2">
                 <a id="btn-open-markitdown" href="http://127.0.0.1:8001/markitdown/" target="_blank"
                     class="text-xs px-2.5 py-1 rounded-md bg-amber-950/70 hover:bg-amber-900 text-amber-300 border border-amber-700/60 flex items-center gap-1.5 font-semibold transition shadow-sm cursor-pointer no-underline select-none"
-                    title="開啟 MarkItDown 文件轉換器 (PDF/Word/Excel/PPT 轉 Markdown)">
+                    title="開啟 MarkItDown 文件轉換器 (PDF/Word/Excel/PPT 轉 Markdown)" data-i18n-title="tooltipMarkItDown">
                     <i data-lucide="file-text" class="w-3.5 h-3.5"></i> <span>MarkItDown</span>
                 </a>
                 <button id="btn-open-diagnostics" type="button" onclick="openDiagnosticsModal()"
                     class="text-xs px-2.5 py-1 rounded-md bg-emerald-950/70 hover:bg-emerald-900 text-emerald-300 border border-emerald-700/60 flex items-center gap-1.5 font-semibold transition shadow-sm cursor-pointer select-none"
-                    title="一鍵進行系統與功能自我健康檢測 (檢查函式、UI按鈕、8001後端與MarkItDown)">
-                    <i data-lucide="activity" class="w-3.5 h-3.5"></i> <span>自我檢測</span>
+                    title="一鍵進行系統與功能自我健康檢測 (檢查函式、UI按鈕、8001後端與MarkItDown)" data-i18n-title="tooltipSelfTest">
+                    <i data-lucide="activity" class="w-3.5 h-3.5"></i> <span data-i18n="btnSelfTest">自我檢測</span>
                 </button>
                 <button id="btn-launch-daemon" type="button" onclick="openDaemonModal()"
                     class="text-xs px-2.5 py-1 rounded-md bg-purple-950/70 hover:bg-purple-900 text-purple-300 border border-purple-700/60 flex items-center gap-1.5 font-semibold transition shadow-sm cursor-pointer select-none"
@@ -294,19 +294,19 @@
             <div class="flex items-center gap-1 bg-black/60 p-0.5 rounded-lg border border-gray-800 text-xs">
                 <button id="tab-left-term" type="button" onclick="switchLeftMode('term')"
                     class="px-2.5 py-1 rounded-md font-medium transition flex items-center gap-1.5 bg-purple-600 text-white shadow-sm cursor-pointer select-none"
-                    title="多協定終端機 (WSL Shell, SSH, Telnet, Serial)">
+                    title="多協定終端機 (WSL Shell, SSH, Telnet, Serial)" data-i18n-title="tooltipTabTerm">
                     <i data-lucide="terminal" class="w-3.5 h-3.5"></i>
                     <span data-i18n="tabTerm">終端機</span>
                 </button>
                 <button id="tab-left-novnc" type="button" onclick="switchLeftMode('novnc')"
                     class="px-2.5 py-1 rounded-md font-medium transition flex items-center gap-1.5 text-gray-400 hover:text-gray-200 hover:bg-gray-800/80 cursor-pointer select-none"
-                    title="noVNC HTML5 遠端桌面 (VNC / websockify)">
+                    title="noVNC HTML5 遠端桌面 (VNC / websockify)" data-i18n-title="tooltipTabNoVNC">
                     <i data-lucide="monitor" class="w-3.5 h-3.5 text-blue-400"></i>
                     <span data-i18n="tabNoVNC">noVNC 桌面</span>
                 </button>
                 <button id="tab-left-xorg" type="button" onclick="switchLeftMode('xorg')"
                     class="px-2.5 py-1 rounded-md font-medium transition flex items-center gap-1.5 text-gray-400 hover:text-gray-200 hover:bg-gray-800/80 cursor-pointer select-none"
-                    title="Xorg GUI 視窗模式 (Linux/WSL2/Docker DISPLAY:0)">
+                    title="Xorg GUI 視窗模式 (Linux/WSL2/Docker DISPLAY:1)" data-i18n-title="tooltipTabXorg">
                     <i data-lucide="layout-grid" class="w-3.5 h-3.5 text-emerald-400"></i>
                     <span data-i18n="tabXorg">Xorg 視窗</span>
                 </button>
@@ -330,12 +330,12 @@
             <div id="actions-left-novnc" class="flex items-center gap-2 hidden">
                 <button id="btn-novnc-cad" type="button" onclick="sendNoVncCtrlAltDel()"
                     class="text-xs px-2 py-0.5 rounded bg-gray-800 hover:bg-gray-700 text-amber-300 border border-amber-600/40 flex items-center gap-1 font-mono transition"
-                    title="發送 Ctrl+Alt+Delete 組合鍵">
+                    title="發送 Ctrl+Alt+Delete 組合鍵" data-i18n-title="tooltipCtrlAltDel">
                     <span>Ctrl+Alt+Del</span>
                 </button>
                 <button id="btn-novnc-fs" type="button" onclick="toggleNoVncFullscreen()"
                     class="text-xs px-2 py-0.5 rounded bg-gray-800 hover:bg-gray-700 text-blue-300 border border-blue-600/40 flex items-center gap-1 transition"
-                    title="全螢幕顯示桌面">
+                    title="全螢幕顯示桌面" data-i18n-title="tooltipFullscreen">
                     <i data-lucide="maximize" class="w-3 h-3"></i> <span data-i18n="novncFullscreen">全螢幕</span>
                 </button>
             </div>
@@ -344,17 +344,17 @@
             <div id="actions-left-xorg" class="flex items-center gap-2 hidden">
                 <button id="btn-xorg-wizard" type="button" onclick="openXorgWizardModal()"
                     class="text-xs px-2 py-0.5 rounded bg-emerald-950/80 hover:bg-emerald-900 text-emerald-300 border border-emerald-600/50 flex items-center gap-1 font-medium transition"
-                    title="WSL2 / Linux Xorg 一鍵啟動精靈與指令範例">
+                    title="WSL2 / Linux Xorg 一鍵啟動精靈與指令範例" data-i18n-title="tooltipXorgWizard">
                     <i data-lucide="sparkles" class="w-3 h-3 text-emerald-400"></i> <span data-i18n="xorgLaunchWizard">啟動精靈</span>
                 </button>
                 <button id="btn-xorg-alttab" type="button" onclick="sendXorgKeyCombo('alttab')"
                     class="text-xs px-2 py-0.5 rounded bg-gray-800 hover:bg-gray-700 text-indigo-300 border border-indigo-600/40 flex items-center gap-1 font-mono transition"
-                    title="發送 Alt+Tab 切換視窗">
+                    title="發送 Alt+Tab 切換視窗" data-i18n-title="tooltipAltTab">
                     <span>Alt+Tab</span>
                 </button>
                 <button id="btn-xorg-fs" type="button" onclick="toggleXorgFullscreen()"
                     class="text-xs px-2 py-0.5 rounded bg-gray-800 hover:bg-gray-700 text-blue-300 border border-blue-600/40 flex items-center gap-1 transition"
-                    title="全螢幕顯示 Xorg 視窗">
+                    title="全螢幕顯示 Xorg 視窗" data-i18n-title="tooltipXorgFullscreen">
                     <i data-lucide="maximize" class="w-3 h-3"></i> <span data-i18n="novncFullscreen">全螢幕</span>
                 </button>
             </div>
@@ -475,7 +475,7 @@
                     <div id="vkey-custom-container" class="flex items-center gap-1"></div>
                     <button id="btn-config-vkeys" type="button" onclick="openKeySettingsModal('term')"
                         class="px-2 py-1 bg-purple-950/60 hover:bg-purple-900 active:bg-purple-800 text-purple-300 border border-purple-700/60 rounded-md font-mono text-xs font-bold transition flex items-center gap-1 shadow-sm cursor-pointer"
-                        title="按鍵與快捷鍵設置 (自訂虛擬按鍵/巨集/遠端快捷鍵)">
+                        title="按鍵與快捷鍵設置 (自訂虛擬按鍵/巨集/遠端快捷鍵)" data-i18n-title="tooltipKeySettings">
                         <i data-lucide="settings" class="w-3.5 h-3.5"></i> <span>設置</span>
                     </button>
                 </div>
@@ -507,22 +507,22 @@
                 </div>
                 <div class="flex items-center gap-1 bg-black/60 px-2 py-1 rounded border border-gray-800">
                     <span class="text-gray-400 font-mono">Pwd:</span>
-                    <input id="novnc-password" type="password" class="bg-transparent text-white w-20 font-mono focus:outline-none" placeholder="選填密碼">
+                    <input id="novnc-password" type="password" class="bg-transparent text-white w-20 font-mono focus:outline-none" placeholder="選填密碼" data-i18n-placeholder="wslPasswordPlaceholder">
                 </div>
                 
                 <label class="flex items-center gap-1 text-gray-400 cursor-pointer select-none text-[11px]">
                     <input id="novnc-view-only" type="checkbox" class="rounded bg-gray-800 border-gray-700 text-purple-600 focus:ring-0">
-                    <span>僅檢視</span>
+                    <span data-i18n="wslViewOnly">僅檢視</span>
                 </label>
 
                 <label class="flex items-center gap-1 text-gray-400 cursor-pointer select-none text-[11px]">
                     <input id="novnc-mode-iframe" type="checkbox" class="rounded bg-gray-800 border-gray-700 text-blue-600 focus:ring-0">
-                    <span>Web 模式</span>
+                    <span data-i18n="wslWebMode">Web 模式</span>
                 </label>
 
                 <button id="btn-novnc-probe" type="button" onclick="probeVncPort('novnc')"
                     class="px-2 py-1 rounded bg-gray-800 hover:bg-gray-700 text-cyan-300 border border-cyan-700/50 flex items-center gap-1 transition text-xs cursor-pointer"
-                    title="測試 8001 後端 TCP 探測連接埠">
+                    title="測試 8001 後端 TCP 探測連接埠" data-i18n-title="wslProbeTooltip">
                     <i data-lucide="activity" class="w-3.5 h-3.5"></i> <span>探測</span>
                 </button>
 
@@ -544,15 +544,15 @@
                     </span>
                     <button id="btn-novnc-wsl-check" type="button" onclick="checkWslStatus(true)"
                         class="px-2 py-0.5 rounded bg-gray-800 hover:bg-gray-700 text-teal-300 border border-teal-700/40 text-[11px] flex items-center gap-1 cursor-pointer transition">
-                        <i data-lucide="check-circle-2" class="w-3 h-3 text-teal-400"></i> <span>檢查 WSL</span>
+                        <i data-lucide="check-circle-2" class="w-3 h-3 text-teal-400"></i> <span data-i18n="wslBtnCheck">檢查 WSL</span>
                     </button>
                     <button id="btn-novnc-wsl-start" type="button" onclick="startWslDesktopAndConnect('novnc')"
                         class="px-2.5 py-0.5 rounded bg-teal-900/80 hover:bg-teal-800 text-teal-200 border border-teal-600/50 text-[11px] font-medium flex items-center gap-1 cursor-pointer shadow-sm transition">
-                        <i data-lucide="rocket" class="w-3 h-3 text-teal-400"></i> <span>一鍵啟動 WSL 桌面</span>
+                        <i data-lucide="rocket" class="w-3 h-3 text-teal-400"></i> <span data-i18n="wslBtnStart">一鍵啟動 WSL 桌面</span>
                     </button>
                     <button id="btn-novnc-wsl-stop" type="button" onclick="stopWslDesktopService('novnc')"
                         class="px-2 py-0.5 rounded bg-rose-950/60 hover:bg-rose-900 text-rose-300 border border-rose-800/40 text-[11px] flex items-center gap-1 cursor-pointer transition">
-                        <i data-lucide="square" class="w-3 h-3 text-rose-400"></i> <span>停止 WSL 桌面</span>
+                        <i data-lucide="square" class="w-3 h-3 text-rose-400"></i> <span data-i18n="wslBtnStop">停止 WSL 桌面</span>
                     </button>
                 </div>
                 <div class="text-[11px] text-gray-400 font-mono flex items-center gap-2">
@@ -570,13 +570,13 @@
                 <div class="flex items-center gap-2 flex-wrap">
                     <button id="btn-novnc-audio-toggle" type="button" onclick="toggleAudioStream('novnc')"
                         class="px-2 py-0.5 rounded bg-gray-900 hover:bg-gray-800 text-gray-300 border border-gray-700 flex items-center gap-1 font-medium transition cursor-pointer"
-                        title="開啟 / 關閉音訊串流 (支援 PulseAudio / HTTP MP3 / AAC)">
+                        title="開啟 / 關閉音訊串流 (支援 PulseAudio / HTTP MP3 / AAC)" data-i18n-title="audioStreamTooltip">
                         <i id="icon-novnc-audio" data-lucide="volume-x" class="w-3.5 h-3.5 text-gray-400"></i>
                         <span id="txt-novnc-audio" data-i18n="audioMuted">音訊: 關閉</span>
                     </button>
 
                     <div class="flex items-center gap-1 bg-black/60 px-2 py-0.5 rounded border border-gray-800">
-                        <span class="text-gray-400 text-[11px]">音量:</span>
+                        <span class="text-gray-400 text-[11px]" data-i18n="audioVolumeLabel">音量:</span>
                         <input id="novnc-audio-vol" type="range" min="0" max="100" value="80" oninput="setAudioVolume(this.value, 'novnc')"
                             class="w-16 h-1 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-purple-500">
                         <span id="novnc-audio-vol-txt" class="text-[11px] text-gray-300 w-6 font-mono">80%</span>
@@ -590,7 +590,7 @@
 
                     <button type="button" onclick="playTestTone()"
                         class="px-2 py-0.5 rounded bg-gray-900 hover:bg-gray-800 text-cyan-300 border border-cyan-800/40 text-[11px] flex items-center gap-1 cursor-pointer"
-                        title="使用 Web Audio API 播放測試鈴聲">
+                        title="使用 Web Audio API 播放測試鈴聲" data-i18n-title="audioTestToneTooltip">
                         <i data-lucide="bell" class="w-3 h-3 text-cyan-400"></i> <span data-i18n="audioTestTone">測試音</span>
                     </button>
                 </div>
@@ -600,7 +600,7 @@
                     <div id="novnc-remote-shortcuts" class="flex items-center gap-1"></div>
                     <button type="button" onclick="openKeySettingsModal('novnc')"
                         class="px-2 py-0.5 rounded bg-purple-950/60 hover:bg-purple-900 text-purple-300 border border-purple-700/50 flex items-center gap-1 text-[11px] font-medium transition cursor-pointer"
-                        title="按鍵與快捷鍵自訂設置">
+                        title="按鍵與快捷鍵自訂設置" data-i18n-title="keySettingsTooltip">
                         <i data-lucide="settings" class="w-3 h-3"></i> <span data-i18n="btnKeySettings">按鍵設置</span>
                     </button>
                 </div>
@@ -609,13 +609,13 @@
             <!-- noVNC 狀態列 (Status bar) -->
             <div class="px-3 py-1 bg-black/40 border-b border-gray-800/80 text-[11px] font-mono flex items-center justify-between text-gray-400 shrink-0">
                 <span id="novnc-status" class="flex items-center gap-1.5">
-                    <span class="w-2 h-2 rounded-full bg-gray-500"></span> <span>未連線 (請確認 websockify 服務或 VNC 伺服器運作中)</span>
+                    <span class="w-2 h-2 rounded-full bg-gray-500"></span> <span data-i18n="novncStatusDisconnected">未連線 (請確認 websockify 服務或 VNC 伺服器運作中)</span>
                 </span>
                 <div class="flex items-center gap-2">
-                    <span class="text-gray-500">快速預設:</span>
-                    <button type="button" onclick="applyVncPreset('novnc', '127.0.0.1', 6080, 'websockify')" class="hover:text-blue-300 underline cursor-pointer">本機 6080</button>
+                    <span class="text-gray-500" data-i18n="novncQuickPresets">快速預設:</span>
+                    <button type="button" onclick="applyVncPreset('novnc', '127.0.0.1', 6080, 'websockify')" class="hover:text-blue-300 underline cursor-pointer" data-i18n="novncPresetLocal">本機 6080</button>
                     <button type="button" onclick="applyVncPreset('novnc', '127.0.0.1', 5900, '')" class="hover:text-blue-300 underline cursor-pointer">VNC 5900</button>
-                    <button type="button" onclick="applyVncPreset('novnc', '192.168.1.100', 6080, 'websockify')" class="hover:text-blue-300 underline cursor-pointer">區網 6080</button>
+                    <button type="button" onclick="applyVncPreset('novnc', '192.168.1.100', 6080, 'websockify')" class="hover:text-blue-300 underline cursor-pointer" data-i18n="novncPresetLan">區網 6080</button>
                 </div>
             </div>
 
@@ -627,10 +627,10 @@
                         <div class="w-16 h-16 rounded-full bg-gray-900 border border-gray-800 flex items-center justify-center mx-auto mb-3 text-blue-400">
                             <i data-lucide="monitor" class="w-8 h-8"></i>
                         </div>
-                        <h3 class="text-sm font-bold text-gray-300 mb-1">noVNC HTML5 遠端桌面未連線</h3>
+                        <h3 class="text-sm font-bold text-gray-300 mb-1" data-i18n="novncDisconnectedTitle">noVNC HTML5 遠端桌面未連線</h3>
                         <p class="text-xs text-gray-500 leading-relaxed mb-4">支援標準 RFB 協定、Tight/ZRLE 編碼，相容 x11vnc、TigerVNC、TightVNC 及 websockify 代理。</p>
                         <button type="button" onclick="handleNoVncConnect()" class="px-4 py-1.5 bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold rounded-lg transition shadow-md inline-flex items-center gap-1.5 cursor-pointer">
-                            <i data-lucide="plug" class="w-3.5 h-3.5"></i> 立即連線
+                            <i data-lucide="plug" class="w-3.5 h-3.5"></i> <span data-i18n="novncBtnConnectNow">立即連線</span>
                         </button>
                     </div>
                 </div>
@@ -666,7 +666,7 @@
                     <select id="xorg-wm" class="bg-transparent text-white text-xs font-mono focus:outline-none cursor-pointer">
                         <option value="xfce4" selected>XFCE4 (完整桌面)</option>
                         <option value="standalone">單一 App (Direct)</option>
-                        <option value="fluxbox">Fluxbox (極速輕量)</option>
+                        <option value="fluxbox" data-i18n="xorgEnvOptionFluxbox">Fluxbox (極速輕量)</option>
                     </select>
                 </div>
 
@@ -694,7 +694,7 @@
                     </span>
                     <button id="btn-xorg-wsl-check" type="button" onclick="checkWslStatus(true)"
                         class="px-2 py-0.5 rounded bg-gray-800 hover:bg-gray-700 text-teal-300 border border-teal-700/40 text-[11px] flex items-center gap-1 cursor-pointer transition">
-                        <i data-lucide="check-circle-2" class="w-3 h-3 text-teal-400"></i> <span>檢查 WSL</span>
+                        <i data-lucide="check-circle-2" class="w-3 h-3 text-teal-400"></i> <span data-i18n="wslBtnCheck">檢查 WSL</span>
                     </button>
                     <button id="btn-xorg-wsl-start" type="button" onclick="startWslDesktopAndConnect('xorg')"
                         class="px-2.5 py-0.5 rounded bg-emerald-900/80 hover:bg-emerald-800 text-emerald-200 border border-emerald-600/50 text-[11px] font-medium flex items-center gap-1 cursor-pointer shadow-sm transition">
@@ -702,7 +702,7 @@
                     </button>
                     <button id="btn-xorg-wsl-stop" type="button" onclick="stopWslDesktopService('xorg')"
                         class="px-2 py-0.5 rounded bg-rose-950/60 hover:bg-rose-900 text-rose-300 border border-rose-800/40 text-[11px] flex items-center gap-1 cursor-pointer transition">
-                        <i data-lucide="square" class="w-3 h-3 text-rose-400"></i> <span>停止 WSL 桌面</span>
+                        <i data-lucide="square" class="w-3 h-3 text-rose-400"></i> <span data-i18n="wslBtnStop">停止 WSL 桌面</span>
                     </button>
                 </div>
                 <div class="text-[11px] text-gray-400 font-mono flex items-center gap-2">
@@ -717,42 +717,42 @@
                 <div class="flex items-center gap-1.5 flex-wrap">
                     <span class="text-gray-400 font-mono text-[11px] flex items-center gap-1">
                         <i data-lucide="sparkles" class="w-3.5 h-3.5 text-yellow-400"></i>
-                        <span>啟動 App:</span>
+                        <span data-i18n="xorgLaunchAppLabel">啟動 App:</span>
                     </span>
                     <button type="button" onclick="launchWslApp('xfce4-terminal --disable-server')"
                         class="px-2 py-0.5 rounded bg-gray-800 hover:bg-gray-700 text-emerald-300 border border-emerald-700/50 flex items-center gap-1 text-[11px] cursor-pointer transition shadow-sm"
-                        title="在 Xorg 視窗啟動 XFCE 終端機">
-                        <i data-lucide="terminal" class="w-3 h-3 text-emerald-400"></i> <span>終端機</span>
+                        title="在 Xorg 視窗啟動 XFCE 終端機" data-i18n-title="xorgAppTerminalTooltip">
+                        <i data-lucide="terminal" class="w-3 h-3 text-emerald-400"></i> <span data-i18n="xorgAppTerminal">終端機</span>
                     </button>
                     <button type="button" onclick="launchWslApp('thunar')"
                         class="px-2 py-0.5 rounded bg-gray-800 hover:bg-gray-700 text-blue-300 border border-blue-700/50 flex items-center gap-1 text-[11px] cursor-pointer transition shadow-sm"
-                        title="在 Xorg 視窗啟動 Thunar 檔案總管">
-                        <i data-lucide="folder" class="w-3 h-3 text-blue-400"></i> <span>檔案總管</span>
+                        title="在 Xorg 視窗啟動 Thunar 檔案總管" data-i18n-title="xorgAppFilesTooltip">
+                        <i data-lucide="folder" class="w-3 h-3 text-blue-400"></i> <span data-i18n="xorgAppFiles">檔案總管</span>
                     </button>
                     <button type="button" onclick="launchWslApp('mousepad')"
                         class="px-2 py-0.5 rounded bg-gray-800 hover:bg-gray-700 text-purple-300 border border-purple-700/50 flex items-center gap-1 text-[11px] cursor-pointer transition shadow-sm"
-                        title="在 Xorg 視窗啟動 Mousepad 文字編輯器">
-                        <i data-lucide="file-text" class="w-3 h-3 text-purple-400"></i> <span>編輯器</span>
+                        title="在 Xorg 視窗啟動 Mousepad 文字編輯器" data-i18n-title="xorgAppEditorTooltip">
+                        <i data-lucide="file-text" class="w-3 h-3 text-purple-400"></i> <span data-i18n="xorgAppEditor">編輯器</span>
                     </button>
                     <button type="button" onclick="launchWslApp('xcalc')"
                         class="px-2 py-0.5 rounded bg-gray-800 hover:bg-gray-700 text-amber-300 border border-amber-700/50 flex items-center gap-1 text-[11px] cursor-pointer transition shadow-sm"
-                        title="在 Xorg 視窗啟動 X11 計算機">
-                        <i data-lucide="calculator" class="w-3 h-3 text-amber-400"></i> <span>計算機</span>
+                        title="在 Xorg 視窗啟動 X11 計算機" data-i18n-title="xorgAppCalcTooltip">
+                        <i data-lucide="calculator" class="w-3 h-3 text-amber-400"></i> <span data-i18n="xorgAppCalc">計算機</span>
                     </button>
                     <button type="button" onclick="launchWslApp('xeyes')"
                         class="px-2 py-0.5 rounded bg-gray-800 hover:bg-gray-700 text-cyan-300 border border-cyan-700/50 flex items-center gap-1 text-[11px] cursor-pointer transition shadow-sm"
-                        title="在 Xorg 視窗啟動 xeyes">
-                        <i data-lucide="eye" class="w-3 h-3 text-cyan-400"></i> <span>xeyes</span>
+                        title="在 Xorg 視窗啟動 xeyes" data-i18n-title="xorgAppXeyesTooltip">
+                        <i data-lucide="eye" class="w-3 h-3 text-cyan-400"></i> <span data-i18n="xorgAppXeyes">xeyes</span>
                     </button>
                 </div>
                 <!-- 自訂指令輸入框 -->
                 <div class="flex items-center gap-1">
-                    <input id="xorg-custom-cmd" type="text" placeholder="指令 (如: gedit, firefox)"
+                    <input id="xorg-custom-cmd" type="text" placeholder="指令 (如: gedit, firefox)" data-i18n-placeholder="xorgCmdPlaceholder"
                         class="bg-black/60 text-white text-[11px] font-mono px-2 py-0.5 rounded border border-gray-700 focus:outline-none focus:border-emerald-500 w-36 sm:w-44"
                         onkeydown="if(event.key==='Enter') launchWslCustomApp()">
                     <button type="button" onclick="launchWslCustomApp()"
                         class="px-2 py-0.5 rounded bg-emerald-700 hover:bg-emerald-600 text-white text-[11px] font-medium flex items-center gap-1 cursor-pointer transition shadow-sm">
-                        <i data-lucide="play" class="w-2.5 h-2.5 fill-current"></i> <span>執行</span>
+                        <i data-lucide="play" class="w-2.5 h-2.5 fill-current"></i> <span data-i18n="xorgBtnRun">執行</span>
                     </button>
                 </div>
             </div>
@@ -763,13 +763,13 @@
                 <div class="flex items-center gap-2 flex-wrap">
                     <button id="btn-xorg-audio-toggle" type="button" onclick="toggleAudioStream('xorg')"
                         class="px-2 py-0.5 rounded bg-gray-900 hover:bg-gray-800 text-gray-300 border border-gray-700 flex items-center gap-1 font-medium transition cursor-pointer"
-                        title="開啟 / 關閉音訊串流 (支援 PulseAudio / HTTP MP3 / AAC)">
+                        title="開啟 / 關閉音訊串流 (支援 PulseAudio / HTTP MP3 / AAC)" data-i18n-title="audioStreamTooltip">
                         <i id="icon-xorg-audio" data-lucide="volume-x" class="w-3.5 h-3.5 text-gray-400"></i>
                         <span id="txt-xorg-audio" data-i18n="audioMuted">音訊: 關閉</span>
                     </button>
 
                     <div class="flex items-center gap-1 bg-black/60 px-2 py-0.5 rounded border border-gray-800">
-                        <span class="text-gray-400 text-[11px]">音量:</span>
+                        <span class="text-gray-400 text-[11px]" data-i18n="audioVolumeLabel">音量:</span>
                         <input id="xorg-audio-vol" type="range" min="0" max="100" value="80" oninput="setAudioVolume(this.value, 'xorg')"
                             class="w-16 h-1 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-purple-500">
                         <span id="xorg-audio-vol-txt" class="text-[11px] text-gray-300 w-6 font-mono">80%</span>
@@ -783,7 +783,7 @@
 
                     <button type="button" onclick="playTestTone()"
                         class="px-2 py-0.5 rounded bg-gray-900 hover:bg-gray-800 text-cyan-300 border border-cyan-800/40 text-[11px] flex items-center gap-1 cursor-pointer"
-                        title="使用 Web Audio API 播放測試鈴聲">
+                        title="使用 Web Audio API 播放測試鈴聲" data-i18n-title="audioTestToneTooltip">
                         <i data-lucide="bell" class="w-3 h-3 text-cyan-400"></i> <span data-i18n="audioTestTone">測試音</span>
                     </button>
                 </div>
@@ -793,7 +793,7 @@
                     <div id="xorg-remote-shortcuts" class="flex items-center gap-1"></div>
                     <button type="button" onclick="openKeySettingsModal('xorg')"
                         class="px-2 py-0.5 rounded bg-purple-950/60 hover:bg-purple-900 text-purple-300 border border-purple-700/50 flex items-center gap-1 text-[11px] font-medium transition cursor-pointer"
-                        title="按鍵與快捷鍵自訂設置">
+                        title="按鍵與快捷鍵自訂設置" data-i18n-title="keySettingsTooltip">
                         <i data-lucide="settings" class="w-3 h-3"></i> <span data-i18n="btnKeySettings">按鍵設置</span>
                     </button>
                 </div>
@@ -802,13 +802,13 @@
             <!-- Xorg 狀態與快捷鍵列 (Status & Shortcut Bar) -->
             <div class="px-3 py-1 bg-black/40 border-b border-gray-800/80 text-[11px] font-mono flex items-center justify-between text-gray-400 shrink-0">
                 <span id="xorg-status" class="flex items-center gap-1.5">
-                    <span class="w-2 h-2 rounded-full bg-gray-500"></span> <span>Xorg 視窗伺服器未連線 (DISPLAY=:1)</span>
+                    <span class="w-2 h-2 rounded-full bg-gray-500"></span> <span data-i18n="xorgDisconnectedTitle">Xorg 視窗伺服器未連線 (DISPLAY=:1)</span>
                 </span>
                 <div class="flex items-center gap-2">
                     <span class="text-gray-500">視窗快捷鍵:</span>
                     <button type="button" onclick="sendXorgKeyCombo('alttab')" class="px-1.5 py-0.5 rounded bg-gray-800 hover:bg-gray-700 text-gray-300 border border-gray-700 cursor-pointer">Alt+Tab</button>
                     <button type="button" onclick="sendXorgKeyCombo('altf4')" class="px-1.5 py-0.5 rounded bg-gray-800 hover:bg-gray-700 text-rose-300 border border-gray-700 cursor-pointer">Alt+F4</button>
-                    <button type="button" onclick="openXorgWizardModal()" class="text-emerald-400 hover:underline cursor-pointer">一鍵配置精靈</button>
+                    <button type="button" onclick="openXorgWizardModal()" class="text-emerald-400 hover:underline cursor-pointer" data-i18n="xorgBtnWizard">一鍵配置精靈</button>
                 </div>
             </div>
 
@@ -825,10 +825,10 @@
                         </p>
                         <div class="flex items-center justify-center gap-2">
                             <button type="button" onclick="openXorgWizardModal()" class="px-3.5 py-1.5 bg-emerald-700 hover:bg-emerald-600 text-white text-xs font-semibold rounded-lg transition shadow-md inline-flex items-center gap-1.5 cursor-pointer">
-                                <i data-lucide="terminal" class="w-3.5 h-3.5"></i> 查看 WSL 啟動指令
+                                <i data-lucide="terminal" class="w-3.5 h-3.5"></i> <span data-i18n="xorgBtnViewWslCmd">查看 WSL 啟動指令</span>
                             </button>
                             <button type="button" onclick="handleXorgConnect()" class="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold rounded-lg transition shadow-md inline-flex items-center gap-1.5 cursor-pointer">
-                                <i data-lucide="play" class="w-3.5 h-3.5 fill-current"></i> 連線 DISPLAY:1
+                                <i data-lucide="play" class="w-3.5 h-3.5 fill-current"></i> <span data-i18n="xorgBtnConnectDisplay">連線 DISPLAY:1</span>
                             </button>
                         </div>
                     </div>
@@ -1820,10 +1820,10 @@
                     </div>
                     <div>
                         <h2 class="text-base font-bold text-white flex items-center gap-2">
-                            <span>系統與功能自我檢測工具</span>
+                            <span data-i18n="diagModalTitle">系統與功能自我檢測工具</span>
                             <span class="text-xs bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded font-mono">Self-Diagnostics</span>
                         </h2>
-                        <p class="text-xs text-gray-400">自動檢驗核心 API、UI 按鈕防禦、常駐服務連線與 MarkItDown 轉檔能力</p>
+                        <p class="text-xs text-gray-400" data-i18n="diagModalDesc">自動檢驗核心 API、UI 按鈕防禦、常駐服務連線與 MarkItDown 轉檔能力</p>
                     </div>
                 </div>
                 <button id="btn-close-diag" onclick="closeDiagnosticsModal()" class="text-gray-400 hover:text-white transition p-1 cursor-pointer">
@@ -1836,7 +1836,7 @@
                 <!-- Summary Card -->
                 <div id="diag-summary-card" class="p-3.5 bg-gray-950 rounded-xl border border-gray-800 flex items-center justify-between">
                     <div>
-                        <div class="text-gray-400 text-[11px]">綜合健康度診斷狀態</div>
+                        <div class="text-gray-400 text-[11px]" data-i18n="diagOverallStatus">綜合健康度診斷狀態</div>
                         <div id="diag-summary-title" class="text-sm font-bold text-gray-200 mt-0.5 flex items-center gap-2 font-mono">
                             <span class="w-2.5 h-2.5 rounded-full bg-yellow-500 animate-pulse"></span>
                             <span>診斷準備中...</span>
@@ -1855,11 +1855,11 @@
 
             <!-- Footer Controls -->
             <div class="px-5 py-3.5 bg-gray-950 border-t border-gray-800 flex items-center justify-between shrink-0">
-                <span class="text-[11px] text-gray-500">提示：若常駐程式或轉檔異常，可點擊上方「啟動常駐程式」</span>
+                <span class="text-[11px] text-gray-500" data-i18n="diagHint">提示：若常駐程式或轉檔異常，可點擊上方「啟動常駐程式」</span>
                 <div class="flex items-center gap-2">
                     <button type="button" onclick="runDiagnosticsTests()"
                         class="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-semibold transition flex items-center gap-1.5 shadow-sm cursor-pointer">
-                        <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i> <span>重新檢測</span>
+                        <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i> <span data-i18n="diagBtnRerun">重新檢測</span>
                     </button>
                     <button type="button" onclick="closeDiagnosticsModal()"
                         class="px-3 py-1.5 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-300 transition cursor-pointer">
@@ -2928,7 +2928,7 @@
                     <div class="p-1.5 bg-emerald-600/20 text-emerald-400 rounded-lg border border-emerald-500/30">
                         <i data-lucide="layout-grid" class="w-4 h-4 text-emerald-400"></i>
                     </div>
-                    <span>WSL2 / Linux 桌面與 Xorg 檢測精靈</span>
+                    <span data-i18n="xorgModalTitle">WSL2 / Linux 桌面與 Xorg 檢測精靈</span>
                 </h2>
                 <button id="btn-close-xorg-modal" onclick="closeXorgWizardModal()" class="text-gray-400 hover:text-white transition p-1 cursor-pointer">
                     <i data-lucide="x" class="w-5 h-5"></i>
@@ -2939,7 +2939,7 @@
                 <div class="p-4 bg-gray-950 rounded-xl border border-gray-800 space-y-2.5">
                     <div class="flex items-center justify-between">
                         <span class="font-bold text-teal-300 flex items-center gap-1.5">
-                            <i data-lucide="activity" class="w-4 h-4"></i> WSL 當前環境檢測狀態
+                            <i data-lucide="activity" class="w-4 h-4"></i> <span data-i18n="xorgModalEnvStatus">WSL 當前環境檢測狀態</span>
                         </span>
                         <div class="flex items-center gap-1.5">
                             <button type="button" onclick="checkWslStatus(true)" class="px-2 py-0.5 rounded bg-gray-800 hover:bg-gray-700 text-teal-300 border border-teal-700/40 text-[11px] cursor-pointer">
@@ -2960,7 +2960,7 @@
 
                 <div class="p-3.5 bg-gray-950 rounded-xl border border-gray-800">
                     <div class="font-bold text-emerald-300 mb-1 flex items-center gap-1.5">
-                        <i data-lucide="info" class="w-4 h-4"></i> 工作原理說明
+                        <i data-lucide="info" class="w-4 h-4"></i> <span data-i18n="xorgModalHowItWorks">工作原理說明</span>
                     </div>
                     <p class="text-gray-400 leading-relaxed text-[11px]">
                         WSL2 桌面運作方式：透過 <strong>Xvfb + x11vnc</strong> 在 WSL 內啟動 <code>:1</code> 虛擬顯示器並運行 <strong>XFCE4</strong> 視窗管理與桌面，監聽 5901 埠；同時透過 <strong>websockify</strong> 橋接為 WebSocket (6080) 與 HTTP 伺服器，前端即可透過 HTML5 Canvas 零延遲順暢操控！
@@ -2970,7 +2970,7 @@
                 <div class="p-4 bg-emerald-950/20 rounded-xl border border-emerald-800/40 space-y-2.5">
                     <div class="flex items-center justify-between font-bold text-white">
                         <span class="flex items-center gap-1.5 text-emerald-300">
-                            <i data-lucide="terminal" class="w-4 h-4"></i> 方案一：完整桌面服務 (Xvfb + x11vnc + XFCE4 + websockify)
+                            <i data-lucide="terminal" class="w-4 h-4"></i> <span data-i18n="xorgModalOpt1">方案一：完整桌面服務 (Xvfb + x11vnc + XFCE4 + websockify)</span>
                         </span>
                         <button type="button" onclick="copyXorgCommands('fluxbox')" class="text-xs px-2 py-0.5 rounded bg-emerald-800/60 hover:bg-emerald-700 text-emerald-200 border border-emerald-600/40 cursor-pointer">複製指令</button>
                     </div>
@@ -2985,7 +2985,7 @@ nohup env -u WAYLAND_DISPLAY GDK_BACKEND=x11 DISPLAY=:1 QT_QPA_PLATFORM=xcb dbus
 websockify -D --web /usr/share/novnc 6080 localhost:5901</pre>
                     <div class="flex items-center gap-2 pt-1">
                         <button type="button" onclick="runXorgCommandsInTerm('fluxbox')" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg font-semibold flex items-center gap-1.5 cursor-pointer shadow">
-                            <i data-lucide="play" class="w-3.5 h-3.5 fill-current"></i> 直接於 Webcom WSL 終端機執行
+                            <i data-lucide="play" class="w-3.5 h-3.5 fill-current"></i> <span data-i18n="xorgModalBtnExecInWsl">直接於 Webcom WSL 終端機執行</span>
                         </button>
                     </div>
                 </div>
@@ -2993,7 +2993,7 @@ websockify -D --web /usr/share/novnc 6080 localhost:5901</pre>
                 <div class="p-4 bg-gray-950 rounded-xl border border-gray-800 space-y-2.5">
                     <div class="flex items-center justify-between font-bold text-white">
                         <span class="flex items-center gap-1.5 text-blue-300">
-                            <i data-lucide="monitor" class="w-4 h-4"></i> 方案二：單一 GUI 程式 (Direct App)
+                            <i data-lucide="monitor" class="w-4 h-4"></i> <span data-i18n="xorgModalOpt2">方案二：單一 GUI 程式 (Direct App)</span>
                         </span>
                         <button type="button" onclick="copyXorgCommands('singleapp')" class="text-xs px-2 py-0.5 rounded bg-gray-800 hover:bg-gray-700 text-gray-300 border border-gray-700 cursor-pointer">複製指令</button>
                     </div>
@@ -3007,7 +3007,7 @@ mousepad &</pre>
             </div>
             <div class="px-5 py-3 bg-gray-900 border-t border-gray-800 flex justify-between items-center shrink-0">
                 <button type="button" onclick="checkWslStatus(true)" class="text-teal-400 hover:underline text-xs flex items-center gap-1 cursor-pointer">
-                    <i data-lucide="help-circle" class="w-3.5 h-3.5"></i> 排查 WSL 連線問題
+                    <i data-lucide="help-circle" class="w-3.5 h-3.5"></i> <span data-i18n="xorgModalBtnTroubleshoot">排查 WSL 連線問題</span>
                 </button>
                 <button type="button" onclick="closeXorgWizardModal()" class="px-4 py-1.5 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-lg font-medium cursor-pointer">關閉</button>
             </div>
@@ -3478,7 +3478,113 @@ mousepad &</pre>
                 appLibDuplicateSuccess: "已成功建立「{name}」的副本！ (Duplicated successfully!)",
                 appLibDeleteModalTitle: "確認刪除自建應用 (Delete Custom App)",
                 appLibDeleteModalDesc: "您即將刪除以下自建應用程式，此操作將無法還原： (You are about to delete this custom app. This action cannot be undone:)",
-                appLibConfirmDeleteBtn: "確認刪除 (Confirm Delete)"
+                appLibConfirmDeleteBtn: "確認刪除 (Confirm Delete)",
+
+                // Newly added UI keys for comprehensive i18n
+                btnSelfTest: "自我檢測",
+                tooltipMarkItDown: "開啟 MarkItDown 文件轉換器 (PDF/Word/Excel/PPT 轉 Markdown)",
+                tooltipSelfTest: "一鍵進行系統與功能自我健康檢測 (檢查函式、UI按鈕、8001後端與MarkItDown)",
+                tabTerminalTitle: "多協定終端機 (WSL Shell, SSH, Telnet, Serial)",
+                tabNoVncTitle: "noVNC HTML5 遠端桌面 (VNC / websockify)",
+                tabXorgTitle: "Xorg GUI 視窗模式 (Linux/WSL2/Docker DISPLAY:1)",
+                tooltipCtrlAltDel: "發送 Ctrl+Alt+Delete 組合鍵",
+                tooltipFullscreen: "全螢幕顯示桌面",
+                tooltipXorgWizard: "WSL2 / Linux Xorg 一鍵啟動精靈與指令範例",
+                tooltipAltTab: "發送 Alt+Tab 切換視窗",
+                tooltipXorgFullscreen: "全螢幕顯示 Xorg 視窗",
+                tooltipKeySettings: "按鍵與快捷鍵設置 (自訂虛擬按鍵/巨集/遠端快捷鍵)",
+                btnKeySettingsLabel: "設置",
+                wslDesktopServiceLabel: "WSL 桌面服務:",
+                wslStatusChecking: "檢查中...",
+                wslStatusRunning: "運行中",
+                wslStatusStopped: "未啟動",
+                wslStatusNotInstalled: "未安裝",
+                wslStatusUnknown: "尚未檢測",
+                wslBtnCheck: "檢查 WSL",
+                wslBtnStart: "一鍵啟動 WSL 桌面",
+                wslBtnStop: "停止 WSL 桌面",
+                wslProbe: "探測",
+                wslProbeTooltip: "測試 8001 後端 TCP 探測連接埠",
+                wslViewOnly: "僅檢視",
+                wslWebMode: "Web 模式",
+                wslPasswordPlaceholder: "選填密碼",
+                audioStreamLabel: "音訊串流:",
+                audioStreamOff: "音訊串流: 關閉",
+                audioStreamOn: "音訊串流: 開啟",
+                audioStatusMuted: "音訊: 靜音",
+                audioStatusPlaying: "音訊: 播放中",
+                audioVolumeLabel: "音量:",
+                audioTestTone: "測試音",
+                audioTestToneTooltip: "使用 Web Audio API 播放測試鈴聲",
+                audioStreamTooltip: "開啟 / 關閉音訊串流 (支援 PulseAudio / HTTP MP3 / AAC)",
+                novncDisconnectedTitle: "noVNC HTML5 遠端桌面未連線",
+                novncDisconnectedDesc: "支援標準 RFB 協定、Tight/ZRLE 編碼，相容 x11vnc、TigerVNC、TightVNC 及 websockify 代理。",
+                novncQuickPresets: "快速預設:",
+                novncPresetLocal: "本機 6080",
+                novncPresetLan: "區網 6080",
+                novncBtnConnectNow: "立即連線",
+                novncStatusDisconnected: "未連線 (請確認 websockify 服務或 VNC 伺服器運作中)",
+                xorgLaunchAppLabel: "啟動 App:",
+                xorgAppTerminal: "終端機",
+                xorgAppFiles: "檔案總管",
+                xorgAppEditor: "編輯器",
+                xorgAppCalc: "計算機",
+                xorgAppXeyes: "xeyes",
+                xorgAppTerminalTooltip: "在 Xorg 視窗啟動 XFCE 終端機",
+                xorgAppFilesTooltip: "在 Xorg 視窗啟動 Thunar 檔案總管",
+                xorgAppEditorTooltip: "在 Xorg 視窗啟動 Mousepad 文字編輯器",
+                xorgAppCalcTooltip: "在 Xorg 視窗啟動 X11 計算機",
+                xorgAppXeyesTooltip: "在 Xorg 視窗啟動 xeyes",
+                xorgCmdPlaceholder: "指令 (如: gedit, firefox)",
+                xorgBtnRun: "執行",
+                xorgBtnRunTooltip: "在 Xorg 畫布啟動輸入的 Linux GUI 程式",
+                xorgResolutionLabel: "解析度:",
+                xorgEnvLabel: "環境:",
+                xorgEnvOptionXfce: "XFCE4 (完整桌面)",
+                xorgEnvOptionDirect: "單一 App (Direct)",
+                xorgEnvOptionFluxbox: "Fluxbox (極速輕量)",
+                xorgDisconnectedTitle: "Xorg 視窗伺服器未連線 (DISPLAY=:1)",
+                xorgShortcutsLabel: "視窗快捷鍵:",
+                xorgBtnWizard: "一鍵配置精靈",
+                xorgEmptyHeroTitle: "Xorg GUI 虛擬視窗環境 (DISPLAY=:1)",
+                xorgEmptyHeroDesc: "可於 Windows/WSL2 或 Docker 中無縫執行 Linux GUI 圖形化程式（如 終端機、Thunar 檔案總管、Mousepad、Firefox 等），並透過 HTML5 零延遲畫布呈現。",
+                xorgBtnViewWslCmd: "查看 WSL 啟動指令",
+                xorgBtnConnectDisplay: "連線 DISPLAY:1",
+                xorgModalTitle: "WSL2 / Linux 桌面與 Xorg 檢測精靈",
+                xorgModalEnvStatus: "WSL 當前環境檢測狀態",
+                xorgModalBtnRecheck: "重新檢測",
+                xorgModalBtnStart: "一鍵啟動桌面",
+                xorgModalBtnStop: "停止桌面",
+                xorgModalHowItWorks: "工作原理說明",
+                xorgModalOpt1: "方案一：完整桌面服務 (Xvfb + x11vnc + XFCE4 + websockify)",
+                xorgModalOpt2: "方案二：單一 GUI 程式 (Direct App)",
+                xorgModalBtnCopy: "複製指令",
+                xorgModalBtnExecInWsl: "直接於 Webcom WSL 終端機執行",
+                xorgModalBtnTroubleshoot: "排查 WSL 連線問題",
+                xorgModalBtnClose: "關閉",
+                diagModalTitle: "系統與功能自我檢測工具",
+                diagModalDesc: "自動檢驗核心 API、UI 按鈕防禦、常駐服務連線與 MarkItDown 轉檔能力",
+                diagOverallStatus: "綜合健康度診斷狀態",
+                diagStatusReady: "診斷準備中...",
+                diagStatusRunning: "正在檢測中...",
+                diagItemsLabel: "項目",
+                diagHint: "提示：若常駐程式或轉檔異常，可點擊上方「啟動常駐程式」",
+                diagBtnRerun: "重新檢測",
+                diagBtnClose: "關閉",
+                keyModalDefaultToggle: "內建按鍵顯示開關",
+                keyModalDefaultToggleDesc: "勾選後將顯示於終端機虛擬鍵盤",
+                keyModalCustomList: "自訂快速按鍵列表",
+                keyModalBtnAddKey: "新增自訂按鍵",
+                keyModalColLabel: "按鍵名稱",
+                keyModalColCmd: "發送代碼 / 指令",
+                keyModalColAction: "操作",
+                keyModalBtnSave: "儲存並套用",
+                keyModalBtnReset: "恢復預設值",
+                keyModalBtnClose: "關閉",
+                artRollbackNotice: "您目前正在檢視歷史版本 (唯讀預覽模式)。若要恢復此版本，請點擊右側「還原此版」。",
+                artBtnRestore: "還原此版",
+                artSaved: "已儲存",
+                browserDirect: "(瀏覽器直連)"
             },
             "en": {
                 appTitle: "Dual-Engine AI Console",
@@ -3875,72 +3981,178 @@ mousepad &</pre>
                 slashCmdArtifact_title: "/create-artifact",
                 slashCmdArtifact_desc: "Ask AI to generate a standalone web app, script, or doc as an Artifact",
                 slashCmdArtifact_payload: "Please design and implement a complete standalone application (e.g. HTML/JS/CSS interactive app or utility script) wrapped in <artifact identifier=\"app\" type=\"html\" title=\"My App\">...</artifact>. If it is long, feel free to stop and let me continue.",
-                btnAppLibrary: "App Library (應用庫)",
-                tooltipOpenAppLib: "Open Custom App Library (開啟自建應用庫)",
-                artifactSaveToLib: "Save to Library (存入應用庫)",
-                tooltipSaveToAppLib: "Save this Artifact into your personal App Library (收藏至自建應用庫)",
-                appLibModalTitle: "Custom App Library (自建應用程式庫)",
-                appLibModalSubtitle: "Manage and launch standalone tools, automation scripts, and custom agents with Sandbox preview and LLM invocation (管理與執行自建單檔工具、腳本與助理)",
-                appLibBtnNew: "New App (+ 新建應用)",
-                appLibCatAll: "All Apps (全部應用)",
-                appLibCatWeb: "Web App (HTML / 網頁)",
-                appLibCatPy: "Python Script (Python 腳本)",
-                appLibCatShell: "Shell / Batch (批次腳本)",
-                appLibCatPrompt: "Prompt Agent (提示詞助理)",
-                appLibCatData: "Data / JSON (資料格式)",
-                appLibSearchPlaceholder: "Search app title, desc or keyword... (搜尋應用名稱、說明或關鍵字)",
-                appLibEmptyTitle: "No Custom Apps Yet (尚無自建應用程式)",
-                appLibEmptyDesc: "Click 'New App' above to build from scratch, or load sample templates below! (點擊上方「新建應用」建立，或載入示範範本)",
-                appLibBtnCreateFirst: "Create First App (新建第一個應用)",
-                appLibBtnLoadSamples: "⚡ Load Sample Templates (載入示範範本)",
-                appLibLoadSamplesBtn: "⚡ Load Sample Templates (載入示範範本)",
-                appLibFooterHint: "Click 'Save to Library' inside Artifact Workbench to bookmark any LLM creation (支援在工坊中點擊「存入應用庫」收藏成果)",
-                appLibBtnExport: "Backup Library (備份應用庫)",
-                appLibBtnImport: "Import Backup (匯入備份)",
-                appLibExportBtn: "Backup Library (備份應用庫)",
-                appLibImportBtn: "Import Backup (匯入備份)",
-                tooltipExportApps: "Export all custom apps to a JSON backup (匯出自建應用為 JSON 備份)",
-                tooltipImportApps: "Import custom apps from a JSON backup (匯入自建應用 JSON 備份)",
-                appEditTitleNew: "Create Custom App (新建自訂應用)",
-                appEditTitleEdit: "Edit Custom App (編輯自訂應用)",
-                appEditModalNewTitle: "Create Custom App (新建自訂應用)",
-                appEditModalEditTitle: "Edit Custom App (編輯自訂應用)",
-                appEditLabelName: "Application Name (應用程式名稱) *",
-                appEditNamePlaceholder: "e.g. Pomodoro Timer, SQL Formatter... (例如：番茄鐘專注工具)",
-                appEditLabelCategory: "Category (應用類型) *",
-                appEditLabelId: "Identifier (ID 識別碼) *",
-                appEditLabelIcon: "Icon / Emoji (圖示)",
-                appEditLabelVersion: "Version (版本號)",
-                appEditLabelDesc: "Description (功能簡介說明)",
-                appEditDescPlaceholder: "Brief description of features & usage... (簡短描述功能與用法)",
-                appEditLabelPrompt: "LLM Invocation Prompt (LLM 調用提示詞)",
-                appEditPromptHint: "Prompt injected when invoking with AI (點擊「LLM 調用」時指導 AI 的指令)",
-                appEditPromptPlaceholder: "e.g. You are a focus coach, assist user with Pomodoro sessions... (例如：你是一個專注力教練...)",
-                appEditLabelCode: "Code / Content (應用內容) *",
-                appEditBtnCopyCode: "Copy Code (複製代碼)",
-                appEditBtnSampleCode: "Fill Sample Code (填入範本代碼)",
-                appEditCodePlaceholder: "Paste full HTML/JS, Python script, or JSON content... (請貼上完整的程式碼或 JSON)",
-                appEditBtnPreview: "Preview in Sandbox (在沙箱預覽)",
-                appEditBtnSave: "Save Application (儲存應用程式)",
-                appLibRunBtn: "Run (執行)",
-                appLibInvokeBtn: "LLM Invoke (LLM 調用)",
-                appLibEditBtn: "Edit (編輯)",
-                appLibDeleteBtn: "Delete (刪除)",
-                appLibDeleteConfirm: "Are you sure you want to delete '{name}'? This cannot be undone. (確定要刪除「{name}」嗎？此操作無法還原。)",
-                appLibSavedSuccess: "Application '{name}' saved to library successfully! (應用程式「{name}」已儲存！)",
-                appLibDeletedSuccess: "Application '{name}' deleted successfully! (應用程式「{name}」已刪除！)",
-                appLibLoadedSampleSuccess: "Curated sample apps loaded successfully! (已成功載入示範範本！)",
-                appLibExportedSuccess: "App library backup exported successfully! (應用程式庫備份已匯出！)",
-                appLibImportedSuccess: "Successfully imported {count} applications! (成功匯入 {count} 個應用！)",
-                appLibInvokedToast: "🤖 Loaded '{name}' into chat input, ready to send to LLM! (已載入對話輸入框)",
-                modalCancel: "Cancel (取消)",
-                appLibCopyCodeBtn: "Copy Code (複製程式碼)",
-                appLibCopyCodeSuccess: "Code for '{name}' copied to clipboard! (已複製「{name}」的程式碼！)",
-                appLibDuplicateBtn: "Duplicate (建立副本)",
-                appLibDuplicateSuccess: "Duplicated '{name}' successfully! (已建立「{name}」的副本！)",
-                appLibDeleteModalTitle: "Delete Custom App (確認刪除自建應用)",
-                appLibDeleteModalDesc: "You are about to delete the following application. This action cannot be undone: (您即將刪除以下自建應用程式，此操作將無法還原：)",
-                appLibConfirmDeleteBtn: "Confirm Delete (確認刪除)",
+                btnAppLibrary: "App Library",
+                tooltipOpenAppLib: "Open Custom App Library",
+                artifactSaveToLib: "Save to Library",
+                tooltipSaveToAppLib: "Save this Artifact into your personal App Library",
+                appLibModalTitle: "Custom App Library",
+                appLibModalSubtitle: "Manage and launch standalone tools, automation scripts, and custom agents with Sandbox preview and LLM invocation",
+                appLibBtnNew: "+ New App",
+                appLibCatAll: "All Apps",
+                appLibCatWeb: "Web App (HTML / Web)",
+                appLibCatPy: "Python Script",
+                appLibCatShell: "Shell / Batch Script",
+                appLibCatPrompt: "Prompt Agent",
+                appLibCatData: "Data / JSON",
+                appLibSearchPlaceholder: "Search app title, description or keyword...",
+                appLibEmptyTitle: "No Custom Apps Yet",
+                appLibEmptyDesc: "Click '+ New App' above to build from scratch, or load sample templates below!",
+                appLibBtnCreateFirst: "Create First App",
+                appLibBtnLoadSamples: "⚡ Load Sample Templates",
+                appLibLoadSamplesBtn: "⚡ Load Sample Templates",
+                appLibFooterHint: "Click 'Save to Library' inside Artifact Workbench to bookmark any LLM creation",
+                appLibBtnExport: "Backup Library",
+                appLibBtnImport: "Import Backup",
+                appLibExportBtn: "Backup Library",
+                appLibImportBtn: "Import Backup",
+                tooltipExportApps: "Export all custom apps to a JSON backup",
+                tooltipImportApps: "Import custom apps from a JSON backup",
+                appEditTitleNew: "Create Custom App",
+                appEditTitleEdit: "Edit Custom App",
+                appEditModalNewTitle: "Create Custom App",
+                appEditModalEditTitle: "Edit Custom App",
+                appEditLabelName: "Application Name *",
+                appEditNamePlaceholder: "e.g. Pomodoro Timer, SQL Formatter...",
+                appEditLabelCategory: "Category *",
+                appEditLabelId: "Identifier (ID) *",
+                appEditLabelIcon: "Icon / Emoji",
+                appEditLabelVersion: "Version",
+                appEditLabelDesc: "Description",
+                appEditDescPlaceholder: "Brief description of features & usage...",
+                appEditLabelPrompt: "LLM Invocation Prompt",
+                appEditPromptHint: "Prompt injected when invoking with AI",
+                appEditPromptPlaceholder: "e.g. You are a focus coach, assist user with Pomodoro sessions...",
+                appEditLabelCode: "Code / Content *",
+                appEditBtnCopyCode: "Copy Code",
+                appEditBtnSampleCode: "Fill Sample Code",
+                appEditCodePlaceholder: "Paste full HTML/JS, Python script, or JSON content...",
+                appEditBtnPreview: "Preview in Sandbox",
+                appEditBtnSave: "Save Application",
+                appLibRunBtn: "Run",
+                appLibInvokeBtn: "LLM Invoke",
+                appLibEditBtn: "Edit",
+                appLibDeleteBtn: "Delete",
+                appLibDeleteConfirm: "Are you sure you want to delete '{name}'? This cannot be undone.",
+                appLibSavedSuccess: "Application '{name}' saved to library successfully!",
+                appLibDeletedSuccess: "Application '{name}' deleted successfully!",
+                appLibLoadedSampleSuccess: "Curated sample apps loaded successfully!",
+                appLibExportedSuccess: "App library backup exported successfully!",
+                appLibImportedSuccess: "Successfully imported {count} applications!",
+                appLibInvokedToast: "🤖 Loaded '{name}' into chat input, ready to send to LLM!",
+                modalCancel: "Cancel",
+                appLibCopyCodeBtn: "Copy Code",
+                appLibCopyCodeSuccess: "Code for '{name}' copied to clipboard!",
+                appLibDuplicateBtn: "Duplicate",
+                appLibDuplicateSuccess: "Duplicated '{name}' successfully!",
+                appLibDeleteModalTitle: "Delete Custom App",
+                appLibDeleteModalDesc: "You are about to delete the following application. This action cannot be undone:",
+                appLibConfirmDeleteBtn: "Confirm Delete",
+
+                // Newly added UI keys for comprehensive i18n
+                btnSelfTest: "Self-Test",
+                tooltipMarkItDown: "Open MarkItDown File Converter (PDF/Word/Excel/PPT to Markdown)",
+                tooltipSelfTest: "Run System & Functional Health Self-Test",
+                tabTerminalTitle: "Multi-Protocol Terminal (WSL Shell, SSH, Telnet, Serial)",
+                tabNoVncTitle: "noVNC HTML5 Remote Desktop (VNC / websockify)",
+                tabXorgTitle: "Xorg GUI Window Mode (Linux/WSL2/Docker DISPLAY:1)",
+                tooltipCtrlAltDel: "Send Ctrl+Alt+Delete",
+                tooltipFullscreen: "Fullscreen Desktop",
+                tooltipXorgWizard: "WSL2 / Linux Xorg Launch Wizard & Guide",
+                tooltipAltTab: "Send Alt+Tab",
+                tooltipXorgFullscreen: "Fullscreen Xorg Window",
+                tooltipKeySettings: "Keypad & Shortcut Settings (Virtual Keys / Macros / Remote Keys)",
+                btnKeySettingsLabel: "Settings",
+                wslDesktopServiceLabel: "WSL Desktop:",
+                wslStatusChecking: "Checking...",
+                wslStatusRunning: "Running",
+                wslStatusStopped: "Stopped",
+                wslStatusNotInstalled: "Not Installed",
+                wslStatusUnknown: "Not Checked",
+                wslBtnCheck: "Check WSL",
+                wslBtnStart: "Start WSL Desktop",
+                wslBtnStop: "Stop WSL Desktop",
+                wslProbe: "Probe",
+                wslProbeTooltip: "Test backend TCP port probe",
+                wslViewOnly: "View Only",
+                wslWebMode: "Web Mode",
+                wslPasswordPlaceholder: "Optional Password",
+                audioStreamLabel: "Audio Stream:",
+                audioStreamOff: "Audio Stream: Off",
+                audioStreamOn: "Audio Stream: On",
+                audioStatusMuted: "Audio: Muted",
+                audioStatusPlaying: "Audio: Playing",
+                audioVolumeLabel: "Volume:",
+                audioTestTone: "Test Tone",
+                audioTestToneTooltip: "Play test tone via Web Audio API",
+                audioStreamTooltip: "Toggle Audio Stream (PulseAudio / HTTP MP3 / AAC)",
+                novncDisconnectedTitle: "noVNC HTML5 Remote Desktop Disconnected",
+                novncDisconnectedDesc: "Supports standard RFB protocol, Tight/ZRLE encoding, compatible with x11vnc, TigerVNC, TightVNC and websockify proxy.",
+                novncQuickPresets: "Quick Presets:",
+                novncPresetLocal: "Localhost 6080",
+                novncPresetLan: "LAN 6080",
+                novncBtnConnectNow: "Connect Now",
+                novncStatusDisconnected: "Disconnected (Ensure websockify or VNC server is running)",
+                xorgLaunchAppLabel: "Launch App:",
+                xorgAppTerminal: "Terminal",
+                xorgAppFiles: "Files",
+                xorgAppEditor: "Editor",
+                xorgAppCalc: "Calculator",
+                xorgAppXeyes: "xeyes",
+                xorgAppTerminalTooltip: "Launch XFCE Terminal in Xorg window",
+                xorgAppFilesTooltip: "Launch Thunar File Manager in Xorg window",
+                xorgAppEditorTooltip: "Launch Mousepad Text Editor in Xorg window",
+                xorgAppCalcTooltip: "Launch X11 Calculator in Xorg window",
+                xorgAppXeyesTooltip: "Launch xeyes in Xorg window",
+                xorgCmdPlaceholder: "Command (e.g. gedit, firefox)",
+                xorgBtnRun: "Run",
+                xorgBtnRunTooltip: "Launch the specified Linux GUI app on Xorg canvas",
+                xorgResolutionLabel: "Resolution:",
+                xorgEnvLabel: "Environment:",
+                xorgEnvOptionXfce: "XFCE4 (Full Desktop)",
+                xorgEnvOptionDirect: "Single App (Direct)",
+                xorgEnvOptionFluxbox: "Fluxbox (Lightweight)",
+                xorgDisconnectedTitle: "Xorg Window Server Disconnected (DISPLAY=:1)",
+                xorgShortcutsLabel: "Window Shortcuts:",
+                xorgBtnWizard: "Setup Wizard",
+                xorgEmptyHeroTitle: "Xorg GUI Virtual Window Environment (DISPLAY=:1)",
+                xorgEmptyHeroDesc: "Run Linux GUI applications (Terminal, Thunar, Mousepad, Firefox, etc.) seamlessly in Windows/WSL2 or Docker, rendered via low-latency HTML5 canvas.",
+                xorgBtnViewWslCmd: "View WSL Commands",
+                xorgBtnConnectDisplay: "Connect DISPLAY:1",
+                xorgModalTitle: "WSL2 / Linux Desktop & Xorg Wizard",
+                xorgModalEnvStatus: "Current WSL Environment Status",
+                xorgModalBtnRecheck: "Re-check",
+                xorgModalBtnStart: "Launch Desktop",
+                xorgModalBtnStop: "Stop Desktop",
+                xorgModalHowItWorks: "How It Works",
+                xorgModalOpt1: "Option 1: Full Desktop Service (Xvfb + x11vnc + XFCE4 + websockify)",
+                xorgModalOpt2: "Option 2: Single GUI Application (Direct App)",
+                xorgModalBtnCopy: "Copy Command",
+                xorgModalBtnExecInWsl: "Run directly in Webcom WSL Terminal",
+                xorgModalBtnTroubleshoot: "Troubleshoot WSL Connection",
+                xorgModalBtnClose: "Close",
+                diagModalTitle: "System & Functional Self-Test",
+                diagModalDesc: "Automated tests for core APIs, UI defenses, daemon connection, and MarkItDown engine",
+                diagOverallStatus: "Overall Health Status",
+                diagStatusReady: "Preparing diagnosis...",
+                diagStatusRunning: "Diagnostics in progress...",
+                diagItemsLabel: "items",
+                diagHint: "Hint: If daemon or conversion fails, click 'Start Daemon' above",
+                diagBtnRerun: "Re-run",
+                diagBtnClose: "Close",
+                keyModalDefaultToggle: "Default Keys Display Toggle",
+                keyModalDefaultToggleDesc: "Checked keys will appear on the virtual keypad",
+                keyModalCustomList: "Custom Key List",
+                keyModalBtnAddKey: "Add Custom Key",
+                keyModalColLabel: "Key Label",
+                keyModalColCmd: "Command / Key Code",
+                keyModalColAction: "Action",
+                keyModalBtnSave: "Save & Apply",
+                keyModalBtnReset: "Reset Defaults",
+                keyModalBtnClose: "Close",
+                artRollbackNotice: "You are currently viewing a historical version (read-only preview). To restore this version, click 'Restore This Version'.",
+                artBtnRestore: "Restore This Version",
+                artSaved: "Saved",
+                browserDirect: "(Direct Browser)"
             }
         };
 
@@ -5681,6 +5893,41 @@ mousepad &</pre>
                 const actArt = globalArtifactStore.get(actId);
                 if (actArt) renderDrawerContent(actArt);
             }
+
+            // ── WSL 狀態徽章雙語更新 ──
+            ['wsl-status-badge', 'wsl-status-badge-xorg'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) {
+                    const txt = el.textContent.trim();
+                    if (txt.includes('檢查中') || txt.includes('Checking')) el.textContent = t('wslStatusChecking');
+                    else if (txt.includes('運行中') || txt.includes('Running')) el.textContent = t('wslStatusRunning');
+                    else if (txt.includes('未啟動') || txt.includes('Stopped')) el.textContent = t('wslStatusStopped');
+                    else if (txt.includes('未安裝') || txt.includes('Not Installed')) el.textContent = t('wslStatusNotInstalled');
+                    else if (txt.includes('尚未檢測') || txt.includes('Not Checked')) el.textContent = t('wslStatusUnknown');
+                }
+            });
+
+            // ── 音訊按鈕與狀態雙語更新 ──
+            ['btn-audio-stream-text', 'btn-audio-stream-text-xorg'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) {
+                    const txt = el.textContent.trim();
+                    if (txt.includes('關閉') || txt.includes('Off')) el.textContent = t('audioStreamOff');
+                    else if (txt.includes('開啟') || txt.includes('On')) el.textContent = t('audioStreamOn');
+                }
+            });
+            ['audio-status-badge', 'audio-status-badge-xorg'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) {
+                    const txt = el.textContent.trim();
+                    if (txt.includes('靜音') || txt.includes('Muted')) el.textContent = t('audioStatusMuted');
+                    else if (txt.includes('播放中') || txt.includes('Playing')) el.textContent = t('audioStatusPlaying');
+                }
+            });
+
+            // ── Xorg 指令輸入框雙語 Placeholder ──
+            const xcmdIn = document.getElementById('xorg-cmd-input');
+            if (xcmdIn) xcmdIn.placeholder = t('xorgCmdPlaceholder');
 
             lucide.createIcons();
         }
@@ -7585,8 +7832,8 @@ mousepad &</pre>
                 <div id="cfg-panel-term" class="space-y-4">
                     <div class="p-3 bg-gray-950 rounded-xl border border-gray-800 space-y-2">
                         <div class="font-bold text-gray-200 flex items-center justify-between">
-                            <span>內建按鍵顯示開關 (Default Keys Toggle)</span>
-                            <span class="text-[11px] text-gray-500">勾選後將顯示於終端機虛擬鍵盤</span>
+                            <span data-i18n="keyModalDefaultToggle">內建按鍵顯示開關</span>
+                            <span class="text-[11px] text-gray-500" data-i18n="keyModalDefaultToggleDesc">勾選後將顯示於終端機虛擬鍵盤</span>
                         </div>
                         <div class="grid grid-cols-3 sm:grid-cols-4 gap-2 pt-1">
                             <label class="flex items-center gap-1.5 cursor-pointer text-gray-300">
@@ -14594,9 +14841,10 @@ Important guidelines:
         async function launchWslApp(cmd) {
             const ep = (typeof appSettings !== 'undefined' && appSettings?.daemonEndpoint) ? appSettings.daemonEndpoint : 'http://127.0.0.1:8001';
             const dpy = (document.getElementById('xorg-display-num')?.value || ':1').trim();
+            const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en');
             const statusEl = document.getElementById('xorg-status');
             if (statusEl) {
-                statusEl.innerHTML = `<span class="w-2 h-2 rounded-full bg-teal-400 animate-pulse"></span> <span>正在啟動 ${cmd}...</span>`;
+                statusEl.innerHTML = `<span class="w-2 h-2 rounded-full bg-teal-400 animate-pulse"></span> <span>${isEn ? `Launching ${cmd}...` : `正在啟動 ${cmd}...`}</span>`;
             }
             try {
                 const res = await fetch(`${ep}/api/wsl/launch-app`, {
@@ -14612,10 +14860,10 @@ Important guidelines:
                 if (!rfbXorgInstance) {
                     await handleXorgConnect();
                 } else if (statusEl) {
-                    statusEl.innerHTML = `<span class="w-2 h-2 rounded-full bg-emerald-500"></span> <span class="text-emerald-400">已啟動 ${cmd} (DISPLAY=${dpy})</span>`;
+                    statusEl.innerHTML = `<span class="w-2 h-2 rounded-full bg-emerald-500"></span> <span class="text-emerald-400">${isEn ? `Launched ${cmd} (DISPLAY=${dpy})` : `已啟動 ${cmd} (DISPLAY=${dpy})`}</span>`;
                 }
             } catch (err) {
-                alert('啟動應用程式失敗：' + err.message);
+                alert((isEn ? 'Failed to launch application: ' : '啟動應用程式失敗：') + err.message);
                 if (statusEl) {
                     statusEl.innerHTML = `<span class="w-2 h-2 rounded-full bg-rose-500"></span> <span class="text-rose-400">啟動失敗: ${err.message}</span>`;
                 }
@@ -14718,6 +14966,7 @@ Important guidelines:
 
         async function checkWslStatus(showAlert = false) {
             const ep = (typeof appSettings !== 'undefined' && appSettings?.daemonEndpoint) ? appSettings.daemonEndpoint : 'http://127.0.0.1:8001';
+            const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en');
             
             const badgeNovnc = document.getElementById('novnc-wsl-status');
             const badgeXorg = document.getElementById('xorg-wsl-status');
@@ -14731,7 +14980,7 @@ Important guidelines:
                 if (modalStatus) modalStatus.innerHTML = htmlContent;
             };
 
-            setStatusText('<span class="w-2 h-2 rounded-full bg-yellow-500 animate-ping"></span> <span>檢查 WSL 狀態中...</span>');
+            setStatusText(`<span class="w-2 h-2 rounded-full bg-yellow-500 animate-ping"></span> <span>${isEn ? 'Checking WSL status...' : '檢查 WSL 狀態中...'}</span>`);
 
             try {
                 const res = await fetch(`${ep}/api/wsl/status`);
@@ -14740,27 +14989,27 @@ Important guidelines:
                 lastWslStatus = data;
 
                 if (!data.has_wsl) {
-                    setStatusText('<span class="w-2 h-2 rounded-full bg-rose-500"></span> <span class="text-rose-400">未偵測到 WSL 環境</span>');
-                    if (showAlert) alert('未偵測到 WSL 環境。請先於 Windows 安裝 WSL2 (例如: wsl --install -d Debian)。');
+                    setStatusText(`<span class="w-2 h-2 rounded-full bg-rose-500"></span> <span class="text-rose-400">${isEn ? 'WSL environment not detected' : '未偵測到 WSL 環境'}</span>`);
+                    if (showAlert) alert(isEn ? 'WSL environment not detected. Please install WSL2 first (e.g. wsl --install -d Debian).' : '未偵測到 WSL 環境。請先於 Windows 安裝 WSL2 (例如: wsl --install -d Debian)。');
                     return data;
                 }
 
                 const distro = data.distro || 'Debian';
                 if (data.ready) {
-                    setStatusText(`<span class="w-2 h-2 rounded-full bg-emerald-500"></span> <span class="text-emerald-300">WSL (${distro}): 桌面運行中 (VNC:5901, WS:6080)</span>`);
-                    if (showAlert) alert(`WSL 桌面環境已就緒！\n發行版: ${distro}\n- TigerVNC (5901): 監聽中\n- WebSockify (6080): 監聽中\n- 音訊串流 (8000): ${data.audio_open ? '監聽中' : '關閉'}\n可直接點擊「連線桌面」進入！`);
+                    setStatusText(`<span class="w-2 h-2 rounded-full bg-emerald-500"></span> <span class="text-emerald-300">${isEn ? `WSL (${distro}): Desktop running (VNC:5901, WS:6080)` : `WSL (${distro}): 桌面運行中 (VNC:5901, WS:6080)`}</span>`);
+                    if (showAlert) alert(isEn ? `WSL Desktop is ready!\nDistro: ${distro}\n- VNC (5901): Active\n- WebSockify (6080): Active\n- Audio (8000): ${data.audio_open ? 'Active' : 'Off'}\nClick 'Connect' to enter!` : `WSL 桌面環境已就緒！\n發行版: ${distro}\n- x11vnc (5901): 監聽中\n- WebSockify (6080): 監聽中\n- 音訊串流 (8000): ${data.audio_open ? '監聽中' : '關閉'}\n可直接點擊「連線桌面」進入！`);
                 } else {
                     const statusDetail = [];
-                    if (!data.vnc_open) statusDetail.push('VNC (5901) 關閉');
-                    if (!data.websockify_open) statusDetail.push('WebSockify (6080) 關閉');
-                    setStatusText(`<span class="w-2 h-2 rounded-full bg-amber-500"></span> <span class="text-amber-300">WSL (${distro}): 桌面未啟動 (${statusDetail.join(', ')})</span>`);
-                    if (showAlert) alert(`WSL 系統已偵測到 (${distro})，但桌面服務尚未啟動：\n${statusDetail.join('\n')}\n\n請點擊「一鍵啟動 WSL 桌面」自動拉起服務。`);
+                    if (!data.vnc_open) statusDetail.push(isEn ? 'VNC (5901) Off' : 'VNC (5901) 關閉');
+                    if (!data.websockify_open) statusDetail.push(isEn ? 'WebSockify (6080) Off' : 'WebSockify (6080) 關閉');
+                    setStatusText(`<span class="w-2 h-2 rounded-full bg-amber-500"></span> <span class="text-amber-300">${isEn ? `WSL (${distro}): Desktop stopped (${statusDetail.join(', ')})` : `WSL (${distro}): 桌面未啟動 (${statusDetail.join(', ')})`}</span>`);
+                    if (showAlert) alert(isEn ? `WSL (${distro}) detected, but desktop services are stopped.\nClick 'Start WSL Desktop' to launch!` : `WSL 系統已偵測到 (${distro})，但桌面服務尚未啟動。\n請點擊「一鍵啟動 WSL 桌面」自動拉起服務！`);
                 }
                 return data;
             } catch (err) {
-                setStatusText('<span class="w-2 h-2 rounded-full bg-rose-500"></span> <span class="text-rose-400">WSL 探測失敗 (常駐服務離線)</span>');
-                if (showAlert) alert('無法連接常駐程式 (Port 8001)，請確認 daemon 服務已啟動。');
-                return null;
+                setStatusText(`<span class="w-2 h-2 rounded-full bg-rose-500"></span> <span class="text-rose-400">${isEn ? 'WSL probe failed' : 'WSL 探測失敗'} (${err.message})</span>`);
+                if (showAlert) alert((isEn ? 'WSL status check failed: ' : 'WSL 檢測失敗：') + err.message);
+                return { has_wsl: false, error: err.message };
             }
         }
         window.checkWslStatus = checkWslStatus;
