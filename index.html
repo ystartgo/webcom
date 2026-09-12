@@ -464,6 +464,19 @@
                         <span class="text-[10px] bg-rose-500/20 px-1 py-0.2 rounded font-semibold">^X</span>
                         <span>Ctrl+X (剪下/清空)</span>
                     </button>
+                    <button id="vkey-esc" type="button" onclick="handleSpecialKey('esc')"
+                        class="px-2.5 py-1 bg-gray-900 hover:bg-gray-800 text-amber-300 border border-gray-700 rounded-md font-mono text-xs font-bold transition flex items-center gap-1 shadow-sm cursor-pointer"
+                        title="發送 Escape (Esc) 鍵">
+                        <span>Esc ⎋</span>
+                    </button>
+                </div>
+                <div class="flex items-center gap-1">
+                    <div id="vkey-custom-container" class="flex items-center gap-1"></div>
+                    <button id="btn-config-vkeys" type="button" onclick="openKeySettingsModal('term')"
+                        class="px-2 py-1 bg-purple-950/60 hover:bg-purple-900 active:bg-purple-800 text-purple-300 border border-purple-700/60 rounded-md font-mono text-xs font-bold transition flex items-center gap-1 shadow-sm cursor-pointer"
+                        title="按鍵與快捷鍵設置 (自訂虛擬按鍵/巨集/遠端快捷鍵)">
+                        <i data-lucide="settings" class="w-3.5 h-3.5"></i> <span>設置</span>
+                    </button>
                 </div>
             </div>
         </div>
@@ -520,6 +533,48 @@
                     class="bg-red-600 hover:bg-red-500 text-white px-3 py-1 rounded-md transition flex items-center gap-1.5 font-medium shadow-sm hidden ml-auto text-xs cursor-pointer">
                     <i data-lucide="power-off" class="w-3.5 h-3.5"></i> <span data-i18n="novncDisconnect">斷開連線</span>
                 </button>
+            </div>
+
+            <!-- noVNC 音訊控制與快捷鍵工具列 (Audio & Shortcuts Bar) -->
+            <div class="bg-gray-950/90 px-3 py-1.5 flex flex-wrap items-center justify-between gap-2 border-b border-gray-800 text-xs shrink-0 select-none">
+                <!-- 左側：音訊串流控制 (Audio Stream Controls) -->
+                <div class="flex items-center gap-2 flex-wrap">
+                    <button id="btn-novnc-audio-toggle" type="button" onclick="toggleAudioStream('novnc')"
+                        class="px-2 py-0.5 rounded bg-gray-900 hover:bg-gray-800 text-gray-300 border border-gray-700 flex items-center gap-1 font-medium transition cursor-pointer"
+                        title="開啟 / 關閉音訊串流 (支援 PulseAudio / HTTP MP3 / AAC)">
+                        <i id="icon-novnc-audio" data-lucide="volume-x" class="w-3.5 h-3.5 text-gray-400"></i>
+                        <span id="txt-novnc-audio" data-i18n="audioMuted">音訊: 關閉</span>
+                    </button>
+
+                    <div class="flex items-center gap-1 bg-black/60 px-2 py-0.5 rounded border border-gray-800">
+                        <span class="text-gray-400 text-[11px]">音量:</span>
+                        <input id="novnc-audio-vol" type="range" min="0" max="100" value="80" oninput="setAudioVolume(this.value, 'novnc')"
+                            class="w-16 h-1 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-purple-500">
+                        <span id="novnc-audio-vol-txt" class="text-[11px] text-gray-300 w-6 font-mono">80%</span>
+                    </div>
+
+                    <div class="flex items-center gap-1 bg-black/60 px-2 py-0.5 rounded border border-gray-800 text-[11px]">
+                        <span class="text-gray-400">URL:</span>
+                        <input id="novnc-audio-url" type="text" value="http://127.0.0.1:8000/audio"
+                            class="bg-transparent text-gray-200 font-mono w-40 focus:outline-none" placeholder="http://127.0.0.1:8000/audio">
+                    </div>
+
+                    <button type="button" onclick="playTestTone()"
+                        class="px-2 py-0.5 rounded bg-gray-900 hover:bg-gray-800 text-cyan-300 border border-cyan-800/40 text-[11px] flex items-center gap-1 cursor-pointer"
+                        title="使用 Web Audio API 播放測試鈴聲">
+                        <i data-lucide="bell" class="w-3 h-3 text-cyan-400"></i> <span data-i18n="audioTestTone">測試音</span>
+                    </button>
+                </div>
+
+                <!-- 右側：遠端桌面快捷鍵與按鍵設置 (Remote Shortcuts & Config) -->
+                <div class="flex items-center gap-1.5 flex-wrap">
+                    <div id="novnc-remote-shortcuts" class="flex items-center gap-1"></div>
+                    <button type="button" onclick="openKeySettingsModal('novnc')"
+                        class="px-2 py-0.5 rounded bg-purple-950/60 hover:bg-purple-900 text-purple-300 border border-purple-700/50 flex items-center gap-1 text-[11px] font-medium transition cursor-pointer"
+                        title="按鍵與快捷鍵自訂設置">
+                        <i data-lucide="settings" class="w-3 h-3"></i> <span data-i18n="btnKeySettings">按鍵設置</span>
+                    </button>
+                </div>
             </div>
 
             <!-- noVNC 狀態列 (Status bar) -->
@@ -601,6 +656,48 @@
                     class="bg-red-600 hover:bg-red-500 text-white px-3 py-1 rounded-md transition flex items-center gap-1.5 font-medium shadow-sm hidden ml-auto text-xs cursor-pointer">
                     <i data-lucide="power-off" class="w-3.5 h-3.5"></i> <span data-i18n="novncDisconnect">中斷視窗</span>
                 </button>
+            </div>
+
+            <!-- Xorg 音訊控制與快捷鍵工具列 (Audio & Shortcuts Bar) -->
+            <div class="bg-gray-950/90 px-3 py-1.5 flex flex-wrap items-center justify-between gap-2 border-b border-gray-800 text-xs shrink-0 select-none">
+                <!-- 左側：音訊串流控制 (Audio Stream Controls) -->
+                <div class="flex items-center gap-2 flex-wrap">
+                    <button id="btn-xorg-audio-toggle" type="button" onclick="toggleAudioStream('xorg')"
+                        class="px-2 py-0.5 rounded bg-gray-900 hover:bg-gray-800 text-gray-300 border border-gray-700 flex items-center gap-1 font-medium transition cursor-pointer"
+                        title="開啟 / 關閉音訊串流 (支援 PulseAudio / HTTP MP3 / AAC)">
+                        <i id="icon-xorg-audio" data-lucide="volume-x" class="w-3.5 h-3.5 text-gray-400"></i>
+                        <span id="txt-xorg-audio" data-i18n="audioMuted">音訊: 關閉</span>
+                    </button>
+
+                    <div class="flex items-center gap-1 bg-black/60 px-2 py-0.5 rounded border border-gray-800">
+                        <span class="text-gray-400 text-[11px]">音量:</span>
+                        <input id="xorg-audio-vol" type="range" min="0" max="100" value="80" oninput="setAudioVolume(this.value, 'xorg')"
+                            class="w-16 h-1 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-purple-500">
+                        <span id="xorg-audio-vol-txt" class="text-[11px] text-gray-300 w-6 font-mono">80%</span>
+                    </div>
+
+                    <div class="flex items-center gap-1 bg-black/60 px-2 py-0.5 rounded border border-gray-800 text-[11px]">
+                        <span class="text-gray-400">URL:</span>
+                        <input id="xorg-audio-url" type="text" value="http://127.0.0.1:8000/audio"
+                            class="bg-transparent text-gray-200 font-mono w-40 focus:outline-none" placeholder="http://127.0.0.1:8000/audio">
+                    </div>
+
+                    <button type="button" onclick="playTestTone()"
+                        class="px-2 py-0.5 rounded bg-gray-900 hover:bg-gray-800 text-cyan-300 border border-cyan-800/40 text-[11px] flex items-center gap-1 cursor-pointer"
+                        title="使用 Web Audio API 播放測試鈴聲">
+                        <i data-lucide="bell" class="w-3 h-3 text-cyan-400"></i> <span data-i18n="audioTestTone">測試音</span>
+                    </button>
+                </div>
+
+                <!-- 右側：遠端視窗快捷鍵與按鍵設置 (Remote Shortcuts & Config) -->
+                <div class="flex items-center gap-1.5 flex-wrap">
+                    <div id="xorg-remote-shortcuts" class="flex items-center gap-1"></div>
+                    <button type="button" onclick="openKeySettingsModal('xorg')"
+                        class="px-2 py-0.5 rounded bg-purple-950/60 hover:bg-purple-900 text-purple-300 border border-purple-700/50 flex items-center gap-1 text-[11px] font-medium transition cursor-pointer"
+                        title="按鍵與快捷鍵自訂設置">
+                        <i data-lucide="settings" class="w-3 h-3"></i> <span data-i18n="btnKeySettings">按鍵設置</span>
+                    </button>
+                </div>
             </div>
 
             <!-- Xorg 狀態與快捷鍵列 (Status & Shortcut Bar) -->
@@ -2743,6 +2840,15 @@
                 novncDisconnect: "斷開連線",
                 novncFullscreen: "全螢幕",
                 xorgLaunchWizard: "啟動精靈",
+                audioTitle: "音訊串流",
+                audioMuted: "音訊: 關閉",
+                audioPlaying: "音訊: 播放中",
+                audioTestTone: "測試音",
+                keySettingsTitle: "按鍵與快捷鍵自訂設置",
+                btnKeySettings: "按鍵設置",
+                tabTermKeys: "終端機按鍵",
+                tabRemoteKeys: "遠端桌面快捷鍵",
+                tabAudioConfig: "音訊設置",
                 termReady: "終端機已就緒。當前環境：[本地 Shell]",
                 daemonChecking: "常駐程式 (8001): 檢查中...",
                 daemonOnline: "常駐程式 (8001) 已連線",
@@ -3192,6 +3298,15 @@
                 novncDisconnect: "Disconnect",
                 novncFullscreen: "Fullscreen",
                 xorgLaunchWizard: "Launch Wizard",
+                audioTitle: "Audio Stream",
+                audioMuted: "Audio: Off",
+                audioPlaying: "Audio: Playing",
+                audioTestTone: "Test Tone",
+                keySettingsTitle: "Keypad & Shortcuts Config",
+                btnKeySettings: "Key Settings",
+                tabTermKeys: "Terminal Keys",
+                tabRemoteKeys: "Remote Shortcuts",
+                tabAudioConfig: "Audio Config",
                 termReady: "Terminal Ready. Current Context: [Local Shell]",
                 daemonChecking: "Daemon (8001): Checking...",
                 daemonOnline: "Daemon (8001) Online",
@@ -7218,6 +7333,253 @@
     function inc() { document.getElementById('num').textContent = ++n; }
     function reset() { n = 0; document.getElementById('num').textContent = 0; }
   <\/script>
+
+    <!-- 按鍵與快捷鍵自訂設置對話盒 (Keypad, Shortcuts & Audio Settings Modal) -->
+    <div id="key-settings-modal"
+        class="fixed inset-0 bg-black/75 backdrop-blur-sm z-[100] hidden flex items-center justify-center p-4">
+        <div class="bg-gray-900 border border-purple-500/40 rounded-2xl w-[640px] shadow-2xl flex flex-col overflow-hidden max-h-[90vh]">
+            <div class="px-5 py-4 border-b border-gray-800 flex justify-between items-center bg-gray-900/90 shrink-0">
+                <h2 class="text-base font-bold text-white flex items-center gap-2">
+                    <div class="p-1.5 bg-purple-600/20 text-purple-400 rounded-lg border border-purple-500/30">
+                        <i data-lucide="keyboard" class="w-4 h-4 text-purple-400"></i>
+                    </div>
+                    <span data-i18n="keySettingsTitle">按鍵與快捷鍵自訂設置 (Keypad & Shortcuts Config)</span>
+                </h2>
+                <button id="btn-close-key-modal" onclick="closeKeySettingsModal()" class="text-gray-400 hover:text-white transition p-1 cursor-pointer">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <!-- Modal Sub-Tabs -->
+            <div class="flex border-b border-gray-800 bg-black/40 px-5 pt-2 gap-2 text-xs font-semibold shrink-0">
+                <button id="tab-btn-cfg-term" type="button" onclick="switchKeyConfigTab('term')"
+                    class="px-3 py-1.5 border-b-2 border-purple-500 text-purple-300 font-bold transition flex items-center gap-1.5 cursor-pointer">
+                    <i data-lucide="terminal" class="w-3.5 h-3.5"></i> <span data-i18n="tabTermKeys">終端機按鍵</span>
+                </button>
+                <button id="tab-btn-cfg-remote" type="button" onclick="switchKeyConfigTab('remote')"
+                    class="px-3 py-1.5 border-b-2 border-transparent text-gray-400 hover:text-gray-200 transition flex items-center gap-1.5 cursor-pointer">
+                    <i data-lucide="monitor" class="w-3.5 h-3.5"></i> <span data-i18n="tabRemoteKeys">遠端桌面快捷鍵</span>
+                </button>
+                <button id="tab-btn-cfg-audio" type="button" onclick="switchKeyConfigTab('audio')"
+                    class="px-3 py-1.5 border-b-2 border-transparent text-gray-400 hover:text-gray-200 transition flex items-center gap-1.5 cursor-pointer">
+                    <i data-lucide="volume-2" class="w-3.5 h-3.5"></i> <span data-i18n="tabAudioConfig">音訊設置</span>
+                </button>
+            </div>
+
+            <div class="p-5 space-y-4 text-xs overflow-y-auto flex-1">
+                <!-- Tab 1: Terminal Keys Config -->
+                <div id="cfg-panel-term" class="space-y-4">
+                    <div class="p-3 bg-gray-950 rounded-xl border border-gray-800 space-y-2">
+                        <div class="font-bold text-gray-200 flex items-center justify-between">
+                            <span>內建按鍵顯示開關 (Default Keys Toggle)</span>
+                            <span class="text-[11px] text-gray-500">勾選後將顯示於終端機虛擬鍵盤</span>
+                        </div>
+                        <div class="grid grid-cols-3 sm:grid-cols-4 gap-2 pt-1">
+                            <label class="flex items-center gap-1.5 cursor-pointer text-gray-300">
+                                <input id="cfg-chk-nav" type="checkbox" checked class="rounded bg-gray-800 border-gray-700 text-purple-600 focus:ring-0">
+                                <span>方向鍵 (↑↓←→)</span>
+                            </label>
+                            <label class="flex items-center gap-1.5 cursor-pointer text-gray-300">
+                                <input id="cfg-chk-tab" type="checkbox" checked class="rounded bg-gray-800 border-gray-700 text-purple-600 focus:ring-0">
+                                <span>Tab 補全</span>
+                            </label>
+                            <label class="flex items-center gap-1.5 cursor-pointer text-gray-300">
+                                <input id="cfg-chk-del" type="checkbox" checked class="rounded bg-gray-800 border-gray-700 text-purple-600 focus:ring-0">
+                                <span>Del 退格</span>
+                            </label>
+                            <label class="flex items-center gap-1.5 cursor-pointer text-gray-300">
+                                <input id="cfg-chk-enter" type="checkbox" checked class="rounded bg-gray-800 border-gray-700 text-purple-600 focus:ring-0">
+                                <span>Enter 發送</span>
+                            </label>
+                            <label class="flex items-center gap-1.5 cursor-pointer text-gray-300">
+                                <input id="cfg-chk-esc" type="checkbox" checked class="rounded bg-gray-800 border-gray-700 text-purple-600 focus:ring-0">
+                                <span>Esc 離開</span>
+                            </label>
+                            <label class="flex items-center gap-1.5 cursor-pointer text-gray-300">
+                                <input id="cfg-chk-ctrla" type="checkbox" checked class="rounded bg-gray-800 border-gray-700 text-purple-600 focus:ring-0">
+                                <span>Ctrl+A (全選)</span>
+                            </label>
+                            <label class="flex items-center gap-1.5 cursor-pointer text-gray-300">
+                                <input id="cfg-chk-ctrlc" type="checkbox" checked class="rounded bg-gray-800 border-gray-700 text-purple-600 focus:ring-0">
+                                <span>Ctrl+C (中斷)</span>
+                            </label>
+                            <label class="flex items-center gap-1.5 cursor-pointer text-gray-300">
+                                <input id="cfg-chk-ctrlv" type="checkbox" checked class="rounded bg-gray-800 border-gray-700 text-purple-600 focus:ring-0">
+                                <span>Ctrl+V (貼上)</span>
+                            </label>
+                            <label class="flex items-center gap-1.5 cursor-pointer text-gray-300">
+                                <input id="cfg-chk-ctrlx" type="checkbox" checked class="rounded bg-gray-800 border-gray-700 text-purple-600 focus:ring-0">
+                                <span>Ctrl+X (剪下)</span>
+                            </label>
+                            <label class="flex items-center gap-1.5 cursor-pointer text-gray-300">
+                                <input id="cfg-chk-ctrlz" type="checkbox" checked class="rounded bg-gray-800 border-gray-700 text-purple-600 focus:ring-0">
+                                <span>Ctrl+Z (暫停)</span>
+                            </label>
+                            <label class="flex items-center gap-1.5 cursor-pointer text-gray-300">
+                                <input id="cfg-chk-ctrll" type="checkbox" checked class="rounded bg-gray-800 border-gray-700 text-purple-600 focus:ring-0">
+                                <span>Ctrl+L (清屏)</span>
+                            </label>
+                            <label class="flex items-center gap-1.5 cursor-pointer text-gray-300">
+                                <input id="cfg-chk-ctrld" type="checkbox" class="rounded bg-gray-800 border-gray-700 text-purple-600 focus:ring-0">
+                                <span>Ctrl+D (登出)</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Custom Macro Buttons -->
+                    <div class="p-3 bg-gray-950 rounded-xl border border-gray-800 space-y-2.5">
+                        <div class="font-bold text-gray-200 flex items-center justify-between">
+                            <span class="flex items-center gap-1.5 text-purple-300">
+                                <i data-lucide="sparkles" class="w-4 h-4"></i> 自訂巨集快捷鍵 (Custom Macro Keys)
+                            </span>
+                            <span class="text-[11px] text-gray-500">點擊按鈕直接發送字串或指令</span>
+                        </div>
+                        <div id="cfg-term-custom-list" class="space-y-1.5">
+                            <!-- Injected dynamically -->
+                        </div>
+                        <!-- Add Custom Key Form -->
+                        <div class="flex items-center gap-2 pt-2 border-t border-gray-800/80">
+                            <input id="cfg-new-term-label" type="text" placeholder="標籤 (如 htop)" class="bg-gray-900 border border-gray-700 rounded px-2 py-1 text-xs w-28 font-mono focus:outline-none">
+                            <input id="cfg-new-term-cmd" type="text" placeholder="送出指令 (如 htop
+)" class="bg-gray-900 border border-gray-700 rounded px-2 py-1 text-xs flex-1 font-mono focus:outline-none">
+                            <select id="cfg-new-term-color" class="bg-gray-900 border border-gray-700 rounded px-2 py-1 text-xs cursor-pointer">
+                                <option value="purple">紫色</option>
+                                <option value="blue">藍色</option>
+                                <option value="emerald">綠色</option>
+                                <option value="gray">灰色</option>
+                                <option value="rose">紅色</option>
+                            </select>
+                            <button type="button" onclick="addCustomTermKey()" class="px-3 py-1 bg-purple-600 hover:bg-purple-500 text-white rounded font-medium flex items-center gap-1 cursor-pointer">
+                                <i data-lucide="plus" class="w-3.5 h-3.5"></i> 新增
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tab 2: Remote Shortcuts Config -->
+                <div id="cfg-panel-remote" class="space-y-4 hidden">
+                    <div class="p-3 bg-gray-950 rounded-xl border border-gray-800 space-y-2">
+                        <div class="font-bold text-gray-200 flex items-center justify-between">
+                            <span>常用遠端按鍵顯示 (Remote Presets)</span>
+                            <span class="text-[11px] text-gray-500">顯示於 noVNC 與 Xorg 工具列</span>
+                        </div>
+                        <div class="grid grid-cols-2 sm:grid-cols-3 gap-2 pt-1">
+                            <label class="flex items-center gap-1.5 cursor-pointer text-gray-300">
+                                <input id="cfg-chk-cad" type="checkbox" checked class="rounded bg-gray-800 border-gray-700 text-purple-600 focus:ring-0">
+                                <span>Ctrl+Alt+Del</span>
+                            </label>
+                            <label class="flex items-center gap-1.5 cursor-pointer text-gray-300">
+                                <input id="cfg-chk-alttab" type="checkbox" checked class="rounded bg-gray-800 border-gray-700 text-purple-600 focus:ring-0">
+                                <span>Alt+Tab (切換視窗)</span>
+                            </label>
+                            <label class="flex items-center gap-1.5 cursor-pointer text-gray-300">
+                                <input id="cfg-chk-altf4" type="checkbox" checked class="rounded bg-gray-800 border-gray-700 text-purple-600 focus:ring-0">
+                                <span>Alt+F4 (關閉視窗)</span>
+                            </label>
+                            <label class="flex items-center gap-1.5 cursor-pointer text-gray-300">
+                                <input id="cfg-chk-super" type="checkbox" checked class="rounded bg-gray-800 border-gray-700 text-purple-600 focus:ring-0">
+                                <span>Super / Win 徽標鍵</span>
+                            </label>
+                            <label class="flex items-center gap-1.5 cursor-pointer text-gray-300">
+                                <input id="cfg-chk-ctrlaltt" type="checkbox" checked class="rounded bg-gray-800 border-gray-700 text-purple-600 focus:ring-0">
+                                <span>Ctrl+Alt+T (開終端)</span>
+                            </label>
+                            <label class="flex items-center gap-1.5 cursor-pointer text-gray-300">
+                                <input id="cfg-chk-fullscreen" type="checkbox" checked class="rounded bg-gray-800 border-gray-700 text-purple-600 focus:ring-0">
+                                <span>全螢幕切換</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Custom Remote Combinations -->
+                    <div class="p-3 bg-gray-950 rounded-xl border border-gray-800 space-y-2.5">
+                        <div class="font-bold text-gray-200 flex items-center justify-between">
+                            <span class="flex items-center gap-1.5 text-blue-300">
+                                <i data-lucide="keyboard" class="w-4 h-4"></i> 自訂遠端組合鍵 (Custom Remote Combos)
+                            </span>
+                        </div>
+                        <div id="cfg-remote-custom-list" class="space-y-1.5">
+                            <!-- Injected dynamically -->
+                        </div>
+                        <!-- Add Custom Remote Key Form -->
+                        <div class="flex items-center gap-2 pt-2 border-t border-gray-800/80">
+                            <input id="cfg-new-remote-label" type="text" placeholder="標籤 (如 Ctrl+W)" class="bg-gray-900 border border-gray-700 rounded px-2 py-1 text-xs w-28 font-mono focus:outline-none">
+                            <select id="cfg-new-remote-action" class="bg-gray-900 border border-gray-700 rounded px-2 py-1 text-xs flex-1 cursor-pointer">
+                                <option value="ctrl-w">Ctrl + W (關閉分頁)</option>
+                                <option value="ctrl-shift-t">Ctrl + Shift + T (復原分頁)</option>
+                                <option value="f11">F11 (視窗全螢幕)</option>
+                                <option value="f5">F5 (重整)</option>
+                                <option value="printscreen">PrintScreen (螢幕截圖)</option>
+                                <option value="ctrl-esc">Ctrl + Esc (開始功能表)</option>
+                            </select>
+                            <button type="button" onclick="addCustomRemoteKey()" class="px-3 py-1 bg-blue-600 hover:bg-blue-500 text-white rounded font-medium flex items-center gap-1 cursor-pointer">
+                                <i data-lucide="plus" class="w-3.5 h-3.5"></i> 新增
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tab 3: Audio Stream Config -->
+                <div id="cfg-panel-audio" class="space-y-4 hidden">
+                    <div class="p-3 bg-gray-950 rounded-xl border border-gray-800 space-y-3">
+                        <div class="font-bold text-gray-200 flex items-center justify-between">
+                            <span class="flex items-center gap-1.5 text-emerald-300">
+                                <i data-lucide="volume-2" class="w-4 h-4"></i> 音訊串流參數配置 (Audio Stream Config)
+                            </span>
+                            <button type="button" onclick="playTestTone()" class="text-xs text-cyan-400 hover:underline flex items-center gap-1 cursor-pointer">
+                                <i data-lucide="bell" class="w-3 h-3"></i> 播放測試音
+                            </button>
+                        </div>
+
+                        <div class="space-y-2">
+                            <div>
+                                <label class="block text-gray-400 text-[11px] mb-1">預設音訊串流來源 URL (PulseAudio / HTTP Stream)</label>
+                                <div class="flex items-center gap-2">
+                                    <input id="cfg-audio-url" type="text" value="http://127.0.0.1:8000/audio" class="bg-gray-900 border border-gray-700 rounded px-2 py-1 text-xs flex-1 font-mono focus:outline-none">
+                                    <button type="button" onclick="probeAudioPortFromModal()" class="px-2 py-1 rounded bg-gray-800 hover:bg-gray-700 text-cyan-300 border border-cyan-800/50 flex items-center gap-1 cursor-pointer">
+                                        <i data-lucide="activity" class="w-3 h-3"></i> 探測 8000
+                                    </button>
+                                </div>
+                                <span id="cfg-audio-probe-status" class="text-[11px] text-gray-500 mt-1 block font-mono"></span>
+                            </div>
+
+                            <div>
+                                <label class="block text-gray-400 text-[11px] mb-1">預設初始音量 (0 - 100%)</label>
+                                <div class="flex items-center gap-2">
+                                    <input id="cfg-audio-default-vol" type="range" min="0" max="100" value="80" class="w-32 accent-purple-500 cursor-pointer">
+                                    <span id="cfg-audio-vol-text" class="font-mono text-gray-300">80%</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="p-3 bg-emerald-950/20 rounded-xl border border-emerald-800/40 space-y-2">
+                        <div class="font-bold text-emerald-300 flex items-center gap-1.5">
+                            <i data-lucide="info" class="w-4 h-4"></i> Linux / WSL2 音訊架設指令 (PulseAudio + ffmpeg)
+                        </div>
+                        <pre class="bg-black/70 p-2.5 rounded-lg border border-gray-800 font-mono text-[10px] text-gray-200 overflow-x-auto select-all">sudo apt install -y pulseaudio ffmpeg
+pulseaudio --start --exit-idle-time=-1
+ffmpeg -f pulse -i default -acodec libmp3lame -ab 128k -f mp3 -listen 1 http://0.0.0.0:8000/audio &</pre>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Footer Buttons -->
+            <div class="px-5 py-3 bg-gray-900 border-t border-gray-800 flex items-center justify-between shrink-0">
+                <button type="button" onclick="resetKeySettingsToDefault()" class="text-xs text-rose-400 hover:text-rose-300 hover:underline cursor-pointer">
+                    恢復預設值 (Reset Defaults)
+                </button>
+                <div class="flex items-center gap-2">
+                    <button type="button" onclick="saveAndApplyKeySettings()" class="px-4 py-1.5 bg-purple-600 hover:bg-purple-500 text-white rounded-lg font-medium cursor-pointer shadow">
+                        儲存並套用 (Save & Apply)
+                    </button>
+                    <button type="button" onclick="closeKeySettingsModal()" class="px-4 py-1.5 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-lg font-medium cursor-pointer">
+                        關閉
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
 </body>
 </html>` : `<!DOCTYPE html>
 <html lang="zh-TW">
@@ -13098,6 +13460,553 @@ Important guidelines:
         window.runDiagnosticsTests = runDiagnosticsTests;
 
         window.openDaemonModal = openDaemonModal;
+
+        // ── 鍵盤快捷鍵與自訂按鍵設置核心 (Keypad & Shortcuts Engine) ────────────
+        const DEFAULT_KEY_CONFIG = {
+            term: {
+                showNav: true,
+                showTab: true,
+                showDel: true,
+                showEnter: true,
+                showEsc: true,
+                showCtrlA: true,
+                showCtrlC: true,
+                showCtrlV: true,
+                showCtrlX: true,
+                showCtrlZ: true,
+                showCtrlD: false,
+                showCtrlL: true,
+                customKeys: [
+                    { id: "k1", label: "clear", cmd: "clear\n", color: "blue" },
+                    { id: "k2", label: "htop", cmd: "htop\n", color: "purple" },
+                    { id: "k3", label: "ls -la", cmd: "ls -la\n", color: "gray" }
+                ]
+            },
+            remote: {
+                showCAD: true,
+                showAltTab: true,
+                showAltF4: true,
+                showSuper: true,
+                showCtrlAltT: true,
+                showFullscreen: true,
+                customKeys: [
+                    { id: "r1", label: "Win 徽標", action: "super" },
+                    { id: "r2", label: "Ctrl+Alt+T", action: "ctrl-alt-t" },
+                    { id: "r3", label: "Ctrl+Esc", action: "ctrl-esc" }
+                ]
+            },
+            audio: {
+                url: "http://127.0.0.1:8000/audio",
+                volume: 80,
+                muted: false
+            }
+        };
+
+        let userKeyConfig = null;
+        function loadKeySettings() {
+            try {
+                const saved = localStorage.getItem('webcom_key_settings');
+                if (saved) {
+                    userKeyConfig = JSON.parse(saved);
+                }
+            } catch (e) { console.warn(e); }
+            if (!userKeyConfig) {
+                userKeyConfig = JSON.parse(JSON.stringify(DEFAULT_KEY_CONFIG));
+            }
+            // Ensure schema integrity
+            if (!userKeyConfig.term) userKeyConfig.term = { ...DEFAULT_KEY_CONFIG.term };
+            if (!userKeyConfig.remote) userKeyConfig.remote = { ...DEFAULT_KEY_CONFIG.remote };
+            if (!userKeyConfig.audio) userKeyConfig.audio = { ...DEFAULT_KEY_CONFIG.audio };
+            return userKeyConfig;
+        }
+
+        function saveKeySettings() {
+            try {
+                localStorage.setItem('webcom_key_settings', JSON.stringify(userKeyConfig));
+            } catch (e) { console.warn(e); }
+            renderKeypadFromConfig();
+            renderRemoteShortcuts();
+        }
+
+        function renderKeypadFromConfig() {
+            const cfg = userKeyConfig.term;
+            // Toggle visibility of built-in keypad buttons
+            const navUp = document.getElementById('vkey-up');
+            const navDown = document.getElementById('vkey-down');
+            const navLeft = document.getElementById('vkey-left');
+            const navRight = document.getElementById('vkey-right');
+            const isNav = !!cfg.showNav;
+            if (navUp) navUp.classList.toggle('hidden', !isNav);
+            if (navDown) navDown.classList.toggle('hidden', !isNav);
+            if (navLeft) navLeft.classList.toggle('hidden', !isNav);
+            if (navRight) navRight.classList.toggle('hidden', !isNav);
+
+            const btnTab = document.getElementById('vkey-tab');
+            if (btnTab) btnTab.classList.toggle('hidden', !cfg.showTab);
+            const btnDel = document.getElementById('vkey-del');
+            if (btnDel) btnDel.classList.toggle('hidden', !cfg.showDel);
+            const btnEnter = document.getElementById('vkey-enter');
+            if (btnEnter) btnEnter.classList.toggle('hidden', !cfg.showEnter);
+            const btnEsc = document.getElementById('vkey-esc');
+            if (btnEsc) btnEsc.classList.toggle('hidden', !cfg.showEsc);
+
+            const btnCtrlA = document.getElementById('vkey-ctrl-a');
+            if (btnCtrlA) btnCtrlA.classList.toggle('hidden', !cfg.showCtrlA);
+            const btnCtrlC = document.getElementById('vkey-ctrl-c');
+            if (btnCtrlC) btnCtrlC.classList.toggle('hidden', !cfg.showCtrlC);
+            const btnCtrlV = document.getElementById('vkey-ctrl-v');
+            if (btnCtrlV) btnCtrlV.classList.toggle('hidden', !cfg.showCtrlV);
+            const btnCtrlX = document.getElementById('vkey-ctrl-x');
+            if (btnCtrlX) btnCtrlX.classList.toggle('hidden', !cfg.showCtrlX);
+
+            // Render custom buttons container
+            const customContainer = document.getElementById('vkey-custom-container');
+            if (customContainer) {
+                let html = '';
+                const colorMap = {
+                    purple: 'bg-purple-950/60 hover:bg-purple-900/80 text-purple-300 border-purple-700/60',
+                    blue: 'bg-blue-950/60 hover:bg-blue-900/80 text-blue-300 border-blue-700/60',
+                    emerald: 'bg-emerald-950/60 hover:bg-emerald-900/80 text-emerald-300 border-emerald-700/60',
+                    gray: 'bg-gray-900 hover:bg-gray-800 text-gray-300 border-gray-700',
+                    rose: 'bg-rose-950/60 hover:bg-rose-900/80 text-rose-300 border-rose-700/60'
+                };
+                (cfg.customKeys || []).forEach(k => {
+                    const cCls = colorMap[k.color] || colorMap.gray;
+                    html += `<button type="button" onclick="executeCustomTermKey('${encodeURIComponent(k.cmd)}')"
+                        class="px-2 py-1 ${cCls} border rounded-md font-mono text-xs font-bold transition flex items-center gap-1 shadow-sm cursor-pointer"
+                        title="送出指令: ${k.cmd.replace(/\n/g, ' ↵')}">
+                        <span>${k.label}</span>
+                    </button>`;
+                });
+                customContainer.innerHTML = html;
+            }
+        }
+
+        function renderRemoteShortcuts() {
+            const cfg = userKeyConfig.remote;
+            const targets = ['novnc-remote-shortcuts', 'xorg-remote-shortcuts'];
+            targets.forEach(tid => {
+                const el = document.getElementById(tid);
+                if (!el) return;
+                let html = '';
+                (cfg.customKeys || []).forEach(k => {
+                    html += `<button type="button" onclick="executeRemoteShortcut('${k.action}')"
+                        class="px-2 py-0.5 rounded bg-gray-800 hover:bg-gray-700 text-cyan-300 border border-cyan-800/40 font-mono text-[11px] transition cursor-pointer"
+                        title="發送遠端組合鍵: ${k.label}">
+                        <span>${k.label}</span>
+                    </button>`;
+                });
+                el.innerHTML = html;
+            });
+        }
+
+        async function executeCustomTermKey(encodedCmd) {
+            const cmd = decodeURIComponent(encodedCmd);
+            if (typeof sendCommandToTerminal === 'function') {
+                await sendCommandToTerminal(cmd.replace(/\n$/, ''));
+            } else {
+                const termIn = document.getElementById('term-input');
+                if (termIn) {
+                    termIn.value = cmd.replace(/\n$/, '');
+                    termIn.focus();
+                }
+            }
+        }
+        window.executeCustomTermKey = executeCustomTermKey;
+
+        function handleSpecialKey(key) {
+            if (key === 'esc') {
+                if (activeTermContext.protocol === 'webserial' && webSerialPort?.writable) {
+                    const writer = webSerialPort.writable.getWriter();
+                    writer.write(new Uint8Array([27])).then(() => writer.releaseLock());
+                } else if (window.wtermInstance) {
+                    window.wtermInstance.write('\x1b');
+                }
+                const termIn = document.getElementById('term-input');
+                if (termIn) { termIn.value = ''; termIn.focus(); }
+            }
+        }
+        window.handleSpecialKey = handleSpecialKey;
+
+        function executeRemoteShortcut(action) {
+            const activeRfb = (currentLeftMode === 'xorg') ? rfbXorgInstance : rfbNovncInstance;
+            if (!activeRfb) {
+                alert('目前尚未連線至桌面，無法發送快捷鍵');
+                return;
+            }
+            try {
+                if (action === 'super') {
+                    activeRfb.sendKey(0xffeb, 'MetaLeft', true);
+                    setTimeout(() => activeRfb.sendKey(0xffeb, 'MetaLeft', false), 80);
+                } else if (action === 'ctrl-alt-t') {
+                    activeRfb.sendKey(0xffe3, 'ControlLeft', true);
+                    activeRfb.sendKey(0xffe9, 'AltLeft', true);
+                    activeRfb.sendKey(0x74, 'KeyT', true);
+                    activeRfb.sendKey(0x74, 'KeyT', false);
+                    activeRfb.sendKey(0xffe9, 'AltLeft', false);
+                    activeRfb.sendKey(0xffe3, 'ControlLeft', false);
+                } else if (action === 'ctrl-esc') {
+                    activeRfb.sendKey(0xffe3, 'ControlLeft', true);
+                    activeRfb.sendKey(0xff1b, 'Escape', true);
+                    activeRfb.sendKey(0xff1b, 'Escape', false);
+                    activeRfb.sendKey(0xffe3, 'ControlLeft', false);
+                } else if (action === 'ctrl-w') {
+                    activeRfb.sendKey(0xffe3, 'ControlLeft', true);
+                    activeRfb.sendKey(0x77, 'KeyW', true);
+                    activeRfb.sendKey(0x77, 'KeyW', false);
+                    activeRfb.sendKey(0xffe3, 'ControlLeft', false);
+                } else if (action === 'f11') {
+                    activeRfb.sendKey(0xffc8, 'F11', true);
+                    setTimeout(() => activeRfb.sendKey(0xffc8, 'F11', false), 80);
+                } else if (action === 'f5') {
+                    activeRfb.sendKey(0xffc2, 'F5', true);
+                    setTimeout(() => activeRfb.sendKey(0xffc2, 'F5', false), 80);
+                } else if (action === 'printscreen') {
+                    activeRfb.sendKey(0xff61, 'PrintScreen', true);
+                    setTimeout(() => activeRfb.sendKey(0xff61, 'PrintScreen', false), 80);
+                }
+            } catch (e) { console.warn('executeRemoteShortcut failed:', e); }
+        }
+        window.executeRemoteShortcut = executeRemoteShortcut;
+
+        // ── Modal UI Controls for Key & Audio Settings ──────────────────────────
+        function openKeySettingsModal(defaultTab = 'term') {
+            loadKeySettings();
+            syncKeySettingsToModal();
+            switchKeyConfigTab(defaultTab);
+            const m = document.getElementById('key-settings-modal');
+            if (m) m.classList.remove('hidden');
+            if (window.lucide) lucide.createIcons();
+        }
+        function closeKeySettingsModal() {
+            const m = document.getElementById('key-settings-modal');
+            if (m) m.classList.add('hidden');
+        }
+        window.openKeySettingsModal = openKeySettingsModal;
+        window.closeKeySettingsModal = closeKeySettingsModal;
+
+        function switchKeyConfigTab(tab) {
+            ['term', 'remote', 'audio'].forEach(t => {
+                const btn = document.getElementById('tab-btn-cfg-' + t);
+                const panel = document.getElementById('cfg-panel-' + t);
+                if (btn) {
+                    if (t === tab) {
+                        btn.classList.add('border-purple-500', 'text-purple-300', 'font-bold');
+                        btn.classList.remove('border-transparent', 'text-gray-400');
+                    } else {
+                        btn.classList.remove('border-purple-500', 'text-purple-300', 'font-bold');
+                        btn.classList.add('border-transparent', 'text-gray-400');
+                    }
+                }
+                if (panel) panel.classList.toggle('hidden', t !== tab);
+            });
+            if (window.lucide) lucide.createIcons();
+        }
+        window.switchKeyConfigTab = switchKeyConfigTab;
+
+        function syncKeySettingsToModal() {
+            const tc = userKeyConfig.term;
+            const setChk = (id, val) => { const el = document.getElementById(id); if (el) el.checked = !!val; };
+            setChk('cfg-chk-nav', tc.showNav);
+            setChk('cfg-chk-tab', tc.showTab);
+            setChk('cfg-chk-del', tc.showDel);
+            setChk('cfg-chk-enter', tc.showEnter);
+            setChk('cfg-chk-esc', tc.showEsc);
+            setChk('cfg-chk-ctrla', tc.showCtrlA);
+            setChk('cfg-chk-ctrlc', tc.showCtrlC);
+            setChk('cfg-chk-ctrlv', tc.showCtrlV);
+            setChk('cfg-chk-ctrlx', tc.showCtrlX);
+            setChk('cfg-chk-ctrlz', tc.showCtrlZ);
+            setChk('cfg-chk-ctrll', tc.showCtrlL);
+            setChk('cfg-chk-ctrld', tc.showCtrlD);
+
+            // Render Term custom keys list in modal
+            const listEl = document.getElementById('cfg-term-custom-list');
+            if (listEl) {
+                let html = '';
+                (tc.customKeys || []).forEach((k, idx) => {
+                    html += `<div class="flex items-center justify-between p-2 bg-gray-900 rounded border border-gray-800 text-xs">
+                        <div class="flex items-center gap-2">
+                            <span class="px-2 py-0.5 rounded font-mono font-bold bg-purple-950 text-purple-300 border border-purple-800">${k.label}</span>
+                            <span class="font-mono text-gray-400 text-[11px]">${k.cmd.replace(/\n/g, ' ↵')}</span>
+                        </div>
+                        <button type="button" onclick="deleteCustomTermKey(${idx})" class="text-rose-400 hover:text-rose-300 px-2 py-0.5 rounded hover:bg-gray-800 cursor-pointer">
+                            刪除
+                        </button>
+                    </div>`;
+                });
+                listEl.innerHTML = html || '<div class="text-gray-500 text-[11px]">尚未添加自訂按鍵</div>';
+            }
+
+            // Remote Presets
+            const rc = userKeyConfig.remote;
+            setChk('cfg-chk-cad', rc.showCAD);
+            setChk('cfg-chk-alttab', rc.showAltTab);
+            setChk('cfg-chk-altf4', rc.showAltF4);
+            setChk('cfg-chk-super', rc.showSuper);
+            setChk('cfg-chk-ctrlaltt', rc.showCtrlAltT);
+            setChk('cfg-chk-fullscreen', rc.showFullscreen);
+
+            // Remote custom list in modal
+            const rListEl = document.getElementById('cfg-remote-custom-list');
+            if (rListEl) {
+                let html = '';
+                (rc.customKeys || []).forEach((k, idx) => {
+                    html += `<div class="flex items-center justify-between p-2 bg-gray-900 rounded border border-gray-800 text-xs">
+                        <div class="flex items-center gap-2">
+                            <span class="px-2 py-0.5 rounded font-mono font-bold bg-cyan-950 text-cyan-300 border border-cyan-800">${k.label}</span>
+                            <span class="font-mono text-gray-400 text-[11px]">${k.action}</span>
+                        </div>
+                        <button type="button" onclick="deleteCustomRemoteKey(${idx})" class="text-rose-400 hover:text-rose-300 px-2 py-0.5 rounded hover:bg-gray-800 cursor-pointer">
+                            刪除
+                        </button>
+                    </div>`;
+                });
+                rListEl.innerHTML = html || '<div class="text-gray-500 text-[11px]">尚未添加自訂遠端快捷鍵</div>';
+            }
+
+            // Audio settings in modal
+            const aUrl = document.getElementById('cfg-audio-url');
+            if (aUrl) aUrl.value = userKeyConfig.audio.url || "http://127.0.0.1:8000/audio";
+            const aVol = document.getElementById('cfg-audio-default-vol');
+            const aVolTxt = document.getElementById('cfg-audio-vol-text');
+            if (aVol) {
+                aVol.value = userKeyConfig.audio.volume || 80;
+                if (aVolTxt) aVolTxt.textContent = `${aVol.value}%`;
+                aVol.oninput = () => { if (aVolTxt) aVolTxt.textContent = `${aVol.value}%`; };
+            }
+        }
+
+        function addCustomTermKey() {
+            const label = (document.getElementById('cfg-new-term-label')?.value || '').trim();
+            const cmd = (document.getElementById('cfg-new-term-cmd')?.value || '').trim();
+            const color = document.getElementById('cfg-new-term-color')?.value || 'gray';
+            if (!label || !cmd) {
+                alert('請輸入按鍵標籤與送出指令');
+                return;
+            }
+            if (!userKeyConfig.term.customKeys) userKeyConfig.term.customKeys = [];
+            userKeyConfig.term.customKeys.push({ id: 'k_' + Date.now(), label, cmd, color });
+            document.getElementById('cfg-new-term-label').value = '';
+            document.getElementById('cfg-new-term-cmd').value = '';
+            syncKeySettingsToModal();
+        }
+        window.addCustomTermKey = addCustomTermKey;
+
+        function deleteCustomTermKey(idx) {
+            if (userKeyConfig?.term?.customKeys) {
+                userKeyConfig.term.customKeys.splice(idx, 1);
+                syncKeySettingsToModal();
+            }
+        }
+        window.deleteCustomTermKey = deleteCustomTermKey;
+
+        function addCustomRemoteKey() {
+            const label = (document.getElementById('cfg-new-remote-label')?.value || '').trim();
+            const action = document.getElementById('cfg-new-remote-action')?.value || 'f11';
+            if (!label) {
+                alert('請輸入按鍵標籤');
+                return;
+            }
+            if (!userKeyConfig.remote.customKeys) userKeyConfig.remote.customKeys = [];
+            userKeyConfig.remote.customKeys.push({ id: 'r_' + Date.now(), label, action });
+            document.getElementById('cfg-new-remote-label').value = '';
+            syncKeySettingsToModal();
+        }
+        window.addCustomRemoteKey = addCustomRemoteKey;
+
+        function deleteCustomRemoteKey(idx) {
+            if (userKeyConfig?.remote?.customKeys) {
+                userKeyConfig.remote.customKeys.splice(idx, 1);
+                syncKeySettingsToModal();
+            }
+        }
+        window.deleteCustomRemoteKey = deleteCustomRemoteKey;
+
+        function saveAndApplyKeySettings() {
+            const getChk = id => !!document.getElementById(id)?.checked;
+            userKeyConfig.term.showNav = getChk('cfg-chk-nav');
+            userKeyConfig.term.showTab = getChk('cfg-chk-tab');
+            userKeyConfig.term.showDel = getChk('cfg-chk-del');
+            userKeyConfig.term.showEnter = getChk('cfg-chk-enter');
+            userKeyConfig.term.showEsc = getChk('cfg-chk-esc');
+            userKeyConfig.term.showCtrlA = getChk('cfg-chk-ctrla');
+            userKeyConfig.term.showCtrlC = getChk('cfg-chk-ctrlc');
+            userKeyConfig.term.showCtrlV = getChk('cfg-chk-ctrlv');
+            userKeyConfig.term.showCtrlX = getChk('cfg-chk-ctrlx');
+            userKeyConfig.term.showCtrlZ = getChk('cfg-chk-ctrlz');
+            userKeyConfig.term.showCtrlL = getChk('cfg-chk-ctrll');
+            userKeyConfig.term.showCtrlD = getChk('cfg-chk-ctrld');
+
+            userKeyConfig.remote.showCAD = getChk('cfg-chk-cad');
+            userKeyConfig.remote.showAltTab = getChk('cfg-chk-alttab');
+            userKeyConfig.remote.showAltF4 = getChk('cfg-chk-altf4');
+            userKeyConfig.remote.showSuper = getChk('cfg-chk-super');
+            userKeyConfig.remote.showCtrlAltT = getChk('cfg-chk-ctrlaltt');
+            userKeyConfig.remote.showFullscreen = getChk('cfg-chk-fullscreen');
+
+            const aUrl = document.getElementById('cfg-audio-url')?.value?.trim();
+            if (aUrl) {
+                userKeyConfig.audio.url = aUrl;
+                const nUrl = document.getElementById('novnc-audio-url');
+                const xUrl = document.getElementById('xorg-audio-url');
+                if (nUrl) nUrl.value = aUrl;
+                if (xUrl) xUrl.value = aUrl;
+            }
+            const aVol = parseInt(document.getElementById('cfg-audio-default-vol')?.value || '80');
+            userKeyConfig.audio.volume = aVol;
+
+            saveKeySettings();
+            closeKeySettingsModal();
+        }
+        window.saveAndApplyKeySettings = saveAndApplyKeySettings;
+
+        function resetKeySettingsToDefault() {
+            if (confirm('確定要將所有按鍵與快捷鍵恢復為系統預設值嗎？')) {
+                userKeyConfig = JSON.parse(JSON.stringify(DEFAULT_KEY_CONFIG));
+                saveKeySettings();
+                syncKeySettingsToModal();
+            }
+        }
+        window.resetKeySettingsToDefault = resetKeySettingsToDefault;
+
+        // ── 音訊串流與播放接收核心 (Audio Streaming & Web Audio Engine) ──────────
+        let audioPlayerInstance = null;
+        let audioWebCtx = null;
+        let isAudioStreaming = false;
+
+        function playTestTone() {
+            try {
+                if (!audioWebCtx) {
+                    audioWebCtx = new (window.AudioContext || window.webkitAudioContext)();
+                }
+                if (audioWebCtx.state === 'suspended') {
+                    audioWebCtx.resume();
+                }
+                const osc = audioWebCtx.createOscillator();
+                const gain = audioWebCtx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(587.33, audioWebCtx.currentTime); // D5
+                osc.frequency.setValueAtTime(880.00, audioWebCtx.currentTime + 0.15); // A5
+
+                gain.gain.setValueAtTime(0.3, audioWebCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.0001, audioWebCtx.currentTime + 0.45);
+
+                osc.connect(gain);
+                gain.connect(audioWebCtx.destination);
+                osc.start();
+                osc.stop(audioWebCtx.currentTime + 0.45);
+            } catch (e) {
+                console.warn('Web Audio test tone failed:', e);
+                alert('播放測試音發生異常: ' + e.message);
+            }
+        }
+        window.playTestTone = playTestTone;
+
+        async function probeAudioPortFromModal() {
+            const statusEl = document.getElementById('cfg-audio-probe-status');
+            if (statusEl) statusEl.textContent = '探測中...';
+            try {
+                const ep = (typeof appSettings !== 'undefined' && appSettings?.daemonEndpoint) ? appSettings.daemonEndpoint : 'http://127.0.0.1:8001';
+                const resp = await fetch(`${ep}/api/audio/probe?host=127.0.0.1&port=8000`);
+                if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+                const d = await resp.json();
+                if (statusEl) {
+                    statusEl.textContent = d.open ? '✔ Port 8000 正在監聽中 (音訊服務就緒)' : '✖ Port 8000 未啟動或拒絕連線 (請依下方指南架設)';
+                    statusEl.className = d.open ? 'text-[11px] text-emerald-400 mt-1 block font-mono' : 'text-[11px] text-rose-400 mt-1 block font-mono';
+                }
+            } catch (e) {
+                if (statusEl) {
+                    statusEl.textContent = '探測失敗: ' + e.message;
+                    statusEl.className = 'text-[11px] text-amber-400 mt-1 block font-mono';
+                }
+            }
+        }
+        window.probeAudioPortFromModal = probeAudioPortFromModal;
+
+        function setAudioVolume(vol, mode) {
+            const num = parseInt(vol);
+            if (audioPlayerInstance) {
+                audioPlayerInstance.volume = Math.max(0, Math.min(1, num / 100));
+            }
+            const nSlider = document.getElementById('novnc-audio-vol');
+            const nTxt = document.getElementById('novnc-audio-vol-txt');
+            const xSlider = document.getElementById('xorg-audio-vol');
+            const xTxt = document.getElementById('xorg-audio-vol-txt');
+            if (nSlider) nSlider.value = num;
+            if (nTxt) nTxt.textContent = num + '%';
+            if (xSlider) xSlider.value = num;
+            if (xTxt) xTxt.textContent = num + '%';
+        }
+        window.setAudioVolume = setAudioVolume;
+
+        function toggleAudioStream(mode) {
+            const urlInput = document.getElementById(mode === 'xorg' ? 'xorg-audio-url' : 'novnc-audio-url');
+            const streamUrl = (urlInput?.value || 'http://127.0.0.1:8000/audio').trim();
+
+            if (isAudioStreaming) {
+                // Stop audio
+                if (audioPlayerInstance) {
+                    audioPlayerInstance.pause();
+                    audioPlayerInstance.src = '';
+                    audioPlayerInstance = null;
+                }
+                isAudioStreaming = false;
+                updateAudioUIState(false);
+            } else {
+                // Start audio
+                try {
+                    audioPlayerInstance = new Audio(streamUrl);
+                    const volInput = document.getElementById(mode === 'xorg' ? 'xorg-audio-vol' : 'novnc-audio-vol');
+                    const vol = parseInt(volInput?.value || '80');
+                    audioPlayerInstance.volume = Math.max(0, Math.min(1, vol / 100));
+
+                    audioPlayerInstance.onplaying = () => {
+                        isAudioStreaming = true;
+                        updateAudioUIState(true);
+                    };
+                    audioPlayerInstance.onerror = (e) => {
+                        console.warn('Audio stream error:', e);
+                        isAudioStreaming = false;
+                        updateAudioUIState(false);
+                        alert(`無法載入音訊串流 (${streamUrl})\n請確認 PulseAudio/ffmpeg 已於背景執行並串流至該連接埠。`);
+                    };
+                    audioPlayerInstance.play().catch(e => {
+                        console.warn('Audio play request failed:', e);
+                        alert('播放音訊失敗：' + e.message + '\n(部分瀏覽器需使用者先點擊頁面才允許播放音訊)');
+                    });
+                } catch (e) {
+                    alert('啟動音訊播放失敗：' + e.message);
+                }
+            }
+        }
+        window.toggleAudioStream = toggleAudioStream;
+
+        function updateAudioUIState(playing) {
+            ['novnc', 'xorg'].forEach(m => {
+                const btn = document.getElementById(`btn-${m}-audio-toggle`);
+                const icon = document.getElementById(`icon-${m}-audio`);
+                const txt = document.getElementById(`txt-${m}-audio`);
+                if (btn) {
+                    if (playing) {
+                        btn.classList.add('bg-emerald-950/80', 'text-emerald-300', 'border-emerald-600/60');
+                        btn.classList.remove('bg-gray-900', 'text-gray-300', 'border-gray-700');
+                    } else {
+                        btn.classList.remove('bg-emerald-950/80', 'text-emerald-300', 'border-emerald-600/60');
+                        btn.classList.add('bg-gray-900', 'text-gray-300', 'border-gray-700');
+                    }
+                }
+                if (icon) {
+                    icon.setAttribute('data-lucide', playing ? 'volume-2' : 'volume-x');
+                    icon.className = playing ? 'w-3.5 h-3.5 text-emerald-400 animate-pulse' : 'w-3.5 h-3.5 text-gray-400';
+                }
+                if (txt) {
+                    txt.textContent = playing ? (currentLang === 'en' ? 'Audio: Playing' : '音訊: 播放中') : (currentLang === 'en' ? 'Audio: Off' : '音訊: 關閉');
+                }
+            });
+            if (window.lucide) lucide.createIcons();
+        }
+
 
         // ── 左側工作區模式切換器 (Terminal / noVNC / Xorg) ──────────────────────
         let currentLeftMode = 'term';

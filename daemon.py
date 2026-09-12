@@ -268,6 +268,63 @@ def probe_vnc_port(host: str = "127.0.0.1", port: int = 6080):
             pass
 
 
+@app.get("/api/audio/probe")
+def probe_audio_port(host: str = "127.0.0.1", port: int = 8000):
+    """探測音訊串流伺服器 (PulseAudio/HTTP/GStreamer) 埠號是否處於監聽中"""
+    import socket
+    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    s.settimeout(1.0)
+    try:
+        err = s.connect_ex((host, int(port)))
+        is_open = (err == 0)
+        return {
+            "status": "ok",
+            "host": host,
+            "port": int(port),
+            "open": is_open,
+            "message": "Audio stream port is listening" if is_open else f"Audio port is closed or unreachable (code: {err})"
+        }
+    except Exception as ex:
+        return {
+            "status": "error",
+            "host": host,
+            "port": int(port),
+            "open": False,
+            "message": str(ex)
+        }
+    finally:
+        try:
+            s.close()
+        except Exception:
+            pass
+
+
+@app.get("/api/audio/stream")
+def proxy_audio_stream(url: str = "http://127.0.0.1:8000/audio"):
+    """代理後端音訊串流 (MP3/OGG/WAV) 避免瀏覽器 CORS 與 Mixed-Content 限制"""
+    from fastapi.responses import StreamingResponse
+    import urllib.request
+    try:
+        req = urllib.request.Request(url, headers={"User-Agent": "Webcom-Audio-Proxy"})
+        resp = urllib.request.urlopen(req, timeout=5)
+        def iter_audio():
+            try:
+                while True:
+                    chunk = resp.read(4096)
+                    if not chunk:
+                        break
+                    yield chunk
+            except Exception:
+                pass
+            finally:
+                try: resp.close()
+                except Exception: pass
+        content_type = resp.headers.get("Content-Type", "audio/mpeg")
+        return StreamingResponse(iter_audio(), media_type=content_type)
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=f"Audio proxy failed: {e}")
+
+
 import logging
 import threading
 import urllib.request

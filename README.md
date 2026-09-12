@@ -38,6 +38,14 @@
     - 支援 1080p / 720p / 4:3 等多種解析度切換與 Fluxbox / XFCE4 / Openbox / Direct App 模式
     - 內建視窗快捷鍵：`Alt+Tab` 切換視窗、`Alt+F4` 關閉視窗
     - 內建 **WSL2 / Linux Xorg 快速啟動精靈**（支援一鍵複製指令與一鍵直發終端機執行 `Xvfb + fluxbox + x11vnc + websockify`）
+  - 🔊 **音訊串流支援 (Audio Streaming Support)**
+    - 支援 noVNC 與 Xorg 遠端桌面即時音訊播放（相容 PulseAudio / GStreamer / HTTP MP3 / AAC 串流）
+    - 工具列內建：一鍵靜音/開啟、音量調整滑桿（0-100%）、自訂串流 URL、Web Audio 鈴聲自我測試 (`playTestTone`)
+    - 後端 Daemon 內建 `/api/audio/probe`（連接埠探針）與 `/api/audio/stream`（反向串流代理，防 CORS）
+  - ⌨️ **鍵盤快捷鍵與自訂按鍵設置 (Keypad & Shortcuts Config)**
+    - 終端機虛擬按鍵支援一鍵開關與自訂巨集按鈕（如 `clear`, `htop`, `ls -la`, `Esc`, `Ctrl+Z`, `Ctrl+L` 等）
+    - 遠端桌面支援自訂組合鍵按鈕（如 `Super/Win 徽標鍵`, `Ctrl+Alt+T`, `Ctrl+Esc`, `Alt+Tab`, `Alt+F4` 等）
+    - 提供專屬「按鍵設置」對話盒，設定值自動持久化儲存於 `localStorage`，並支援一鍵恢復原廠設定
 - 📚 **RAG 知識庫管理員**（Chunk 分段 + 向量索引 + 即時搜尋測試）
   - **支援格式**：`.txt` / `.md` / `.json` / `.pdf` / `.docx` (Word) / `.xlsx` (Excel) / `.pptx` (PowerPoint) / 原始程式碼（`.py/.js/.sh/.bat/.ps1/...`）
   - 可設定 Chunk 大小（預設 512 / 25% overlap），內建「已收錄文件清單 + 分塊數」即時顯示

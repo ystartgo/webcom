@@ -143,6 +143,9 @@ def test_core_functions():
         ("switchLeftMode 模式切換函式", "function switchLeftMode" in content and "window.switchLeftMode = switchLeftMode" in content),
         ("handleNoVncConnect 遠端桌面函式", "function handleNoVncConnect" in content and "window.handleNoVncConnect = handleNoVncConnect" in content),
         ("handleXorgConnect 視窗連線函式", "function handleXorgConnect" in content and "window.handleXorgConnect = handleXorgConnect" in content),
+        ("openKeySettingsModal 按鍵設置函式", "function openKeySettingsModal" in content and "window.openKeySettingsModal = openKeySettingsModal" in content),
+        ("toggleAudioStream 音訊串流函式", "function toggleAudioStream" in content and "window.toggleAudioStream = toggleAudioStream" in content),
+        ("playTestTone WebAudio 測試音函式", "function playTestTone" in content and "window.playTestTone = playTestTone" in content),
     ]
 
     for name, ok in core_checks:
@@ -187,6 +190,15 @@ def test_ui_elements():
     novnc_asset_ok = os.path.exists(novnc_asset_path) and os.path.getsize(novnc_asset_path) > 100000
     record("UI", "noVNC 離線獨立打包核心 (assets/novnc.bundle.mjs)", novnc_asset_ok,
            f"本地資源就緒 ({round(os.path.getsize(novnc_asset_path)/1024, 1) if os.path.exists(novnc_asset_path) else 0} KB)" if novnc_asset_ok else "缺少 assets/novnc.bundle.mjs 離線資產")
+
+    # 6. 音訊串流控制與按鍵設置對話盒
+    audio_controls_ok = ('id="btn-novnc-audio-toggle"' in content) and ('id="btn-xorg-audio-toggle"' in content)
+    record("UI", "遠端桌面與 Xorg 音訊串流控制面板", audio_controls_ok,
+           "雙視圖音訊控制就緒" if audio_controls_ok else "缺少音訊控制面板")
+
+    key_settings_ok = ('id="key-settings-modal"' in content) and ('id="btn-config-vkeys"' in content)
+    record("UI", "按鍵與快捷鍵自訂設置對話盒 (#key-settings-modal)", key_settings_ok,
+           "自訂按鍵對話盒與觸發鈕齊全" if key_settings_ok else "缺少按鍵設置模態視窗")
 
 def test_python_deps():
     print(f"\n{CYAN}{BOLD}【4. Python 環境與 MarkItDown 依賴檢測】{RESET}")
