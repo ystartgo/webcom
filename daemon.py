@@ -236,6 +236,38 @@ def get_local_models():
                 })
     return {"models": installed}
 
+
+@app.get("/api/vnc/probe")
+def probe_vnc_port(host: str = "127.0.0.1", port: int = 6080):
+    """探測特定 TCP 主機與埠號是否處於監聽中 (供 noVNC / websockify / Xorg 連線診斷使用)"""
+    import socket
+    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    s.settimeout(1.0)
+    try:
+        err = s.connect_ex((host, int(port)))
+        is_open = (err == 0)
+        return {
+            "status": "ok",
+            "host": host,
+            "port": int(port),
+            "open": is_open,
+            "message": "Port is listening and reachable" if is_open else f"Port is closed or unreachable (code: {err})"
+        }
+    except Exception as ex:
+        return {
+            "status": "error",
+            "host": host,
+            "port": int(port),
+            "open": False,
+            "message": str(ex)
+        }
+    finally:
+        try:
+            s.close()
+        except Exception:
+            pass
+
+
 import logging
 import threading
 import urllib.request

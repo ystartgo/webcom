@@ -20,13 +20,24 @@
     - 內建 4 模型：Qwen2.5-0.5B (350MB 極速⭐)、Bonsai-1.7B、Qwen3-VL-2B 視覺、Gemma-4-2B (Google)
     - 支援「自訂 HuggingFace onnx-community 模型 ID」手動加載
   - 可切換：「API → WebGPU → ONNX → 雙引擎聯合思考 → 監督排查流水線」共 5 模式
-- 🖥️ **多協定終端機**（以 [wterm](https://github.com/vercel-labs/wterm) 為基礎的 WASM 終端）
-  - 本地 Shell（WSL）
-  - SSH / Telnet 遠端登入
-  - Web Serial（Chrome/Edge 內建，免驅動免 Daemon，直接操作 COM 埠）
-  - 後端 Serial（透過 Daemon 遠端寫入序列埠）
-  - 虛擬鍵盤：`Ctrl+A / Ctrl+C / Ctrl+V / Ctrl+X` + 方向鍵
-  - **匯出 LOG / 清除畫面**：一次按鈕輸出整段終端機 Log 為 .log 檔 / 清空滾動緩衝
+- 🖥️ **左側多模式工作區（終端機 / noVNC 遠端桌面 / Xorg GUI 視窗）**
+  - **多協定終端機**（以 [wterm](https://github.com/vercel-labs/wterm) 為基礎的 WASM 終端）
+    - 本地 Shell（WSL）
+    - SSH / Telnet 遠端登入
+    - Web Serial（Chrome/Edge 內建，免驅動免 Daemon，直接操作 COM 埠）
+    - 後端 Serial（透過 Daemon 遠端寫入序列埠）
+    - 虛擬鍵盤：`Ctrl+A / Ctrl+C / Ctrl+V / Ctrl+X` + 方向鍵
+    - **匯出 LOG / 清除畫面**：一次按鈕輸出整段終端機 Log 為 .log 檔 / 清空滾動緩衝
+  - 🌐 **noVNC HTML5 遠端桌面**
+    - 本地離線打包 `@novnc/novnc` 獨立模組（無外網也能使用）
+    - 支援原生 RFB Canvas WebSocket 直連與 Web Iframe 嵌入模式
+    - 支援快捷操作：`Ctrl+Alt+Del` 發送、全螢幕切換、快速預設（本機 6080 / VNC 5900 / 區網 6080）
+    - 整合後端 `/api/vnc/probe` TCP 探針，即時檢測連接埠狀態
+  - 🖼️ **Xorg GUI 虛擬視窗環境（DISPLAY=:0）**
+    - 專為 Windows/WSL2 與 Docker 打造之 Linux GUI 視窗整合工作區
+    - 支援 1080p / 720p / 4:3 等多種解析度切換與 Fluxbox / XFCE4 / Openbox / Direct App 模式
+    - 內建視窗快捷鍵：`Alt+Tab` 切換視窗、`Alt+F4` 關閉視窗
+    - 內建 **WSL2 / Linux Xorg 快速啟動精靈**（支援一鍵複製指令與一鍵直發終端機執行 `Xvfb + fluxbox + x11vnc + websockify`）
 - 📚 **RAG 知識庫管理員**（Chunk 分段 + 向量索引 + 即時搜尋測試）
   - **支援格式**：`.txt` / `.md` / `.json` / `.pdf` / `.docx` (Word) / `.xlsx` (Excel) / `.pptx` (PowerPoint) / 原始程式碼（`.py/.js/.sh/.bat/.ps1/...`）
   - 可設定 Chunk 大小（預設 512 / 25% overlap），內建「已收錄文件清單 + 分塊數」即時顯示
@@ -517,13 +528,24 @@ Licensed under **GNU GPL v3.0**. See the built-in User Guide tab 6 *License & Cr
     - 4 built-in models: Qwen2.5-0.5B (350 MB ultra-fast ⭐), Bonsai-1.7B, Qwen3-VL-2B (Vision), Gemma-4-2B (Google)
     - "Custom HuggingFace onnx-community model ID" tab for user-added models
   - 5 selectable top-level modes: `API → WebGPU → ONNX → Co-Think (hybrid) → Supervised-Mutual-Debug (4-Stage SRE Pipeline)`
-- 🖥️ **Multi-Protocol Terminal** (WASM, powered by [wterm](https://github.com/vercel-labs/wterm))
-  - Local Shell via WSL
-  - SSH / Telnet remote login
-  - **Web Serial** (Chrome/Edge built-in — no driver, no daemon, direct COM/UART control)
-  - Backend Serial (serial ports routed through port-8001 Daemon for AI Agent mode)
-  - Virtual keypad: `Ctrl+A / Ctrl+C / Ctrl+V / Ctrl+X` + arrow keys
-  - **Export Log / Clear Buffer**: one-click export the entire terminal scrollback as `.log` / reset scrollback
+- 🖥️ **Left Multi-Mode Workspace (Terminal / noVNC Remote Desktop / Xorg GUI Display)**
+  - **Multi-Protocol Terminal** (WASM, powered by [wterm](https://github.com/vercel-labs/wterm))
+    - Local Shell via WSL
+    - SSH / Telnet remote login
+    - **Web Serial** (Chrome/Edge built-in — no driver, no daemon, direct COM/UART control)
+    - Backend Serial (serial ports routed through port-8001 Daemon for AI Agent mode)
+    - Virtual keypad: `Ctrl+A / Ctrl+C / Ctrl+V / Ctrl+X` + arrow keys
+    - **Export Log / Clear Buffer**: one-click export the entire terminal scrollback as `.log` / reset scrollback
+  - 🌐 **noVNC HTML5 Remote Desktop**
+    - Bundled `@novnc/novnc` self-contained offline ES module
+    - Supports native RFB Canvas WebSocket direct connection & Web Iframe embed modes
+    - Key actions: `Ctrl+Alt+Del` trigger, Fullscreen toggle, quick presets (Local 6080 / VNC 5900 / LAN 6080)
+    - Integrated with backend `/api/vnc/probe` TCP probe for instant port diagnostics
+  - 🖼️ **Xorg GUI Display Environment (DISPLAY=:0)**
+    - Designed for seamless Linux GUI applications inside Windows/WSL2 and Docker
+    - Supports 1080p / 720p / 4:3 resolutions and Fluxbox / XFCE4 / Openbox / Direct App modes
+    - Window shortcuts: `Alt+Tab` window switcher, `Alt+F4` close window
+    - Built-in **WSL2 / Linux Xorg Quick Launch Wizard** (one-click command copy & direct dispatch to WSL terminal)
 - 📚 **RAG Knowledge Base Manager** (chunked indexing + live search test)
   - **Supported formats**: `.txt` / `.md` / `.json` / **`.pdf`** / **`.docx` (Word)** / **`.xlsx` (Excel)** / **`.pptx` (PowerPoint)** / raw source code (`.py/.js/.sh/.bat/.ps1/…`)
   - Configurable chunk size (default 512, 25% overlap) with live "ingested files + chunk count" indicator

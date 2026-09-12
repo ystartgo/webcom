@@ -140,6 +140,9 @@ def test_core_functions():
         ("initWTerm 終端機啟動函式", "async function initWTerm" in content or "function initWTerm" in content),
         ("processDocumentFile MarkItDown 轉檔函式", "async function processDocumentFile" in content),
         ("btn-send 監聽器綁定", "btn-send" in content and "addEventListener('click', handleSend)" in content),
+        ("switchLeftMode 模式切換函式", "function switchLeftMode" in content and "window.switchLeftMode = switchLeftMode" in content),
+        ("handleNoVncConnect 遠端桌面函式", "function handleNoVncConnect" in content and "window.handleNoVncConnect = handleNoVncConnect" in content),
+        ("handleXorgConnect 視窗連線函式", "function handleXorgConnect" in content and "window.handleXorgConnect = handleXorgConnect" in content),
     ]
 
     for name, ok in core_checks:
@@ -170,6 +173,20 @@ def test_ui_elements():
     nav_link_ok = '<a id="btn-open-markitdown"' in content and 'target="_blank"' in content
     record("UI", "頂部 MarkItDown 原生 <a> 標籤 (防 Popup Blocker)", nav_link_ok,
            "原生超連結開啟新分頁" if nav_link_ok else "使用 window.open，可能被瀏覽器阻擋彈出")
+
+    # 5. 左側模式切換與容器檢查
+    left_tabs_ok = ('id="tab-left-term"' in content) and ('id="tab-left-novnc"' in content) and ('id="tab-left-xorg"' in content)
+    record("UI", "左側工作區模式切換分頁標籤 (Terminal / noVNC / Xorg)", left_tabs_ok,
+           "分頁標籤齊全" if left_tabs_ok else "缺少左側模式切換按鈕")
+
+    left_views_ok = ('id="view-container-term"' in content) and ('id="view-container-novnc"' in content) and ('id="view-container-xorg"' in content)
+    record("UI", "左側多模式容器健全性 (Terminal / noVNC / Xorg Views)", left_views_ok,
+           "三大工作區容器就緒" if left_views_ok else "缺少工作區顯示容器")
+
+    novnc_asset_path = os.path.join(BASE_DIR, "assets", "novnc.bundle.mjs")
+    novnc_asset_ok = os.path.exists(novnc_asset_path) and os.path.getsize(novnc_asset_path) > 100000
+    record("UI", "noVNC 離線獨立打包核心 (assets/novnc.bundle.mjs)", novnc_asset_ok,
+           f"本地資源就緒 ({round(os.path.getsize(novnc_asset_path)/1024, 1) if os.path.exists(novnc_asset_path) else 0} KB)" if novnc_asset_ok else "缺少 assets/novnc.bundle.mjs 離線資產")
 
 def test_python_deps():
     print(f"\n{CYAN}{BOLD}【4. Python 環境與 MarkItDown 依賴檢測】{RESET}")

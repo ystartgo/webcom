@@ -291,11 +291,29 @@
         </div>
 
         <div class="bg-gray-900 px-3 py-1.5 flex justify-between items-center border-b border-gray-800 shrink-0">
-            <span class="text-xs text-gray-400 font-mono flex items-center gap-1.5 font-medium">
-                <i data-lucide="terminal" class="w-4 h-4 text-gray-400"></i>
-                <span data-i18n="multiProtocolTerm">多協定終端機</span>
-            </span>
-            <div class="flex items-center gap-3">
+            <div class="flex items-center gap-1 bg-black/60 p-0.5 rounded-lg border border-gray-800 text-xs">
+                <button id="tab-left-term" type="button" onclick="switchLeftMode('term')"
+                    class="px-2.5 py-1 rounded-md font-medium transition flex items-center gap-1.5 bg-purple-600 text-white shadow-sm cursor-pointer select-none"
+                    title="多協定終端機 (WSL Shell, SSH, Telnet, Serial)">
+                    <i data-lucide="terminal" class="w-3.5 h-3.5"></i>
+                    <span data-i18n="tabTerm">終端機</span>
+                </button>
+                <button id="tab-left-novnc" type="button" onclick="switchLeftMode('novnc')"
+                    class="px-2.5 py-1 rounded-md font-medium transition flex items-center gap-1.5 text-gray-400 hover:text-gray-200 hover:bg-gray-800/80 cursor-pointer select-none"
+                    title="noVNC HTML5 遠端桌面 (VNC / websockify)">
+                    <i data-lucide="monitor" class="w-3.5 h-3.5 text-blue-400"></i>
+                    <span data-i18n="tabNoVNC">noVNC 桌面</span>
+                </button>
+                <button id="tab-left-xorg" type="button" onclick="switchLeftMode('xorg')"
+                    class="px-2.5 py-1 rounded-md font-medium transition flex items-center gap-1.5 text-gray-400 hover:text-gray-200 hover:bg-gray-800/80 cursor-pointer select-none"
+                    title="Xorg GUI 視窗模式 (Linux/WSL2/Docker DISPLAY:0)">
+                    <i data-lucide="layout-grid" class="w-3.5 h-3.5 text-emerald-400"></i>
+                    <span data-i18n="tabXorg">Xorg 視窗</span>
+                </button>
+            </div>
+
+            <!-- 終端機模式控制項 (Terminal Actions) -->
+            <div id="actions-left-term" class="flex items-center gap-3">
                 <button id="btn-export-log"
                     class="text-xs text-blue-400 hover:text-blue-300 flex items-center gap-1 font-medium transition"
                     title="匯出終端機日誌" data-i18n-title="tooltipExportLog">
@@ -307,8 +325,42 @@
                     <i data-lucide="eraser" class="w-3.5 h-3.5"></i> <span data-i18n="clearTerm">清除畫面</span>
                 </button>
             </div>
+
+            <!-- noVNC 模式控制項 (noVNC Actions) -->
+            <div id="actions-left-novnc" class="flex items-center gap-2 hidden">
+                <button id="btn-novnc-cad" type="button" onclick="sendNoVncCtrlAltDel()"
+                    class="text-xs px-2 py-0.5 rounded bg-gray-800 hover:bg-gray-700 text-amber-300 border border-amber-600/40 flex items-center gap-1 font-mono transition"
+                    title="發送 Ctrl+Alt+Delete 組合鍵">
+                    <span>Ctrl+Alt+Del</span>
+                </button>
+                <button id="btn-novnc-fs" type="button" onclick="toggleNoVncFullscreen()"
+                    class="text-xs px-2 py-0.5 rounded bg-gray-800 hover:bg-gray-700 text-blue-300 border border-blue-600/40 flex items-center gap-1 transition"
+                    title="全螢幕顯示桌面">
+                    <i data-lucide="maximize" class="w-3 h-3"></i> <span data-i18n="novncFullscreen">全螢幕</span>
+                </button>
+            </div>
+
+            <!-- Xorg 模式控制項 (Xorg Actions) -->
+            <div id="actions-left-xorg" class="flex items-center gap-2 hidden">
+                <button id="btn-xorg-wizard" type="button" onclick="openXorgWizardModal()"
+                    class="text-xs px-2 py-0.5 rounded bg-emerald-950/80 hover:bg-emerald-900 text-emerald-300 border border-emerald-600/50 flex items-center gap-1 font-medium transition"
+                    title="WSL2 / Linux Xorg 一鍵啟動精靈與指令範例">
+                    <i data-lucide="sparkles" class="w-3 h-3 text-emerald-400"></i> <span data-i18n="xorgLaunchWizard">啟動精靈</span>
+                </button>
+                <button id="btn-xorg-alttab" type="button" onclick="sendXorgKeyCombo('alttab')"
+                    class="text-xs px-2 py-0.5 rounded bg-gray-800 hover:bg-gray-700 text-indigo-300 border border-indigo-600/40 flex items-center gap-1 font-mono transition"
+                    title="發送 Alt+Tab 切換視窗">
+                    <span>Alt+Tab</span>
+                </button>
+                <button id="btn-xorg-fs" type="button" onclick="toggleXorgFullscreen()"
+                    class="text-xs px-2 py-0.5 rounded bg-gray-800 hover:bg-gray-700 text-blue-300 border border-blue-600/40 flex items-center gap-1 transition"
+                    title="全螢幕顯示 Xorg 視窗">
+                    <i data-lucide="maximize" class="w-3 h-3"></i> <span data-i18n="novncFullscreen">全螢幕</span>
+                </button>
+            </div>
         </div>
 
+        <div id="view-container-term" class="flex-1 flex flex-col min-h-0 min-w-0">
         <div
             class="bg-gray-800 px-3 py-2 flex flex-wrap items-center gap-2.5 border-b border-gray-700 text-xs shrink-0">
             <select id="conn-protocol"
@@ -319,6 +371,8 @@
                 <option value="webserial" class="text-yellow-400 font-bold" data-i18n="protoWebSerial">Web Serial
                     (瀏覽器直連)</option>
                 <option value="serial" data-i18n="protoSerial">後端 Serial (限 Agent)</option>
+                <option value="novnc" class="text-blue-400 font-semibold" data-i18n="protoNoVNC">noVNC (HTML5 桌面)</option>
+                <option value="xorg" class="text-emerald-400 font-semibold" data-i18n="protoXorg">Xorg GUI (Linux/WSL)</option>
             </select>
 
             <div id="conn-fields" class="flex flex-wrap items-center gap-2 flex-1"></div>
@@ -418,6 +472,173 @@
             <span id="term-prompt" class="text-green-400 text-sm font-mono font-bold">$</span>
             <input id="term-input" type="text"
                 class="flex-1 bg-transparent text-sm font-mono text-gray-200 focus:outline-none" placeholder="輸入指令...">
+        </div>
+        </div>
+
+        <!-- noVNC HTML5 遠端桌面視圖 (Remote Desktop View) -->
+        <div id="view-container-novnc" class="flex-1 flex flex-col min-h-0 min-w-0 bg-gray-950 hidden">
+            <!-- noVNC 連線工具列 (Toolbar) -->
+            <div class="bg-gray-900/90 px-3 py-2 flex flex-wrap items-center gap-2 border-b border-gray-800 text-xs shrink-0">
+                <div class="flex items-center gap-1 bg-black/60 px-2 py-1 rounded border border-gray-800">
+                    <span class="text-gray-400 font-mono">Host:</span>
+                    <input id="novnc-host" type="text" value="127.0.0.1" class="bg-transparent text-white w-24 font-mono focus:outline-none" placeholder="127.0.0.1">
+                </div>
+                <div class="flex items-center gap-1 bg-black/60 px-2 py-1 rounded border border-gray-800">
+                    <span class="text-gray-400 font-mono">Port:</span>
+                    <input id="novnc-port" type="number" value="6080" class="bg-transparent text-white w-16 font-mono focus:outline-none" placeholder="6080">
+                </div>
+                <div class="flex items-center gap-1 bg-black/60 px-2 py-1 rounded border border-gray-800">
+                    <span class="text-gray-400 font-mono">Path:</span>
+                    <input id="novnc-path" type="text" value="websockify" class="bg-transparent text-white w-20 font-mono focus:outline-none" placeholder="websockify">
+                </div>
+                <div class="flex items-center gap-1 bg-black/60 px-2 py-1 rounded border border-gray-800">
+                    <span class="text-gray-400 font-mono">Pwd:</span>
+                    <input id="novnc-password" type="password" class="bg-transparent text-white w-20 font-mono focus:outline-none" placeholder="選填密碼">
+                </div>
+                
+                <label class="flex items-center gap-1 text-gray-400 cursor-pointer select-none text-[11px]">
+                    <input id="novnc-view-only" type="checkbox" class="rounded bg-gray-800 border-gray-700 text-purple-600 focus:ring-0">
+                    <span>僅檢視</span>
+                </label>
+
+                <label class="flex items-center gap-1 text-gray-400 cursor-pointer select-none text-[11px]">
+                    <input id="novnc-mode-iframe" type="checkbox" class="rounded bg-gray-800 border-gray-700 text-blue-600 focus:ring-0">
+                    <span>Web 模式</span>
+                </label>
+
+                <button id="btn-novnc-probe" type="button" onclick="probeVncPort('novnc')"
+                    class="px-2 py-1 rounded bg-gray-800 hover:bg-gray-700 text-cyan-300 border border-cyan-700/50 flex items-center gap-1 transition text-xs cursor-pointer"
+                    title="測試 8001 後端 TCP 探測連接埠">
+                    <i data-lucide="activity" class="w-3.5 h-3.5"></i> <span>探測</span>
+                </button>
+
+                <button id="btn-novnc-connect" type="button" onclick="handleNoVncConnect()"
+                    class="bg-blue-600 hover:bg-blue-500 text-white px-3 py-1 rounded-md transition flex items-center gap-1.5 font-medium shadow-sm ml-auto text-xs cursor-pointer">
+                    <i data-lucide="play" class="w-3.5 h-3.5 fill-current"></i> <span data-i18n="novncConnect">連線桌面</span>
+                </button>
+                <button id="btn-novnc-disconnect" type="button" onclick="handleNoVncDisconnect()"
+                    class="bg-red-600 hover:bg-red-500 text-white px-3 py-1 rounded-md transition flex items-center gap-1.5 font-medium shadow-sm hidden ml-auto text-xs cursor-pointer">
+                    <i data-lucide="power-off" class="w-3.5 h-3.5"></i> <span data-i18n="novncDisconnect">斷開連線</span>
+                </button>
+            </div>
+
+            <!-- noVNC 狀態列 (Status bar) -->
+            <div class="px-3 py-1 bg-black/40 border-b border-gray-800/80 text-[11px] font-mono flex items-center justify-between text-gray-400 shrink-0">
+                <span id="novnc-status" class="flex items-center gap-1.5">
+                    <span class="w-2 h-2 rounded-full bg-gray-500"></span> <span>未連線 (請確認 websockify 服務或 VNC 伺服器運作中)</span>
+                </span>
+                <div class="flex items-center gap-2">
+                    <span class="text-gray-500">快速預設:</span>
+                    <button type="button" onclick="applyVncPreset('novnc', '127.0.0.1', 6080, 'websockify')" class="hover:text-blue-300 underline cursor-pointer">本機 6080</button>
+                    <button type="button" onclick="applyVncPreset('novnc', '127.0.0.1', 5900, '')" class="hover:text-blue-300 underline cursor-pointer">VNC 5900</button>
+                    <button type="button" onclick="applyVncPreset('novnc', '192.168.1.100', 6080, 'websockify')" class="hover:text-blue-300 underline cursor-pointer">區網 6080</button>
+                </div>
+            </div>
+
+            <!-- 桌面顯示畫布 (Desktop Display Area) -->
+            <div id="novnc-screen-wrapper" class="flex-1 relative bg-black overflow-hidden flex items-center justify-center select-none">
+                <!-- 原生 RFB Canvas 容器 -->
+                <div id="novnc-canvas-container" class="w-full h-full flex items-center justify-center relative">
+                    <div id="novnc-placeholder" class="text-center text-gray-500 p-6 max-w-md">
+                        <div class="w-16 h-16 rounded-full bg-gray-900 border border-gray-800 flex items-center justify-center mx-auto mb-3 text-blue-400">
+                            <i data-lucide="monitor" class="w-8 h-8"></i>
+                        </div>
+                        <h3 class="text-sm font-bold text-gray-300 mb-1">noVNC HTML5 遠端桌面未連線</h3>
+                        <p class="text-xs text-gray-500 leading-relaxed mb-4">支援標準 RFB 協定、Tight/ZRLE 編碼，相容 x11vnc、TigerVNC、TightVNC 及 websockify 代理。</p>
+                        <button type="button" onclick="handleNoVncConnect()" class="px-4 py-1.5 bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold rounded-lg transition shadow-md inline-flex items-center gap-1.5 cursor-pointer">
+                            <i data-lucide="plug" class="w-3.5 h-3.5"></i> 立即連線
+                        </button>
+                    </div>
+                </div>
+                <!-- Iframe Web 網頁嵌入模式 -->
+                <iframe id="novnc-iframe" class="w-full h-full border-0 hidden" allowfullscreen></iframe>
+            </div>
+        </div>
+
+        <!-- Xorg GUI 虛擬視窗視圖 (X11 Display View) -->
+        <div id="view-container-xorg" class="flex-1 flex flex-col min-h-0 min-w-0 bg-gray-950 hidden">
+            <!-- Xorg 工具列 (Toolbar) -->
+            <div class="bg-gray-900/90 px-3 py-2 flex flex-wrap items-center gap-2 border-b border-gray-800 text-xs shrink-0">
+                <div class="flex items-center gap-1 bg-black/60 px-2 py-1 rounded border border-gray-800">
+                    <span class="text-emerald-400 font-bold font-mono">DISPLAY:</span>
+                    <input id="xorg-display-num" type="text" value=":0" class="bg-transparent text-emerald-300 w-12 font-mono font-bold focus:outline-none" placeholder=":0">
+                </div>
+                <div class="flex items-center gap-1 bg-black/60 px-2 py-1 rounded border border-gray-800">
+                    <span class="text-gray-400 font-mono">Port:</span>
+                    <input id="xorg-port" type="number" value="6080" class="bg-transparent text-white w-16 font-mono focus:outline-none" placeholder="6080">
+                </div>
+                <div class="flex items-center gap-1 bg-black/60 px-2 py-1 rounded border border-gray-800">
+                    <span class="text-gray-400 font-mono">解析度:</span>
+                    <select id="xorg-resolution" class="bg-transparent text-white text-xs font-mono focus:outline-none cursor-pointer">
+                        <option value="1280x720">1280x720 (720p HD)</option>
+                        <option value="1920x1080" selected>1920x1080 (1080p FHD)</option>
+                        <option value="1024x768">1024x768 (4:3)</option>
+                        <option value="1366x768">1366x768 (WXGA)</option>
+                        <option value="1600x900">1600x900 (HD+)</option>
+                    </select>
+                </div>
+                <div class="flex items-center gap-1 bg-black/60 px-2 py-1 rounded border border-gray-800">
+                    <span class="text-gray-400 font-mono">環境:</span>
+                    <select id="xorg-wm" class="bg-transparent text-white text-xs font-mono focus:outline-none cursor-pointer">
+                        <option value="fluxbox" selected>Fluxbox (極速輕量)</option>
+                        <option value="xfce4">XFCE4 (完整桌面)</option>
+                        <option value="openbox">Openbox</option>
+                        <option value="standalone">單一 App (Direct)</option>
+                    </select>
+                </div>
+
+                <button id="btn-xorg-probe" type="button" onclick="probeVncPort('xorg')"
+                    class="px-2 py-1 rounded bg-gray-800 hover:bg-gray-700 text-cyan-300 border border-cyan-700/50 flex items-center gap-1 transition text-xs cursor-pointer"
+                    title="測試 Xorg 服務埠連線">
+                    <i data-lucide="activity" class="w-3.5 h-3.5"></i> <span>探測</span>
+                </button>
+
+                <button id="btn-xorg-connect" type="button" onclick="handleXorgConnect()"
+                    class="bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-1 rounded-md transition flex items-center gap-1.5 font-medium shadow-sm ml-auto text-xs cursor-pointer">
+                    <i data-lucide="play" class="w-3.5 h-3.5 fill-current"></i> <span data-i18n="novncConnect">連線視窗</span>
+                </button>
+                <button id="btn-xorg-disconnect" type="button" onclick="handleXorgDisconnect()"
+                    class="bg-red-600 hover:bg-red-500 text-white px-3 py-1 rounded-md transition flex items-center gap-1.5 font-medium shadow-sm hidden ml-auto text-xs cursor-pointer">
+                    <i data-lucide="power-off" class="w-3.5 h-3.5"></i> <span data-i18n="novncDisconnect">中斷視窗</span>
+                </button>
+            </div>
+
+            <!-- Xorg 狀態與快捷鍵列 (Status & Shortcut Bar) -->
+            <div class="px-3 py-1 bg-black/40 border-b border-gray-800/80 text-[11px] font-mono flex items-center justify-between text-gray-400 shrink-0">
+                <span id="xorg-status" class="flex items-center gap-1.5">
+                    <span class="w-2 h-2 rounded-full bg-gray-500"></span> <span>Xorg 視窗伺服器未連線 (DISPLAY=:0)</span>
+                </span>
+                <div class="flex items-center gap-2">
+                    <span class="text-gray-500">視窗快捷鍵:</span>
+                    <button type="button" onclick="sendXorgKeyCombo('alttab')" class="px-1.5 py-0.5 rounded bg-gray-800 hover:bg-gray-700 text-gray-300 border border-gray-700 cursor-pointer">Alt+Tab</button>
+                    <button type="button" onclick="sendXorgKeyCombo('altf4')" class="px-1.5 py-0.5 rounded bg-gray-800 hover:bg-gray-700 text-rose-300 border border-gray-700 cursor-pointer">Alt+F4</button>
+                    <button type="button" onclick="openXorgWizardModal()" class="text-emerald-400 hover:underline cursor-pointer">一鍵配置精靈</button>
+                </div>
+            </div>
+
+            <!-- Xorg 顯示畫布 (Display Area) -->
+            <div id="xorg-screen-wrapper" class="flex-1 relative bg-black overflow-hidden flex items-center justify-center select-none">
+                <div id="xorg-canvas-container" class="w-full h-full flex items-center justify-center relative">
+                    <div id="xorg-placeholder" class="text-center text-gray-500 p-6 max-w-lg">
+                        <div class="w-16 h-16 rounded-full bg-gray-900 border border-gray-800 flex items-center justify-center mx-auto mb-3 text-emerald-400">
+                            <i data-lucide="layout-grid" class="w-8 h-8"></i>
+                        </div>
+                        <h3 class="text-sm font-bold text-gray-300 mb-1">Xorg GUI 虛擬視窗環境 (DISPLAY=:0)</h3>
+                        <p class="text-xs text-gray-500 leading-relaxed mb-4">
+                            可於 Windows/WSL2 或 Docker 中無縫執行 Linux GUI 圖形化程式（如 Firefox, VS Code, GIMP, XFCE4 桌面），並透過 HTML5 零延遲畫布呈現。
+                        </p>
+                        <div class="flex items-center justify-center gap-2">
+                            <button type="button" onclick="openXorgWizardModal()" class="px-3.5 py-1.5 bg-emerald-700 hover:bg-emerald-600 text-white text-xs font-semibold rounded-lg transition shadow-md inline-flex items-center gap-1.5 cursor-pointer">
+                                <i data-lucide="terminal" class="w-3.5 h-3.5"></i> 查看 WSL 啟動指令
+                            </button>
+                            <button type="button" onclick="handleXorgConnect()" class="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold rounded-lg transition shadow-md inline-flex items-center gap-1.5 cursor-pointer">
+                                <i data-lucide="play" class="w-3.5 h-3.5 fill-current"></i> 連線 DISPLAY:0
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <iframe id="xorg-iframe" class="w-full h-full border-0 hidden" allowfullscreen></iframe>
+            </div>
         </div>
     </div>
 
@@ -2513,6 +2734,15 @@
                 protoTelnet: "TCP/IP: Telnet 遠端",
                 protoWebSerial: "Web Serial (瀏覽器直連)",
                 protoSerial: "後端 Serial (限 Agent)",
+                tabTerm: "終端機",
+                tabNoVNC: "noVNC 桌面",
+                tabXorg: "Xorg 視窗",
+                protoNoVNC: "noVNC (HTML5 桌面)",
+                protoXorg: "Xorg GUI (Linux/WSL)",
+                novncConnect: "連線桌面",
+                novncDisconnect: "斷開連線",
+                novncFullscreen: "全螢幕",
+                xorgLaunchWizard: "啟動精靈",
                 termReady: "終端機已就緒。當前環境：[本地 Shell]",
                 daemonChecking: "常駐程式 (8001): 檢查中...",
                 daemonOnline: "常駐程式 (8001) 已連線",
@@ -2953,6 +3183,15 @@
                 protoTelnet: "TCP/IP: Telnet",
                 protoWebSerial: "Web Serial (Browser Direct)",
                 protoSerial: "Backend Serial (Agent Only)",
+                tabTerm: "Terminal",
+                tabNoVNC: "noVNC Desktop",
+                tabXorg: "Xorg GUI",
+                protoNoVNC: "noVNC (HTML5 Desktop)",
+                protoXorg: "Xorg GUI (Linux/WSL)",
+                novncConnect: "Connect",
+                novncDisconnect: "Disconnect",
+                novncFullscreen: "Fullscreen",
+                xorgLaunchWizard: "Launch Wizard",
                 termReady: "Terminal Ready. Current Context: [Local Shell]",
                 daemonChecking: "Daemon (8001): Checking...",
                 daemonOnline: "Daemon (8001) Online",
@@ -4777,6 +5016,14 @@
                                         <p class="text-[10px] text-gray-400 mt-0.5">線上多格式文件轉 Markdown Web 應用 (雙欄預覽/批次打包) · <span class="text-green-600 font-semibold">MIT</span></p>
                                     </div>
                                 </div>
+                                <div class="flex items-start gap-2.5 p-2.5 bg-gray-900/60 rounded-lg border border-gray-800/60">
+                                    <span class="shrink-0 w-2 h-2 rounded-full bg-blue-400 mt-1"></span>
+                                    <div>
+                                        <a href="https://github.com/novnc/noVNC" target="_blank" class="text-blue-400 hover:text-blue-300 font-bold text-[11px] underline">@novnc/novnc</a>
+                                        <span class="text-[10px] text-gray-500 ml-1">— The noVNC Authors</span>
+                                        <p class="text-[10px] text-gray-400 mt-0.5">HTML5 VNC/RFB 遠端桌面客戶端與 WebSocket 直連 · <span class="text-green-600 font-semibold">MPL 2.0</span></p>
+                                    </div>
+                                </div>
                             </div>
                         </div>
 
@@ -5034,6 +5281,10 @@
                 connProtocolSel.options[2].textContent = t('protoTelnet');
                 connProtocolSel.options[3].textContent = t('protoWebSerial');
                 connProtocolSel.options[4].textContent = t('protoSerial');
+                if (connProtocolSel.options.length >= 7) {
+                    connProtocolSel.options[5].textContent = t('protoNoVNC');
+                    connProtocolSel.options[6].textContent = t('protoXorg');
+                }
             }
 
             // ── 進度列文字翻譯 ──
@@ -7931,13 +8182,33 @@ The system will automatically merge all parts into a single completed file witho
                         <select id="cfg-baud" class="bg-gray-900 border border-gray-700 rounded px-2 py-1 ml-1 text-xs font-mono">
                             <option value="9600">9600</option><option value="115200" selected>115200</option>
                         </select>`;
+            } else if (proto === 'novnc') {
+                html = `<span class="text-blue-400 font-medium flex items-center gap-1"><i data-lucide="monitor" class="w-3.5 h-3.5"></i> noVNC 桌面模式</span>
+                        <button type="button" onclick="switchLeftMode('novnc')" class="px-2 py-0.5 bg-blue-600 hover:bg-blue-500 text-white rounded text-[11px] font-medium cursor-pointer">切換至桌面</button>`;
+            } else if (proto === 'xorg') {
+                html = `<span class="text-emerald-400 font-medium flex items-center gap-1"><i data-lucide="layout-grid" class="w-3.5 h-3.5"></i> Xorg 視窗模式 (DISPLAY=:0)</span>
+                        <button type="button" onclick="switchLeftMode('xorg')" class="px-2 py-0.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded text-[11px] font-medium cursor-pointer">切換至視窗</button>`;
+            } else if (proto === 'novnc') {
+                html = `<span class="text-blue-400 font-medium flex items-center gap-1"><i data-lucide="monitor" class="w-3.5 h-3.5"></i> noVNC 桌面模式</span>
+                        <button type="button" onclick="switchLeftMode('novnc')" class="px-2 py-0.5 bg-blue-600 hover:bg-blue-500 text-white rounded text-[11px] font-medium cursor-pointer">切換至桌面</button>`;
+            } else if (proto === 'xorg') {
+                html = `<span class="text-emerald-400 font-medium flex items-center gap-1"><i data-lucide="layout-grid" class="w-3.5 h-3.5"></i> Xorg 視窗模式 (DISPLAY=:0)</span>
+                        <button type="button" onclick="switchLeftMode('xorg')" class="px-2 py-0.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded text-[11px] font-medium cursor-pointer">切換至視窗</button>`;
             }
             connFields.innerHTML = html;
         }
 
         connProtocol.addEventListener('change', () => {
-            renderConnFields();
-            termInput.focus();
+            const val = connProtocol.value;
+            if (val === 'novnc') {
+                switchLeftMode('novnc');
+            } else if (val === 'xorg') {
+                switchLeftMode('xorg');
+            } else {
+                switchLeftMode('term');
+                renderConnFields();
+                termInput.focus();
+            }
         });
 
         async function connectWebSerial(baudRate) {
@@ -12765,6 +13036,18 @@ Important guidelines:
                 detail: `文件數: ${appSettings?.ragDocs?.length || 0} | 切塊演算法: ${hasChunkFn ? 'OK' : 'MISSING'}`
             });
 
+            // 8. noVNC 遠端桌面與 Xorg 視窗模組支援
+            const hasSwitchMode = typeof switchLeftMode === 'function';
+            const hasNovncConn = typeof handleNoVncConnect === 'function';
+            const hasXorgConn = typeof handleXorgConnect === 'function';
+            const novncOk = hasSwitchMode && hasNovncConn && hasXorgConn;
+            tests.push({
+                title: '8. noVNC 遠端桌面與 Xorg GUI 視窗模式',
+                desc: novncOk ? '已就緒：支援 noVNC HTML5 遠端桌面、Xorg 虛擬視窗與 WSL2 快速啟動精靈' : 'noVNC / Xorg 支援函式未完全就緒',
+                passed: novncOk,
+                detail: `switchLeftMode: ${hasSwitchMode ? 'OK' : 'MISSING'} | noVNC: ${hasNovncConn ? 'OK' : 'MISSING'} | Xorg: ${hasXorgConn ? 'OK' : 'MISSING'}`
+            });
+
             // 渲染列表
             const total = tests.length;
             const passedCount = tests.filter(t => t.passed).length;
@@ -12815,6 +13098,417 @@ Important guidelines:
         window.runDiagnosticsTests = runDiagnosticsTests;
 
         window.openDaemonModal = openDaemonModal;
+
+        // ── 左側工作區模式切換器 (Terminal / noVNC / Xorg) ──────────────────────
+        let currentLeftMode = 'term';
+        let rfbNovncInstance = null;
+        let rfbXorgInstance = null;
+
+        function switchLeftMode(mode) {
+            if (!['term', 'novnc', 'xorg'].includes(mode)) mode = 'term';
+            currentLeftMode = mode;
+
+            // 1. 切換分頁按鈕視覺樣式
+            const tabTerm = document.getElementById('tab-left-term');
+            const tabNovnc = document.getElementById('tab-left-novnc');
+            const tabXorg = document.getElementById('tab-left-xorg');
+
+            const activeCls = ['bg-purple-600', 'text-white', 'shadow-sm'];
+            const inactiveCls = ['text-gray-400', 'hover:text-gray-200', 'hover:bg-gray-800/80'];
+
+            if (tabTerm) {
+                tabTerm.classList.remove('bg-purple-600', 'text-white', 'shadow-sm', 'text-gray-400', 'hover:text-gray-200', 'hover:bg-gray-800/80');
+                if (mode === 'term') tabTerm.classList.add(...activeCls);
+                else tabTerm.classList.add(...inactiveCls);
+            }
+            if (tabNovnc) {
+                tabNovnc.classList.remove('bg-blue-600', 'text-white', 'shadow-sm', 'text-gray-400', 'hover:text-gray-200', 'hover:bg-gray-800/80');
+                if (mode === 'novnc') tabNovnc.classList.add('bg-blue-600', 'text-white', 'shadow-sm');
+                else tabNovnc.classList.add(...inactiveCls);
+            }
+            if (tabXorg) {
+                tabXorg.classList.remove('bg-emerald-600', 'text-white', 'shadow-sm', 'text-gray-400', 'hover:text-gray-200', 'hover:bg-gray-800/80');
+                if (mode === 'xorg') tabXorg.classList.add('bg-emerald-600', 'text-white', 'shadow-sm');
+                else tabXorg.classList.add(...inactiveCls);
+            }
+
+            // 2. 切換容器可見性
+            const viewTerm = document.getElementById('view-container-term');
+            const viewNovnc = document.getElementById('view-container-novnc');
+            const viewXorg = document.getElementById('view-container-xorg');
+
+            if (viewTerm) viewTerm.classList.toggle('hidden', mode !== 'term');
+            if (viewNovnc) viewNovnc.classList.toggle('hidden', mode !== 'novnc');
+            if (viewXorg) viewXorg.classList.toggle('hidden', mode !== 'xorg');
+
+            // 3. 切換動作按鈕群組
+            const actTerm = document.getElementById('actions-left-term');
+            const actNovnc = document.getElementById('actions-left-novnc');
+            const actXorg = document.getElementById('actions-left-xorg');
+
+            if (actTerm) actTerm.classList.toggle('hidden', mode !== 'term');
+            if (actNovnc) actNovnc.classList.toggle('hidden', mode !== 'novnc');
+            if (actXorg) actXorg.classList.toggle('hidden', mode !== 'xorg');
+
+            // 4. 同步更新 #conn-protocol 選單
+            const connProto = document.getElementById('conn-protocol');
+            if (connProto) {
+                if (mode === 'novnc' && connProto.value !== 'novnc') connProto.value = 'novnc';
+                else if (mode === 'xorg' && connProto.value !== 'xorg') connProto.value = 'xorg';
+                else if (mode === 'term' && (connProto.value === 'novnc' || connProto.value === 'xorg')) {
+                    connProto.value = (typeof activeTermContext !== 'undefined' && activeTermContext.protocol) ? activeTermContext.protocol : 'shell';
+                }
+            }
+
+            if (window.lucide) lucide.createIcons();
+        }
+        window.switchLeftMode = switchLeftMode;
+
+        // ── noVNC 模組動態載入器 (Local-First Bundle with Fallback) ─────────────
+        async function getRFBClass() {
+            try {
+                const mod = await import('./assets/novnc.bundle.mjs');
+                return mod.default || mod.RFB || mod;
+            } catch (err) {
+                console.warn('[noVNC] 本地 bundle 載入失敗，嘗試 CDN fallback:', err);
+                const mod = await import('https://esm.sh/@novnc/novnc@1.7.0/es2022/novnc.bundle.mjs');
+                return mod.default || mod.RFB || mod;
+            }
+        }
+
+        // ── TCP 埠號探針端點呼叫 (/api/vnc/probe) ─────────────────────────────────
+        async function probeVncPort(target) {
+            const isXorg = (target === 'xorg');
+            const host = (document.getElementById(isXorg ? 'xorg-host' : 'novnc-host')?.value || '127.0.0.1').trim();
+            const port = parseInt(document.getElementById(isXorg ? 'xorg-port' : 'novnc-port')?.value || '6080');
+            const statusEl = document.getElementById(isXorg ? 'xorg-status' : 'novnc-status');
+
+            if (statusEl) {
+                statusEl.innerHTML = `<span class="w-2 h-2 rounded-full bg-yellow-500 animate-ping"></span> <span>探測 ${host}:${port} 中...</span>`;
+            }
+
+            try {
+                const ep = (typeof appSettings !== 'undefined' && appSettings?.daemonEndpoint) ? appSettings.daemonEndpoint : 'http://127.0.0.1:8001';
+                const resp = await fetch(`${ep}/api/vnc/probe?host=${encodeURIComponent(host)}&port=${port}`);
+                if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+                const data = await resp.json();
+                if (data.open) {
+                    if (statusEl) {
+                        statusEl.innerHTML = `<span class="w-2 h-2 rounded-full bg-emerald-500"></span> <span class="text-emerald-400">連接埠 ${host}:${port} 監聽中 (服務就緒)</span>`;
+                    }
+                } else {
+                    if (statusEl) {
+                        statusEl.innerHTML = `<span class="w-2 h-2 rounded-full bg-rose-500"></span> <span class="text-rose-400">連接埠 ${host}:${port} 尚未啟動或拒絕連線</span>`;
+                    }
+                }
+            } catch (err) {
+                if (statusEl) {
+                    statusEl.innerHTML = `<span class="w-2 h-2 rounded-full bg-amber-500"></span> <span class="text-amber-400">探測失敗 (常駐 8001 服務未啟動): ${err.message}</span>`;
+                }
+            }
+        }
+        window.probeVncPort = probeVncPort;
+
+        // ── 快速切換預設值 ───────────────────────────────────────────────────────
+        function applyVncPreset(mode, host, port, path) {
+            const isXorg = (mode === 'xorg');
+            const hostEl = document.getElementById(isXorg ? 'xorg-host' : 'novnc-host');
+            const portEl = document.getElementById(isXorg ? 'xorg-port' : 'novnc-port');
+            const pathEl = document.getElementById(isXorg ? 'xorg-path' : 'novnc-path');
+            if (hostEl) hostEl.value = host;
+            if (portEl) portEl.value = port;
+            if (pathEl) pathEl.value = path;
+            probeVncPort(mode);
+        }
+        window.applyVncPreset = applyVncPreset;
+
+        // ── noVNC 連線核心 ───────────────────────────────────────────────────────
+        async function handleNoVncConnect() {
+            const host = (document.getElementById('novnc-host')?.value || '127.0.0.1').trim();
+            const port = parseInt(document.getElementById('novnc-port')?.value || '6080');
+            const path = (document.getElementById('novnc-path')?.value || 'websockify').trim();
+            const password = document.getElementById('novnc-password')?.value || '';
+            const viewOnly = !!document.getElementById('novnc-view-only')?.checked;
+            const useIframe = !!document.getElementById('novnc-mode-iframe')?.checked;
+
+            const statusEl = document.getElementById('novnc-status');
+            const btnConn = document.getElementById('btn-novnc-connect');
+            const btnDisc = document.getElementById('btn-novnc-disconnect');
+            const canvasContainer = document.getElementById('novnc-canvas-container');
+            const iframeEl = document.getElementById('novnc-iframe');
+            const placeholder = document.getElementById('novnc-placeholder');
+
+            if (useIframe) {
+                // Iframe 網頁模式 (直接嵌入現有 noVNC Web 服務)
+                if (canvasContainer) canvasContainer.classList.add('hidden');
+                if (iframeEl) {
+                    iframeEl.classList.remove('hidden');
+                    const cleanPath = path ? `${path}/` : '';
+                    iframeEl.src = `http://${host}:${port}/${cleanPath}vnc.html?host=${host}&port=${port}&path=${encodeURIComponent(path)}&autoconnect=true&password=${encodeURIComponent(password)}`;
+                }
+                if (statusEl) statusEl.innerHTML = `<span class="w-2 h-2 rounded-full bg-emerald-500"></span> <span class="text-emerald-400">Web 嵌入模式載入中 (http://${host}:${port}/...)</span>`;
+                if (btnConn) btnConn.classList.add('hidden');
+                if (btnDisc) btnDisc.classList.remove('hidden');
+                return;
+            }
+
+            // Canvas 原生 RFB WebSocket 模式
+            if (iframeEl) iframeEl.classList.add('hidden');
+            if (canvasContainer) canvasContainer.classList.remove('hidden');
+            if (placeholder) placeholder.classList.add('hidden');
+
+            if (statusEl) {
+                statusEl.innerHTML = `<span class="w-2 h-2 rounded-full bg-yellow-500 animate-ping"></span> <span>連線中: ws://${host}:${port}/${path}...</span>`;
+            }
+
+            try {
+                const RFB = await getRFBClass();
+                const wsProto = window.location.protocol === 'https:' ? 'wss' : 'ws';
+                const url = `${wsProto}://${host}:${port}/${path}`;
+
+                if (rfbNovncInstance) {
+                    try { rfbNovncInstance.disconnect(); } catch(e) {}
+                    rfbNovncInstance = null;
+                }
+
+                rfbNovncInstance = new RFB(canvasContainer, url, {
+                    credentials: { password: password },
+                    shared: true
+                });
+
+                rfbNovncInstance.viewOnly = viewOnly;
+                rfbNovncInstance.scaleViewport = true;
+                rfbNovncInstance.resizeSession = true;
+
+                rfbNovncInstance.addEventListener('connect', () => {
+                    if (statusEl) {
+                        statusEl.innerHTML = `<span class="w-2 h-2 rounded-full bg-emerald-500"></span> <span class="text-emerald-400">已連線至 noVNC 桌面 (${host}:${port})</span>`;
+                    }
+                    if (btnConn) btnConn.classList.add('hidden');
+                    if (btnDisc) btnDisc.classList.remove('hidden');
+                });
+
+                rfbNovncInstance.addEventListener('disconnect', (e) => {
+                    if (statusEl) {
+                        statusEl.innerHTML = `<span class="w-2 h-2 rounded-full bg-rose-500"></span> <span class="text-rose-400">已斷開桌面連線 ${e.detail?.clean ? '' : '(異常關閉)'}</span>`;
+                    }
+                    if (btnConn) btnConn.classList.remove('hidden');
+                    if (btnDisc) btnDisc.classList.add('hidden');
+                    if (placeholder) placeholder.classList.remove('hidden');
+                });
+
+                rfbNovncInstance.addEventListener('securityfailure', (e) => {
+                    alert('noVNC 認證失敗：' + (e.detail?.reason || '密碼錯誤或握手失敗'));
+                });
+            } catch (err) {
+                if (statusEl) {
+                    statusEl.innerHTML = `<span class="w-2 h-2 rounded-full bg-rose-500"></span> <span class="text-rose-400">連線失敗: ${err.message}</span>`;
+                }
+                if (placeholder) placeholder.classList.remove('hidden');
+                alert('noVNC 連線發生錯誤：' + err.message);
+            }
+        }
+        window.handleNoVncConnect = handleNoVncConnect;
+
+        function handleNoVncDisconnect() {
+            if (rfbNovncInstance) {
+                try { rfbNovncInstance.disconnect(); } catch(e) {}
+                rfbNovncInstance = null;
+            }
+            const iframeEl = document.getElementById('novnc-iframe');
+            if (iframeEl) {
+                iframeEl.src = 'about:blank';
+                iframeEl.classList.add('hidden');
+            }
+            const placeholder = document.getElementById('novnc-placeholder');
+            if (placeholder) placeholder.classList.remove('hidden');
+
+            const btnConn = document.getElementById('btn-novnc-connect');
+            const btnDisc = document.getElementById('btn-novnc-disconnect');
+            if (btnConn) btnConn.classList.remove('hidden');
+            if (btnDisc) btnDisc.classList.add('hidden');
+
+            const statusEl = document.getElementById('novnc-status');
+            if (statusEl) {
+                statusEl.innerHTML = `<span class="w-2 h-2 rounded-full bg-gray-500"></span> <span>已中斷連線</span>`;
+            }
+        }
+        window.handleNoVncDisconnect = handleNoVncDisconnect;
+
+        function sendNoVncCtrlAltDel() {
+            if (rfbNovncInstance && typeof rfbNovncInstance.sendCtrlAltDel === 'function') {
+                rfbNovncInstance.sendCtrlAltDel();
+            } else {
+                alert('目前未連線至 noVNC 桌面，無法發送 Ctrl+Alt+Del');
+            }
+        }
+        window.sendNoVncCtrlAltDel = sendNoVncCtrlAltDel;
+
+        function toggleNoVncFullscreen() {
+            const wrapper = document.getElementById('novnc-screen-wrapper');
+            if (!wrapper) return;
+            if (!document.fullscreenElement) {
+                wrapper.requestFullscreen().catch(err => console.warn(err));
+            } else {
+                document.exitFullscreen();
+            }
+        }
+        window.toggleNoVncFullscreen = toggleNoVncFullscreen;
+
+        // ── Xorg GUI 視窗連線核心 ────────────────────────────────────────────────
+        async function handleXorgConnect() {
+            const dpy = (document.getElementById('xorg-display-num')?.value || ':0').trim();
+            const port = parseInt(document.getElementById('xorg-port')?.value || '6080');
+            const host = '127.0.0.1';
+            const statusEl = document.getElementById('xorg-status');
+            const btnConn = document.getElementById('btn-xorg-connect');
+            const btnDisc = document.getElementById('btn-xorg-disconnect');
+            const canvasContainer = document.getElementById('xorg-canvas-container');
+            const placeholder = document.getElementById('xorg-placeholder');
+
+            if (canvasContainer) canvasContainer.classList.remove('hidden');
+            if (placeholder) placeholder.classList.add('hidden');
+
+            if (statusEl) {
+                statusEl.innerHTML = `<span class="w-2 h-2 rounded-full bg-yellow-500 animate-ping"></span> <span>連線 Xorg DISPLAY ${dpy} (Port ${port})...</span>`;
+            }
+
+            try {
+                const RFB = await getRFBClass();
+                const wsProto = window.location.protocol === 'https:' ? 'wss' : 'ws';
+                const url = `${wsProto}://${host}:${port}/websockify`;
+
+                if (rfbXorgInstance) {
+                    try { rfbXorgInstance.disconnect(); } catch(e) {}
+                    rfbXorgInstance = null;
+                }
+
+                rfbXorgInstance = new RFB(canvasContainer, url, { shared: true });
+                rfbXorgInstance.scaleViewport = true;
+                rfbXorgInstance.resizeSession = true;
+
+                rfbXorgInstance.addEventListener('connect', () => {
+                    if (statusEl) {
+                        statusEl.innerHTML = `<span class="w-2 h-2 rounded-full bg-emerald-500"></span> <span class="text-emerald-400">已連線至 Xorg (DISPLAY=${dpy} @ Port ${port})</span>`;
+                    }
+                    if (btnConn) btnConn.classList.add('hidden');
+                    if (btnDisc) btnDisc.classList.remove('hidden');
+                });
+
+                rfbXorgInstance.addEventListener('disconnect', (e) => {
+                    if (statusEl) {
+                        statusEl.innerHTML = `<span class="w-2 h-2 rounded-full bg-rose-500"></span> <span class="text-rose-400">Xorg 連線已斷開 ${e.detail?.clean ? '' : '(請確認 x11vnc/websockify 運作中)'}</span>`;
+                    }
+                    if (btnConn) btnConn.classList.remove('hidden');
+                    if (btnDisc) btnDisc.classList.add('hidden');
+                    if (placeholder) placeholder.classList.remove('hidden');
+                });
+            } catch (err) {
+                if (statusEl) {
+                    statusEl.innerHTML = `<span class="w-2 h-2 rounded-full bg-rose-500"></span> <span class="text-rose-400">連線失敗: ${err.message}</span>`;
+                }
+                if (placeholder) placeholder.classList.remove('hidden');
+                alert('Xorg 連線失敗：' + err.message + '\n請點擊「查看 WSL 啟動指令」檢視一鍵架設步驟。');
+            }
+        }
+        window.handleXorgConnect = handleXorgConnect;
+
+        function handleXorgDisconnect() {
+            if (rfbXorgInstance) {
+                try { rfbXorgInstance.disconnect(); } catch(e) {}
+                rfbXorgInstance = null;
+            }
+            const placeholder = document.getElementById('xorg-placeholder');
+            if (placeholder) placeholder.classList.remove('hidden');
+            const btnConn = document.getElementById('btn-xorg-connect');
+            const btnDisc = document.getElementById('btn-xorg-disconnect');
+            if (btnConn) btnConn.classList.remove('hidden');
+            if (btnDisc) btnDisc.classList.add('hidden');
+            const statusEl = document.getElementById('xorg-status');
+            if (statusEl) {
+                statusEl.innerHTML = `<span class="w-2 h-2 rounded-full bg-gray-500"></span> <span>已中斷 Xorg 視窗連線</span>`;
+            }
+        }
+        window.handleXorgDisconnect = handleXorgDisconnect;
+
+        function sendXorgKeyCombo(combo) {
+            if (!rfbXorgInstance) {
+                alert('目前尚未連線至 Xorg 視窗');
+                return;
+            }
+            if (combo === 'alttab') {
+                // 發送 Alt+Tab keysym
+                try {
+                    rfbXorgInstance.sendKey(0xffe9, 'AltLeft', true);
+                    rfbXorgInstance.sendKey(0xff09, 'Tab', true);
+                    rfbXorgInstance.sendKey(0xff09, 'Tab', false);
+                    rfbXorgInstance.sendKey(0xffe9, 'AltLeft', false);
+                } catch(e) { console.warn(e); }
+            } else if (combo === 'altf4') {
+                try {
+                    rfbXorgInstance.sendKey(0xffe9, 'AltLeft', true);
+                    rfbXorgInstance.sendKey(0xffbe, 'F4', true);
+                    rfbXorgInstance.sendKey(0xffbe, 'F4', false);
+                    rfbXorgInstance.sendKey(0xffe9, 'AltLeft', false);
+                } catch(e) { console.warn(e); }
+            }
+        }
+        window.sendXorgKeyCombo = sendXorgKeyCombo;
+
+        function toggleXorgFullscreen() {
+            const wrapper = document.getElementById('xorg-screen-wrapper');
+            if (!wrapper) return;
+            if (!document.fullscreenElement) {
+                wrapper.requestFullscreen().catch(err => console.warn(err));
+            } else {
+                document.exitFullscreen();
+            }
+        }
+        window.toggleXorgFullscreen = toggleXorgFullscreen;
+
+        // ── Xorg 快速啟動精靈互動函式 ───────────────────────────────────────────
+        function openXorgWizardModal() {
+            const m = document.getElementById('xorg-modal');
+            if (m) m.classList.remove('hidden');
+            if (window.lucide) lucide.createIcons();
+        }
+        function closeXorgWizardModal() {
+            const m = document.getElementById('xorg-modal');
+            if (m) m.classList.add('hidden');
+        }
+        window.openXorgWizardModal = openXorgWizardModal;
+        window.closeXorgWizardModal = closeXorgWizardModal;
+
+        function copyXorgCommands(scheme) {
+            const id = scheme === 'fluxbox' ? 'code-xorg-fluxbox' : 'code-xorg-singleapp';
+            const el = document.getElementById(id);
+            if (el) {
+                navigator.clipboard.writeText(el.innerText || el.textContent || '').then(() => {
+                    alert('已複製啟動指令至剪貼簿！可直接貼上於 WSL 終端機執行。');
+                }).catch(() => {
+                    alert('複製失敗，請手動選取文字複製。');
+                });
+            }
+        }
+        window.copyXorgCommands = copyXorgCommands;
+
+        async function runXorgCommandsInTerm(scheme) {
+            closeXorgWizardModal();
+            switchLeftMode('term');
+            const id = scheme === 'fluxbox' ? 'code-xorg-fluxbox' : 'code-xorg-singleapp';
+            const el = document.getElementById(id);
+            if (!el) return;
+            const raw = (el.innerText || el.textContent || '').trim();
+            const lines = raw.split('\n').map(l => l.trim()).filter(l => l && !l.startsWith('#'));
+            for (const cmd of lines) {
+                if (typeof sendCommandToTerminal === 'function') {
+                    await sendCommandToTerminal(cmd);
+                }
+            }
+            alert('已將 Xorg 啟動指令依序發送至終端機執行！完成後切換至「Xorg 視窗」分頁即可開始使用。');
+        }
+        window.runXorgCommandsInTerm = runXorgCommandsInTerm;
+
         window.openMarkItDownCenter = openMarkItDownCenter;
 
         // Open MarkItDown with Auto-Wakeup Daemon (Header Nav)
