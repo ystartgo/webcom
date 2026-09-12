@@ -4044,6 +4044,20 @@ mousepad &</pre>
                         "【U-Boot 啟動失敗與卡死常見排查】 執行 bootm 0x82000000 - 0x88000000 啟動系統。若卡在 'Starting kernel ...' 無任何後續輸出，排查原因：1. bootargs 中的 console 設備名稱不正確 (如應為 ttyS0, ttyAMA0 或 ttyFIQ0)；2. 裝置樹 DTB 與 Kernel 記憶體載入位址重疊覆蓋；3. 機器 ID (Machine ID) 或架構 (ARM32/AArch64) 不匹配。"
                     ],
                     date: new Date().toISOString()
+                },
+                {
+                    id: "doc_webcom_setup_troubleshooting",
+                    title: "Webcom 環境建置、WSL2 GUI/noVNC、多模態與常見疑難排解指南 (Webcom Setup & Troubleshooting Guide)",
+                    content: "【Webcom 常見問題與解決方案】\n1. Windows .bat 與 Python 路徑：CRLF 換行符遺失或 Python 未入 PATH 時，於 start_webcom.bat 加入動態 fallback 檢測。\n2. Pip 依賴衝突：解耦極簡化 requirements.txt，於 daemon.py 採按需動態載入。\n3. 多模態視覺 (Gemma-4 ONNX)：前端 handleSend 保護圖片結構，Tokenizer 對齊 <|image|>，後端 Pillow 解碼為 RGB。\n4. WSL2 noVNC 黑畫面：避開 WSLg :0 衝突，於 WSL 啟動 Xvfb :1、x11vnc 綁定 5901、websockify 6080，應用程式指定 DISPLAY=:1。\n5. Xorg 桌面模式：/api/wsl/launch-app 配合 setsid/nohup 保持行程運作，前端新增一鍵啟動工具列與自適應縮放。\n6. 診斷速查表：python diagnose_system.py (55項自檢)；PowerShell 查埠 8001/5901/6080；Linux ps aux 查 Xvfb/x11vnc/websockify。",
+                    chunks: [
+                        "【問題 1：Windows 批次檔 (.bat) 換行符與 Python 路徑偵測失敗】症狀：雙擊 start_webcom.bat 閃退或找不到 python 命令。根本原因：CRLF (\r\n) 換行符遺失，或 python.exe 位於特定虛擬環境 (如 AppData\\Local\\hermes\\...\\venv) 未加入 PATH。解法：在 .bat 中加入 where python 檢測與多個虛擬環境路徑 fallback 回退，並確保檔案存為 CRLF 格式。",
+                        "【問題 2：Pip 套件版本依賴衝突 (如 youtube-transcript-api)】症狀：pip install -r requirements.txt 報錯或衝突。根本原因：舊版過度嚴苛綁定特定子套件小版本，不相容 Python 3.12+。解法：極簡化 requirements.txt 解耦非必要依賴，並在 daemon.py 中採用動態按需載入 (Dynamic Lazy Import) 優雅降級。",
+                        "【問題 3：Gemma-4 ONNX 多模態視覺影像輸入遺失與解析】症狀：聊天上傳圖片提問後模型看不到圖片。根本原因：前端 handleSend 訊息結構遺失 images 陣列，或缺乏 <|image|> token 與 RawImage 解碼。解法：前端發送保護 payload.images，Tokenizer 對齊 <|image|> 標籤，後端使用 Pillow 轉為 RGB 供 ONNX 視覺特徵抽取。",
+                        "【問題 4：WSL2 noVNC 遠端桌面連線黑畫面排查】症狀：瀏覽器開啟 http://localhost:6080/vnc.html 連線成功但畫面全黑。根本原因：WSLg 佔用 DISPLAY=:0 與 Wayland 衝突，缺乏獨立虛擬顯示器，x11vnc 缺少 -forever -shared -noxrandr。解法：啟動 Xvfb :1 -screen 0 1280x720x24，x11vnc 綁定 :1 與 port 5901，websockify 橋接 6080->5901，啟動 GUI 程式時加上 DISPLAY=:1 GDK_BACKEND=x11。",
+                        "【問題 5：左側 Xorg 模式無法運作與改進】症狀：點擊左側 Xorg 桌面空白、GUI 程式啟動立刻關閉、RFB SetDesktopSize 警告。根本原因：連線埠未指向 :1、無前置應用啟動器導致只看見黑背景、行程未用 setsid/nohup 分離 session 隨 shell 退出。解法：提供 /api/wsl/launch-app 配合 setsid/nohup，前端加入快捷啟動工具列 (Terminal, Thunar, Mousepad, xcalc) 與自適應縮放 scaleViewport。",
+                        "【問題 6：診斷指令與系統速查表 (Cheat Sheet)】Windows: Get-NetTCPConnection -LocalPort 8001, 5901, 6080 檢查監聽埠；wsl --list --verbose 檢查 WSL 狀態；python diagnose_system.py 執行 55 項全自動檢測。Linux/WSL: ps aux | grep -E 'Xvfb|x11vnc|websockify' 檢查行程；DISPLAY=:1 GDK_BACKEND=x11 xcalc & 測試視窗渲染。"
+                    ],
+                    date: new Date().toISOString()
                 }
             ]
         };
