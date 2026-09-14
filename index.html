@@ -9104,6 +9104,7 @@ ffmpeg -f pulse -i default -acodec libmp3lame -ab 128k -f mp3 -listen 1 http://0
         const slashMenu = document.getElementById('slash-menu');
 
         let chatHistory = [];
+        let sessionChatLog = [];
         let isGenerating = false;
 
         const termInput = document.getElementById('term-input');
@@ -9486,33 +9487,14 @@ ${tools.join('\n')}${contextStr}
             }
         });
 
-        // --- Export / Import Chat Logic ---
-        document.getElementById('btn-export-chat').addEventListener('click', () => {
-            if (chatHistory.length === 0) return alert(t('alertNoHistoryExport'));
-            const json = JSON.stringify(chatHistory, null, 2);
-            const blob = new Blob([json], { type: 'application/json' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `chat_history_${new Date().toISOString().replace(/[:.]/g, '-')}.json`;
-            a.click();
-            URL.revokeObjectURL(url);
-        });
-
-        document.getElementById('btn-import-chat').addEventListener('click', () => { document.getElementById('file-import-chat').click(); });
-
-        document.getElementById('file-import-chat').addEventListener('change', (e) => {
-            const file = e.target.files[0];
-            if (!file) return;
-            const reader = new FileReader();
-            reader.onload = (event) => {
-                try {
-                    const data = JSON.parse(event.target.result);
-                    if (Array.isArray(data)) { chatHistory = data; renderChatHistory(); }
-                } catch (err) { alert(t('alertImportFail')); }
-            };
-            reader.readAsText(file); e.target.value = '';
-        });
+        // --- Export / Import Chat Forwarder ---
+        // (Delegated to unified, DOM-resilient exportChatHistory & importChatHistory)
+        function triggerChatExport() {
+            if (typeof exportChatHistory === 'function') exportChatHistory();
+        }
+        function triggerChatImport(file) {
+            if (typeof importChatHistory === 'function') importChatHistory(file);
+        }
 
         function renderChatHistory() {
             chatBox.innerHTML = '';
@@ -12202,6 +12184,17 @@ Important guidelines:
             chatBox.appendChild(div);
             lucide.createIcons();
             scrollToBottom();
+
+            if (role === 'user' || role === 'assistant') {
+                if (typeof sessionChatLog !== 'undefined') {
+                    sessionChatLog.push({
+                        role: role,
+                        content: content,
+                        images: images || [],
+                        timestamp: new Date().toISOString()
+                    });
+                }
+            }
 
             if (!skipHistory) {
                 const isAgentEnabled = agentToggle.checked;
@@ -15055,6 +15048,7 @@ Important guidelines:
         document.getElementById('btn-send')?.addEventListener('click', handleSend);
         document.getElementById('btn-clear')?.addEventListener('click', () => {
             chatHistory = [];
+            if (typeof sessionChatLog !== 'undefined') sessionChatLog = [];
             chatBox.innerHTML = '';
         });
 
@@ -17029,113 +17023,229 @@ Important guidelines:
             setTimeout(() => URL.revokeObjectURL(url), 5000);
         });
 
-        // ── 匯出對話紀錄功能 (Export Chat History) ──
+        // ── 匯出對話紀錄功能 (Export Chat History - 多重備援保證「所見即所得」) ──
         function exportChatHistory() {
             try {
                 const chatBox = document.getElementById('chat-box');
-                const messages = [];
+                let messages = [];
 
-                // 從 chat-box 提取所有訊息項目
+                // 1. 先讀取記憶體快取的非系統訊息 (sessionChatLog 與 chatHistory)
+                const validSession = (typeof sessionChatLog !== 'undefined' && Array.isArray(sessionChatLog))
+                    ? sessionChatLog.filter(m => m && (m.role === 'user' || m.role === 'assistant'))
+                    : [];
+                const validHistory = (typeof chatHistory !== 'undefined' && Array.isArray(chatHistory))
+                    ? chatHistory.filter(m => m && (m.role === 'user' || m.role === 'assistant'))
+                    : [];
+
+                if (validSession.length > 0) {
+                    messages = validSession.map(m => {
+                        let c = m.content;
+                        if (Array.isArray(c)) {
+                            c = c.map(item => item.text || '').join('');
+                        } else if (typeof c !== 'string') {
+                            c = JSON.stringify(c);
+                        }
+                        return {
+                            role: m.role,
+                            content: c,
+                            images: (Array.isArray(m.images) && m.images.length > 0) ? m.images : undefined,
+                            timestamp: m.timestamp || new Date().toISOString()
+                        };
+                    });
+                } else if (validHistory.length > 0) {
+                    messages = validHistory.map(m => {
+                        let c = m.content;
+                        if (Array.isArray(c)) {
+                            c = c.map(item => item.text || '').join('');
+                        } else if (typeof c !== 'string') {
+                            c = JSON.stringify(c);
+                        }
+                        return {
+                            role: m.role,
+                            content: c,
+                            timestamp: new Date().toISOString()
+                        };
+                    });
+                }
+
+                // 2. 從 chatBox DOM 中即時萃取畫面訊息 (防止因切換語系/重整/非同步導致記憶體清空)
                 if (chatBox) {
-                    const msgEls = chatBox.querySelectorAll('.flex.gap-3, .flex.gap-4, .space-y-4 > div');
+                    const domMsgs = [];
+                    const msgEls = chatBox.querySelectorAll('.msg-wrapper, .flex.justify-end, .flex.justify-start, .flex.gap-3, .flex.gap-4');
                     msgEls.forEach(el => {
-                        const isUser = el.querySelector('.bg-indigo-600') || el.classList.contains('justify-end') || el.innerHTML.includes('data-lucide="user"');
-                        const proseEl = el.querySelector('.prose') || el.querySelector('p') || el;
-                        const text = (proseEl.innerText || proseEl.textContent || '').trim();
-                        if (text && !text.includes('系統已就緒')) {
-                            messages.push({
-                                role: isUser ? 'user' : 'assistant',
+                        if (el.classList.contains('py-12') || el.id === 'chat-welcome') return;
+
+                        const isUser = el.classList.contains('justify-end') || 
+                                       el.querySelector('.bg-blue-600') || 
+                                       el.querySelector('.bg-indigo-600') || 
+                                       el.querySelector('[data-lucide="user"]');
+                        const role = isUser ? 'user' : 'assistant';
+
+                        let text = '';
+                        if (isUser) {
+                            const textEl = el.querySelector('.whitespace-pre-wrap') || el.querySelector('.prose') || el;
+                            text = (textEl.innerText || textEl.textContent || '').trim();
+                        } else {
+                            const proseEl = el.querySelector('.prose');
+                            if (proseEl) {
+                                text = (proseEl.innerText || proseEl.textContent || '').trim();
+                            } else {
+                                const clone = el.cloneNode(true);
+                                clone.querySelectorAll('.msg-action-bar, button, [data-lucide]').forEach(b => b.remove());
+                                text = (clone.innerText || clone.textContent || '').trim();
+                            }
+                        }
+
+                        // 提取夾帶的圖片資料
+                        const imgs = [];
+                        el.querySelectorAll('img').forEach(img => {
+                            if (img.src && !img.src.includes('lucide') && !img.src.includes('avatar') && !img.src.includes('data:image/svg')) {
+                                imgs.push(img.src);
+                            }
+                        });
+
+                        // 排除系統歡迎詞或空字元
+                        if ((text || imgs.length > 0) && !text.includes('系統已就緒') && !text.includes('System Ready')) {
+                            domMsgs.push({
+                                role: role,
                                 content: text,
-                                html: el.innerHTML
+                                images: imgs.length > 0 ? imgs : undefined,
+                                timestamp: new Date().toISOString()
                             });
                         }
                     });
+
+                    // 若 DOM 提取之訊息數量 >= 記憶體訊息，以 DOM 提取為準，確保「畫面上看到的一定能匯出」
+                    if (domMsgs.length >= messages.length && domMsgs.length > 0) {
+                        messages = domMsgs;
+                        if (typeof sessionChatLog !== 'undefined') sessionChatLog = [...domMsgs];
+                        if (chatHistory.length === 0) {
+                            domMsgs.forEach(m => chatHistory.push({ role: m.role, content: m.content }));
+                        }
+                    }
+                }
+
+                // 3. 雙重防呆：若畫面上與記憶體皆確實為空
+                if (messages.length === 0) {
+                    const noMsgText = (typeof currentLang !== 'undefined' && currentLang === 'en')
+                        ? 'No chat history to export'
+                        : (t('alertNoHistoryExport') || '沒有對話紀錄可匯出');
+                    showNotificationToast(noMsgText, true);
+                    alert(noMsgText);
+                    return;
                 }
 
                 const now = new Date();
                 const pad = (n) => String(n).padStart(2, '0');
                 const timestamp = `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}_${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}`;
 
+                // 匯出包含完整中繼資訊的結構
                 const exportData = {
                     app: "Webcom Dual-Engine Console",
-                    version: "1.0.1",
+                    version: "1.0.7",
                     exportTimestamp: now.toISOString(),
-                    engineMode: appSettings.engineMode,
-                    activeModel: appSettings.engineMode === 'webgpu' ? appSettings.webgpuModel : (appSettings.engineMode === 'onnx' ? appSettings.onnxModel : appSettings.activeProfile),
+                    engineMode: (typeof appSettings !== 'undefined' && appSettings?.engineMode) ? appSettings.engineMode : 'api',
                     totalMessages: messages.length,
                     messages: messages
                 };
 
                 const jsonStr = JSON.stringify(exportData, null, 2);
                 const blob = new Blob([jsonStr], { type: 'application/json;charset=utf-8' });
-                const fileName = `Webcom_Chat_${timestamp}.json`;
+                const fileName = `chat_history_${timestamp}.json`;
 
                 const a = document.createElement('a');
                 a.href = URL.createObjectURL(blob);
                 a.download = fileName;
+                a.setAttribute('download', fileName);
                 document.body.appendChild(a);
                 a.click();
                 setTimeout(() => {
-                    URL.revokeObjectURL(a.href);
-                    a.remove();
-                }, 1000);
+                    try {
+                        if (a.parentNode) a.parentNode.removeChild(a);
+                        URL.revokeObjectURL(a.href);
+                    } catch (e) {}
+                }, 1500);
 
-                showNotificationToast(currentLang === 'en' ? `📁 Chat exported [${fileName}]` : `📁 對話紀錄已匯出 [${fileName}]`);
+                const successToast = (typeof currentLang !== 'undefined' && currentLang === 'en')
+                    ? `📁 Successfully exported ${messages.length} messages [${fileName}]`
+                    : `📁 已成功匯出 ${messages.length} 則對話紀錄 [${fileName}]`;
+                showNotificationToast(successToast);
             } catch (err) {
                 console.error('[Export Chat Error]', err);
-                showNotificationToast((currentLang === 'en' ? 'Export failed: ' : '匯出失敗: ') + err.message, true);
+                const errPrefix = (typeof currentLang !== 'undefined' && currentLang === 'en') ? 'Export failed: ' : '匯出失敗: ';
+                showNotificationToast(errPrefix + err.message, true);
             }
         }
+        window.exportChatHistory = exportChatHistory;
 
-        // ── 匯入對話紀錄功能 (Import Chat History) ──
+        // ── 匯入對話紀錄功能 (Import Chat History - 全格式智慧相容) ──
         function importChatHistory(file) {
+            if (!file) return;
             const reader = new FileReader();
             reader.onload = (e) => {
                 try {
                     const data = JSON.parse(e.target.result);
-                    if (!data || (!data.messages && !Array.isArray(data))) {
-                        throw new Error('無效的對話紀錄檔案格式 (Invalid chat format)');
+                    if (!data) throw new Error('檔案為空 (File is empty)');
+
+                    let msgs = [];
+                    if (Array.isArray(data)) {
+                        msgs = data;
+                    } else if (Array.isArray(data.messages)) {
+                        msgs = data.messages;
+                    } else if (Array.isArray(data.chatHistory)) {
+                        msgs = data.chatHistory;
+                    } else {
+                        throw new Error('無效的對話紀錄檔案格式 (Invalid chat format, must be JSON array or object with messages)');
                     }
-                    const msgs = Array.isArray(data) ? data : data.messages;
+
                     const chatBox = document.getElementById('chat-box');
                     if (!chatBox) return;
 
-                    // 清空預設歡迎文字
+                    // 清空預設歡迎卡片
                     const welcome = chatBox.querySelector('.text-center.py-12');
                     if (welcome) welcome.remove();
 
+                    // 重設記憶體快取
+                    chatHistory = [];
+                    if (typeof sessionChatLog !== 'undefined') sessionChatLog = [];
+
+                    let importedCount = 0;
                     msgs.forEach(m => {
-                        const isUser = m.role === 'user';
-                        const card = document.createElement('div');
-                        card.className = "flex gap-3 text-sm";
-                        if (m.html && m.html.includes('data-lucide')) {
-                            card.innerHTML = m.html;
-                        } else {
-                            const iconBg = isUser ? 'bg-indigo-600' : 'bg-purple-600';
-                            const iconName = isUser ? 'user' : 'bot';
-                            card.innerHTML = `
-                                <div class="w-8 h-8 rounded-full ${iconBg} flex items-center justify-center shrink-0 shadow">
-                                    <i data-lucide="${iconName}" class="w-4 h-4 text-white"></i>
-                                </div>
-                                <div class="flex-1 overflow-hidden">
-                                    <div class="font-bold text-xs text-gray-400 mb-1 font-mono">${isUser ? 'User' : 'Assistant'}</div>
-                                    <div class="prose prose-invert max-w-none text-gray-200">${renderMarkdown(m.content || '')}</div>
-                                </div>
-                            `;
+                        if (!m || m.role === 'system') return;
+                        const role = m.role === 'user' ? 'user' : 'assistant';
+                        let content = m.content;
+                        if (Array.isArray(content)) {
+                            content = content.map(item => item.text || '').join('');
+                        } else if (typeof content !== 'string') {
+                            content = JSON.stringify(content);
                         }
-                        chatBox.appendChild(card);
+                        const images = Array.isArray(m.images) ? m.images : [];
+
+                        appendMessage(role, content, false, true, '', images);
+                        chatHistory.push({ role, content });
+                        if (typeof sessionChatLog !== 'undefined') {
+                            sessionChatLog.push({ role, content, images, timestamp: m.timestamp || new Date().toISOString() });
+                        }
+                        importedCount++;
                     });
 
-                    if (window.lucide) lucide.createIcons({ root: chatBox });
+                    if (window.lucide) lucide.createIcons();
                     scrollToBottom();
-                    showNotificationToast(currentLang === 'en' ? `✅ Imported ${msgs.length} messages` : `✅ 已成功匯入 ${msgs.length} 則對話紀錄`);
+
+                    const okToast = (typeof currentLang !== 'undefined' && currentLang === 'en')
+                        ? `✅ Successfully imported ${importedCount} messages`
+                        : `✅ 已成功匯入 ${importedCount} 則對話紀錄`;
+                    showNotificationToast(okToast);
                 } catch (err) {
                     console.error('[Import Chat Error]', err);
-                    showNotificationToast((currentLang === 'en' ? 'Import failed: ' : '匯入失敗: ') + err.message, true);
+                    const errPrefix = (typeof currentLang !== 'undefined' && currentLang === 'en') ? 'Import failed: ' : '匯出失敗: ';
+                    showNotificationToast(errPrefix + err.message, true);
+                    alert(errPrefix + err.message);
                 }
             };
             reader.readAsText(file, 'utf-8');
         }
+        window.importChatHistory = importChatHistory;
 
         // ── 輔助 Toast 通知 ──
         function showNotificationToast(msg, isErr = false) {
