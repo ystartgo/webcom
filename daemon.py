@@ -689,6 +689,22 @@ def execute_shell(req: ShellRequest):
         env["LANG"] = "C.UTF-8"
         env["LC_ALL"] = "C.UTF-8"
 
+        # 優先將本專案目錄下之 ./python 與直譯器路徑置於 PATH 最前，確保指令一律優先使用專案 Python
+        base_dir = os.path.dirname(os.path.abspath(__file__))
+        extra_paths = []
+        proj_py_dir = os.path.join(base_dir, "python")
+        if os.path.isdir(proj_py_dir):
+            extra_paths.append(proj_py_dir)
+            extra_scripts = os.path.join(proj_py_dir, "Scripts")
+            if os.path.isdir(extra_scripts):
+                extra_paths.append(extra_scripts)
+        if sys.executable and os.path.isfile(sys.executable):
+            exe_dir = os.path.dirname(sys.executable)
+            if exe_dir not in extra_paths and os.path.isdir(exe_dir):
+                extra_paths.append(exe_dir)
+        if extra_paths:
+            env["PATH"] = os.pathsep.join(extra_paths) + os.pathsep + env.get("PATH", "")
+
         def decode_stream(raw_bytes: bytes) -> str:
             if not raw_bytes:
                 return ""
@@ -763,9 +779,88 @@ def execute_shell(req: ShellRequest):
     except Exception as e:
         return {"status": "error", "error": str(e)}
 
+def resolve_python_interpreter(preference: str = "auto") -> tuple:
+    """
+    依照使用者指定與優先順序解析 Python 直譯器：
+    1. 本專案目錄下的 ./python/python.exe (或 ./python/bin/python3) -> "project"
+    2. 當前 daemon 執行的 Python 直譯器 (sys.executable) -> "project" 或 "daemon_venv"
+    3. 系統 PATH 中的 python / python3 -> "system"
+    4. 常見 Windows 安裝路徑 -> "system"
+    """
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+
+    # 1. 本專案自帶的嵌入式/可攜式 Python (最高優先)
+    proj_candidates = [
+        os.path.join(base_dir, "python", "python.exe"),
+        os.path.join(base_dir, "python", "bin", "python3"),
+        os.path.join(base_dir, "python", "bin", "python")
+    ]
+    for p in proj_candidates:
+        if os.path.isfile(p):
+            return p, "project"
+
+    # 若 sys.executable 本身就在專案目錄內
+    if sys.executable and os.path.isfile(sys.executable):
+        try:
+            rel = os.path.relpath(sys.executable, base_dir)
+            if not rel.startswith(".."):
+                return sys.executable, "project"
+        except Exception:
+            pass
+
+    # 2. 如果偏好專案或自動，且 sys.executable 有效
+    if preference != "system" and sys.executable and os.path.isfile(sys.executable):
+        return sys.executable, "project"
+
+    # 3. 系統環境中的 Python (preference == "system" 或無專案 Python)
+    sys_candidates = []
+    w_py = shutil.which("python")
+    w_py3 = shutil.which("python3")
+    if w_py: sys_candidates.append(w_py)
+    if w_py3: sys_candidates.append(w_py3)
+
+    common_win_dirs = [
+        os.path.expandvars(r"%LocalAppData%\Programs\Python\Python313\python.exe"),
+        os.path.expandvars(r"%LocalAppData%\Programs\Python\Python312\python.exe"),
+        os.path.expandvars(r"%LocalAppData%\Programs\Python\Python311\python.exe"),
+        os.path.expandvars(r"%LocalAppData%\Programs\Python\Python310\python.exe"),
+        os.path.expandvars(r"%ProgramFiles%\Python313\python.exe"),
+        os.path.expandvars(r"%ProgramFiles%\Python312\python.exe"),
+        os.path.expandvars(r"%ProgramFiles%\Python311\python.exe"),
+        os.path.expandvars(r"%ProgramFiles%\Python310\python.exe"),
+        os.path.expandvars(r"%UserProfile%\miniconda3\python.exe"),
+        os.path.expandvars(r"%UserProfile%\anaconda3\python.exe"),
+    ]
+    sys_candidates.extend(common_win_dirs)
+
+    for p in sys_candidates:
+        if os.path.isfile(p):
+            # 排除 Windows Store 0-byte stub
+            if "windowsapps" not in p.lower():
+                return p, "system"
+
+    # 4. 最後回退至 sys.executable 或 "python"
+    return sys.executable or "python", "fallback"
+
+@app.get("/tools/python_info")
+def python_info_endpoint():
+    py_exec, engine_type = resolve_python_interpreter("auto")
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    proj_py = os.path.join(base_dir, "python", "python.exe")
+    return {
+        "status": "success",
+        "resolved_executable": py_exec,
+        "engine_type": engine_type,
+        "project_python_exists": os.path.isfile(proj_py),
+        "project_python_path": proj_py,
+        "daemon_executable": sys.executable,
+        "version": sys.version
+    }
+
 class ScriptRunRequest(BaseModel):
     code: str
     language: Optional[str] = "py"
+    engine_preference: Optional[str] = "auto"
 
 @app.post("/tools/run_script")
 def run_script_endpoint(req: ScriptRunRequest):
@@ -785,8 +880,31 @@ def run_script_endpoint(req: ScriptRunRequest):
             f.write(code)
             temp_path = f.name
 
+        base_dir = os.path.dirname(os.path.abspath(__file__))
+        env = os.environ.copy()
+        env["PYTHONIOENCODING"] = "utf-8"
+        env["PYTHONUTF8"] = "1"
+        env["LANG"] = "C.UTF-8"
+        env["LC_ALL"] = "C.UTF-8"
+        extra_paths = []
+        proj_py_dir = os.path.join(base_dir, "python")
+        if os.path.isdir(proj_py_dir):
+            extra_paths.append(proj_py_dir)
+            extra_scripts = os.path.join(proj_py_dir, "Scripts")
+            if os.path.isdir(extra_scripts):
+                extra_paths.append(extra_scripts)
+        if sys.executable and os.path.isfile(sys.executable):
+            exe_dir = os.path.dirname(sys.executable)
+            if exe_dir not in extra_paths and os.path.isdir(exe_dir):
+                extra_paths.append(exe_dir)
+        if extra_paths:
+            env["PATH"] = os.pathsep.join(extra_paths) + os.pathsep + env.get("PATH", "")
+
+        engine_type = "project"
+        py_exec = sys.executable
         if ext == ".py":
-            cmd = [sys.executable, "-u", temp_path]
+            py_exec, engine_type = resolve_python_interpreter(req.engine_preference or "auto")
+            cmd = [py_exec, "-X", "utf8", "-u", temp_path]
         elif ext == ".sh":
             cmd = ["bash", temp_path] if shutil.which("bash") else ["wsl", "bash", temp_path]
         elif ext == ".bat":
@@ -794,14 +912,17 @@ def run_script_endpoint(req: ScriptRunRequest):
         elif ext == ".ps1":
             cmd = ["powershell.exe", "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", temp_path]
         else:
-            cmd = [sys.executable, "-u", temp_path]
+            py_exec, engine_type = resolve_python_interpreter(req.engine_preference or "auto")
+            cmd = [py_exec, "-X", "utf8", "-u", temp_path]
 
-        proc = subprocess.run(cmd, capture_output=True, text=True, timeout=30, encoding="utf-8", errors="replace")
+        proc = subprocess.run(cmd, capture_output=True, text=True, timeout=30, encoding="utf-8", errors="replace", env=env)
         return {
             "status": "success" if proc.returncode == 0 else "error",
             "returncode": proc.returncode,
             "stdout": proc.stdout,
-            "stderr": proc.stderr
+            "stderr": proc.stderr,
+            "engine": engine_type,
+            "executable": py_exec
         }
     except subprocess.TimeoutExpired:
         return {"status": "error", "error": "腳本執行超時 (Timeout 30s)"}

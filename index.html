@@ -10450,8 +10450,21 @@ Important guidelines:
 
                     <!-- Output Console Window -->
                     <div class="flex-1 bg-[#050811] border border-gray-800 rounded-xl p-4 overflow-auto font-mono text-xs leading-relaxed text-gray-100 flex flex-col">
-                        <div class="text-[11px] text-gray-500 border-b border-gray-800/80 pb-2 mb-2 flex justify-between items-center select-none shrink-0">
-                            <span class="flex items-center gap-1.5"><i data-lucide="terminal-square" class="w-3.5 h-3.5 text-gray-400"></i> ${isEn ? 'Console Output (stdout / stderr)' : '即時標準輸出 (Console Output)'}</span>
+                        <div class="text-[11px] text-gray-500 border-b border-gray-800/80 pb-2 mb-2 flex flex-wrap justify-between items-center select-none shrink-0 gap-2">
+                            <div class="flex items-center gap-2">
+                                <span class="flex items-center gap-1.5"><i data-lucide="terminal-square" class="w-3.5 h-3.5 text-gray-400"></i> ${isEn ? 'Console Output' : '即時標準輸出'}</span>
+                                ${art.language === 'py' || art.language === 'python' ? `
+                                <div class="flex items-center gap-1.5 ml-2">
+                                    <span class="text-[10px] text-gray-400 font-semibold">${isEn ? 'Engine' : '環境'}:</span>
+                                    <select id="script-engine-select" class="bg-gray-900 border border-gray-700/80 rounded px-1.5 py-0.5 text-[10px] text-violet-300 font-mono focus:outline-none focus:border-violet-500 cursor-pointer" title="${isEn ? 'Python Execution Engine' : 'Python 執行引擎選擇'}">
+                                        <option value="auto">⚡ ${isEn ? 'Auto (Project ➔ Pyodide ➔ System)' : '自動推薦 (專案優先 ➔ Pyodide ➔ 系統)'}</option>
+                                        <option value="project">🐍 ${isEn ? 'Project Python (./python/)' : '本專案 Python (./python/)'}</option>
+                                        <option value="pyodide">🌐 ${isEn ? 'Pyodide (Browser WASM)' : 'Pyodide (瀏覽器端 WASM)'}</option>
+                                        <option value="system">💻 ${isEn ? 'System Python (PATH)' : '系統環境 Python (PATH)'}</option>
+                                    </select>
+                                    <span id="script-engine-badge" class="hidden px-2 py-0.5 rounded text-[10px] font-mono font-bold"></span>
+                                </div>` : ''}
+                            </div>
                             <span id="script-run-time" class="text-gray-500 font-mono">耗時: -- ms</span>
                         </div>
                         <pre id="script-output-pre" class="flex-1 overflow-auto whitespace-pre-wrap text-emerald-400 font-mono m-0 select-text">${isEn ? 'Click [Run Script] to execute...' : '點擊上方 [執行腳本] 開始運行...'}</pre>
@@ -10482,77 +10495,219 @@ Important guidelines:
             });
         }
 
+        // ── 瀏覽器端 Pyodide (WebAssembly Python) 輕量加載管線 ──
+        let _pyodideInstance = null;
+        let _pyodideLoadingPromise = null;
+
+        async function getPyodide() {
+            if (_pyodideInstance) return _pyodideInstance;
+            if (_pyodideLoadingPromise) return _pyodideLoadingPromise;
+
+            _pyodideLoadingPromise = (async () => {
+                if (!window.loadPyodide) {
+                    await new Promise((resolve, reject) => {
+                        const s = document.createElement('script');
+                        s.src = 'https://cdn.jsdelivr.net/pyodide/v0.26.4/full/pyodide.js';
+                        s.onload = resolve;
+                        s.onerror = () => reject(new Error('無法從 CDN 載入 Pyodide 核心腳本'));
+                        document.head.appendChild(s);
+                    });
+                }
+                const py = await window.loadPyodide({
+                    indexURL: 'https://cdn.jsdelivr.net/pyodide/v0.26.4/full/'
+                });
+                _pyodideInstance = py;
+                return py;
+            })();
+
+            return _pyodideLoadingPromise;
+        }
+
+        async function runPythonInPyodide(code) {
+            const py = await getPyodide();
+            let stdoutLines = [];
+            let stderrLines = [];
+            py.setStdout({ batched: (msg) => stdoutLines.push(msg) });
+            py.setStderr({ batched: (msg) => stderrLines.push(msg) });
+
+            try {
+                await py.runPythonAsync(code);
+                return {
+                    status: "success",
+                    returncode: 0,
+                    stdout: stdoutLines.join('\n'),
+                    stderr: stderrLines.join('\n'),
+                    engine: "pyodide"
+                };
+            } catch (err) {
+                return {
+                    status: "error",
+                    returncode: 1,
+                    stdout: stdoutLines.join('\n'),
+                    stderr: (stderrLines.length > 0 ? stderrLines.join('\n') + '\n' : '') + (err.message || String(err)),
+                    engine: "pyodide"
+                };
+            }
+        }
+
         async function executeScriptInDrawer(art) {
             const statusEl = document.getElementById('script-run-status');
             const statusText = document.getElementById('script-status-text');
             const outputPre = document.getElementById('script-output-pre');
             const timeEl = document.getElementById('script-run-time');
+            const engineBadge = document.getElementById('script-engine-badge');
+            const engineSelect = document.getElementById('script-engine-select');
+            const prefEngine = engineSelect ? engineSelect.value : 'auto';
             if (!outputPre) return;
 
             const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en');
+            const isPython = (art.language === 'py' || art.language === 'python');
+
             if (statusEl) {
                 statusEl.className = "px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-950/80 border border-amber-600/50 text-amber-300 flex items-center gap-1";
                 if (statusText) statusText.textContent = isEn ? 'Running...' : '執行中...';
             }
-            outputPre.textContent = isEn ? '⚡ Executing script via Daemon (Port 8001)...\n' : '⚡ 正在透過常駐程式 (Port 8001) 執行腳本...\n';
+            outputPre.textContent = isEn ? '⚡ Preparing execution environment...\n' : '⚡ 正在準備腳本執行環境...\n';
             outputPre.className = "flex-1 overflow-auto whitespace-pre-wrap text-amber-300 font-mono m-0 select-text";
 
             const startTime = performance.now();
+            let data = null;
+            let activeEngine = "unknown";
+            let execError = null;
 
-            try {
-                const b64 = btoa(unescape(encodeURIComponent(art.fullContent)));
-                let shellCmd = '';
-                if (art.language === 'py' || art.language === 'python') {
-                    shellCmd = `python -X utf8 -u -c "import sys, base64; sys.stdout.reconfigure(encoding='utf-8', errors='replace') if hasattr(sys.stdout, 'reconfigure') else None; sys.stderr.reconfigure(encoding='utf-8', errors='replace') if hasattr(sys.stderr, 'reconfigure') else None; exec(base64.b64decode('${b64}').decode('utf-8'))"`;
-                } else if (art.language === 'sh' || art.language === 'bash') {
-                    shellCmd = `bash -c "echo '${b64}' | base64 -d | bash"`;
+            if (isPython) {
+                // Tier 1: 若未強制指定 pyodide，優先嘗試本專案目錄下之 Python (Daemon: ./python/python.exe 或 sys.executable)
+                if (prefEngine !== 'pyodide') {
+                    try {
+                        outputPre.textContent = isEn ? '⚡ Trying Project-local Python (./python/python.exe)...\n' : '⚡ 正在嘗試調用本專案 Python (./python/python.exe)...\n';
+                        const resp = await fetchWithTimeout(`${appSettings.daemonEndpoint}/tools/run_script`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                code: art.fullContent,
+                                language: 'py',
+                                engine_preference: (prefEngine === 'system' ? 'system' : 'project')
+                            }),
+                            timeout: 20000
+                        });
+                        if (resp.ok) {
+                            const resJson = await resp.json();
+                            // 若執行成功或成功調用專案 Python
+                            if (resJson.status === 'success' || resJson.returncode === 0 || (resJson.engine && !String(resJson.error || '').includes('not found') && !String(resJson.stderr || '').includes('No such file'))) {
+                                data = resJson;
+                                activeEngine = resJson.engine === 'system' ? 'system' : 'project';
+                            } else if (prefEngine === 'project') {
+                                data = resJson;
+                                activeEngine = 'project';
+                            }
+                        }
+                    } catch (e) {
+                        console.warn("[Python Runner] Project daemon execution unavailable, falling back to Pyodide:", e);
+                    }
+                }
+
+                // Tier 2: 若專案 Python 無法執行或使用者選用 Pyodide，降級至 Pyodide 瀏覽器原生 WebAssembly
+                if (!data && prefEngine !== 'system') {
+                    try {
+                        outputPre.textContent = isEn ? '⚡ Falling back to Pyodide (In-Browser WebAssembly Python)...\n' : '⚡ 降級使用 Pyodide 瀏覽器端 Python (WebAssembly)...\n';
+                        data = await runPythonInPyodide(art.fullContent);
+                        activeEngine = 'pyodide';
+                    } catch (pyoErr) {
+                        console.warn("[Python Runner] Pyodide failed, checking system fallback:", pyoErr);
+                        execError = pyoErr;
+                    }
+                }
+
+                // Tier 3: 若 Pyodide 載入失敗 (如離線且無快取)，最後嘗試系統環境 Python
+                if (!data) {
+                    try {
+                        outputPre.textContent = isEn ? '⚡ Falling back to System Python...\n' : '⚡ 嘗試調用系統環境 Python (PATH)...\n';
+                        const resp = await fetchWithTimeout(`${appSettings.daemonEndpoint}/tools/run_script`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                code: art.fullContent,
+                                language: 'py',
+                                engine_preference: 'system'
+                            }),
+                            timeout: 20000
+                        });
+                        if (resp.ok) {
+                            data = await resp.json();
+                            activeEngine = 'system';
+                        }
+                    } catch (sysErr) {
+                        execError = sysErr;
+                    }
+                }
+            } else {
+                // Shell / Bash / Batch 腳本執行
+                try {
+                    const resp = await fetchWithTimeout(`${appSettings.daemonEndpoint}/tools/run_script`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            code: art.fullContent,
+                            language: art.language || 'sh'
+                        }),
+                        timeout: 25000
+                    });
+                    if (resp.ok) {
+                        data = await resp.json();
+                        activeEngine = 'shell';
+                    }
+                } catch (shErr) {
+                    execError = shErr;
+                }
+            }
+
+            const elapsedMs = Math.round(performance.now() - startTime);
+            if (timeEl) timeEl.textContent = `${isEn ? 'Time' : '耗時'}: ${elapsedMs} ms`;
+
+            // 更新 Engine Badge
+            if (engineBadge) {
+                engineBadge.classList.remove('hidden');
+                if (activeEngine === 'project') {
+                    engineBadge.className = "px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-emerald-950/80 border border-emerald-600/50 text-emerald-300";
+                    engineBadge.textContent = isEn ? '🐍 Project Python' : '🐍 本專案 Python (./python/)';
+                } else if (activeEngine === 'pyodide') {
+                    engineBadge.className = "px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-sky-950/80 border border-sky-600/50 text-sky-300";
+                    engineBadge.textContent = isEn ? '🌐 Pyodide (WASM)' : '🌐 Pyodide (瀏覽器端 WASM)';
+                } else if (activeEngine === 'system') {
+                    engineBadge.className = "px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-amber-950/80 border border-amber-600/50 text-amber-300";
+                    engineBadge.textContent = isEn ? '💻 System Python' : '💻 系統 Python';
                 } else {
-                    shellCmd = art.fullContent;
+                    engineBadge.className = "px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-gray-800 text-gray-400 border border-gray-700";
+                    engineBadge.textContent = activeEngine.toUpperCase();
                 }
+            }
 
-                const resp = await fetch('http://127.0.0.1:8001/tools/execute_shell', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ command: shellCmd })
-                });
-
-                if (!resp.ok) {
-                    throw new Error(`HTTP ${resp.status}: ${resp.statusText}`);
+            if (data && (data.status === 'success' || data.returncode === 0)) {
+                if (statusEl) {
+                    statusEl.className = "px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-950/80 border border-emerald-600/50 text-emerald-300 flex items-center gap-1";
+                    if (statusText) statusText.textContent = `${isEn ? 'Success' : '執行完成'} (${data.returncode || 0})`;
                 }
-
-                const data = await resp.json();
-                const elapsedMs = Math.round(performance.now() - startTime);
-                if (timeEl) timeEl.textContent = `${isEn ? 'Time' : '耗時'}: ${elapsedMs} ms`;
-
-                if (data.status === 'success' || data.returncode === 0) {
-                    if (statusEl) {
-                        statusEl.className = "px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-950/80 border border-emerald-600/50 text-emerald-300 flex items-center gap-1";
-                        if (statusText) statusText.textContent = `${isEn ? 'Success' : '執行完成'} (${data.returncode || 0})`;
-                    }
-                    outputPre.className = "flex-1 overflow-auto whitespace-pre-wrap text-emerald-400 font-mono m-0 select-text";
-                    outputPre.textContent = (data.stdout || '') + (data.stderr ? '\n[stderr]\n' + data.stderr : '');
-                    if (!data.stdout && !data.stderr) {
-                        outputPre.textContent = isEn ? '✅ Program finished with exit code 0 (no stdout output).' : '✅ 程式執行完成，結束代碼 0 (無標準輸出)。';
-                    }
-                } else {
-                    if (statusEl) {
-                        statusEl.className = "px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-950/80 border border-rose-600/50 text-rose-300 flex items-center gap-1";
-                        if (statusText) statusText.textContent = `${isEn ? 'Exit' : '執行結束'} (${data.returncode || 1})`;
-                    }
-                    outputPre.className = "flex-1 overflow-auto whitespace-pre-wrap text-rose-300 font-mono m-0 select-text";
-                    outputPre.textContent = (data.error || '') + '\n' + (data.stderr || '') + (data.stdout ? '\n' + data.stdout : '');
+                outputPre.className = "flex-1 overflow-auto whitespace-pre-wrap text-emerald-400 font-mono m-0 select-text";
+                outputPre.textContent = (data.stdout || '') + (data.stderr ? '\n[stderr]\n' + data.stderr : '');
+                if (!data.stdout && !data.stderr) {
+                    outputPre.textContent = isEn ? '✅ Program finished with exit code 0 (no stdout output).' : '✅ 程式執行完成，結束代碼 0 (無標準輸出)。';
                 }
-            } catch (err) {
-                const elapsedMs = Math.round(performance.now() - startTime);
-                if (timeEl) timeEl.textContent = `${isEn ? 'Time' : '耗時'}: ${elapsedMs} ms`;
+            } else if (data) {
                 if (statusEl) {
                     statusEl.className = "px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-950/80 border border-rose-600/50 text-rose-300 flex items-center gap-1";
-                    if (statusText) statusText.textContent = isEn ? 'Offline' : '連線失敗';
+                    if (statusText) statusText.textContent = `${isEn ? 'Exit' : '執行結束'} (${data.returncode || 1})`;
+                }
+                outputPre.className = "flex-1 overflow-auto whitespace-pre-wrap text-rose-300 font-mono m-0 select-text";
+                outputPre.textContent = (data.error || '') + '\n' + (data.stderr || '') + (data.stdout ? '\n' + data.stdout : '');
+            } else {
+                if (statusEl) {
+                    statusEl.className = "px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-950/80 border border-rose-600/50 text-rose-300 flex items-center gap-1";
+                    if (statusText) statusText.textContent = isEn ? 'Failed' : '執行失敗';
                 }
                 outputPre.className = "flex-1 overflow-auto whitespace-pre-wrap text-amber-300 font-mono m-0 select-text";
                 outputPre.textContent = isEn
-                    ? `❌ Execution failed: Unable to reach Daemon at http://127.0.0.1:8001.\n[Tip] Please start start_daemon.bat or python daemon.py, or click [Run in Terminal] above.\n[Error] ${err.message}`
-                    : `❌ 執行失敗：無法連線至本地常駐程式 (http://127.0.0.1:8001)。\n[提示] 請先執行 start_daemon.bat 或 python daemon.py 啟動常駐服務，或點擊上方「在終端機執行」按鈕！\n[錯誤細節] ${err.message}`;
+                    ? `❌ Execution failed across all Python engines:\n1. Project Python: Daemon unavailable or python/python.exe missing.\n2. Pyodide: ${(execError?.message || 'Failed to load Pyodide WASM')}\n3. System Python: Not found in PATH.\n[Tip] Start start_daemon.bat or check internet connection for Pyodide CDN.`
+                    : `❌ Python 各層執行環境皆無法運行：\n1. 本專案 Python：Daemon 離線或專案 ./python/ 目錄未就緒。\n2. Pyodide (WASM)：${(execError?.message || '載入失敗，可能處於無網路離線狀態')}\n3. 系統 Python：未於系統 PATH 偵測到可執行的 Python。\n[建議] 請確認專案目錄內包含 python.exe，或確保網路連線可載入 Pyodide，或執行 start_daemon.bat！`;
             }
         }
 
