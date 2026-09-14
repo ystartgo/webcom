@@ -5,12 +5,12 @@
     <!--
     作者 startgo (startgo@yia.app)
     授權預設 GPLv3
-    時間戳記: 2026-09-11 09:00:00
-    版本號: v1.0.6-Dual-Engine-WebGPU-RAG-Supervise
+    時間戳記: 2026-09-14 15:30:00
+    版本號: v1.0.7-Dual-Engine-WebGPU-RAG-Supervise
     -->
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>雙引擎 AI 協同控制台 (Dual-Engine AI Console) - v1.0.6</title>
+    <title>雙引擎 AI 協同控制台 (Dual-Engine AI Console) - v1.0.7</title>
     <!-- 離線優先 Local-First 資源載入 (斷網零依賴 + CDN 自動容錯備援) -->
     <script src="./assets/tailwindcss.js"></script>
     <script>
@@ -298,17 +298,17 @@
             <div class="w-6 h-[1px] bg-gray-800"></div>
             <button type="button" onclick="toggleLeftPanelCollapse(); switchLeftMode('term');"
                 class="p-2 rounded-lg text-gray-400 hover:text-white hover:bg-gray-800 transition cursor-pointer"
-                title="展開並切換至終端機">
+                title="展開並切換至終端機" data-i18n-title="tooltipExpandTerm">
                 <i data-lucide="terminal" class="w-4 h-4"></i>
             </button>
             <button type="button" onclick="toggleLeftPanelCollapse(); switchLeftMode('novnc');"
                 class="p-2 rounded-lg text-gray-400 hover:text-white hover:bg-gray-800 transition cursor-pointer"
-                title="展開並切換至 noVNC 桌面">
+                title="展開並切換至 noVNC 桌面" data-i18n-title="tooltipExpandNoVnc">
                 <i data-lucide="monitor" class="w-4 h-4 text-blue-400"></i>
             </button>
             <button type="button" onclick="toggleLeftPanelCollapse(); switchLeftMode('xorg');"
                 class="p-2 rounded-lg text-gray-400 hover:text-white hover:bg-gray-800 transition cursor-pointer"
-                title="展開並切換至 Xorg 視窗">
+                title="展開並切換至 Xorg 視窗" data-i18n-title="tooltipExpandXorg">
                 <i data-lucide="layout-grid" class="w-4 h-4 text-emerald-400"></i>
             </button>
         </div>
@@ -329,7 +329,7 @@
                     </div>
                     <h1 class="text-xs sm:text-sm font-bold tracking-tight text-white flex items-center gap-1.5 truncate">
                         <span data-i18n="appTitle">雙引擎 AI 控制台</span>
-                        <span class="text-[10px] bg-purple-500/20 text-purple-300 px-1.5 py-0.2 rounded font-mono hidden sm:inline">v1.0.6</span>
+                        <span class="text-[10px] bg-purple-500/20 text-purple-300 px-1.5 py-0.2 rounded font-mono hidden sm:inline">v1.0.7</span>
                     </h1>
                 </div>
                 <div class="flex items-center gap-1.5 shrink-0 relative">
@@ -353,7 +353,7 @@
                                 class="flex items-center gap-2.5 px-3.5 py-2 hover:bg-gray-800 text-amber-300 transition no-underline cursor-pointer"
                                 title="開啟 MarkItDown 文件轉換器" data-i18n-title="tooltipMarkItDown">
                                 <i data-lucide="file-text" class="w-4 h-4 text-amber-400"></i>
-                                <span class="font-medium">MarkItDown 轉換器</span>
+                                <span class="font-medium" data-i18n="markitdownConverter">MarkItDown 轉換器</span>
                             </a>
                             <button id="btn-open-diagnostics" type="button" onclick="openDiagnosticsModal(); closeTopToolsDropdown();"
                                 class="w-full flex items-center gap-2.5 px-3.5 py-2 hover:bg-gray-800 text-emerald-300 transition text-left cursor-pointer"
@@ -763,33 +763,33 @@
                     <div class="relative">
                         <button id="btn-xorg-app-menu" type="button" onclick="toggleXorgAppDropdown(event)"
                             class="px-2.5 py-1 rounded-lg bg-gray-800 hover:bg-gray-700 text-emerald-300 border border-gray-700 flex items-center gap-1.5 transition text-xs cursor-pointer select-none"
-                            title="快速啟動 Linux GUI 程式選單">
+                            title="快速啟動 Linux GUI 程式選單" data-i18n-title="tooltipXorgLaunchApp">
                             <i data-lucide="sparkles" class="w-3.5 h-3.5 text-yellow-400"></i>
-                            <span class="font-medium">啟動 App</span>
+                            <span class="font-medium" data-i18n="xorgLaunchApp">啟動 App</span>
                             <i data-lucide="chevron-down" class="w-3 h-3 text-gray-400"></i>
                         </button>
                         <div id="dropdown-xorg-apps" class="hidden absolute right-0 top-full mt-1.5 w-64 bg-gray-900 border border-gray-700 rounded-xl shadow-2xl py-2 z-50 text-xs select-none">
-                            <div class="px-3 py-1 text-[10px] font-bold text-gray-400 uppercase tracking-wider border-b border-gray-800">Linux GUI 程式</div>
+                            <div class="px-3 py-1 text-[10px] font-bold text-gray-400 uppercase tracking-wider border-b border-gray-800" data-i18n="xorgGuiApps">Linux GUI 程式</div>
                             <div class="grid grid-cols-2 gap-1 p-2">
                                 <button type="button" onclick="launchWslApp('xfce4-terminal --disable-server'); closeXorgDropdowns();"
                                     class="px-2 py-1.5 rounded bg-gray-800 hover:bg-gray-700 text-emerald-300 flex items-center gap-1.5 transition text-left cursor-pointer">
-                                    <i data-lucide="terminal" class="w-3.5 h-3.5 text-emerald-400"></i> <span>終端機</span>
+                                    <i data-lucide="terminal" class="w-3.5 h-3.5 text-emerald-400"></i> <span data-i18n="appTerminal">終端機</span>
                                 </button>
                                 <button type="button" onclick="handleXinitLaunch('xfce4-session'); closeXorgDropdowns();"
                                     class="px-2 py-1.5 rounded bg-teal-950/80 hover:bg-teal-900 text-teal-300 border border-teal-700/50 flex items-center gap-1.5 transition text-left cursor-pointer">
-                                    <i data-lucide="zap" class="w-3.5 h-3.5 text-teal-400"></i> <span>xinit 桌面</span>
+                                    <i data-lucide="zap" class="w-3.5 h-3.5 text-teal-400"></i> <span data-i18n="btnTermXinit">xinit 桌面</span>
                                 </button>
                                 <button type="button" onclick="launchWslApp('thunar'); closeXorgDropdowns();"
                                     class="px-2 py-1.5 rounded bg-gray-800 hover:bg-gray-700 text-blue-300 flex items-center gap-1.5 transition text-left cursor-pointer">
-                                    <i data-lucide="folder" class="w-3.5 h-3.5 text-blue-400"></i> <span>檔案總管</span>
+                                    <i data-lucide="folder" class="w-3.5 h-3.5 text-blue-400"></i> <span data-i18n="appFileManager">檔案總管</span>
                                 </button>
                                 <button type="button" onclick="launchWslApp('mousepad'); closeXorgDropdowns();"
                                     class="px-2 py-1.5 rounded bg-gray-800 hover:bg-gray-700 text-purple-300 flex items-center gap-1.5 transition text-left cursor-pointer">
-                                    <i data-lucide="file-text" class="w-3.5 h-3.5 text-purple-400"></i> <span>編輯器</span>
+                                    <i data-lucide="file-text" class="w-3.5 h-3.5 text-purple-400"></i> <span data-i18n="appTextEditor">編輯器</span>
                                 </button>
                                 <button type="button" onclick="launchWslApp('xcalc'); closeXorgDropdowns();"
                                     class="px-2 py-1.5 rounded bg-gray-800 hover:bg-gray-700 text-amber-300 flex items-center gap-1.5 transition text-left cursor-pointer">
-                                    <i data-lucide="calculator" class="w-3.5 h-3.5 text-amber-400"></i> <span>計算機</span>
+                                    <i data-lucide="calculator" class="w-3.5 h-3.5 text-amber-400"></i> <span data-i18n="appCalc">計算機</span>
                                 </button>
                                 <button type="button" onclick="launchWslApp('xeyes'); closeXorgDropdowns();"
                                     class="px-2 py-1.5 rounded bg-gray-800 hover:bg-gray-700 text-cyan-300 flex items-center gap-1.5 transition text-left cursor-pointer">
@@ -797,14 +797,14 @@
                                 </button>
                             </div>
                             <div class="px-3 pt-2 border-t border-gray-800">
-                                <div class="text-[10px] text-gray-400 mb-1">自訂指令 (如 firefox, gedit)：</div>
+                                <div class="text-[10px] text-gray-400 mb-1" data-i18n="xorgCustomCmdHint">自訂指令 (如 firefox, gedit)：</div>
                                 <div class="flex items-center gap-1">
-                                    <input id="xorg-custom-cmd" type="text" placeholder="指令名稱"
+                                    <input id="xorg-custom-cmd" type="text" placeholder="指令名稱" data-i18n-placeholder="xorgCmdPlaceholder"
                                         class="bg-black/60 text-white text-[11px] font-mono px-2 py-1 rounded border border-gray-700 focus:outline-none focus:border-emerald-500 flex-1 min-w-0"
                                         onkeydown="if(event.key==='Enter') { launchWslCustomApp(); closeXorgDropdowns(); }">
                                     <button type="button" onclick="launchWslCustomApp(); closeXorgDropdowns();"
                                         class="px-2.5 py-1 rounded bg-emerald-700 hover:bg-emerald-600 text-white text-[11px] font-medium flex items-center gap-1 cursor-pointer transition">
-                                        <i data-lucide="play" class="w-2.5 h-2.5 fill-current"></i> <span>執行</span>
+                                        <i data-lucide="play" class="w-2.5 h-2.5 fill-current"></i> <span data-i18n="btnExecute">執行</span>
                                     </button>
                                 </div>
                             </div>
@@ -815,15 +815,15 @@
                     <div class="relative">
                         <button id="btn-xorg-ctrl-menu" type="button" onclick="toggleXorgCtrlDropdown(event)"
                             class="px-2.5 py-1 rounded-lg bg-gray-800 hover:bg-gray-700 text-cyan-300 border border-gray-700 flex items-center gap-1.5 transition text-xs cursor-pointer select-none"
-                            title="連線參數、WSL 管理與音訊設定">
+                            title="連線參數、WSL 管理與音訊設定" data-i18n-title="tooltipXorgControls">
                             <i data-lucide="settings" class="w-3.5 h-3.5 text-cyan-400"></i>
-                            <span class="font-medium">控制與設置</span>
+                            <span class="font-medium" data-i18n="xorgControlsTitle">控制與設置</span>
                             <i data-lucide="chevron-down" class="w-3 h-3 text-gray-400"></i>
                         </button>
                         <div id="dropdown-xorg-ctrl" class="hidden absolute right-0 top-full mt-1.5 w-72 bg-gray-900 border border-gray-700 rounded-xl shadow-2xl p-3 z-50 text-xs select-none space-y-2.5">
                             <!-- 連線設定 -->
                             <div>
-                                <div class="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1.5">連線參數</div>
+                                <div class="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1.5" data-i18n="xorgConnParams">連線參數</div>
                                 <div class="grid grid-cols-2 gap-1.5">
                                     <div class="flex items-center gap-1 bg-black/60 px-2 py-1 rounded border border-gray-800">
                                         <span class="text-emerald-400 font-mono text-[11px]">DISPLAY:</span>
@@ -834,7 +834,7 @@
                                         <input id="xorg-port" type="number" value="6080" class="bg-transparent text-white w-12 font-mono text-[11px] focus:outline-none">
                                     </div>
                                     <div class="col-span-2 flex items-center justify-between bg-black/60 px-2 py-1 rounded border border-gray-800">
-                                        <span class="text-gray-400 text-[11px]">解析度:</span>
+                                        <span class="text-gray-400 text-[11px]" data-i18n="xorgResolution">解析度:</span>
                                         <select id="xorg-resolution" class="bg-transparent text-white text-[11px] font-mono focus:outline-none cursor-pointer">
                                             <option value="1280x720">1280x720 (720p HD)</option>
                                             <option value="1920x1080" selected>1920x1080 (1080p FHD)</option>
@@ -844,7 +844,7 @@
                                         </select>
                                     </div>
                                     <div class="col-span-2 flex items-center justify-between bg-black/60 px-2 py-1 rounded border border-gray-800">
-                                        <span class="text-gray-400 text-[11px]">桌面環境:</span>
+                                        <span class="text-gray-400 text-[11px]" data-i18n="xorgDesktopEnv">桌面環境:</span>
                                         <select id="xorg-wm" class="bg-transparent text-white text-[11px] font-mono focus:outline-none cursor-pointer">
                                             <option value="xfce4" selected>XFCE4 (完整桌面)</option>
                                             <option value="standalone">單一 App (Direct)</option>
@@ -855,11 +855,11 @@
                                 <div class="mt-1.5 flex items-center gap-1.5">
                                     <button id="btn-xorg-probe" type="button" onclick="probeVncPort('xorg')"
                                         class="flex-1 px-2 py-1 rounded bg-gray-800 hover:bg-gray-700 text-cyan-300 border border-cyan-700/50 flex items-center justify-center gap-1 transition text-[11px] cursor-pointer">
-                                        <i data-lucide="activity" class="w-3 h-3"></i> <span>探測服務埠</span>
+                                        <i data-lucide="activity" class="w-3 h-3"></i> <span data-i18n="xorgProbePort">探測服務埠</span>
                                     </button>
                                     <button id="btn-xorg-wizard" type="button" onclick="openXorgWizardModal(); closeXorgDropdowns();"
                                         class="flex-1 px-2 py-1 rounded bg-teal-950 hover:bg-teal-900 text-teal-300 border border-teal-700/50 flex items-center justify-center gap-1 transition text-[11px] cursor-pointer">
-                                        <i data-lucide="sparkles" class="w-3 h-3"></i> <span>配置精靈</span>
+                                        <i data-lucide="sparkles" class="w-3 h-3"></i> <span data-i18n="btnXorgWizard">配置精靈</span>
                                     </button>
                                 </div>
                             </div>
@@ -867,34 +867,34 @@
                             <!-- WSL 管理 -->
                             <div class="pt-2 border-t border-gray-800">
                                 <div class="flex items-center justify-between mb-1.5">
-                                    <span class="text-[10px] font-bold text-gray-400 uppercase tracking-wider">WSL 服務</span>
+                                    <span class="text-[10px] font-bold text-gray-400 uppercase tracking-wider" data-i18n="wslServiceTitle">WSL 服務</span>
                                     <span id="xorg-wsl-status" class="text-[10px] font-mono text-gray-300 flex items-center gap-1">
-                                        <span class="w-1.5 h-1.5 rounded-full bg-gray-500"></span> <span>未檢測</span>
+                                        <span class="w-1.5 h-1.5 rounded-full bg-gray-500"></span> <span data-i18n="wslStatusUnchecked">未檢測</span>
                                     </span>
                                 </div>
                                 <div class="flex items-center gap-1.5">
                                     <button id="btn-xorg-wsl-check" type="button" onclick="checkWslStatus(true)"
                                         class="flex-1 px-2 py-1 rounded bg-gray-800 hover:bg-gray-700 text-teal-300 border border-teal-700/40 text-[11px] flex items-center justify-center gap-1 cursor-pointer transition">
-                                        <i data-lucide="check-circle-2" class="w-3 h-3"></i> <span>檢查 WSL</span>
+                                        <i data-lucide="check-circle-2" class="w-3 h-3"></i> <span data-i18n="wslCheckBtn">檢查 WSL</span>
                                     </button>
                                     <button id="btn-xorg-wsl-stop" type="button" onclick="stopWslDesktopService('xorg')"
                                         class="flex-1 px-2 py-1 rounded bg-rose-950/60 hover:bg-rose-900 text-rose-300 border border-rose-800/40 text-[11px] flex items-center justify-center gap-1 cursor-pointer transition">
-                                        <i data-lucide="square" class="w-3 h-3"></i> <span>停止 WSL</span>
+                                        <i data-lucide="square" class="w-3 h-3"></i> <span data-i18n="wslStopBtn">停止 WSL</span>
                                     </button>
                                 </div>
                             </div>
 
                             <!-- 音訊控制 -->
                             <div class="pt-2 border-t border-gray-800">
-                                <div class="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1.5">音訊串流</div>
+                                <div class="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1.5" data-i18n="audioStreamTitle">音訊串流</div>
                                 <div class="flex items-center gap-2 mb-1.5">
                                     <button id="btn-xorg-audio-toggle" type="button" onclick="toggleAudioStream('xorg')"
                                         class="px-2 py-0.5 rounded bg-gray-800 hover:bg-gray-700 text-gray-300 border border-gray-700 flex items-center gap-1 text-[11px] font-medium transition cursor-pointer">
                                         <i id="icon-xorg-audio" data-lucide="volume-x" class="w-3 h-3 text-gray-400"></i>
-                                        <span id="txt-xorg-audio">音訊: 關閉</span>
+                                        <span id="txt-xorg-audio" data-i18n="audioDisabled">音訊: 關閉</span>
                                     </button>
                                     <div class="flex items-center gap-1 bg-black/60 px-1.5 py-0.5 rounded border border-gray-800 flex-1">
-                                        <span class="text-gray-400 text-[10px]">音量:</span>
+                                        <span class="text-gray-400 text-[10px]" data-i18n="audioVolume">音量:</span>
                                         <input id="xorg-audio-vol" type="range" min="0" max="100" value="80" oninput="setAudioVolume(this.value, 'xorg')"
                                             class="w-14 h-1 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-purple-500">
                                         <span id="xorg-audio-vol-txt" class="text-[10px] text-gray-300 font-mono w-6 text-right">80%</span>
@@ -904,7 +904,7 @@
                                     <span class="text-gray-400">URL:</span>
                                     <input id="xorg-audio-url" type="text" value="http://127.0.0.1:8000/audio"
                                         class="bg-transparent text-gray-200 font-mono flex-1 focus:outline-none">
-                                    <button type="button" onclick="playTestTone()" class="text-cyan-400 hover:underline cursor-pointer">測試音</button>
+                                    <button type="button" onclick="playTestTone()" class="text-cyan-400 hover:underline cursor-pointer" data-i18n="audioTestTone">測試音</button>
                                 </div>
                             </div>
 
@@ -917,7 +917,7 @@
                                 </div>
                                 <button type="button" onclick="openKeySettingsModal('xorg'); closeXorgDropdowns();"
                                     class="px-2 py-0.5 rounded bg-purple-950/80 hover:bg-purple-900 text-purple-300 border border-purple-700/50 flex items-center gap-1 text-[10px] font-medium transition cursor-pointer">
-                                    <i data-lucide="settings" class="w-3 h-3"></i> <span>按鍵設置</span>
+                                    <i data-lucide="settings" class="w-3 h-3"></i> <span data-i18n="keySettingsBtn">按鍵設置</span>
                                 </button>
                             </div>
                         </div>
@@ -974,12 +974,12 @@
             <div class="w-6 h-[1px] bg-gray-800"></div>
             <button type="button" onclick="toggleRightPanelCollapse()"
                 class="p-2 rounded-lg text-purple-400 hover:text-white hover:bg-gray-800 transition cursor-pointer"
-                title="展開 AI 對話">
+                title="展開 AI 對話" data-i18n-title="tooltipExpandChat">
                 <i data-lucide="bot" class="w-4 h-4"></i>
             </button>
             <button type="button" onclick="toggleRightPanelCollapse(); document.getElementById('btn-open-settings')?.click();"
                 class="p-2 rounded-lg text-gray-400 hover:text-white hover:bg-gray-800 transition cursor-pointer"
-                title="展開並開啟設定">
+                title="展開並開啟設定" data-i18n-title="tooltipExpandSettings">
                 <i data-lucide="settings" class="w-4 h-4"></i>
             </button>
         </div>
@@ -1433,7 +1433,7 @@
                             class="text-xs px-2.5 py-1.5 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-200 hover:text-white border border-gray-700 transition flex items-center gap-1.5 font-medium shadow-sm cursor-pointer"
                             title="更多操作選單" data-i18n-title="artifactMoreActions">
                             <i data-lucide="menu" class="w-3.5 h-3.5"></i>
-                            <span class="hidden sm:inline text-xs font-semibold">功能</span>
+                            <span class="hidden sm:inline text-xs font-semibold" data-i18n="artifactDrawerActions">功能</span>
                             <i data-lucide="chevron-down" class="w-3 h-3 text-gray-400"></i>
                         </button>
                         <!-- Dropdown Menu -->
@@ -1485,7 +1485,7 @@
                     class="shrink-0 flex items-center gap-1.5 px-3 py-1.5 bg-rose-950/80 hover:bg-rose-900 text-rose-300 hover:text-white border border-rose-700/60 rounded-lg text-xs font-bold transition shadow-sm cursor-pointer ml-1 z-10"
                     title="離開 / 關閉 (Esc)" data-i18n-title="artifactCloseDrawer">
                     <i data-lucide="x" class="w-4 h-4 text-rose-400"></i>
-                    <span class="whitespace-nowrap font-bold">離開</span>
+                    <span class="whitespace-nowrap font-bold" data-i18n="artifactExit">離開</span>
                 </button>
             </div>
 
@@ -2735,7 +2735,7 @@
                                 <div class="flex items-center gap-1.5">
                                     <i data-lucide="tag" class="w-3.5 h-3.5 text-indigo-400 shrink-0"></i>
                                     <span><strong class="text-gray-200">版本：</strong> <code
-                                            class="text-indigo-300">v1.0.6-Dual-Engine-WebGPU-RAG-Supervise</code></span>
+                                            class="text-indigo-300">v1.0.7-Dual-Engine-WebGPU-RAG-Supervise</code></span>
                                 </div>
                             </div>
                             <div class="space-y-1.5 text-[11px] text-gray-400">
@@ -2917,7 +2917,7 @@
                                 <div class="flex items-center gap-2">
                                     <i data-lucide="tag" class="w-3.5 h-3.5 text-indigo-400 shrink-0"></i>
                                     <span><strong class="text-gray-200">版本：</strong> <code
-                                            class="text-indigo-300">v1.0.6-Dual-Engine-WebGPU-RAG-Supervise</code></span>
+                                            class="text-indigo-300">v1.0.7-Dual-Engine-WebGPU-RAG-Supervise</code></span>
                                 </div>
                             </div>
                             <div class="space-y-2 text-[11px] text-gray-400">
@@ -3102,7 +3102,7 @@
             <div class="px-6 py-3 border-t border-gray-800 flex justify-between items-center bg-gray-950 shrink-0">
                 <div class="flex flex-col gap-0.5">
                     <span class="text-[11px] text-gray-400 font-mono font-semibold">Webcom Dual-Engine Console
-                        <span class="text-indigo-400">v1.0.6</span></span>
+                        <span class="text-indigo-400">v1.0.7</span></span>
                     <span class="text-[10px] text-gray-600">© 2026 startgo · Licensed under
                         <span class="text-green-600">GNU GPL v3.0</span> ·
                         <a href="mailto:startgo@yia.app"
@@ -3810,7 +3810,61 @@ startx                 # 標準 startx 啟動</pre>
                 artRollbackNotice: "您目前正在檢視歷史版本 (唯讀預覽模式)。若要恢復此版本，請點擊右側「還原此版」。",
                 artBtnRestore: "還原此版",
                 artSaved: "已儲存",
-                browserDirect: "(瀏覽器直連)"
+                browserDirect: "(瀏覽器直連)",
+                artifactDrawerActions: "功能",
+                artifactExit: "離開",
+                artifactMoreActions: "更多功能選單",
+                tooltipCollapseLeft: "往左收合左側工作區 (讓右側 AI 展開全寬)",
+                tooltipExpandLeft: "往右展開左側工作區 (終端機/桌面)",
+                tooltipCollapseRight: "往右收合右側 AI 區 (讓左側工作區展開全寬)",
+                tooltipExpandRight: "往左展開右側 AI 對話區",
+                tooltipExpandChat: "展開 AI 對話",
+                tooltipExpandSettings: "展開並開啟設定",
+                tooltipExpandTerm: "展開並切換至終端機",
+                tooltipExpandNoVnc: "展開並切換至 noVNC 桌面",
+                tooltipExpandXorg: "展開並切換至 Xorg 視窗",
+                tooltipTopToolsMenu: "工具與診斷選單 (MarkItDown / 自我檢測 / 啟動常駐程式)",
+                tooltipLeftActionsMenu: "更多操作選單 (三按鈕縮排)",
+                markitdownConverter: "MarkItDown 轉換器",
+                termActionsCategory: "終端機操作",
+                termActionXinit: "啟動 xinit 桌面",
+                termActionExportLog: "匯出終端機日誌",
+                termActionClear: "清除畫面",
+                termActionKeySettings: "按鍵與快捷鍵設置",
+                novncActionsCategory: "noVNC 桌面操作",
+                novncActionFullscreen: "全螢幕顯示",
+                novncActionCad: "送出 Ctrl+Alt+Del",
+                xorgActionsCategory: "Xorg 視窗操作",
+                xorgActionXinit: "xinit 啟動 / 重啟",
+                xorgActionToolbars: "展開 / 收合快捷啟動列",
+                xorgActionAltTab: "送出 Alt+Tab",
+                xorgActionAltF4: "送出 Alt+F4",
+                xorgActionWizard: "一鍵配置精靈",
+                xorgLaunchApp: "啟動 App",
+                tooltipXorgLaunchApp: "快速啟動 Linux GUI 程式選單",
+                xorgGuiApps: "Linux GUI 程式",
+                appTerminal: "終端機",
+                appFileManager: "檔案總管",
+                appTextEditor: "編輯器",
+                appCalc: "計算機",
+                xorgCustomCmdHint: "自訂指令 (如 firefox, gedit)：",
+                xorgCmdPlaceholder: "指令名稱",
+                btnExecute: "執行",
+                xorgControlsTitle: "控制與設置",
+                tooltipXorgControls: "連線參數、WSL 管理與音訊設定",
+                xorgConnParams: "連線參數",
+                xorgResolution: "解析度:",
+                xorgDesktopEnv: "桌面環境:",
+                xorgProbePort: "探測服務埠",
+                btnXorgWizard: "配置精靈",
+                wslServiceTitle: "WSL 服務",
+                wslStatusUnchecked: "未檢測",
+                wslCheckBtn: "檢查 WSL",
+                wslStopBtn: "停止 WSL",
+                audioStreamTitle: "音訊串流",
+                audioDisabled: "音訊: 關閉",
+                audioVolume: "音量:",
+                keySettingsBtn: "按鍵設置"
             },
             "en": {
                 appTitle: "Dual-Engine AI Console",
@@ -4388,7 +4442,61 @@ startx                 # 標準 startx 啟動</pre>
                 artRollbackNotice: "You are currently viewing a historical version (read-only preview). To restore this version, click 'Restore This Version'.",
                 artBtnRestore: "Restore This Version",
                 artSaved: "Saved",
-                browserDirect: "(Direct Browser)"
+                browserDirect: "(Direct Browser)",
+                artifactDrawerActions: "Actions",
+                artifactExit: "Exit",
+                artifactMoreActions: "More Actions Menu",
+                tooltipCollapseLeft: "Collapse left panel (expand AI full width)",
+                tooltipExpandLeft: "Expand left panel (terminal/desktop)",
+                tooltipCollapseRight: "Collapse right AI panel (expand left workspace full width)",
+                tooltipExpandRight: "Expand right AI chat panel",
+                tooltipExpandChat: "Expand AI Chat",
+                tooltipExpandSettings: "Expand & Open Settings",
+                tooltipExpandTerm: "Expand & switch to Terminal",
+                tooltipExpandNoVnc: "Expand & switch to noVNC Desktop",
+                tooltipExpandXorg: "Expand & switch to Xorg Window",
+                tooltipTopToolsMenu: "Tools & Diagnostics Menu (MarkItDown / Self-Test / Launch Daemon)",
+                tooltipLeftActionsMenu: "Left Mode Actions Menu",
+                markitdownConverter: "MarkItDown Converter",
+                termActionsCategory: "Terminal Actions",
+                termActionXinit: "Launch xinit Desktop",
+                termActionExportLog: "Export Terminal Log",
+                termActionClear: "Clear Screen",
+                termActionKeySettings: "Keys & Shortcuts Settings",
+                novncActionsCategory: "noVNC Desktop Actions",
+                novncActionFullscreen: "Fullscreen",
+                novncActionCad: "Send Ctrl+Alt+Del",
+                xorgActionsCategory: "Xorg View Actions",
+                xorgActionXinit: "xinit Launch / Restart",
+                xorgActionToolbars: "Toggle Quick Launch Toolbar",
+                xorgActionAltTab: "Send Alt+Tab",
+                xorgActionAltF4: "Send Alt+F4",
+                xorgActionWizard: "Setup Wizard",
+                xorgLaunchApp: "Launch App",
+                tooltipXorgLaunchApp: "Quick Launch Linux GUI Apps Menu",
+                xorgGuiApps: "Linux GUI Apps",
+                appTerminal: "Terminal",
+                appFileManager: "File Manager",
+                appTextEditor: "Editor",
+                appCalc: "Calculator",
+                xorgCustomCmdHint: "Custom command (e.g. firefox, gedit):",
+                xorgCmdPlaceholder: "Command name",
+                btnExecute: "Run",
+                xorgControlsTitle: "Controls & Setup",
+                tooltipXorgControls: "Connection parameters, WSL management & audio settings",
+                xorgConnParams: "Connection Parameters",
+                xorgResolution: "Resolution:",
+                xorgDesktopEnv: "Desktop Environment:",
+                xorgProbePort: "Probe Port",
+                btnXorgWizard: "Setup Wizard",
+                wslServiceTitle: "WSL Service",
+                wslStatusUnchecked: "Not checked",
+                wslCheckBtn: "Check WSL",
+                wslStopBtn: "Stop WSL",
+                audioStreamTitle: "Audio Stream",
+                audioDisabled: "Audio: Off",
+                audioVolume: "Volume:",
+                keySettingsBtn: "Key Settings"
             }
         };
 
@@ -5056,7 +5164,7 @@ startx                 # 標準 startx 啟動</pre>
                         <h3 class="font-bold text-sm text-white flex items-center gap-1.5">
                             <i data-lucide="play-circle" class="w-4 h-4 text-green-400"></i> 常駐程式 (Port 8001 Daemon) 啟動
                         </h3>
-                        <p>點擊頂部 <strong>[▶ 啟動常駐程式]</strong> ➔ <strong>[確認一鍵重啟 / 啟用]</strong>，系統將自動啟動後端，連線成功後視窗會<strong>自動關閉</strong>。v1.0.6 支援根目錄免安裝可攜版 Python，並支援 <code>webcom://</code> 前台一鍵無感靜默拉起服務。</p>
+                        <p>點擊頂部 <strong>[▶ 啟動常駐程式]</strong> ➔ <strong>[確認一鍵重啟 / 啟用]</strong>，系統將自動啟動後端，連線成功後視窗會<strong>自動關閉</strong>。v1.0.7 支援根目錄免安裝可攜版 Python，並支援 <code>webcom://</code> 前台一鍵無感靜默拉起服務。</p>
                     </div>
 
                     <div class="p-4 bg-amber-950/20 border border-amber-800/40 rounded-xl space-y-2">
@@ -5456,7 +5564,7 @@ startx                 # 標準 startx 啟動</pre>
                             <i data-lucide="alert-triangle" class="w-4 h-4"></i> Q7: Launching Daemon (Port 8001) on a clean Windows PC without Python?
                         </div>
                         <p class="text-[11px] text-gray-400 leading-relaxed">
-                            A: In v1.0.6, <code>start_daemon.bat</code> is completely rewritten in pure ASCII with strict CRLF line endings to prevent cmd parser crashes. It automatically prioritizes the bundled portable Python (<code>python\python.exe</code>) without needing global Python. It also auto-registers the <code>webcom://</code> protocol so web buttons can silently wake up the service in the background!
+                            A: In v1.0.7, <code>start_daemon.bat</code> is completely rewritten in pure ASCII with strict CRLF line endings to prevent cmd parser crashes. It automatically prioritizes the bundled portable Python (<code>python\python.exe</code>) without needing global Python. It also auto-registers the <code>webcom://</code> protocol so web buttons can silently wake up the service in the background!
                         </p>
                     </div>
 
@@ -5528,7 +5636,7 @@ startx                 # 標準 startx 啟動</pre>
                             <i data-lucide="alert-triangle" class="w-4 h-4"></i> Q7: 在無安裝 Python 的全新電腦上啟動常駐程式 (Port 8001)？
                         </div>
                         <p class="text-[11px] text-gray-400 leading-relaxed">
-                            A: v1.0.6 <code>start_daemon.bat</code> 全面重構！採用純 ASCII 與嚴格 CRLF，徹底根除 Windows cmd.exe 語法解析錯位錯誤。優先自動偵測專案根目錄自帶的 <code>python\python.exe</code>（可攜版免安裝），次選 <code>uv</code> 超高速執行器或全域 Python。同時自動在目前使用者註冊表寫入 <code>webcom://</code> 協定，網頁點擊按鈕即可完全於背景無感拉起服務！
+                            A: v1.0.7 <code>start_daemon.bat</code> 全面重構！採用純 ASCII 與嚴格 CRLF，徹底根除 Windows cmd.exe 語法解析錯位錯誤。優先自動偵測專案根目錄自帶的 <code>python\python.exe</code>（可攜版免安裝），次選 <code>uv</code> 超高速執行器或全域 Python。同時自動在目前使用者註冊表寫入 <code>webcom://</code> 協定，網頁點擊按鈕即可完全於背景無感拉起服務！
                         </p>
                     </div>
 
@@ -5565,7 +5673,7 @@ startx                 # 標準 startx 啟動</pre>
                                 </div>
                                 <div class="flex items-center gap-2">
                                     <i data-lucide="tag" class="w-3.5 h-3.5 text-indigo-400 shrink-0"></i>
-                                    <span><strong class="text-gray-200">Version:</strong> <code class="text-indigo-300">v1.0.6-Dual-Engine-WebGPU-RAG-Supervise</code></span>
+                                    <span><strong class="text-gray-200">Version:</strong> <code class="text-indigo-300">v1.0.7-Dual-Engine-WebGPU-RAG-Supervise</code></span>
                                 </div>
                             </div>
                             <div class="space-y-2 text-[11px] text-gray-400">
@@ -5722,7 +5830,7 @@ startx                 # 標準 startx 啟動</pre>
                                 </div>
                                 <div class="flex items-center gap-2">
                                     <i data-lucide="tag" class="w-3.5 h-3.5 text-indigo-400 shrink-0"></i>
-                                    <span><strong class="text-gray-200">版本：</strong> <code class="text-indigo-300">v1.0.6-Dual-Engine-WebGPU-RAG-Supervise</code></span>
+                                    <span><strong class="text-gray-200">版本：</strong> <code class="text-indigo-300">v1.0.7-Dual-Engine-WebGPU-RAG-Supervise</code></span>
                                 </div>
                             </div>
                             <div class="space-y-2 text-[11px] text-gray-400">
@@ -9194,11 +9302,11 @@ ${tools.join('\n')}${contextStr}
 
                 const termIsEn = currentLang === 'en';
                 const bannerRaw = termIsEn ? [
-                    "\x1b[1;36mWebcom Multi-Protocol Terminal v1.0.6\x1b[0m  \x1b[33m(Powered by Vercel Labs wterm)\x1b[0m",
+                    "\x1b[1;36mWebcom Multi-Protocol Terminal v1.0.7\x1b[0m  \x1b[33m(Powered by Vercel Labs wterm)\x1b[0m",
                     "\x1b[32m● WASM Core (~12KB)\x1b[0m   \x1b[32m● DOM Native Rendering\x1b[0m   \x1b[32m● 24-bit True Color\x1b[0m",
                     "\x1b[90mSupports: Local Shell (WSL) / SSH / Telnet / Web Serial (Direct)\x1b[0m"
                 ] : [
-                    "\x1b[1;36mWebcom 多協定終端機 v1.0.6\x1b[0m  \x1b[33m(Powered by Vercel Labs wterm)\x1b[0m",
+                    "\x1b[1;36mWebcom 多協定終端機 v1.0.7\x1b[0m  \x1b[33m(Powered by Vercel Labs wterm)\x1b[0m",
                     "\x1b[32m● WASM 核心 (~12KB)\x1b[0m   \x1b[32m● DOM 原生渲染\x1b[0m   \x1b[32m● 24-bit 真彩色\x1b[0m",
                     "\x1b[90m支援：本地 Shell (WSL) / SSH / Telnet / Web Serial (直連)\x1b[0m"
                 ];
@@ -15404,70 +15512,70 @@ Important guidelines:
             let html = '';
             if (mode === 'term') {
                 html = `
-                    <div class="px-3 py-1.5 text-[10px] font-bold text-gray-400 uppercase tracking-wider border-b border-gray-800">終端機操作</div>
+                    <div class="px-3 py-1.5 text-[10px] font-bold text-gray-400 uppercase tracking-wider border-b border-gray-800">${escapeHtml(t('termActionsCategory'))}</div>
                     <button type="button" onclick="runXinitInTerm(); closeLeftActionsDropdown();" class="w-full flex items-center gap-2.5 px-3 py-2 text-emerald-300 hover:bg-gray-800 transition text-left cursor-pointer">
                         <i data-lucide="play" class="w-3.5 h-3.5 text-emerald-400"></i>
-                        <span class="font-medium">啟動 xinit 桌面</span>
+                        <span class="font-medium">${escapeHtml(t('termActionXinit'))}</span>
                     </button>
                     <button type="button" onclick="document.getElementById('btn-export-log')?.click(); closeLeftActionsDropdown();" class="w-full flex items-center gap-2.5 px-3 py-2 text-blue-300 hover:bg-gray-800 transition text-left cursor-pointer">
                         <i data-lucide="download" class="w-3.5 h-3.5 text-blue-400"></i>
-                        <span class="font-medium">匯出終端機日誌</span>
+                        <span class="font-medium">${escapeHtml(t('termActionExportLog'))}</span>
                     </button>
                     <button type="button" onclick="document.getElementById('btn-clear-term')?.click(); closeLeftActionsDropdown();" class="w-full flex items-center gap-2.5 px-3 py-2 text-rose-300 hover:bg-gray-800 transition text-left cursor-pointer">
                         <i data-lucide="trash-2" class="w-3.5 h-3.5 text-rose-400"></i>
-                        <span class="font-medium">清除畫面</span>
+                        <span class="font-medium">${escapeHtml(t('termActionClear'))}</span>
                     </button>
                     <button type="button" onclick="openKeySettingsModal('term'); closeLeftActionsDropdown();" class="w-full flex items-center gap-2.5 px-3 py-2 text-purple-300 hover:bg-gray-800 transition text-left cursor-pointer border-t border-gray-800">
                         <i data-lucide="settings" class="w-3.5 h-3.5 text-purple-400"></i>
-                        <span class="font-medium">按鍵與快捷鍵設置</span>
+                        <span class="font-medium">${escapeHtml(t('termActionKeySettings'))}</span>
                     </button>
                 `;
             } else if (mode === 'novnc') {
                 html = `
-                    <div class="px-3 py-1.5 text-[10px] font-bold text-gray-400 uppercase tracking-wider border-b border-gray-800">noVNC 桌面操作</div>
+                    <div class="px-3 py-1.5 text-[10px] font-bold text-gray-400 uppercase tracking-wider border-b border-gray-800">${escapeHtml(t('novncActionsCategory'))}</div>
                     <button type="button" onclick="toggleNoVncFullscreen(); closeLeftActionsDropdown();" class="w-full flex items-center gap-2.5 px-3 py-2 text-blue-300 hover:bg-gray-800 transition text-left cursor-pointer">
                         <i data-lucide="maximize" class="w-3.5 h-3.5 text-blue-400"></i>
-                        <span class="font-medium">全螢幕顯示</span>
+                        <span class="font-medium">${escapeHtml(t('novncActionFullscreen'))}</span>
                     </button>
                     <button type="button" onclick="sendNoVncCtrlAltDel(); closeLeftActionsDropdown();" class="w-full flex items-center gap-2.5 px-3 py-2 text-amber-300 hover:bg-gray-800 transition text-left cursor-pointer">
                         <i data-lucide="shield-alert" class="w-3.5 h-3.5 text-amber-400"></i>
-                        <span class="font-medium">送出 Ctrl+Alt+Del</span>
+                        <span class="font-medium">${escapeHtml(t('novncActionCad'))}</span>
                     </button>
                     <button type="button" onclick="openKeySettingsModal('novnc'); closeLeftActionsDropdown();" class="w-full flex items-center gap-2.5 px-3 py-2 text-purple-300 hover:bg-gray-800 transition text-left cursor-pointer border-t border-gray-800">
                         <i data-lucide="settings" class="w-3.5 h-3.5 text-purple-400"></i>
-                        <span class="font-medium">按鍵與快捷鍵設置</span>
+                        <span class="font-medium">${escapeHtml(t('termActionKeySettings'))}</span>
                     </button>
                 `;
             } else if (mode === 'xorg') {
                 html = `
-                    <div class="px-3 py-1.5 text-[10px] font-bold text-gray-400 uppercase tracking-wider border-b border-gray-800">Xorg 視窗操作</div>
+                    <div class="px-3 py-1.5 text-[10px] font-bold text-gray-400 uppercase tracking-wider border-b border-gray-800">${escapeHtml(t('xorgActionsCategory'))}</div>
                     <button type="button" onclick="handleXinitLaunch(); closeLeftActionsDropdown();" class="w-full flex items-center gap-2.5 px-3 py-2 text-teal-300 hover:bg-gray-800 transition text-left cursor-pointer">
                         <i data-lucide="zap" class="w-3.5 h-3.5 text-teal-400"></i>
-                        <span class="font-medium">xinit 啟動 / 重啟</span>
+                        <span class="font-medium">${escapeHtml(t('xorgActionXinit'))}</span>
                     </button>
                     <button type="button" onclick="toggleXorgFullscreen(); closeLeftActionsDropdown();" class="w-full flex items-center gap-2.5 px-3 py-2 text-blue-300 hover:bg-gray-800 transition text-left cursor-pointer">
                         <i data-lucide="maximize" class="w-3.5 h-3.5 text-blue-400"></i>
-                        <span class="font-medium">全螢幕顯示</span>
+                        <span class="font-medium">${escapeHtml(t('novncActionFullscreen'))}</span>
                     </button>
                     <button type="button" onclick="toggleXorgToolbars(); closeLeftActionsDropdown();" class="w-full flex items-center gap-2.5 px-3 py-2 text-purple-300 hover:bg-gray-800 transition text-left cursor-pointer">
                         <i data-lucide="sliders-horizontal" class="w-3.5 h-3.5 text-purple-400"></i>
-                        <span class="font-medium">展開 / 收合快捷啟動列</span>
+                        <span class="font-medium">${escapeHtml(t('xorgActionToolbars'))}</span>
                     </button>
                     <button type="button" onclick="sendXorgKeyCombo('alttab'); closeLeftActionsDropdown();" class="w-full flex items-center gap-2.5 px-3 py-2 text-gray-300 hover:bg-gray-800 transition text-left cursor-pointer">
                         <i data-lucide="layers" class="w-3.5 h-3.5 text-cyan-400"></i>
-                        <span class="font-medium">送出 Alt+Tab</span>
+                        <span class="font-medium">${escapeHtml(t('xorgActionAltTab'))}</span>
                     </button>
                     <button type="button" onclick="sendXorgKeyCombo('altf4'); closeLeftActionsDropdown();" class="w-full flex items-center gap-2.5 px-3 py-2 text-rose-300 hover:bg-gray-800 transition text-left cursor-pointer">
                         <i data-lucide="x-circle" class="w-3.5 h-3.5 text-rose-400"></i>
-                        <span class="font-medium">送出 Alt+F4</span>
+                        <span class="font-medium">${escapeHtml(t('xorgActionAltF4'))}</span>
                     </button>
                     <button type="button" onclick="openXorgWizardModal(); closeLeftActionsDropdown();" class="w-full flex items-center gap-2.5 px-3 py-2 text-emerald-300 hover:bg-gray-800 transition text-left cursor-pointer border-t border-gray-800">
                         <i data-lucide="sparkles" class="w-3.5 h-3.5 text-emerald-400"></i>
-                        <span class="font-medium">一鍵配置精靈</span>
+                        <span class="font-medium">${escapeHtml(t('xorgActionWizard'))}</span>
                     </button>
                     <button type="button" onclick="openKeySettingsModal('xorg'); closeLeftActionsDropdown();" class="w-full flex items-center gap-2.5 px-3 py-2 text-purple-300 hover:bg-gray-800 transition text-left cursor-pointer">
                         <i data-lucide="settings" class="w-3.5 h-3.5 text-purple-400"></i>
-                        <span class="font-medium">按鍵與快捷鍵設置</span>
+                        <span class="font-medium">${escapeHtml(t('termActionKeySettings'))}</span>
                     </button>
                 `;
             }
@@ -16847,7 +16955,7 @@ if __name__ == "__main__":
 </head>
 <body>
   <h2>📦 JSON 格式化與驗證工具</h2>
-  <textarea id="box">{\n  "project": "Webcom",\n  "version": "1.0.6",\n  "features": ["Artifact", "AppLibrary", "Agent"]\n}</textarea>
+  <textarea id="box">{\n  "project": "Webcom",\n  "version": "1.0.7",\n  "features": ["Artifact", "AppLibrary", "Agent"]\n}</textarea>
   <div class="btn-row">
     <button onclick="formatJson()">格式化 (2 空格)</button>
     <button onclick="minifyJson()">壓縮 (Minify)</button>

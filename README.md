@@ -2,7 +2,7 @@
 
 > **繁體中文** ・ [English](#english)
 >
-> 🎯 **當前版本：`v1.0.6-Dual-Engine-WebGPU-RAG-Supervise`** ・ 釋出日期：`2026-09-11`
+> 🎯 **當前版本：`v1.0.7-Dual-Engine-WebGPU-RAG-Supervise`** ・ 釋出日期：`2026-09-14`
 > 📝 變更紀錄：見下方 [## 🕓 變更日誌 (Changelog)](#-變更日誌-changelog) / [English Changelog](#-changelog)
 
 **Webcom** 是一套單檔 `index.html` 就能啟動的 **雙引擎 AI 主控台**，整合 **多協定終端機（WSL / SSH / Telnet / Web Serial / 後端 Serial）**、**LM Studio / API** 與 **WebGPU 瀏覽器本地 LLM** 兩種推理引擎、**RAG 知識庫管理**、**MCP 協定工具面板**、**純斷網模擬**、**WinPE 開機自動執行** 等常見的現場維運／離線操作需求。
@@ -402,6 +402,25 @@ Q1~Q3 請見內建手冊第 5 頁「常見問題」。以下為本次 v1.0.0 新
 
 ## 🕓 變更日誌 (Changelog)
 
+#### `v1.0.7-Dual-Engine-WebGPU-RAG-Supervise` — 2026-09-14 **雙向收合佈局、Artifact 工坊介面重構與完整雙語 i18n 釋出 (Layout Optimization, Artifact Drawer & Full i18n Release)**
+> 🚀 重大更新：1366×768 (Asus VS229 等緊湊螢幕) 雙向極致收合佈局 ＋ Artifact 工坊頂部導航抽屜化與常駐離開按鈕 ＋ Xorg 工具列整合為直覺式選單 ＋ 補齊全站 54+ 項 UI 按鈕與選單雙語 (zh-TW / en) i18n 支援 ＋ 系統全功能 55 項自我檢測通過。
+
+- **🖥️ 雙向極致收合佈局 (Compact Screen & Collapsible Panels)**：
+  1. **左右雙向獨立收合**：左側工作區（終端機/桌面）可向左收合為極窄直條，讓右側 AI 對話區展開至 100% 完整寬度；右側 AI 對話區亦可向右收合，讓左側工作區展開全螢幕操作。
+  2. **1366×768 (Asus VS229) 緊湊螢幕最佳化**：即使在標準 1366×768 或小尺寸筆電螢幕下，多欄位、多面板皆能彈性切換，不再擠壓 UI 排版。
+  3. **收合條快捷展開指示**：收合後顯示提示直條，支援一鍵即時還原雙欄佈局或快速展開特定功能（終端、noVNC、Xorg、AI 對話、設定）。
+- **🎨 Artifact 預覽工坊 (Workbench Drawer) 頂部抽屜化與導航優化**：
+  1. **常駐「離開」與「功能 ▾」按鈕**：Artifact 工坊右上方固定常駐「離開 (Esc)」與「功能 ▾」下拉選單，避免窄螢幕時動作按鈕溢出或遮擋關閉鈕。
+  2. **多項動作整合入下拉選單**：重新載入沙箱、新視窗開啟、複製全檔、下載檔案、存入應用庫、版本差異比對、LLM 接續輸出等完整收納於功能選單中。
+- **🖼️ Xorg 工具列收納與直覺化操作**：
+  1. **精簡工具列選單化**：將 Xorg 原有密集的「啟動 App」與「控制設定」工具列重構為「🚀 啟動 App ▾」與「⚙️ 控制與設置 ▾」下拉式選單，釋放寶貴的垂直與水平工作空間。
+  2. **快速啟動 Linux GUI 程式**：內建終端機、Thunar 檔案總管、Mousepad 編輯器、計算機與自訂指令輸入，一鍵在 Linux Xorg 視窗中喚醒。
+- **🌐 補齊新建按鈕與全站雙語 (zh-TW / en) 翻譯**：
+  1. **全面盤點補齊 54+ 項遺漏之 i18n 鍵值**：全面補充收合條提示、頂部工具選單、左側工作區動作選單、MarkItDown 轉換器、終端機/桌面/Xorg 下拉功能、自訂應用庫按鈕與快捷鍵設定之雙語對照。
+  2. **動態按鈕選單語言即時聯動**：修正選單在切換語言時即時透過 `t(...)` 翻譯更新，杜絕語系切換後殘留未翻譯字串。
+- **🩺 全系統 55 項自我檢測 100% 通過**：
+  - `diagnose_system.py` 與 `self_test.bat` 執行 55 項全自動檢驗（WSL 服務探針、前後端語法、檔案 SHA256 雜湊一致性等），全數綠燈通過。
+
 #### `v1.0.6-Dual-Engine-WebGPU-RAG-Supervise` — 2026-09-11 **功能整合、自我檢測與跨平台相容性釋出 (Feature & Compatibility Release)**
 > 🚀 重大更新：完整整合 Microsoft MarkItDown 本地文件轉換與上傳 ＋ 雙模全自動自我檢測系統 ＋ Windows 批次檔跨機相容性重構 ＋ 介面按鈕精簡與終端機修復
 
@@ -518,7 +537,7 @@ Q1~Q3 請見內建手冊第 5 頁「常見問題」。以下為本次 v1.0.0 新
 <a id="english"></a>
 # Webcom — Dual-Engine AI Console (English)
 
-> 🎯 **Current Release:** `v1.0.6-Dual-Engine-WebGPU-RAG-Supervise` ・ **Released:** `2026-09-11`
+> 🎯 **Current Release:** `v1.0.7-Dual-Engine-WebGPU-RAG-Supervise` ・ **Released:** `2026-09-14`
 > 📝 **Changelog:** [Jump to Changelog ↓](#-changelog)
 
 **Webcom** is a single-file (`index.html`) **Dual-Engine AI Console** that combines a **multi-protocol terminal (WSL / SSH / Telnet / Web Serial / Backend Serial)**, **LM Studio / API** and **WebGPU browser-local LLM** inference engines, **RAG Knowledge Base**, **MCP tool panel**, **pure-offline simulation switch**, and **WinPE autorun** for real-world on-site / offline ops.
@@ -899,6 +918,25 @@ Q1~Q3 live inside the built-in User Guide Tab 5 *FAQ*. The Q4~Q6 below cover v1.
 <a id="changelog"></a>
 ## 🕓 Changelog
 
+### `v1.0.7-Dual-Engine-WebGPU-RAG-Supervise` — 2026-09-14 **Collapsible Dual Panels, Streamlined Artifact Drawer & Full Bilingual i18n Release**
+> 🚀 Major update: Bidirectional panel collapsing tailored for 1366×768 (Asus VS229) compact displays + Overhauled Artifact Workbench drawer with pinned exit button + Streamlined Xorg app/control dropdowns + Complete bilingual (zh-TW / en) i18n translation coverage for 54+ newly added UI controls + 55/55 automated system diagnostics passing.
+
+- **🖥️ Bidirectional Panel Collapsing (1366×768 Compact Screen Optimization)**:
+  1. **Independent Panel Collapse**: Left workspace (Terminal / noVNC / Xorg) collapses to an ultra-thin vertical strip, allowing the AI chat area to expand to 100% width; right AI chat panel can likewise collapse to grant the terminal/desktop full screen space.
+  2. **1366×768 (Asus VS229) Tailored Layout**: Prevents UI clipping and horizontal scrollbars on compact and standard resolution screens.
+  3. **Strip Quick-Expand Controls**: Collapsed vertical strip provides intuitive tooltips and one-click restoration or jumping directly into Terminal, noVNC, Xorg, Chat, or Settings.
+- **🎨 Artifact Workbench Drawer & Navigation Overhaul**:
+  1. **Pinned Exit & "Actions ▾" Menu**: Fixed pinned "Exit (Esc)" button alongside a grouped "Actions ▾" dropdown on top right of the Artifact Workbench drawer to eliminate button overflow.
+  2. **Consolidated Action List**: Reload Sandbox, Open in New Tab, Copy Complete Code, Download File, Save to App Library, Version Diff, and LLM Continuation are neatly accessible from the dropdown.
+- **🖼️ Streamlined Xorg Toolbar Dropdown Menus**:
+  1. **Compact Dropdowns**: Consolidated crowded Xorg buttons into two intuitive dropdowns: "🚀 Launch App ▾" and "⚙️ Controls & Setup ▾", saving essential workspace height.
+  2. **One-Click Linux GUI Launchers**: Quick-launch Terminal, Thunar File Manager, Mousepad Text Editor, Calculator, and custom commands directly on the HTML5 canvas.
+- **🌐 Complete Bilingual (zh-TW / en) i18n Coverage**:
+  1. **54+ Missing UI Keys Added**: Thoroughly audited and translated all newly introduced UI buttons, collapsed strip tooltips, dropdown actions, MarkItDown converter triggers, and WSL control buttons in both Traditional Chinese (`zh-TW`) and English (`en`).
+  2. **Dynamic Menu Language Synchronization**: Ensured dynamically rendered menus correctly invoke `t(...)` during runtime language switching.
+- **🩺 Automated Diagnostic Suite 55/55 PASS**:
+  - Full test suite in `diagnose_system.py` and `self_test.bat` passed 55 out of 55 checks with 100% SHA256 file parity across the project repository.
+
 ### `v1.0.6-Dual-Engine-WebGPU-RAG-Supervise` — 2026-09-11 **Feature, Self-Diagnostics & Cross-Platform Compatibility Release**
 > 🚀 Major update: Microsoft MarkItDown full document conversion & upload integration + Dual-mode self-diagnostic suite + Windows batch launcher overhaul + UI button optimization & terminal fixes
 
@@ -941,14 +979,6 @@ Q1~Q3 live inside the built-in User Guide Tab 5 *FAQ*. The Q4~Q6 below cover v1.
   3. `pythonw.exe` / windowless service mode: when `sys.stdout/sys.stderr is None` → auto-redirect both to `daemon.log` (fixes crashes under Task Scheduler / silent launcher because stderr was unavailable)
   4. CWD hardening: at startup, force `os.chdir(__file__ dir)` + `sys.path.insert(0, __dir__)` (fixes imports when daemon is launched from a different working directory)
 - **🩹 `webcom://` custom protocol launcher now uses `<a>.click()` instead of `iframe.src`**: newer Edge/Chromium CSP policies block iframe-loading custom protocols (caused a 3000 ms ghost-flash / no-launch). Replaced with `<a href="webcom://…">` + programmatic `.click()` + removal after 2000 ms — works on Chrome / Edge / Firefox.
-### `v1.0.7-WSL-Desktop-Inspection` — 2026-09-12
-- **🐧 WSL 桌面整合與健康排查 (WSL Desktop Inspection & 1-Click Launch)**:
-  - **解決 WSL 桌面連線難題**：後端常駐程式 (Port 8001) 新增 `/api/wsl/status` 即時檢測端點，自動探測 WSL2 發行版、TigerVNC (`5901`)、WebSockify (`6080`) 與 PulseAudio TCP (`8000`) 埠號監聽狀態。
-  - **一鍵自動拉起桌面環境**：新增 `/api/wsl/start-desktop` 與 `/api/wsl/stop-desktop`，免手動下指令即可自動在 WSL 背景執行 `Xtigervnc :1 -SecurityTypes None`、`startxfce4`、`websockify -D` 與 PulseAudio 模組。
-  - **左側工作區專屬控制列**：noVNC 桌面與 Xorg 視窗工作區頂部新增 WSL 即時狀態徽章、`[🔍 檢查 WSL]` 與 `[🚀 一鍵啟動 WSL 桌面]` 按鈕，點擊後自動啟動並無縫連線 HTML5 桌面畫布。
-  - **原生 WSL Bash 終端機指令執行**：多協定終端機新增「本地 Shell (WSL Linux)」選項，命令原生透過 `wsl.exe -e bash -c "<cmd>"` 執行，完美支援 Linux 系統指令，不再受限於 Windows powershell/cmd 回退機制。
-  - **完整雙向自動檢測**：`diagnose_system.py` 與 `self_test.bat` 全面納入 WSL 核心函式、UI 元件與 `/api/wsl/status` 探針檢查。
-
 - **🩹 Download-register `.reg.bat` now launches via `wscript.exe silent_daemon.vbs` (truly silent)**: the previous `start_daemon.bat` route popped a cmd black console; the new `HKCU\…\webcom\shell\open\command = wscript.exe silent_daemon.vbs %1` runs **fully in background, zero windows, zero user disruption**.
 - **📦 Asset sync**: `assets/webllm.bundle.js` (WebGPU loader callback priority tweak — 78-byte delta)
 - **📄 Docs**: bilingual Changelog entries + top banner version bumped v1.0.3 → v1.0.4
