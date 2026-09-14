@@ -1926,13 +1926,24 @@
         <div
             class="bg-gray-900 border border-gray-700 rounded-2xl w-[560px] shadow-2xl flex flex-col overflow-hidden max-h-[85vh]">
             <div class="px-5 py-4 border-b border-gray-800 flex justify-between items-center bg-gray-900 shrink-0">
-                <h2 class="text-base font-bold text-white flex items-center gap-2">
-                    <i data-lucide="book-open" class="w-5 h-5 text-emerald-400"></i>
-                    <span data-i18n="ragModalTitle">RAG 知識庫管理</span>
-                </h2>
-                <button id="btn-close-rag" class="text-gray-400 hover:text-white transition p-1">
-                    <i data-lucide="x" class="w-5 h-5"></i>
-                </button>
+                <div class="flex items-center gap-2">
+                    <h2 class="text-base font-bold text-white flex items-center gap-2">
+                        <i data-lucide="book-open" class="w-5 h-5 text-emerald-400"></i>
+                        <span data-i18n="ragModalTitle">RAG 百科知識庫管理</span>
+                    </h2>
+                </div>
+                <div class="flex items-center gap-2">
+                    <button id="btn-import-ragpack" type="button" class="text-xs bg-indigo-950/70 hover:bg-indigo-900 text-indigo-300 px-2.5 py-1 rounded-md border border-indigo-700/60 flex items-center gap-1 font-medium transition cursor-pointer" title="匯入主題知識包 (.ragpack / JSON)" data-i18n-title="tooltipImportRagPack">
+                        <i data-lucide="upload" class="w-3.5 h-3.5"></i> <span data-i18n="ragBtnImportPack">匯入知識包</span>
+                    </button>
+                    <input type="file" id="file-import-ragpack" class="hidden" accept=".ragpack,.json">
+                    <button id="btn-export-ragpack" type="button" class="text-xs bg-purple-950/70 hover:bg-purple-900 text-purple-300 px-2.5 py-1 rounded-md border border-purple-700/60 flex items-center gap-1 font-medium transition cursor-pointer" title="匯出當前分類為主題知識包 (.ragpack)" data-i18n-title="tooltipExportRagPack">
+                        <i data-lucide="package" class="w-3.5 h-3.5"></i> <span data-i18n="ragBtnExportPack">匯出知識包</span>
+                    </button>
+                    <button id="btn-close-rag" class="text-gray-400 hover:text-white transition p-1 ml-1 cursor-pointer">
+                        <i data-lucide="x" class="w-5 h-5"></i>
+                    </button>
+                </div>
             </div>
             <div class="p-5 space-y-4 overflow-y-auto flex-1">
                 <!-- 新增文件區塊 -->
@@ -1951,9 +1962,18 @@
                         </div>
                     </div>
                     <div>
-                        <input type="text" id="rag-doc-title"
-                            class="w-full bg-black border border-gray-700 rounded-lg px-3 py-1.5 text-xs text-white focus:border-emerald-500 focus:outline-none mb-2"
-                            placeholder="文件標題 (Title)...">
+                        <div class="flex gap-2 mb-2">
+                            <input type="text" id="rag-doc-title"
+                                class="flex-1 bg-black border border-gray-700 rounded-lg px-3 py-1.5 text-xs text-white focus:border-emerald-500 focus:outline-none"
+                                placeholder="文件標題 (Title)...">
+                            <select id="rag-doc-category" class="bg-black border border-gray-700 rounded-lg px-2.5 py-1.5 text-xs text-emerald-300 focus:border-emerald-500 focus:outline-none shrink-0 font-medium cursor-pointer">
+                                <option value="hardware_pcb">⚡ 硬體架構與 PCB</option>
+                                <option value="network_protocols">🌐 網通與協定</option>
+                                <option value="system_os_cli">💻 系統維運與 CLI</option>
+                                <option value="standards_compliance">📋 安規與認證標準</option>
+                                <option value="general_knowledge" selected>📚 通用知識手冊</option>
+                            </select>
+                        </div>
                         <textarea id="rag-doc-content" rows="3"
                             class="w-full bg-black border border-gray-700 rounded-lg p-2.5 text-xs text-gray-200 focus:border-emerald-500 focus:outline-none resize-none font-mono"
                             placeholder="貼上文件文本內容..."></textarea>
@@ -2008,13 +2028,18 @@
                         class="text-xs text-gray-400 space-y-1.5 max-h-36 overflow-y-auto pt-1"></div>
                 </div>
 
-                <!-- 已建立索引的文件清單 -->
-                <div>
-                    <div class="flex justify-between items-center mb-2">
-                        <label class="block text-xs text-gray-300 font-bold"
-                            data-i18n="ragIndexedListTitle">已收錄文件清單</label>
+                <!-- 百科目錄分類與已收錄文件清單 -->
+                <div class="space-y-2">
+                    <div class="flex justify-between items-center">
+                        <label class="block text-xs text-gray-300 font-bold flex items-center gap-1.5"
+                            data-i18n="ragIndexedListTitle">
+                            <i data-lucide="library" class="w-3.5 h-3.5 text-emerald-400"></i>
+                            <span>百科目錄與已收錄文件</span>
+                        </label>
                         <span id="rag-total-chunks" class="text-xs text-emerald-400 font-mono" data-i18n="ragTotalChunksInit">0 個分塊</span>
                     </div>
+                    <!-- 百科分類切換 Pills -->
+                    <div id="rag-category-tabs" class="flex items-center gap-1.5 overflow-x-auto pb-1 text-xs scrollbar-thin"></div>
                     <div id="rag-doc-list" class="space-y-2 max-h-48 overflow-y-auto"></div>
                 </div>
             </div>
@@ -3617,6 +3642,16 @@ ffmpeg -f pulse -i default -acodec libmp3lame -ab 128k -f mp3 -listen 1 http://0
                 guideModalTitle: "雙引擎 AI 控制台・系統操作與排障手冊",
                 tooltipCompressContext: "壓縮對話上下文 (減少 Token 負載，防止長對話當機)",
                 contextCompressedToast: "✅ 對話歷史已最佳化壓縮 (已節省上下文空間)",
+                ragBtnImportPack: "匯入知識包",
+                ragBtnExportPack: "匯出知識包",
+                tooltipImportRagPack: "匯入主題知識包 (.ragpack / JSON)",
+                tooltipExportRagPack: "匯出當前分類為主題知識包 (.ragpack)",
+                ragCategoryAll: "全部百科",
+                ragCategoryHardwarePcb: "⚡ 硬體架構與 PCB",
+                ragCategoryNetworkProtocols: "🌐 網通與協定",
+                ragCategorySystemOsCli: "💻 系統維運與 CLI",
+                ragCategoryStandardsCompliance: "📋 安規與認證標準",
+                ragCategoryGeneralKnowledge: "📚 通用知識手冊",
                 clearChat: "清空",
                 btnStop: "停止",
                 btnRetry: "重試",
@@ -4342,6 +4377,16 @@ ffmpeg -f pulse -i default -acodec libmp3lame -ab 128k -f mp3 -listen 1 http://0
                 guideModalTitle: "Dual-Engine AI Console User Manual & Diagnostics",
                 tooltipCompressContext: "Compress Context (Reduces tokens & prevents payload overload)",
                 contextCompressedToast: "✅ Conversation context compressed & optimized!",
+                ragBtnImportPack: "Import Pack",
+                ragBtnExportPack: "Export Pack",
+                tooltipImportRagPack: "Import Topic Knowledge Pack (.ragpack / JSON)",
+                tooltipExportRagPack: "Export Current Category as Knowledge Pack (.ragpack)",
+                ragCategoryAll: "All Catalog",
+                ragCategoryHardwarePcb: "⚡ Hardware & PCB",
+                ragCategoryNetworkProtocols: "🌐 Network & Protocols",
+                ragCategorySystemOsCli: "💻 System & CLI",
+                ragCategoryStandardsCompliance: "📋 Standards & EMC",
+                ragCategoryGeneralKnowledge: "📚 General Docs",
                 clearChat: "Clear",
                 btnStop: "Stop",
                 btnRetry: "Retry",
@@ -5054,7 +5099,22 @@ ffmpeg -f pulse -i default -acodec libmp3lame -ab 128k -f mp3 -listen 1 http://0
             },
             ragDocs: [
                 {
+                    id: "doc_wifi_poe_pse_hardware_eval",
+                    category: "hardware_pcb",
+                    title: "WiFi 4+4+4 與雙 PoE+PSE 硬體架構與 PCB 面積評估指南 (WiFi 4+4+4 & Dual PoE+PSE Hardware & PCB Sizing Guide)",
+                    content: `【WiFi 4+4+4 與雙 PoE+PSE 硬體架構與 PCB 面積評估指南】\n1. WiFi 4+4+4 射頻前端區 (12 條通道)：2.4G 4x4 + 5G Low 4x4 + 5G High/6G 4x4，12 路 FEM 封裝約 3x3~5x5mm，含濾波器、匹配電路、屏蔽罩 (Shielding Can) 與 IPEX 接頭，射頻總佔板面積約 3,600 ~ 4,500 mm²。\n2. 雙 PoE 輸入受電模組 (Dual PoE-PD)：雙 RJ45 帶燈變壓器 (MagJack)、Dual Active Bridge 整流橋、TVS 防雷防湧浪、802.3at/bt PD 控制器與隔離電源變壓器，佔板約 1,350 ~ 1,750 mm²。\n3. 可切換 PSE 輸出模組 (PoE-PSE)：802.3at/bt PSE 控制晶片、大功率 MOSFET 開關、精密電流採樣電阻、54V DC-DC 升/降壓電源、大電流屏蔽電感、固態電容、安全爬電間距與散熱鋪銅，佔板約 1,950 ~ 2,700 mm²。\n4. 主控 SoC 核心運算區：高效能 64-bit 多核 ARM SoC、DDR4/5 記憶體、eMMC/NAND、PMIC 與多路 POL 降壓網路，佔板約 2,150 ~ 3,000 mm²。\n5. 結構佈線膨脹係數 (Overhead)：走線通道、螺絲固定孔、板邊禁配區 (Keepout) 係數 1.35 ~ 1.45 倍，實際所需雙面/單面總面積約 135 ~ 148 cm²。\n6. 建議 PCB 總尺寸：標準工業級推薦 140 mm × 100 mm (140 cm²) 或 135 mm × 110 mm (6層板)；極限緊湊型推薦 120 mm × 95 mm (114 cm²，需 8 層 HDI 板雙面高密度打件)。`,
+                    chunks: [
+                        "【WiFi 4+4+4 射頻前端區佔板面積估算】2.4G 4x4 + 5G Low 4x4 + 5G High/6G 4x4 共 12 條射頻通道。RFIC 晶片佔 250~300 mm²；12 路獨立 FEM (每路 80~100 mm²) 合計 1,000~1,200 mm²；12 組帶通濾波器佔 300 mm²；金屬屏蔽罩與隔離牆佔 1,200~1,500 mm²；12 組天線接頭佔 400 mm²。射頻子系統總佔板面積約 3,600 ~ 4,500 mm² (36 ~ 45 cm²)。",
+                        "【雙 PoE 輸入受電模組 (Dual PoE-PD) 佔板面積估算】雙 RJ45 帶燈變壓器 (Dual MagJack) 佔 600~800 mm²；雙路主動整流橋與 TVS 防雷湧浪保護佔 350~450 mm²；802.3at/bt PD 控制晶片與初級隔離 Flyback/Forward DC-DC 變壓器佔 400~500 mm²。雙 PoE-PD 輸入模組總佔板面積約 1,350 ~ 1,750 mm² (13.5 ~ 17.5 cm²)。",
+                        "【可切換 PSE 輸出供電模組 (PoE-PSE) 佔板面積估算】802.3at (30W) / 802.3bt (60W/90W) PSE 控制晶片佔 150~200 mm²；功率 MOSFET 開關管與 Shunt 檢測電阻佔 200~300 mm²；54V 功率電源與大電感固態電容佔 800~1,100 mm²；高低壓安全爬電距離 (Creepage & Clearance) 佔 400~500 mm²；散熱打孔與大面積鋪銅區佔 400~600 mm²。可切換 PSE 模組總佔板面積約 1,950 ~ 2,700 mm² (19.5 ~ 27 cm²)。",
+                        "【主控 SoC 核心系統佔板估算】ARM 64-bit 網通多核 SoC 晶片 (BGA 21x21~27x27mm) 佔 600~800 mm²；DDR4/5 記憶體顆粒與走線通道佔 400~600 mm²；eMMC/NAND Flash 佔 150~200 mm²；主板 PMIC 與多路 POL 電源轉換器佔 800~1,100 mm²；晶振與外設介面佔 200~300 mm²。主控系統合計佔板面積約 2,150 ~ 3,000 mm² (21.5 ~ 30 cm²)。",
+                        "【PCB 佈局膨脹係數與建議尺寸】純元件佔板面積總和約 10,000 mm² (100 cm²)。高頻走線、阻抗匹配、螺絲固定孔 (Keepout) 與板邊隔離膨脹係數為 1.35~1.45 倍，實際所需面積約 135 ~ 148 cm²。標準推薦尺寸為 140 mm × 100 mm (140 cm²) 或 135 mm × 110 mm (建議 6 層板，散熱良率最佳)；極限緊湊尺寸為 120 mm × 95 mm (114 cm²，需 8 層 HDI 板雙面打件與金屬底座散熱)。"
+                    ],
+                    date: new Date().toISOString()
+                },
+                {
                     id: "doc_demo_1",
+                    category: "system_os_cli",
                     title: "Webcom 系統硬體操作規範",
                     content: "本系統具備 Web Serial 直連硬體裝置與後端 Daemon 控制能力。操作序列埠 (Serial/COM) 設備時，請確保鮑率 (Baud Rate) 設定正確 (通常為 115200 或 9600)。若要發送 AT 指令或 help 指令，可直接透過 write_frontend_terminal 下達。",
                     chunks: [
@@ -8306,7 +8366,170 @@ ffmpeg -f pulse -i default -acodec libmp3lame -ab 128k -f mp3 -listen 1 http://0
             reader.readAsText(file); e.target.value = '';
         });
 
-        // --- RAG Knowledge Base Management ---
+        // --- RAG 百科全書目錄與主題知識包系統 (Encyclopedia Catalog & Knowledge Packs) ---
+        const ENCYCLOPEDIA_CATEGORIES = [
+            { id: 'all', nameZh: '全部百科', nameEn: 'All Catalog', icon: 'layers', color: 'text-gray-300' },
+            { id: 'hardware_pcb', nameZh: '硬體架構與 PCB', nameEn: 'Hardware & PCB', icon: 'cpu', color: 'text-amber-400' },
+            { id: 'network_protocols', nameZh: '網通與協定', nameEn: 'Network & Protocols', icon: 'network', color: 'text-cyan-400' },
+            { id: 'system_os_cli', nameZh: '系統維運與 CLI', nameEn: 'System & CLI', icon: 'terminal', color: 'text-emerald-400' },
+            { id: 'standards_compliance', nameZh: '安規與認證標準', nameEn: 'Standards & EMC', icon: 'shield-check', color: 'text-rose-400' },
+            { id: 'general_knowledge', nameZh: '通用知識手冊', nameEn: 'General Docs', icon: 'book-open', color: 'text-purple-400' }
+        ];
+
+        let activeRagCategory = 'all';
+
+        function getCategoryMeta(catId) {
+            return ENCYCLOPEDIA_CATEGORIES.find(c => c.id === catId) || ENCYCLOPEDIA_CATEGORIES[5];
+        }
+
+        function ensureRagDocsSchema() {
+            if (!appSettings.ragDocs || !Array.isArray(appSettings.ragDocs)) {
+                appSettings.ragDocs = defaultSettings.ragDocs;
+            }
+            // 確保所有既有文件皆具備百科分類欄位
+            appSettings.ragDocs.forEach(d => {
+                if (!d.category) {
+                    if (d.id && d.id.includes('hardware')) d.category = 'hardware_pcb';
+                    else if (d.id && (d.id.includes('network') || d.id.includes('openwrt'))) d.category = 'network_protocols';
+                    else if (d.id && (d.id.includes('windows') || d.id.includes('debian') || d.id.includes('uboot') || d.id.includes('demo'))) d.category = 'system_os_cli';
+                    else d.category = 'general_knowledge';
+                }
+            });
+            // 若預設旗艦硬體評估文件尚未收錄，自動補入
+            const hasHwDoc = appSettings.ragDocs.some(d => d.id === 'doc_wifi_poe_pse_hardware_eval');
+            if (!hasHwDoc && defaultSettings.ragDocs && defaultSettings.ragDocs[0]) {
+                appSettings.ragDocs.unshift(defaultSettings.ragDocs[0]);
+            }
+        }
+
+        function renderRagCategoryTabs() {
+            const tabsEl = document.getElementById('rag-category-tabs');
+            if (!tabsEl) return;
+            ensureRagDocsSchema();
+            tabsEl.innerHTML = '';
+            const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en');
+
+            ENCYCLOPEDIA_CATEGORIES.forEach(cat => {
+                const count = cat.id === 'all'
+                    ? appSettings.ragDocs.length
+                    : appSettings.ragDocs.filter(d => (d.category || 'general_knowledge') === cat.id).length;
+                const isActive = activeRagCategory === cat.id;
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = `px-2.5 py-1 rounded-lg flex items-center gap-1.5 transition font-medium shrink-0 cursor-pointer text-xs ${
+                    isActive
+                        ? 'bg-emerald-600 text-white shadow-sm font-bold'
+                        : 'bg-gray-800 hover:bg-gray-700 text-gray-300 border border-gray-700/60'
+                }`;
+                const name = isEn ? cat.nameEn : cat.nameZh;
+                btn.innerHTML = `<span>${name}</span><span class="text-[10px] px-1.5 py-0.2 rounded-full ${isActive ? 'bg-black/40 text-emerald-200' : 'bg-gray-900 text-gray-400 font-mono'}">${count}</span>`;
+                btn.onclick = () => {
+                    activeRagCategory = cat.id;
+                    renderRagCategoryTabs();
+                    renderRagDocList();
+                };
+                tabsEl.appendChild(btn);
+            });
+        }
+
+        function exportRagPack(catId = null) {
+            ensureRagDocsSchema();
+            const targetCat = catId || activeRagCategory;
+            const docsToExport = targetCat === 'all'
+                ? appSettings.ragDocs
+                : appSettings.ragDocs.filter(d => (d.category || 'general_knowledge') === targetCat);
+
+            if (docsToExport.length === 0) {
+                showUploadToast(currentLang === 'en' ? 'No documents in this category to export' : '此分類下無文件可供匯出', true);
+                return;
+            }
+
+            const catMeta = getCategoryMeta(targetCat);
+            const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en');
+            const packName = targetCat === 'all'
+                ? (isEn ? 'Webcom Complete Encyclopedia Knowledge Pack' : 'Webcom 百科全書完整知識庫')
+                : (isEn ? `${catMeta.nameEn} Knowledge Pack` : `Webcom ${catMeta.nameZh} 專業主題包`);
+
+            const ragPack = {
+                manifest: {
+                    format: "ragpack",
+                    version: "1.0",
+                    packId: `pack_${targetCat}_${Date.now()}`,
+                    name: packName,
+                    category: targetCat,
+                    author: "Webcom Engineering Team",
+                    createdAt: new Date().toISOString(),
+                    validUntil: "2027-12-31T23:59:59Z",
+                    license: "Commercial Enterprise Subscription / Annual Maintenance",
+                    documentCount: docsToExport.length
+                },
+                documents: docsToExport
+            };
+
+            const blob = new Blob([JSON.stringify(ragPack, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${targetCat === 'all' ? 'encyclopedia_all' : targetCat}_knowledge_pack.ragpack`;
+            document.body.appendChild(a);
+            a.click();
+            setTimeout(() => {
+                if (a.parentNode) a.parentNode.removeChild(a);
+                URL.revokeObjectURL(url);
+            }, 2000);
+            showUploadToast(isEn ? `✅ Successfully exported ${docsToExport.length} docs to .ragpack` : `✅ 已成功匯出「${packName}」共 ${docsToExport.length} 篇文獻！`, false);
+        }
+
+        function importRagPackFromFile(file) {
+            if (!file) return;
+            const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en');
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    let incomingDocs = [];
+                    let packName = file.name;
+
+                    if (data.manifest && Array.isArray(data.documents)) {
+                        incomingDocs = data.documents;
+                        packName = data.manifest.name || packName;
+                    } else if (Array.isArray(data)) {
+                        incomingDocs = data;
+                    } else if (Array.isArray(data.ragDocs)) {
+                        incomingDocs = data.ragDocs;
+                    } else {
+                        throw new Error("Invalid .ragpack structure");
+                    }
+
+                    ensureRagDocsSchema();
+                    let importedCount = 0;
+                    incomingDocs.forEach(newDoc => {
+                        if (!newDoc.title && !newDoc.content) return;
+                        if (!newDoc.id) newDoc.id = 'doc_' + Math.random().toString(36).substr(2, 9);
+                        if (!newDoc.category) newDoc.category = data.manifest?.category || 'general_knowledge';
+                        if (!newDoc.chunks || newDoc.chunks.length === 0) {
+                            newDoc.chunks = chunkText(newDoc.content || "", 400);
+                        }
+                        const existingIdx = appSettings.ragDocs.findIndex(d => d.id === newDoc.id || d.title === newDoc.title);
+                        if (existingIdx >= 0) {
+                            appSettings.ragDocs[existingIdx] = newDoc;
+                        } else {
+                            appSettings.ragDocs.push(newDoc);
+                        }
+                        importedCount++;
+                    });
+
+                    saveSettingsToLocal();
+                    renderRagCategoryTabs();
+                    renderRagDocList();
+                    showUploadToast(isEn ? `✅ Successfully imported ${importedCount} docs from "${packName}"!` : `✅ 成功匯入「${packName}」共 ${importedCount} 篇百科文件！`, false);
+                } catch (err) {
+                    showUploadToast(`❌ 知識包格式錯誤: ${err.message}`, true);
+                }
+            };
+            reader.readAsText(file);
+        }
+
         function chunkText(text, size = 400) {
             const paragraphs = text.split(/\n+/).filter(p => p.trim());
             const chunks = [];
@@ -8375,28 +8598,42 @@ ffmpeg -f pulse -i default -acodec libmp3lame -ab 128k -f mp3 -listen 1 http://0
             const listEl = document.getElementById('rag-doc-list');
             const totalChunksEl = document.getElementById('rag-total-chunks');
             if (!listEl) return;
+            ensureRagDocsSchema();
+            renderRagCategoryTabs();
             listEl.innerHTML = '';
             let totalChunks = 0;
 
-            if (appSettings.ragDocs.length === 0) {
-                listEl.innerHTML = `<div class="text-xs text-gray-500 p-3 bg-black/40 rounded-lg text-center font-mono">${t('ragEmptyList')}</div>`;
+            const filteredDocs = activeRagCategory === 'all'
+                ? appSettings.ragDocs
+                : appSettings.ragDocs.filter(d => (d.category || 'general_knowledge') === activeRagCategory);
+
+            if (filteredDocs.length === 0) {
+                listEl.innerHTML = `<div class="text-xs text-gray-500 p-4 bg-black/40 rounded-lg text-center font-mono">${t('ragEmptyList')}</div>`;
                 totalChunksEl.textContent = `0 ${t('ragChunksUnit')}`;
                 return;
             }
 
             const dlTitle = (typeof currentLang !== 'undefined' && currentLang === 'en') ? 'Download Markdown (.md)' : '下載 Markdown (.md)';
             const folderTitle = (typeof currentLang !== 'undefined' && currentLang === 'en') ? 'Reveal in Explorer' : '在檔案總管開啟所在資料夾';
+            const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en');
 
-            appSettings.ragDocs.forEach((doc, idx) => {
+            filteredDocs.forEach((doc, idx) => {
                 totalChunks += doc.chunks?.length || 1;
                 const div = document.createElement('div');
-                div.className = "p-2.5 rounded-lg bg-black border border-gray-800 flex justify-between items-center text-xs";
+                div.className = "p-2.5 rounded-lg bg-black border border-gray-800 flex justify-between items-center text-xs hover:border-gray-700 transition";
                 const hasPath = !!doc.savedPath;
                 const pathDisplay = hasPath ? (doc.savedPath.split(/[\\/]/).pop()) : '';
+                const catMeta = getCategoryMeta(doc.category || 'general_knowledge');
+                const catName = isEn ? catMeta.nameEn : catMeta.nameZh;
+
+                // Actual index in appSettings.ragDocs
+                const realIdx = appSettings.ragDocs.indexOf(doc);
+
                 div.innerHTML = `
                     <div class="flex-1 min-w-0 pr-2">
-                        <div class="font-bold text-emerald-400 truncate flex items-center gap-1.5">
+                        <div class="font-bold text-emerald-400 truncate flex items-center gap-1.5 flex-wrap">
                             <span class="truncate">${escapeHtml(doc.title || 'Untitled')}</span>
+                            <span class="text-[9.5px] px-1.5 py-0.2 rounded bg-gray-900 border border-gray-700 font-mono ${catMeta.color} shrink-0">${catName}</span>
                             ${hasPath ? '<span class="text-[9px] px-1 py-0.2 rounded bg-emerald-950 text-emerald-300 border border-emerald-800/80 font-mono shrink-0">MD 實體檔案</span>' : ''}
                         </div>
                         <div class="text-[11px] text-gray-400 flex items-center gap-2 mt-0.5 font-mono">
@@ -8411,10 +8648,10 @@ ffmpeg -f pulse -i default -acodec libmp3lame -ab 128k -f mp3 -listen 1 http://0
                         <button class="btn-reveal-rag-item text-gray-400 hover:text-cyan-300 p-1 rounded hover:bg-gray-800 transition cursor-pointer" data-path="${escapeHtml(doc.savedPath)}" title="${folderTitle}">
                             <i data-lucide="folder" class="w-3.5 h-3.5"></i>
                         </button>` : ''}
-                        <button class="btn-download-rag-item text-gray-400 hover:text-emerald-300 p-1 rounded hover:bg-gray-800 transition cursor-pointer" data-idx="${idx}" title="${dlTitle}">
+                        <button class="btn-download-rag-item text-gray-400 hover:text-emerald-300 p-1 rounded hover:bg-gray-800 transition cursor-pointer" data-idx="${realIdx}" title="${dlTitle}">
                             <i data-lucide="download" class="w-3.5 h-3.5"></i>
                         </button>
-                        <button class="btn-del-rag text-red-400 hover:text-red-300 p-1 rounded hover:bg-gray-800 transition cursor-pointer" data-idx="${idx}" title="${t('ragDelete')}">
+                        <button class="btn-del-rag text-red-400 hover:text-red-300 p-1 rounded hover:bg-gray-800 transition cursor-pointer" data-idx="${realIdx}" title="${t('ragDelete')}">
                             <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
                         </button>
                     </div>
@@ -8444,6 +8681,7 @@ ffmpeg -f pulse -i default -acodec libmp3lame -ab 128k -f mp3 -listen 1 http://0
                     const idx = parseInt(e.currentTarget.getAttribute('data-idx'));
                     appSettings.ragDocs.splice(idx, 1);
                     saveSettingsToLocal();
+                    renderRagCategoryTabs();
                     renderRagDocList();
                 });
             });
@@ -8551,7 +8789,23 @@ ffmpeg -f pulse -i default -acodec libmp3lame -ab 128k -f mp3 -listen 1 http://0
         }
 
 
+        document.getElementById('btn-import-ragpack')?.addEventListener('click', () => {
+            document.getElementById('file-import-ragpack')?.click();
+        });
+
+        document.getElementById('file-import-ragpack')?.addEventListener('change', (e) => {
+            const file = e.target.files && e.target.files[0];
+            if (file) importRagPackFromFile(file);
+            e.target.value = '';
+        });
+
+        document.getElementById('btn-export-ragpack')?.addEventListener('click', () => {
+            exportRagPack();
+        });
+
         document.getElementById('btn-open-rag').addEventListener('click', () => {
+            ensureRagDocsSchema();
+            renderRagCategoryTabs();
             renderRagDocList();
             syncRagDocsFromDaemon();
             ragModal.classList.remove('hidden');
@@ -8701,8 +8955,10 @@ ffmpeg -f pulse -i default -acodec libmp3lame -ab 128k -f mp3 -listen 1 http://0
             }
 
             const chunks = chunkText(content, chunkSize);
+            const docCategory = document.getElementById('rag-doc-category')?.value || 'general_knowledge';
             const docObj = {
                 id: 'doc_' + Date.now(),
+                category: docCategory,
                 title,
                 content,
                 chunks,
@@ -8713,6 +8969,7 @@ ffmpeg -f pulse -i default -acodec libmp3lame -ab 128k -f mp3 -listen 1 http://0
 
             appSettings.ragDocs.push(docObj);
             saveSettingsToLocal();
+            renderRagCategoryTabs();
             renderRagDocList();
 
             document.getElementById('rag-doc-title').value = '';
@@ -15175,8 +15432,10 @@ Important guidelines:
             try {
                 const chunkSize = parseInt(document.getElementById('rag-chunk-size')?.value) || 400;
                 const chunks = chunkText(parsedText, chunkSize);
+                const docCat = document.getElementById('rag-doc-category')?.value || 'general_knowledge';
                 const docObj = {
                     id: 'doc_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
+                    category: docCat,
                     title: file.name,
                     content: parsedText,
                     chunks: chunks,
@@ -15185,6 +15444,7 @@ Important guidelines:
                 };
                 appSettings.ragDocs = appSettings.ragDocs || [];
                 appSettings.ragDocs.push(docObj);
+                renderRagCategoryTabs();
                 renderRagDocList();
                 saveSettingsToLocal();
             } catch (ragErr) {
