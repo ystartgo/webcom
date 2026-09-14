@@ -5,6 +5,10 @@ REM ============================================================
 setlocal
 cd /d "%~dp0"
 
+chcp 65001 >nul 2>&1
+set "PYTHONIOENCODING=utf-8"
+set "PYTHONUTF8=1"
+
 REM 1. Auto-register webcom:// protocol in HKCU
 reg query "HKCU\Software\Classes\webcom\shell\open\command" >nul 2>&1
 if errorlevel 1 (

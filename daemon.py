@@ -6,6 +6,20 @@ import shutil
 # Ensure working directory is always script directory
 os.chdir(os.path.dirname(os.path.abspath(__file__)))
 
+# Ensure standard UTF-8 console output and environment (prevent CP950 / Big5 encoding errors)
+os.environ["PYTHONIOENCODING"] = "utf-8"
+os.environ["PYTHONUTF8"] = "1"
+if hasattr(sys.stdout, 'reconfigure'):
+    try:
+        sys.stdout.reconfigure(encoding='utf-8', errors='replace')
+    except Exception:
+        pass
+if hasattr(sys.stderr, 'reconfigure'):
+    try:
+        sys.stderr.reconfigure(encoding='utf-8', errors='replace')
+    except Exception:
+        pass
+
 # Support windowless execution (pythonw / hidden background service)
 if sys.stdout is None or sys.stderr is None:
     try:
@@ -672,13 +686,13 @@ def execute_shell(req: ShellRequest):
         env = os.environ.copy()
         env["PYTHONIOENCODING"] = "utf-8"
         env["PYTHONUTF8"] = "1"
-        env["LANG"] = "zh_TW.UTF-8"
-        env["LC_ALL"] = "zh_TW.UTF-8"
+        env["LANG"] = "C.UTF-8"
+        env["LC_ALL"] = "C.UTF-8"
 
         def decode_stream(raw_bytes: bytes) -> str:
             if not raw_bytes:
                 return ""
-            for enc in ("utf-8", "cp950", "cp936", "latin-1"):
+            for enc in ("utf-8", "cp950", "cp936", "gbk", "latin-1"):
                 try:
                     return raw_bytes.decode(enc)
                 except UnicodeDecodeError:
@@ -704,7 +718,7 @@ def execute_shell(req: ShellRequest):
                 # WinPE & Windows Execution: Prefer powershell with UTF-8 console encoding if available, fallback cleanly to cmd.exe
                 if shutil.which("powershell.exe"):
                     try:
-                        ps_cmd = f"$OutputEncoding = [System.Text.Encoding]::UTF8; [Console]::OutputEncoding = [System.Text.Encoding]::UTF8; [Console]::InputEncoding = [System.Text.Encoding]::UTF8; {cmd}"
+                        ps_cmd = f"chcp 65001 >$null; $OutputEncoding = [System.Text.Encoding]::UTF8; [Console]::OutputEncoding = [System.Text.Encoding]::UTF8; [Console]::InputEncoding = [System.Text.Encoding]::UTF8; {cmd}"
                         process = subprocess.run(
                             ["powershell.exe", "-NoProfile", "-Command", ps_cmd],
                             capture_output=True,

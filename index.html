@@ -8335,11 +8335,11 @@ ffmpeg -f pulse -i default -acodec libmp3lame -ab 128k -f mp3 -listen 1 http://0
             if (isLocalModel) {
                 // 所有本機模型均使用精簡直接的 System Prompt，避免小模型誤解工具呼叫格式
                 if (currentLang === 'en') {
-                    let p = `You are a helpful, knowledgeable AI assistant. Answer questions clearly and completely in English or Traditional Chinese. Never output JSON or XML tool call formats.`;
+                    let p = `You are a helpful, knowledgeable AI assistant. Answer questions clearly and completely. Never output JSON or XML tool call formats.`;
                     if (ragContext) p += ragContext;
                     return p;
                 } else {
-                    let p = `你是一位專業、親切且具備豐富知識的 AI 助手，請直接以繁體中文回答使用者的問題。\n請提供完整、結構清晰的回答，不要輸出任何 JSON、XML 或程式碼格式。`;
+                    let p = `你是一位專業、親切且具備豐富知識的 AI 助手。\n請以標準 UTF-8 編碼提供完整、結構清晰的回答，不要輸出任何 JSON、XML 或程式碼格式。`;
                     if (lastTerminalLines) p += `\n\n【終端機畫面參考】:\n\`\`\`\n${lastTerminalLines}\n\`\`\``;
                     if (ragContext) p += ragContext;
                     return p;
@@ -8425,7 +8425,7 @@ Rules:
             } else {
                 const timeString = now.toLocaleString('zh-TW', { timeZone: 'Asia/Taipei' });
                 if (!enableAgent) {
-                    let prompt = `【語言強制規則】你必須全程使用【繁體中文】回答，嚴禁使用簡體中文字符。\n你是一個強大的 AI 助理。請以繁體中文回答使用者的問題，並保持邏輯清晰與結構化。`;
+                    let prompt = `【輸出規範】請使用標準 UTF-8 編碼回答。\n你是一個強大的 AI 助理。請清楚、流暢地回答使用者的問題，並保持邏輯清晰與結構化。`;
                     if (lastTerminalLines) {
                         prompt += `\n\n【左側終端機當前畫面感知】\n\`\`\`\n${lastTerminalLines}\n\`\`\``;
                     }
@@ -8470,7 +8470,7 @@ Rules:
 
                 if (ragContext) contextStr += ragContext;
 
-                return `【語言要求】請使用【繁體中文】回答。
+                return `【輸出規範】請使用標準 UTF-8 編碼輸出。
 你是一個具備全方位「左側工作區」與終端機控制能力的 AI 助理 (Agent)。
 你的左側為多功能工作區，包含三大模式：終端機 (Terminal)、遠端桌面 (noVNC)、視窗連線 (Xorg)。你可即時感知左側畫面並下達指令互動。
 【調用左側核心原則】當使用者要求調用左側、操作終端機、下指令、查詢終端機畫面或切換模式時，你必須立即輸出 <tool_call> 主動調用工具！
@@ -8494,8 +8494,8 @@ ${tools.join('\n')}${contextStr}
 
 重要行為準則：
 1. 當使用者要求操作左側、調用左側、執行命令或查詢系統時，務必輸出 <tool_call> 調用對應工具（如 write_frontend_terminal 或 read_frontend_terminal）。
-2. 前端系統會自動攔截工具呼叫、執行動作並回傳 <tool_response>，收到回傳後請根據結果為使用者整理並直接給出完整繁體中文回答。
-3. 日常閒聊、概念諮詢或自我介紹時，直接以繁體中文文字回答，無需呼叫工具。
+2. 前端系統會自動攔截工具呼叫、執行動作並回傳 <tool_response>，收到回傳後請根據結果為使用者整理並直接給出完整回答。
+3. 日常閒聊、概念諮詢或自我介紹時，直接以文字回答，無需呼叫工具。
 4. 每次只呼叫一個工具。`;
             }
         }
