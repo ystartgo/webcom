@@ -569,8 +569,8 @@
                     <div id="vkey-custom-container" class="flex items-center gap-1"></div>
                     <button id="btn-config-vkeys" type="button" onclick="openKeySettingsModal('term')"
                         class="px-2 py-1 bg-purple-950/60 hover:bg-purple-900 active:bg-purple-800 text-purple-300 border border-purple-700/60 rounded-md font-mono text-xs font-bold transition flex items-center gap-1 shadow-sm cursor-pointer"
-                        title="按鍵與快捷鍵設置 (自訂虛擬按鍵/巨集/遠端快捷鍵)" data-i18n-title="tooltipKeySettings">
-                        <i data-lucide="settings" class="w-3.5 h-3.5"></i> <span data-i18n="vkeySettings">設置</span>
+                        title="終端機與桌面按鍵設置 (自訂虛擬按鍵/巨集/快捷鍵)" data-i18n-title="tooltipKeySettings">
+                        <i data-lucide="settings" class="w-3.5 h-3.5"></i> <span data-i18n="keySettingsBtn">按鍵設置</span>
                     </button>
                 </div>
             </div>
@@ -1171,8 +1171,8 @@
                     <i data-lucide="globe" class="w-3.5 h-3.5 text-blue-400 shrink-0"></i>
                     <select id="lang-select"
                         class="bg-transparent text-xs text-gray-200 focus:outline-none cursor-pointer font-medium">
-                        <option value="zh-TW" class="bg-gray-900 text-white" data-i18n="langZhTw">繁體中文</option>
-                        <option value="en" class="bg-gray-900 text-white" data-i18n="langEn">English</option>
+                        <option value="zh-TW" class="bg-gray-900 text-white">繁體中文</option>
+                        <option value="en" class="bg-gray-900 text-white">English</option>
                     </select>
                 </div>
 
@@ -3279,6 +3279,252 @@ startx                 # 標準 startx 啟動</pre>
         </div>
     </div>
 
+    <!-- 按鍵與快捷鍵自訂設置對話盒 (Keypad, Shortcuts & Audio Settings Modal) -->
+    <div id="key-settings-modal"
+        class="fixed inset-0 bg-black/75 backdrop-blur-sm z-[100] hidden flex items-center justify-center p-4">
+        <div class="bg-gray-900 border border-purple-500/40 rounded-2xl w-[640px] shadow-2xl flex flex-col overflow-hidden max-h-[90vh]">
+            <div class="px-5 py-4 border-b border-gray-800 flex justify-between items-center bg-gray-900/90 shrink-0">
+                <h2 class="text-base font-bold text-white flex items-center gap-2">
+                    <div class="p-1.5 bg-purple-600/20 text-purple-400 rounded-lg border border-purple-500/30">
+                        <i data-lucide="keyboard" class="w-4 h-4 text-purple-400"></i>
+                    </div>
+                    <span data-i18n="keySettingsTitle">按鍵與快捷鍵自訂設置</span>
+                </h2>
+                <button id="btn-close-key-modal" onclick="closeKeySettingsModal()" class="text-gray-400 hover:text-white transition p-1 cursor-pointer">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <!-- Modal Sub-Tabs -->
+            <div class="flex border-b border-gray-800 bg-black/40 px-5 pt-2 gap-2 text-xs font-semibold shrink-0">
+                <button id="tab-btn-cfg-term" type="button" onclick="switchKeyConfigTab('term')"
+                    class="px-3 py-1.5 border-b-2 border-purple-500 text-purple-300 font-bold transition flex items-center gap-1.5 cursor-pointer">
+                    <i data-lucide="terminal" class="w-3.5 h-3.5"></i> <span data-i18n="tabTermKeys">終端機按鍵</span>
+                </button>
+                <button id="tab-btn-cfg-remote" type="button" onclick="switchKeyConfigTab('remote')"
+                    class="px-3 py-1.5 border-b-2 border-transparent text-gray-400 hover:text-gray-200 transition flex items-center gap-1.5 cursor-pointer">
+                    <i data-lucide="monitor" class="w-3.5 h-3.5"></i> <span data-i18n="tabRemoteKeys">遠端桌面快捷鍵</span>
+                </button>
+                <button id="tab-btn-cfg-audio" type="button" onclick="switchKeyConfigTab('audio')"
+                    class="px-3 py-1.5 border-b-2 border-transparent text-gray-400 hover:text-gray-200 transition flex items-center gap-1.5 cursor-pointer">
+                    <i data-lucide="volume-2" class="w-3.5 h-3.5"></i> <span data-i18n="tabAudioConfig">音訊設置</span>
+                </button>
+            </div>
+
+            <div class="p-5 space-y-4 text-xs overflow-y-auto flex-1">
+                <!-- Tab 1: Terminal Keys Config -->
+                <div id="cfg-panel-term" class="space-y-4">
+                    <div class="p-3 bg-gray-950 rounded-xl border border-gray-800 space-y-2">
+                        <div class="font-bold text-gray-200 flex items-center justify-between">
+                            <span data-i18n="keyModalDefaultToggle">內建按鍵顯示開關</span>
+                            <span class="text-[11px] text-gray-500" data-i18n="keyModalDefaultToggleDesc">勾選後將顯示於終端機虛擬鍵盤</span>
+                        </div>
+                        <div class="grid grid-cols-3 sm:grid-cols-4 gap-2 pt-1">
+                            <label class="flex items-center gap-1.5 cursor-pointer text-gray-300">
+                                <input id="cfg-chk-nav" type="checkbox" checked class="rounded bg-gray-800 border-gray-700 text-purple-600 focus:ring-0">
+                                <span data-i18n="keyNav">方向鍵 (↑↓←→)</span>
+                            </label>
+                            <label class="flex items-center gap-1.5 cursor-pointer text-gray-300">
+                                <input id="cfg-chk-tab" type="checkbox" checked class="rounded bg-gray-800 border-gray-700 text-purple-600 focus:ring-0">
+                                <span data-i18n="keyTab">Tab 補全</span>
+                            </label>
+                            <label class="flex items-center gap-1.5 cursor-pointer text-gray-300">
+                                <input id="cfg-chk-del" type="checkbox" checked class="rounded bg-gray-800 border-gray-700 text-purple-600 focus:ring-0">
+                                <span data-i18n="keyDel">Del 退格</span>
+                            </label>
+                            <label class="flex items-center gap-1.5 cursor-pointer text-gray-300">
+                                <input id="cfg-chk-enter" type="checkbox" checked class="rounded bg-gray-800 border-gray-700 text-purple-600 focus:ring-0">
+                                <span data-i18n="keyEnter">Enter 發送</span>
+                            </label>
+                            <label class="flex items-center gap-1.5 cursor-pointer text-gray-300">
+                                <input id="cfg-chk-esc" type="checkbox" checked class="rounded bg-gray-800 border-gray-700 text-purple-600 focus:ring-0">
+                                <span data-i18n="keyEsc">Esc 離開</span>
+                            </label>
+                            <label class="flex items-center gap-1.5 cursor-pointer text-gray-300">
+                                <input id="cfg-chk-ctrla" type="checkbox" checked class="rounded bg-gray-800 border-gray-700 text-purple-600 focus:ring-0">
+                                <span data-i18n="keyCtrlA">Ctrl+A (全選)</span>
+                            </label>
+                            <label class="flex items-center gap-1.5 cursor-pointer text-gray-300">
+                                <input id="cfg-chk-ctrlc" type="checkbox" checked class="rounded bg-gray-800 border-gray-700 text-purple-600 focus:ring-0">
+                                <span data-i18n="keyCtrlC">Ctrl+C (中斷)</span>
+                            </label>
+                            <label class="flex items-center gap-1.5 cursor-pointer text-gray-300">
+                                <input id="cfg-chk-ctrlv" type="checkbox" checked class="rounded bg-gray-800 border-gray-700 text-purple-600 focus:ring-0">
+                                <span data-i18n="keyCtrlV">Ctrl+V (貼上)</span>
+                            </label>
+                            <label class="flex items-center gap-1.5 cursor-pointer text-gray-300">
+                                <input id="cfg-chk-ctrlx" type="checkbox" checked class="rounded bg-gray-800 border-gray-700 text-purple-600 focus:ring-0">
+                                <span data-i18n="keyCtrlX">Ctrl+X (剪下)</span>
+                            </label>
+                            <label class="flex items-center gap-1.5 cursor-pointer text-gray-300">
+                                <input id="cfg-chk-ctrlz" type="checkbox" checked class="rounded bg-gray-800 border-gray-700 text-purple-600 focus:ring-0">
+                                <span data-i18n="keyCtrlZ">Ctrl+Z (暫停)</span>
+                            </label>
+                            <label class="flex items-center gap-1.5 cursor-pointer text-gray-300">
+                                <input id="cfg-chk-ctrll" type="checkbox" checked class="rounded bg-gray-800 border-gray-700 text-purple-600 focus:ring-0">
+                                <span data-i18n="keyCtrlL">Ctrl+L (清屏)</span>
+                            </label>
+                            <label class="flex items-center gap-1.5 cursor-pointer text-gray-300">
+                                <input id="cfg-chk-ctrld" type="checkbox" class="rounded bg-gray-800 border-gray-700 text-purple-600 focus:ring-0">
+                                <span data-i18n="keyCtrlD">Ctrl+D (登出)</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Custom Macro Buttons -->
+                    <div class="p-3 bg-gray-950 rounded-xl border border-gray-800 space-y-2.5">
+                        <div class="font-bold text-gray-200 flex items-center justify-between">
+                            <span class="flex items-center gap-1.5 text-purple-300">
+                                <i data-lucide="sparkles" class="w-4 h-4"></i> <span data-i18n="customMacroTitle">自訂巨集快捷鍵</span>
+                            </span>
+                            <span class="text-[11px] text-gray-500" data-i18n="customMacroDesc">點擊按鈕直接發送字串或指令</span>
+                        </div>
+                        <div id="cfg-term-custom-list" class="space-y-1.5">
+                            <!-- Injected dynamically -->
+                        </div>
+                        <!-- Add Custom Key Form -->
+                        <div class="flex items-center gap-2 pt-2 border-t border-gray-800/80">
+                            <input id="cfg-new-term-label" type="text" placeholder="標籤 (如 htop)" data-i18n-placeholder="macroLabelPlaceholder" class="bg-gray-900 border border-gray-700 rounded px-2 py-1 text-xs w-28 font-mono focus:outline-none">
+                            <input id="cfg-new-term-cmd" type="text" placeholder="送出指令 (如 htop\n)" data-i18n-placeholder="macroCmdPlaceholder" class="bg-gray-900 border border-gray-700 rounded px-2 py-1 text-xs flex-1 font-mono focus:outline-none">
+                            <select id="cfg-new-term-color" class="bg-gray-900 border border-gray-700 rounded px-2 py-1 text-xs cursor-pointer">
+                                <option value="purple" data-i18n="colorPurple">紫色</option>
+                                <option value="blue" data-i18n="colorBlue">藍色</option>
+                                <option value="emerald" data-i18n="colorEmerald">綠色</option>
+                                <option value="gray" data-i18n="colorGray">灰色</option>
+                                <option value="rose" data-i18n="colorRose">紅色</option>
+                            </select>
+                            <button type="button" onclick="addCustomTermKey()" class="px-3 py-1 bg-purple-600 hover:bg-purple-500 text-white rounded font-medium flex items-center gap-1 cursor-pointer">
+                                <i data-lucide="plus" class="w-3.5 h-3.5"></i> <span data-i18n="btnAdd">新增</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tab 2: Remote Shortcuts Config -->
+                <div id="cfg-panel-remote" class="space-y-4 hidden">
+                    <div class="p-3 bg-gray-950 rounded-xl border border-gray-800 space-y-2">
+                        <div class="font-bold text-gray-200 flex items-center justify-between">
+                            <span data-i18n="remotePresetsTitle">常用遠端按鍵顯示 (Remote Presets)</span>
+                            <span class="text-[11px] text-gray-500" data-i18n="remotePresetsDesc">顯示於 noVNC 與 Xorg 工具列</span>
+                        </div>
+                        <div class="grid grid-cols-2 sm:grid-cols-3 gap-2 pt-1">
+                            <label class="flex items-center gap-1.5 cursor-pointer text-gray-300">
+                                <input id="cfg-chk-cad" type="checkbox" checked class="rounded bg-gray-800 border-gray-700 text-purple-600 focus:ring-0">
+                                <span data-i18n="keyCad">Ctrl+Alt+Del</span>
+                            </label>
+                            <label class="flex items-center gap-1.5 cursor-pointer text-gray-300">
+                                <input id="cfg-chk-alttab" type="checkbox" checked class="rounded bg-gray-800 border-gray-700 text-purple-600 focus:ring-0">
+                                <span data-i18n="keyAltTab">Alt+Tab (切換視窗)</span>
+                            </label>
+                            <label class="flex items-center gap-1.5 cursor-pointer text-gray-300">
+                                <input id="cfg-chk-altf4" type="checkbox" checked class="rounded bg-gray-800 border-gray-700 text-purple-600 focus:ring-0">
+                                <span data-i18n="keyAltF4">Alt+F4 (關閉視窗)</span>
+                            </label>
+                            <label class="flex items-center gap-1.5 cursor-pointer text-gray-300">
+                                <input id="cfg-chk-super" type="checkbox" checked class="rounded bg-gray-800 border-gray-700 text-purple-600 focus:ring-0">
+                                <span data-i18n="keySuper">Super / Win 徽標鍵</span>
+                            </label>
+                            <label class="flex items-center gap-1.5 cursor-pointer text-gray-300">
+                                <input id="cfg-chk-ctrlaltt" type="checkbox" checked class="rounded bg-gray-800 border-gray-700 text-purple-600 focus:ring-0">
+                                <span data-i18n="keyCtrlAltT">Ctrl+Alt+T (開終端)</span>
+                            </label>
+                            <label class="flex items-center gap-1.5 cursor-pointer text-gray-300">
+                                <input id="cfg-chk-fullscreen" type="checkbox" checked class="rounded bg-gray-800 border-gray-700 text-purple-600 focus:ring-0">
+                                <span data-i18n="keyFullscreen">全螢幕切換</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Custom Remote Combinations -->
+                    <div class="p-3 bg-gray-950 rounded-xl border border-gray-800 space-y-2.5">
+                        <div class="font-bold text-gray-200 flex items-center justify-between">
+                            <span class="flex items-center gap-1.5 text-blue-300">
+                                <i data-lucide="keyboard" class="w-4 h-4"></i> <span data-i18n="customRemoteTitle">自訂遠端組合鍵 (Custom Remote Combos)</span>
+                            </span>
+                        </div>
+                        <div id="cfg-remote-custom-list" class="space-y-1.5">
+                            <!-- Injected dynamically -->
+                        </div>
+                        <!-- Add Custom Remote Key Form -->
+                        <div class="flex items-center gap-2 pt-2 border-t border-gray-800/80">
+                            <input id="cfg-new-remote-label" type="text" placeholder="標籤 (如 Ctrl+W)" data-i18n-placeholder="remoteLabelPlaceholder" class="bg-gray-900 border border-gray-700 rounded px-2 py-1 text-xs w-28 font-mono focus:outline-none">
+                            <select id="cfg-new-remote-action" class="bg-gray-900 border border-gray-700 rounded px-2 py-1 text-xs flex-1 cursor-pointer">
+                                <option value="ctrl-w" data-i18n="optCtrlW">Ctrl + W (關閉分頁)</option>
+                                <option value="ctrl-shift-t" data-i18n="optCtrlShiftT">Ctrl + Shift + T (復原分頁)</option>
+                                <option value="f11" data-i18n="optF11">F11 (視窗全螢幕)</option>
+                                <option value="f5" data-i18n="optF5">F5 (重整)</option>
+                                <option value="printscreen" data-i18n="optPrintScreen">PrintScreen (螢幕截圖)</option>
+                                <option value="ctrl-esc" data-i18n="optCtrlEsc">Ctrl + Esc (開始功能表)</option>
+                            </select>
+                            <button type="button" onclick="addCustomRemoteKey()" class="px-3 py-1 bg-blue-600 hover:bg-blue-500 text-white rounded font-medium flex items-center gap-1 cursor-pointer">
+                                <i data-lucide="plus" class="w-3.5 h-3.5"></i> <span data-i18n="btnAdd">新增</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tab 3: Audio Stream Config -->
+                <div id="cfg-panel-audio" class="space-y-4 hidden">
+                    <div class="p-3 bg-gray-950 rounded-xl border border-gray-800 space-y-3">
+                        <div class="font-bold text-gray-200 flex items-center justify-between">
+                            <span class="flex items-center gap-1.5 text-emerald-300">
+                                <i data-lucide="volume-2" class="w-4 h-4"></i> <span data-i18n="audioConfigTitle">音訊串流參數配置 (Audio Stream Config)</span>
+                            </span>
+                            <button type="button" onclick="playTestTone()" class="text-xs text-cyan-400 hover:underline flex items-center gap-1 cursor-pointer">
+                                <i data-lucide="bell" class="w-3 h-3"></i> <span data-i18n="btnPlayTestTone">播放測試音</span>
+                            </button>
+                        </div>
+
+                        <div class="space-y-2">
+                            <div>
+                                <label class="block text-gray-400 text-[11px] mb-1" data-i18n="lblAudioUrl">預設音訊串流來源 URL (PulseAudio / HTTP Stream)</label>
+                                <div class="flex items-center gap-2">
+                                    <input id="cfg-audio-url" type="text" value="http://127.0.0.1:8000/audio" class="bg-gray-900 border border-gray-700 rounded px-2 py-1 text-xs flex-1 font-mono focus:outline-none">
+                                    <button type="button" onclick="probeAudioPortFromModal()" class="px-2 py-1 rounded bg-gray-800 hover:bg-gray-700 text-cyan-300 border border-cyan-800/50 flex items-center gap-1 cursor-pointer">
+                                        <i data-lucide="activity" class="w-3 h-3"></i> <span data-i18n="btnProbe8000">探測 8000</span>
+                                    </button>
+                                </div>
+                                <span id="cfg-audio-probe-status" class="text-[11px] text-gray-500 mt-1 block font-mono"></span>
+                            </div>
+
+                            <div>
+                                <label class="block text-gray-400 text-[11px] mb-1" data-i18n="lblAudioDefaultVol">預設初始音量 (0 - 100%)</label>
+                                <div class="flex items-center gap-2">
+                                    <input id="cfg-audio-default-vol" type="range" min="0" max="100" value="80" class="w-32 accent-purple-500 cursor-pointer">
+                                    <span id="cfg-audio-vol-text" class="font-mono text-gray-300">80%</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="p-3 bg-emerald-950/20 rounded-xl border border-emerald-800/40 space-y-2">
+                        <div class="font-bold text-emerald-300 flex items-center gap-1.5">
+                            <i data-lucide="info" class="w-4 h-4"></i> <span data-i18n="audioGuideTitle">Linux / WSL2 音訊架設指令 (PulseAudio + ffmpeg)</span>
+                        </div>
+                        <pre class="bg-black/70 p-2.5 rounded-lg border border-gray-800 font-mono text-[10px] text-gray-200 overflow-x-auto select-all">sudo apt install -y pulseaudio ffmpeg
+pulseaudio --start --exit-idle-time=-1
+ffmpeg -f pulse -i default -acodec libmp3lame -ab 128k -f mp3 -listen 1 http://0.0.0.0:8000/audio &</pre>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Footer Buttons -->
+            <div class="px-5 py-3 bg-gray-900 border-t border-gray-800 flex items-center justify-between shrink-0">
+                <button type="button" onclick="resetKeySettingsToDefault()" class="text-xs text-rose-400 hover:text-rose-300 hover:underline cursor-pointer" data-i18n="btnResetDefaults">
+                    恢復預設值 (Reset Defaults)
+                </button>
+                <div class="flex items-center gap-2">
+                    <button type="button" onclick="saveAndApplyKeySettings()" class="px-4 py-1.5 bg-purple-600 hover:bg-purple-500 text-white rounded-lg font-medium cursor-pointer shadow" data-i18n="btnSaveApply">
+                        儲存並套用 (Save & Apply)
+                    </button>
+                    <button type="button" onclick="closeKeySettingsModal()" class="px-4 py-1.5 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-lg font-medium cursor-pointer" data-i18n="modalClose">
+                        關閉
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>iv>
+
 
     <script>
         // --- Multi-Language (i18n) Dictionary ---
@@ -3914,6 +4160,59 @@ startx                 # 標準 startx 啟動</pre>
                 audioDisabled: "音訊: 關閉",
                 audioVolume: "音量:",
                 keySettingsBtn: "按鍵設置",
+            keySettingsTitle: "按鍵與快捷鍵自訂設置",
+            tabTermKeys: "終端機按鍵",
+            tabRemoteKeys: "遠端桌面快捷鍵",
+            tabAudioConfig: "音訊設置",
+            keyModalDefaultToggle: "內建按鍵顯示開關",
+            keyModalDefaultToggleDesc: "勾選後將顯示於終端機虛擬鍵盤",
+            keyNav: "方向鍵 (↑↓←→)",
+            keyTab: "Tab 補全",
+            keyDel: "Del 退格",
+            keyEnter: "Enter 發送",
+            keyEsc: "Esc 離開",
+            keyCtrlA: "Ctrl+A (全選)",
+            keyCtrlC: "Ctrl+C (中斷)",
+            keyCtrlV: "Ctrl+V (貼上)",
+            keyCtrlX: "Ctrl+X (剪下)",
+            keyCtrlZ: "Ctrl+Z (暫停)",
+            keyCtrlL: "Ctrl+L (清屏)",
+            keyCtrlD: "Ctrl+D (登出)",
+            customMacroTitle: "自訂巨集快捷鍵 (Custom Macro Keys)",
+            customMacroDesc: "點擊按鈕直接發送字串或指令",
+            macroLabelPlaceholder: "標籤 (如 htop)",
+            macroCmdPlaceholder: "送出指令 (如 htop\n)",
+            colorPurple: "紫色",
+            colorBlue: "藍色",
+            colorEmerald: "綠色",
+            colorGray: "灰色",
+            colorRose: "紅色",
+            btnAdd: "新增",
+            remotePresetsTitle: "常用遠端按鍵顯示 (Remote Presets)",
+            remotePresetsDesc: "顯示於 noVNC 與 Xorg 工具列",
+            keyCad: "Ctrl+Alt+Del",
+            keyAltTab: "Alt+Tab (切換視窗)",
+            keyAltF4: "Alt+F4 (關閉視窗)",
+            keySuper: "Super / Win 徽標鍵",
+            keyCtrlAltT: "Ctrl+Alt+T (開終端)",
+            keyFullscreen: "全螢幕切換",
+            customRemoteTitle: "自訂遠端組合鍵 (Custom Remote Combos)",
+            remoteLabelPlaceholder: "標籤 (如 Ctrl+W)",
+            optCtrlW: "Ctrl + W (關閉分頁)",
+            optCtrlShiftT: "Ctrl + Shift + T (復原分頁)",
+            optF11: "F11 (視窗全螢幕)",
+            optF5: "F5 (重整)",
+            optPrintScreen: "PrintScreen (螢幕截圖)",
+            optCtrlEsc: "Ctrl + Esc (開始功能表)",
+            audioConfigTitle: "音訊串流參數配置 (Audio Stream Config)",
+            btnPlayTestTone: "播放測試音",
+            lblAudioUrl: "預設音訊串流來源 URL (PulseAudio / HTTP Stream)",
+            btnProbe8000: "探測 8000",
+            lblAudioDefaultVol: "預設初始音量 (0 - 100%)",
+            audioGuideTitle: "Linux / WSL2 音訊架設指令 (PulseAudio + ffmpeg)",
+            btnResetDefaults: "恢復預設值 (Reset Defaults)",
+            btnSaveApply: "儲存並套用 (Save & Apply)",
+
                 aiActiveRunning: "AI 執行中",
                 vkeySettings: "設置",
                 novncPresetNative: "原生 VNC 5900",
@@ -4584,6 +4883,59 @@ startx                 # 標準 startx 啟動</pre>
                 audioDisabled: "Audio: Off",
                 audioVolume: "Volume:",
                 keySettingsBtn: "Key Settings",
+            keySettingsTitle: "Keypad & Shortcuts Settings",
+            tabTermKeys: "Terminal Keys",
+            tabRemoteKeys: "Remote Desktop Keys",
+            tabAudioConfig: "Audio Config",
+            keyModalDefaultToggle: "Built-in Keys Toggle",
+            keyModalDefaultToggleDesc: "Checked keys will appear on terminal keypad",
+            keyNav: "Arrow Keys (↑↓←→)",
+            keyTab: "Tab Complete",
+            keyDel: "Del Backspace",
+            keyEnter: "Enter Send",
+            keyEsc: "Esc Escape",
+            keyCtrlA: "Ctrl+A (Select All)",
+            keyCtrlC: "Ctrl+C (Interrupt)",
+            keyCtrlV: "Ctrl+V (Paste)",
+            keyCtrlX: "Ctrl+X (Cut)",
+            keyCtrlZ: "Ctrl+Z (Suspend)",
+            keyCtrlL: "Ctrl+L (Clear)",
+            keyCtrlD: "Ctrl+D (Logout)",
+            customMacroTitle: "Custom Macro Keys",
+            customMacroDesc: "Click button to send string or command",
+            macroLabelPlaceholder: "Label (e.g. htop)",
+            macroCmdPlaceholder: "Command to send (e.g. htop\n)",
+            colorPurple: "Purple",
+            colorBlue: "Blue",
+            colorEmerald: "Green",
+            colorGray: "Gray",
+            colorRose: "Red",
+            btnAdd: "Add",
+            remotePresetsTitle: "Remote Presets Visibility",
+            remotePresetsDesc: "Shown on noVNC and Xorg toolbars",
+            keyCad: "Ctrl+Alt+Del",
+            keyAltTab: "Alt+Tab (Switch Window)",
+            keyAltF4: "Alt+F4 (Close Window)",
+            keySuper: "Super / Win Key",
+            keyCtrlAltT: "Ctrl+Alt+T (Open Terminal)",
+            keyFullscreen: "Toggle Fullscreen",
+            customRemoteTitle: "Custom Remote Combos",
+            remoteLabelPlaceholder: "Label (e.g. Ctrl+W)",
+            optCtrlW: "Ctrl + W (Close Tab)",
+            optCtrlShiftT: "Ctrl + Shift + T (Reopen Tab)",
+            optF11: "F11 (Fullscreen)",
+            optF5: "F5 (Refresh)",
+            optPrintScreen: "PrintScreen (Screenshot)",
+            optCtrlEsc: "Ctrl + Esc (Start Menu)",
+            audioConfigTitle: "Audio Stream Configuration",
+            btnPlayTestTone: "Play Test Tone",
+            lblAudioUrl: "Default Audio Stream URL (PulseAudio / HTTP Stream)",
+            btnProbe8000: "Probe 8000",
+            lblAudioDefaultVol: "Default Initial Volume (0 - 100%)",
+            audioGuideTitle: "Linux / WSL2 Audio Setup Commands (PulseAudio + ffmpeg)",
+            btnResetDefaults: "Reset Defaults",
+            btnSaveApply: "Save & Apply",
+
                 aiActiveRunning: "AI Running",
                 vkeySettings: "Settings",
                 novncPresetNative: "Native VNC 5900",
@@ -4591,7 +4943,7 @@ startx                 # 標準 startx 啟動</pre>
                 xorgStatusDisconnected: "DISPLAY=:1 (Disconnected)",
                 xorgPlaceholderTitle: "Xorg GUI Virtual Window Environment (DISPLAY=:1)",
                 xorgPlaceholderDesc: "Seamlessly run Linux GUI applications (Terminal, Thunar, Mousepad, Firefox, etc.) in Windows/WSL2 or Docker with zero-latency HTML5 canvas.",
-                langZhTw: "Traditional Chinese",
+                langZhTw: "繁體中文",
                 langEn: "English",
                 webgpuLoadingWeights: "⚡ Loading WebGPU local model weights...",
                 onnxLoadingWeights: "📦 Loading ONNX Runtime local model...",
@@ -5310,53 +5662,95 @@ startx                 # 標準 startx 啟動</pre>
                 `;
             }
 
-            // Tab 2: Terminal Protocols
+            // Tab 2: Terminal & Remote Desktop Protocols (終端機、遠端桌面與按鍵設置)
             const tabTerm = document.getElementById('guide-tab-term');
             if (tabTerm) {
                 tabTerm.innerHTML = isEn ? `
                     <div class="space-y-3">
                         <div class="p-3.5 bg-gray-950 rounded-xl border border-gray-800">
                             <div class="font-bold text-green-400 text-xs mb-1 flex items-center gap-1.5">
-                                <i data-lucide="terminal" class="w-4 h-4"></i> 1. Local Shell (WSL / WinPE CMD / PowerShell)
+                                <i data-lucide="terminal" class="w-4 h-4"></i> 1. Local Shell (WSL / WinPE CMD / PowerShell) ⚡ Fast-Path
                             </div>
-                            <p class="text-[11px] text-gray-300">Executes commands on local machine. Uses cmd.exe / PowerShell in Windows/WinPE, and bash in Linux/WSL.</p>
+                            <p class="text-[11px] text-gray-300 leading-relaxed">Executes commands on local machine. Features a <strong>30ms Fast-Path</strong> via cmd.exe for instant responsiveness with automatic seamless fallback to PowerShell for advanced cmdlets. In WSL mode, commands run directly in native Linux bash.</p>
                         </div>
 
                         <div class="p-3.5 bg-gray-950 rounded-xl border border-blue-900/40 bg-blue-950/10">
                             <div class="font-bold text-blue-300 text-xs mb-1 flex items-center gap-1.5">
                                 <i data-lucide="cpu" class="w-4 h-4"></i> 2. Web Serial (Browser Direct Serial Port) ⭐ Recommended
                             </div>
-                            <p class="text-[11px] text-gray-300">Directly interacts with USB serial ports (COM / UART) via Web Serial API. <strong>Zero daemon or driver installation needed!</strong> Click 'Connect Device' to select your COM port.</p>
+                            <p class="text-[11px] text-gray-300 leading-relaxed">Directly interacts with USB serial ports (COM / UART) via Web Serial API. <strong>Zero daemon or driver installation needed!</strong> Click 'Connect Device' to select your COM port for embedded hardware debugging.</p>
                         </div>
 
                         <div class="p-3.5 bg-gray-950 rounded-xl border border-gray-800">
                             <div class="font-bold text-amber-300 text-xs mb-1 flex items-center gap-1.5">
                                 <i data-lucide="network" class="w-4 h-4"></i> 3. TCP/IP: SSH & Telnet Remote Maintenance
                             </div>
-                            <p class="text-[11px] text-gray-300">Set target IP, port, and credentials then click 'Apply Conn'. The AI Agent can issue SSH / Telnet commands to automate remote device maintenance.</p>
+                            <p class="text-[11px] text-gray-300 leading-relaxed">Set target IP, port, and credentials then click 'Apply Conn'. The AI Agent can issue SSH / Telnet commands to automate remote device maintenance.</p>
+                        </div>
+
+                        <div class="p-3.5 bg-blue-950/20 rounded-xl border border-blue-800/40">
+                            <div class="font-bold text-blue-400 text-xs mb-1 flex items-center gap-1.5">
+                                <i data-lucide="monitor" class="w-4 h-4"></i> 4. noVNC HTML5 Remote Desktop (RFB / websockify) ⭐ New
+                            </div>
+                            <p class="text-[11px] text-gray-300 leading-relaxed">Supports standard RFB protocol and Tight/ZRLE encoding. Features a compact single-row toolbar with <strong>[⚡ Quick Presets]</strong> (Local 6080/5900, LAN), <strong>[⚙️ Controls & Setup]</strong>, one-click WSL2 desktop launch, Web Audio streaming, CAD button, and fullscreen mode.</p>
+                        </div>
+
+                        <div class="p-3.5 bg-emerald-950/20 rounded-xl border border-emerald-800/40">
+                            <div class="font-bold text-emerald-400 text-xs mb-1 flex items-center gap-1.5">
+                                <i data-lucide="layout-grid" class="w-4 h-4"></i> 5. Xorg GUI Virtual Window Environment (DISPLAY=:1) ⭐ New
+                            </div>
+                            <p class="text-[11px] text-gray-300 leading-relaxed">Seamlessly runs Linux GUI software (Terminal, Thunar, Mousepad, Firefox, etc.) in Windows/WSL2/Docker on a zero-latency HTML5 canvas. Fully supports <strong>xinit / startx</strong> sessions, desktop wizards, and fast app launch menus.</p>
+                        </div>
+
+                        <div class="p-3.5 bg-purple-950/20 rounded-xl border border-purple-800/40">
+                            <div class="font-bold text-purple-300 text-xs mb-1 flex items-center gap-1.5">
+                                <i data-lucide="keyboard" class="w-4 h-4"></i> 6. Keypad & Shortcuts Customization (Left 'Key Settings' Button) ⭐
+                            </div>
+                            <p class="text-[11px] text-gray-300 leading-relaxed">Click the <strong>[Key Settings]</strong> button on the right side of the terminal virtual keypad. Customize arrow keys, Tab, Del, Ctrl combinations, add custom macro commands (e.g. <code>clear</code>, <code>htop</code>), and configure remote desktop shortcuts (CAD, Alt+Tab, Alt+F4) and audio streaming volume.</p>
                         </div>
                     </div>
                 ` : `
                     <div class="space-y-3">
                         <div class="p-3.5 bg-gray-950 rounded-xl border border-gray-800">
                             <div class="font-bold text-green-400 text-xs mb-1 flex items-center gap-1.5">
-                                <i data-lucide="terminal" class="w-4 h-4"></i> 1. 本地 Shell (Local Shell / WSL / WinPE CMD)
+                                <i data-lucide="terminal" class="w-4 h-4"></i> 1. 本地 Shell (Local Shell / WSL / WinPE CMD) ⚡ Fast-Path 極速
                             </div>
-                            <p class="text-[11px] text-gray-300">執行本地命令列指令。在 Windows / WinPE 環境下自動調度 cmd.exe 或 powershell，在 Linux/WSL 下調用 bash。</p>
+                            <p class="text-[11px] text-gray-300 leading-relaxed">執行本地命令列指令。內建 <strong>30ms Fast-Path 快速通道</strong>，常用 Windows 指令瞬間秒回，複雜指令自動無感切換至 PowerShell；WSL 模式下直接調度 Linux 原生 bash。</p>
                         </div>
 
                         <div class="p-3.5 bg-gray-950 rounded-xl border border-blue-900/40 bg-blue-950/10">
                             <div class="font-bold text-blue-300 text-xs mb-1 flex items-center gap-1.5">
                                 <i data-lucide="cpu" class="w-4 h-4"></i> 2. Web Serial (瀏覽器直連串口) ⭐ 推薦
                             </div>
-                            <p class="text-[11px] text-gray-300">透過 Chrome / Edge 內建 Web Serial API 直接操控 USB 轉串口（COM Port / UART）。<strong>完全無需啟動 8001 Daemon，也不需要任何驅動程式！</strong> 點擊「連線設備」選擇 COM 埠即可即時收發資料。</p>
+                            <p class="text-[11px] text-gray-300 leading-relaxed">透過 Chrome / Edge 內建 Web Serial API 直接操控 USB 轉串口（COM Port / UART）。<strong>完全無需啟動 8001 Daemon，也不需要任何驅動程式！</strong> 點擊「連線設備」選擇 COM 埠即可即時收發資料。</p>
                         </div>
 
                         <div class="p-3.5 bg-gray-950 rounded-xl border border-gray-800">
                             <div class="font-bold text-amber-300 text-xs mb-1 flex items-center gap-1.5">
                                 <i data-lucide="network" class="w-4 h-4"></i> 3. TCP/IP: SSH 與 Telnet 遠端連線
                             </div>
-                            <p class="text-[11px] text-gray-300">設定遠端伺服器或路由器 IP、Port、帳號密碼後點擊「套用連線」，AI Agent 能透過後端 Daemon 自動發送 SSH / Telnet 指令進行遠端設備維護。</p>
+                            <p class="text-[11px] text-gray-300 leading-relaxed">設定遠端伺服器或路由器 IP、Port、帳號密碼後點擊「套用連線」，AI Agent 能透過後端 Daemon 自動發送 SSH / Telnet 指令進行遠端設備維護。</p>
+                        </div>
+
+                        <div class="p-3.5 bg-blue-950/20 rounded-xl border border-blue-800/40">
+                            <div class="font-bold text-blue-400 text-xs mb-1 flex items-center gap-1.5">
+                                <i data-lucide="monitor" class="w-4 h-4"></i> 4. noVNC HTML5 遠端桌面 (RFB / websockify) ⭐ 全新升級
+                            </div>
+                            <p class="text-[11px] text-gray-300 leading-relaxed">支援標準 RFB 協定與 Tight/ZRLE 編碼，相容 x11vnc、TigerVNC、TightVNC 及 websockify 代理。整合單列緊湊下拉式控制列，提供 <strong>[⚡ 快速預設]</strong>（本機 6080/5900、區網）、<strong>[⚙️ 控制與設置]</strong>、WSL 桌面一鍵啟動、Web Audio 串流音訊、CAD 與全螢幕操控。</p>
+                        </div>
+
+                        <div class="p-3.5 bg-emerald-950/20 rounded-xl border border-emerald-800/40">
+                            <div class="font-bold text-emerald-400 text-xs mb-1 flex items-center gap-1.5">
+                                <i data-lucide="layout-grid" class="w-4 h-4"></i> 5. Xorg GUI 虛擬視窗環境 (DISPLAY=:1) ⭐ 全新升級
+                            </div>
+                            <p class="text-[11px] text-gray-300 leading-relaxed">可於 Windows/WSL2 或 Docker 中無縫執行 Linux GUI 圖形化程式（終端機、Thunar 檔案總管、Mousepad、Firefox 等），並透過 HTML5 零延遲畫布呈現。完整支援 <strong>xinit / startx</strong> 桌面會話、快速配置精靈與應用程式快捷啟動選單。</p>
+                        </div>
+
+                        <div class="p-3.5 bg-purple-950/20 rounded-xl border border-purple-800/40">
+                            <div class="font-bold text-purple-300 text-xs mb-1 flex items-center gap-1.5">
+                                <i data-lucide="keyboard" class="w-4 h-4"></i> 6. 虛擬按鍵與快捷鍵自訂設置 (左側「按鍵設置」按鈕) ⭐
+                            </div>
+                            <p class="text-[11px] text-gray-300 leading-relaxed">點擊終端機虛擬按鍵列右側的 <strong>[按鍵設置]</strong> 按鈕（或 noVNC/Xorg 的快捷設置選單），即可自訂方向鍵、Tab、Del、Ctrl 組合鍵的顯示開關，新增自訂指令巨集（如 <code>clear</code>、<code>htop</code>），並設定遠端桌面 CAD、Alt+Tab、Alt+F4 快捷鍵與音訊串流音量。</p>
                         </div>
                     </div>
                 `;
@@ -5703,6 +6097,33 @@ startx                 # 標準 startx 啟動</pre>
                             A: Click the <strong>[MarkItDown]</strong> button in the top navigation bar. Webcom automatically checks and wakes up the Port 8001 daemon and launches the conversion app. Drag and drop any PDF, Word, Excel, PPTX, HTML, or CSV file to convert to standard Markdown at high speed, powered by the Microsoft MarkItDown engine.
                         </p>
                     </div>
+
+                    <div class="p-3.5 bg-gray-950 rounded-xl border border-gray-800 space-y-1.5">
+                        <div class="font-bold text-amber-300 text-xs flex items-center gap-1.5">
+                            <i data-lucide="alert-triangle" class="w-4 h-4"></i> Q9: How to connect and manage noVNC & WSL2 Remote Desktop?
+                        </div>
+                        <p class="text-[11px] text-gray-400 leading-relaxed">
+                            A: Switch to the 'noVNC' tab in the left panel. Click <strong>[Start WSL Desktop]</strong>, and Webcom will launch Xvfb, x11vnc, XFCE4, and websockify in WSL2 automatically and connect immediately. You can use <strong>[⚡ Quick Presets]</strong> to switch targets or probe ports, use <strong>[CAD]</strong> to send Ctrl+Alt+Del, or toggle audio streaming under <strong>[⚙️ Controls & Setup]</strong>.
+                        </p>
+                    </div>
+
+                    <div class="p-3.5 bg-gray-950 rounded-xl border border-gray-800 space-y-1.5">
+                        <div class="font-bold text-amber-300 text-xs flex items-center gap-1.5">
+                            <i data-lucide="alert-triangle" class="w-4 h-4"></i> Q10: How to run Linux GUI apps in Xorg window mode?
+                        </div>
+                        <p class="text-[11px] text-gray-400 leading-relaxed">
+                            A: Switch to the 'Xorg' tab in the left panel. Click <strong>[Launch App ▾]</strong> to open xfce4-terminal, thunar, mousepad, or xinit desktop sessions. If services aren't running, click <strong>[Setup Wizard]</strong> to view automated startup commands or run xinit directly inside the Webcom WSL terminal.
+                        </p>
+                    </div>
+
+                    <div class="p-3.5 bg-gray-950 rounded-xl border border-gray-800 space-y-1.5">
+                        <div class="font-bold text-amber-300 text-xs flex items-center gap-1.5">
+                            <i data-lucide="alert-triangle" class="w-4 h-4"></i> Q11: What is the left 'Key Settings' button for?
+                        </div>
+                        <p class="text-[11px] text-gray-400 leading-relaxed">
+                            A: Located on the right side of the terminal virtual keypad (and in noVNC/Xorg menus), the <strong>[Key Settings]</strong> button opens the customization modal. You can toggle built-in terminal buttons (arrows, Enter, Del, Tab, Ctrl keys), create custom script macro buttons, configure remote desktop shortcuts (CAD, Alt+Tab, Alt+F4), and set audio stream volume.
+                        </p>
+                    </div>
                 ` : `
                     <div class="p-3.5 bg-gray-950 rounded-xl border border-gray-800 space-y-1.5">
                         <div class="font-bold text-amber-300 text-xs flex items-center gap-1.5">
@@ -5773,6 +6194,33 @@ startx                 # 標準 startx 啟動</pre>
                         </div>
                         <p class="text-[11px] text-gray-400 leading-relaxed">
                             A: 點擊頂部導航列的「MarkItDown」按鈕，系統會自動在線喚醒 8001 常駐服務並開啟文件轉換頁面。支援拖放或點擊上傳多個文件，後端由 Microsoft MarkItDown 核心進行極速轉換，支援純文字預覽、複製與一鍵打包下載 ZIP。
+                        </p>
+                    </div>
+
+                    <div class="p-3.5 bg-gray-950 rounded-xl border border-gray-800 space-y-1.5">
+                        <div class="font-bold text-amber-300 text-xs flex items-center gap-1.5">
+                            <i data-lucide="alert-triangle" class="w-4 h-4"></i> Q9: noVNC 遠端桌面與 WSL2 桌面整合如何使用？
+                        </div>
+                        <p class="text-[11px] text-gray-400 leading-relaxed">
+                            A: 切換至左側「noVNC 桌面」分頁，點擊 <strong>[啟動 WSL 桌面]</strong>，系統將於 WSL2 內自動啟動 Xvfb、x11vnc、XFCE4 與 websockify 服務並即時連線。您可透過 <strong>[⚡ 快速預設]</strong> 切換目標或探測連接埠，或透過 <strong>[⚙️ 控制與設置]</strong> 管理服務、開啟音訊串流或設定快捷鍵。
+                        </p>
+                    </div>
+
+                    <div class="p-3.5 bg-gray-950 rounded-xl border border-gray-800 space-y-1.5">
+                        <div class="font-bold text-amber-300 text-xs flex items-center gap-1.5">
+                            <i data-lucide="alert-triangle" class="w-4 h-4"></i> Q10: Xorg GUI 視窗模式與 xinit 桌面支援？
+                        </div>
+                        <p class="text-[11px] text-gray-400 leading-relaxed">
+                            A: 切換至左側「Xorg 視窗」分頁，點擊 <strong>[啟動 App ▾]</strong> 即可快速拉起 xfce4-terminal 終端機、Thunar 檔案總管、Mousepad 或 xinit 桌面會話。若服務尚未啟動，可點擊「查看 WSL 啟動指令」或「一鍵配置精靈」進行一鍵式桌面環境建置。
+                        </p>
+                    </div>
+
+                    <div class="p-3.5 bg-gray-950 rounded-xl border border-gray-800 space-y-1.5">
+                        <div class="font-bold text-amber-300 text-xs flex items-center gap-1.5">
+                            <i data-lucide="alert-triangle" class="w-4 h-4"></i> Q11: 左側「按鍵設置」按鈕是做什麼的？
+                        </div>
+                        <p class="text-[11px] text-gray-400 leading-relaxed">
+                            A: 位於終端機下方虛擬按鍵列最右側（以及 noVNC / Xorg 控制選單內）的 <strong>[按鍵設置]</strong> 按鈕，能開啟「按鍵與快捷鍵自訂設置」對話盒。您可以自訂方向鍵、Tab、Del、Ctrl 組合鍵的顯示開關，建立自訂指令巨集按鍵（如 <code>clear</code>、<code>htop</code>），並設定遠端桌面 CAD、Alt+Tab、Alt+F4 快捷鍵與音訊串流音量。
                         </p>
                     </div>
                 `;
@@ -8296,252 +8744,6 @@ startx                 # 標準 startx 啟動</pre>
     function reset() { n = 0; document.getElementById('num').textContent = 0; }
   <\/script>
 
-    <!-- 按鍵與快捷鍵自訂設置對話盒 (Keypad, Shortcuts & Audio Settings Modal) -->
-    <div id="key-settings-modal"
-        class="fixed inset-0 bg-black/75 backdrop-blur-sm z-[100] hidden flex items-center justify-center p-4">
-        <div class="bg-gray-900 border border-purple-500/40 rounded-2xl w-[640px] shadow-2xl flex flex-col overflow-hidden max-h-[90vh]">
-            <div class="px-5 py-4 border-b border-gray-800 flex justify-between items-center bg-gray-900/90 shrink-0">
-                <h2 class="text-base font-bold text-white flex items-center gap-2">
-                    <div class="p-1.5 bg-purple-600/20 text-purple-400 rounded-lg border border-purple-500/30">
-                        <i data-lucide="keyboard" class="w-4 h-4 text-purple-400"></i>
-                    </div>
-                    <span data-i18n="keySettingsTitle">按鍵與快捷鍵自訂設置 (Keypad & Shortcuts Config)</span>
-                </h2>
-                <button id="btn-close-key-modal" onclick="closeKeySettingsModal()" class="text-gray-400 hover:text-white transition p-1 cursor-pointer">
-                    <i data-lucide="x" class="w-5 h-5"></i>
-                </button>
-            </div>
-
-            <!-- Modal Sub-Tabs -->
-            <div class="flex border-b border-gray-800 bg-black/40 px-5 pt-2 gap-2 text-xs font-semibold shrink-0">
-                <button id="tab-btn-cfg-term" type="button" onclick="switchKeyConfigTab('term')"
-                    class="px-3 py-1.5 border-b-2 border-purple-500 text-purple-300 font-bold transition flex items-center gap-1.5 cursor-pointer">
-                    <i data-lucide="terminal" class="w-3.5 h-3.5"></i> <span data-i18n="tabTermKeys">終端機按鍵</span>
-                </button>
-                <button id="tab-btn-cfg-remote" type="button" onclick="switchKeyConfigTab('remote')"
-                    class="px-3 py-1.5 border-b-2 border-transparent text-gray-400 hover:text-gray-200 transition flex items-center gap-1.5 cursor-pointer">
-                    <i data-lucide="monitor" class="w-3.5 h-3.5"></i> <span data-i18n="tabRemoteKeys">遠端桌面快捷鍵</span>
-                </button>
-                <button id="tab-btn-cfg-audio" type="button" onclick="switchKeyConfigTab('audio')"
-                    class="px-3 py-1.5 border-b-2 border-transparent text-gray-400 hover:text-gray-200 transition flex items-center gap-1.5 cursor-pointer">
-                    <i data-lucide="volume-2" class="w-3.5 h-3.5"></i> <span data-i18n="tabAudioConfig">音訊設置</span>
-                </button>
-            </div>
-
-            <div class="p-5 space-y-4 text-xs overflow-y-auto flex-1">
-                <!-- Tab 1: Terminal Keys Config -->
-                <div id="cfg-panel-term" class="space-y-4">
-                    <div class="p-3 bg-gray-950 rounded-xl border border-gray-800 space-y-2">
-                        <div class="font-bold text-gray-200 flex items-center justify-between">
-                            <span data-i18n="keyModalDefaultToggle">內建按鍵顯示開關</span>
-                            <span class="text-[11px] text-gray-500" data-i18n="keyModalDefaultToggleDesc">勾選後將顯示於終端機虛擬鍵盤</span>
-                        </div>
-                        <div class="grid grid-cols-3 sm:grid-cols-4 gap-2 pt-1">
-                            <label class="flex items-center gap-1.5 cursor-pointer text-gray-300">
-                                <input id="cfg-chk-nav" type="checkbox" checked class="rounded bg-gray-800 border-gray-700 text-purple-600 focus:ring-0">
-                                <span>方向鍵 (↑↓←→)</span>
-                            </label>
-                            <label class="flex items-center gap-1.5 cursor-pointer text-gray-300">
-                                <input id="cfg-chk-tab" type="checkbox" checked class="rounded bg-gray-800 border-gray-700 text-purple-600 focus:ring-0">
-                                <span>Tab 補全</span>
-                            </label>
-                            <label class="flex items-center gap-1.5 cursor-pointer text-gray-300">
-                                <input id="cfg-chk-del" type="checkbox" checked class="rounded bg-gray-800 border-gray-700 text-purple-600 focus:ring-0">
-                                <span>Del 退格</span>
-                            </label>
-                            <label class="flex items-center gap-1.5 cursor-pointer text-gray-300">
-                                <input id="cfg-chk-enter" type="checkbox" checked class="rounded bg-gray-800 border-gray-700 text-purple-600 focus:ring-0">
-                                <span>Enter 發送</span>
-                            </label>
-                            <label class="flex items-center gap-1.5 cursor-pointer text-gray-300">
-                                <input id="cfg-chk-esc" type="checkbox" checked class="rounded bg-gray-800 border-gray-700 text-purple-600 focus:ring-0">
-                                <span>Esc 離開</span>
-                            </label>
-                            <label class="flex items-center gap-1.5 cursor-pointer text-gray-300">
-                                <input id="cfg-chk-ctrla" type="checkbox" checked class="rounded bg-gray-800 border-gray-700 text-purple-600 focus:ring-0">
-                                <span>Ctrl+A (全選)</span>
-                            </label>
-                            <label class="flex items-center gap-1.5 cursor-pointer text-gray-300">
-                                <input id="cfg-chk-ctrlc" type="checkbox" checked class="rounded bg-gray-800 border-gray-700 text-purple-600 focus:ring-0">
-                                <span>Ctrl+C (中斷)</span>
-                            </label>
-                            <label class="flex items-center gap-1.5 cursor-pointer text-gray-300">
-                                <input id="cfg-chk-ctrlv" type="checkbox" checked class="rounded bg-gray-800 border-gray-700 text-purple-600 focus:ring-0">
-                                <span>Ctrl+V (貼上)</span>
-                            </label>
-                            <label class="flex items-center gap-1.5 cursor-pointer text-gray-300">
-                                <input id="cfg-chk-ctrlx" type="checkbox" checked class="rounded bg-gray-800 border-gray-700 text-purple-600 focus:ring-0">
-                                <span>Ctrl+X (剪下)</span>
-                            </label>
-                            <label class="flex items-center gap-1.5 cursor-pointer text-gray-300">
-                                <input id="cfg-chk-ctrlz" type="checkbox" checked class="rounded bg-gray-800 border-gray-700 text-purple-600 focus:ring-0">
-                                <span>Ctrl+Z (暫停)</span>
-                            </label>
-                            <label class="flex items-center gap-1.5 cursor-pointer text-gray-300">
-                                <input id="cfg-chk-ctrll" type="checkbox" checked class="rounded bg-gray-800 border-gray-700 text-purple-600 focus:ring-0">
-                                <span>Ctrl+L (清屏)</span>
-                            </label>
-                            <label class="flex items-center gap-1.5 cursor-pointer text-gray-300">
-                                <input id="cfg-chk-ctrld" type="checkbox" class="rounded bg-gray-800 border-gray-700 text-purple-600 focus:ring-0">
-                                <span>Ctrl+D (登出)</span>
-                            </label>
-                        </div>
-                    </div>
-
-                    <!-- Custom Macro Buttons -->
-                    <div class="p-3 bg-gray-950 rounded-xl border border-gray-800 space-y-2.5">
-                        <div class="font-bold text-gray-200 flex items-center justify-between">
-                            <span class="flex items-center gap-1.5 text-purple-300">
-                                <i data-lucide="sparkles" class="w-4 h-4"></i> 自訂巨集快捷鍵 (Custom Macro Keys)
-                            </span>
-                            <span class="text-[11px] text-gray-500">點擊按鈕直接發送字串或指令</span>
-                        </div>
-                        <div id="cfg-term-custom-list" class="space-y-1.5">
-                            <!-- Injected dynamically -->
-                        </div>
-                        <!-- Add Custom Key Form -->
-                        <div class="flex items-center gap-2 pt-2 border-t border-gray-800/80">
-                            <input id="cfg-new-term-label" type="text" placeholder="標籤 (如 htop)" class="bg-gray-900 border border-gray-700 rounded px-2 py-1 text-xs w-28 font-mono focus:outline-none">
-                            <input id="cfg-new-term-cmd" type="text" placeholder="送出指令 (如 htop
-)" class="bg-gray-900 border border-gray-700 rounded px-2 py-1 text-xs flex-1 font-mono focus:outline-none">
-                            <select id="cfg-new-term-color" class="bg-gray-900 border border-gray-700 rounded px-2 py-1 text-xs cursor-pointer">
-                                <option value="purple">紫色</option>
-                                <option value="blue">藍色</option>
-                                <option value="emerald">綠色</option>
-                                <option value="gray">灰色</option>
-                                <option value="rose">紅色</option>
-                            </select>
-                            <button type="button" onclick="addCustomTermKey()" class="px-3 py-1 bg-purple-600 hover:bg-purple-500 text-white rounded font-medium flex items-center gap-1 cursor-pointer">
-                                <i data-lucide="plus" class="w-3.5 h-3.5"></i> 新增
-                            </button>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Tab 2: Remote Shortcuts Config -->
-                <div id="cfg-panel-remote" class="space-y-4 hidden">
-                    <div class="p-3 bg-gray-950 rounded-xl border border-gray-800 space-y-2">
-                        <div class="font-bold text-gray-200 flex items-center justify-between">
-                            <span>常用遠端按鍵顯示 (Remote Presets)</span>
-                            <span class="text-[11px] text-gray-500">顯示於 noVNC 與 Xorg 工具列</span>
-                        </div>
-                        <div class="grid grid-cols-2 sm:grid-cols-3 gap-2 pt-1">
-                            <label class="flex items-center gap-1.5 cursor-pointer text-gray-300">
-                                <input id="cfg-chk-cad" type="checkbox" checked class="rounded bg-gray-800 border-gray-700 text-purple-600 focus:ring-0">
-                                <span>Ctrl+Alt+Del</span>
-                            </label>
-                            <label class="flex items-center gap-1.5 cursor-pointer text-gray-300">
-                                <input id="cfg-chk-alttab" type="checkbox" checked class="rounded bg-gray-800 border-gray-700 text-purple-600 focus:ring-0">
-                                <span>Alt+Tab (切換視窗)</span>
-                            </label>
-                            <label class="flex items-center gap-1.5 cursor-pointer text-gray-300">
-                                <input id="cfg-chk-altf4" type="checkbox" checked class="rounded bg-gray-800 border-gray-700 text-purple-600 focus:ring-0">
-                                <span>Alt+F4 (關閉視窗)</span>
-                            </label>
-                            <label class="flex items-center gap-1.5 cursor-pointer text-gray-300">
-                                <input id="cfg-chk-super" type="checkbox" checked class="rounded bg-gray-800 border-gray-700 text-purple-600 focus:ring-0">
-                                <span>Super / Win 徽標鍵</span>
-                            </label>
-                            <label class="flex items-center gap-1.5 cursor-pointer text-gray-300">
-                                <input id="cfg-chk-ctrlaltt" type="checkbox" checked class="rounded bg-gray-800 border-gray-700 text-purple-600 focus:ring-0">
-                                <span>Ctrl+Alt+T (開終端)</span>
-                            </label>
-                            <label class="flex items-center gap-1.5 cursor-pointer text-gray-300">
-                                <input id="cfg-chk-fullscreen" type="checkbox" checked class="rounded bg-gray-800 border-gray-700 text-purple-600 focus:ring-0">
-                                <span>全螢幕切換</span>
-                            </label>
-                        </div>
-                    </div>
-
-                    <!-- Custom Remote Combinations -->
-                    <div class="p-3 bg-gray-950 rounded-xl border border-gray-800 space-y-2.5">
-                        <div class="font-bold text-gray-200 flex items-center justify-between">
-                            <span class="flex items-center gap-1.5 text-blue-300">
-                                <i data-lucide="keyboard" class="w-4 h-4"></i> 自訂遠端組合鍵 (Custom Remote Combos)
-                            </span>
-                        </div>
-                        <div id="cfg-remote-custom-list" class="space-y-1.5">
-                            <!-- Injected dynamically -->
-                        </div>
-                        <!-- Add Custom Remote Key Form -->
-                        <div class="flex items-center gap-2 pt-2 border-t border-gray-800/80">
-                            <input id="cfg-new-remote-label" type="text" placeholder="標籤 (如 Ctrl+W)" class="bg-gray-900 border border-gray-700 rounded px-2 py-1 text-xs w-28 font-mono focus:outline-none">
-                            <select id="cfg-new-remote-action" class="bg-gray-900 border border-gray-700 rounded px-2 py-1 text-xs flex-1 cursor-pointer">
-                                <option value="ctrl-w">Ctrl + W (關閉分頁)</option>
-                                <option value="ctrl-shift-t">Ctrl + Shift + T (復原分頁)</option>
-                                <option value="f11">F11 (視窗全螢幕)</option>
-                                <option value="f5">F5 (重整)</option>
-                                <option value="printscreen">PrintScreen (螢幕截圖)</option>
-                                <option value="ctrl-esc">Ctrl + Esc (開始功能表)</option>
-                            </select>
-                            <button type="button" onclick="addCustomRemoteKey()" class="px-3 py-1 bg-blue-600 hover:bg-blue-500 text-white rounded font-medium flex items-center gap-1 cursor-pointer">
-                                <i data-lucide="plus" class="w-3.5 h-3.5"></i> 新增
-                            </button>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Tab 3: Audio Stream Config -->
-                <div id="cfg-panel-audio" class="space-y-4 hidden">
-                    <div class="p-3 bg-gray-950 rounded-xl border border-gray-800 space-y-3">
-                        <div class="font-bold text-gray-200 flex items-center justify-between">
-                            <span class="flex items-center gap-1.5 text-emerald-300">
-                                <i data-lucide="volume-2" class="w-4 h-4"></i> 音訊串流參數配置 (Audio Stream Config)
-                            </span>
-                            <button type="button" onclick="playTestTone()" class="text-xs text-cyan-400 hover:underline flex items-center gap-1 cursor-pointer">
-                                <i data-lucide="bell" class="w-3 h-3"></i> 播放測試音
-                            </button>
-                        </div>
-
-                        <div class="space-y-2">
-                            <div>
-                                <label class="block text-gray-400 text-[11px] mb-1">預設音訊串流來源 URL (PulseAudio / HTTP Stream)</label>
-                                <div class="flex items-center gap-2">
-                                    <input id="cfg-audio-url" type="text" value="http://127.0.0.1:8000/audio" class="bg-gray-900 border border-gray-700 rounded px-2 py-1 text-xs flex-1 font-mono focus:outline-none">
-                                    <button type="button" onclick="probeAudioPortFromModal()" class="px-2 py-1 rounded bg-gray-800 hover:bg-gray-700 text-cyan-300 border border-cyan-800/50 flex items-center gap-1 cursor-pointer">
-                                        <i data-lucide="activity" class="w-3 h-3"></i> 探測 8000
-                                    </button>
-                                </div>
-                                <span id="cfg-audio-probe-status" class="text-[11px] text-gray-500 mt-1 block font-mono"></span>
-                            </div>
-
-                            <div>
-                                <label class="block text-gray-400 text-[11px] mb-1">預設初始音量 (0 - 100%)</label>
-                                <div class="flex items-center gap-2">
-                                    <input id="cfg-audio-default-vol" type="range" min="0" max="100" value="80" class="w-32 accent-purple-500 cursor-pointer">
-                                    <span id="cfg-audio-vol-text" class="font-mono text-gray-300">80%</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="p-3 bg-emerald-950/20 rounded-xl border border-emerald-800/40 space-y-2">
-                        <div class="font-bold text-emerald-300 flex items-center gap-1.5">
-                            <i data-lucide="info" class="w-4 h-4"></i> Linux / WSL2 音訊架設指令 (PulseAudio + ffmpeg)
-                        </div>
-                        <pre class="bg-black/70 p-2.5 rounded-lg border border-gray-800 font-mono text-[10px] text-gray-200 overflow-x-auto select-all">sudo apt install -y pulseaudio ffmpeg
-pulseaudio --start --exit-idle-time=-1
-ffmpeg -f pulse -i default -acodec libmp3lame -ab 128k -f mp3 -listen 1 http://0.0.0.0:8000/audio &</pre>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Footer Buttons -->
-            <div class="px-5 py-3 bg-gray-900 border-t border-gray-800 flex items-center justify-between shrink-0">
-                <button type="button" onclick="resetKeySettingsToDefault()" class="text-xs text-rose-400 hover:text-rose-300 hover:underline cursor-pointer">
-                    恢復預設值 (Reset Defaults)
-                </button>
-                <div class="flex items-center gap-2">
-                    <button type="button" onclick="saveAndApplyKeySettings()" class="px-4 py-1.5 bg-purple-600 hover:bg-purple-500 text-white rounded-lg font-medium cursor-pointer shadow">
-                        儲存並套用 (Save & Apply)
-                    </button>
-                    <button type="button" onclick="closeKeySettingsModal()" class="px-4 py-1.5 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-lg font-medium cursor-pointer">
-                        關閉
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
 </body>
 </html>` : `<!DOCTYPE html>
 <html lang="zh-TW">
@@ -8680,7 +8882,9 @@ ffmpeg -f pulse -i default -acodec libmp3lame -ab 128k -f mp3 -listen 1 http://0
         // --- Guide Modal Logic & Tab Switching ---
         const guideModal = document.getElementById('guide-modal');
         document.getElementById('btn-open-guide').addEventListener('click', () => {
+            renderGuideContent(currentLang);
             guideModal.classList.remove('hidden');
+            if (window.lucide) lucide.createIcons();
         });
         document.getElementById('btn-close-guide').addEventListener('click', () => {
             guideModal.classList.add('hidden');
