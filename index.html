@@ -9137,13 +9137,17 @@ ffmpeg -f pulse -i default -acodec libmp3lame -ab 128k -f mp3 -listen 1 http://0
         function updateContextBadge() {
             const badge = document.getElementById('context-tokens-badge');
             if (!badge) return;
+            const isRagActive = (typeof ragToggle !== 'undefined' && ragToggle && ragToggle.checked);
             const est = estimateTokens(chatHistory);
             let budget = (appSettings.engineMode === 'onnx' || appSettings.engineMode === 'webgpu') ? 2048 : 4096;
-            badge.textContent = `~${est} / ${budget} tok`;
+            const prefix = isRagActive ? '📚 RAG: ' : '';
+            badge.textContent = `${prefix}~${est} / ${budget} tok`;
             if (est > budget * 0.85) {
                 badge.className = "font-mono text-[11px] text-red-400 font-bold animate-pulse";
             } else if (est > budget * 0.6) {
                 badge.className = "font-mono text-[11px] text-amber-300 font-bold";
+            } else if (isRagActive) {
+                badge.className = "font-mono text-[11px] text-emerald-300 font-bold";
             } else {
                 badge.className = "font-mono text-[11px] text-purple-300";
             }
@@ -9153,9 +9157,11 @@ ffmpeg -f pulse -i default -acodec libmp3lame -ab 128k -f mp3 -listen 1 http://0
             if (!history || !Array.isArray(history) || history.length === 0) return history;
 
             const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en');
+            const isRagActive = (typeof ragToggle !== 'undefined' && ragToggle && ragToggle.checked);
             let maxBudget = (appSettings.engineMode === 'onnx' || appSettings.engineMode === 'webgpu') ? 2200 : 3600;
-            if (aggressive) {
-                maxBudget = Math.min(1800, maxBudget);
+            if (aggressive || isRagActive) {
+                // 當啟用 RAG 時，上下文核心應留給檢索到的文件知識與當前問題，歷史對話預算精簡收斂
+                maxBudget = isRagActive ? 1800 : Math.min(1800, maxBudget);
             }
 
             // 1. Check if system prompt exists at history[0]
@@ -9227,7 +9233,8 @@ ffmpeg -f pulse -i default -acodec libmp3lame -ab 128k -f mp3 -listen 1 http://0
 
             // 3. Sliding Window: If total estimated tokens still exceed budget, prune oldest turns!
             let curTokens = estimateTokens(history);
-            if (aggressive && history.length > 3) {
+            if ((aggressive || isRagActive) && history.length > 3) {
+                // 當已有 RAG 檢索時，模型應專注於 RAG 檢索成果回答，歷史對話僅保留最多最近 1 輪供代名詞指涉
                 while (history.length > 3) {
                     history.splice(1, 1);
                 }
@@ -9323,8 +9330,12 @@ ffmpeg -f pulse -i default -acodec libmp3lame -ab 128k -f mp3 -listen 1 http://0
             if (ragToggle.checked && userQuery) {
                 const retrieved = retrieveRelevantKnowledge(userQuery, 3);
                 if (retrieved.length > 0) {
+                    const isEn = (currentLang === 'en');
+                    const guidance = isEn
+                        ? `\n\n[RAG Focus Rule]: The retrieved knowledge context above is your primary source of truth. Focus directly on the retrieved knowledge chunks without being distracted by earlier irrelevant historical dialogue.`
+                        : `\n\n【RAG 專注回答準則】：上方檢索之文件知識為當前問題之最高權威依據。請直接依據上述檢索內容作答，無需受限或過度追溯過往離題之歷史對話紀錄。`;
                     ragContext = `\n\n【RAG 知識庫檢索結果 (Knowledge Context)】\n` +
-                        retrieved.map((r, i) => `[文件: ${r.docTitle}] (相關度: ${r.score})\n${r.chunk}`).join('\n---\n');
+                        retrieved.map((r, i) => `[文件: ${r.docTitle}] (相關度: ${r.score})\n${r.chunk}`).join('\n---\n') + guidance;
                 }
             }
 
@@ -15268,6 +15279,13 @@ Important guidelines:
             chatHistory = [];
             if (typeof sessionChatLog !== 'undefined') sessionChatLog = [];
             chatBox.innerHTML = '';
+            updateContextBadge();
+        });
+
+        ragToggle?.addEventListener('change', () => {
+            if (ragToggle.checked) {
+                compressChatHistory(chatHistory, false);
+            }
             updateContextBadge();
         });
 
