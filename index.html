@@ -253,7 +253,7 @@
             flex: 1 1 0% !important;
             min-width: 0 !important;
             width: auto !important;
-            transition: width 0.22s cubic-bezier(0.4, 0, 0.2, 1), min-width 0.22s, max-width 0.22s, flex 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+            transition: none !important;
         }
         #left-panel.panel-collapsed-left {
             width: 44px !important;
@@ -9523,7 +9523,7 @@ ${tools.join('\n')}${contextStr}
             }
             try {
                 wtermInstance = new WTermClass(container, {
-                    autoResize: true,
+                    autoResize: false,
                     cursorBlink: true,
                     onData: async (data) => {
                         // Direct interactive keyboard input in upper terminal
@@ -9571,6 +9571,8 @@ ${tools.join('\n')}${contextStr}
                     }
                 });
                 await wtermInstance.init();
+                fitTerminal();
+                window.addEventListener('resize', () => { fitTerminal(); });
 
                 // Right-click: Copy selected text if highlighted, or Paste if no text is selected
                 container.addEventListener('contextmenu', async (e) => {
@@ -9625,10 +9627,14 @@ ${tools.join('\n')}${contextStr}
                     return s + ' '.repeat(need);
                 };
                 const bannerBox = (innerLines, { forceCols = null } = {}) => {
+                    const maxContentWidth = Math.max(...innerLines.map(displayWidth));
+                    const container = document.getElementById('term-wterm-container');
+                    const charW = (wtermInstance && typeof wtermInstance._measureCharSize === 'function' ? wtermInstance._measureCharSize()?.charWidth : null) || 8.4;
+                    const availCols = container ? Math.floor((container.clientWidth - 24) / charW) : 74;
                     const innerCols = forceCols
                         ? forceCols
-                        : Math.max(68, ...innerLines.map(displayWidth));
-                    const W = innerCols + 6;
+                        : Math.min(Math.max(availCols - 6, maxContentWidth), 72);
+                    const W = Math.max(10, innerCols + 6);
                     const top = `\x1b[1;35m╔${'═'.repeat(W - 2)}╗\x1b[0m`;
                     const bot = `\x1b[1;35m╚${'═'.repeat(W - 2)}╝\x1b[0m`;
                     const rows = innerLines.map(line => {
@@ -15756,8 +15762,27 @@ Important guidelines:
             }
             // 5. 更新左側動作選單
             updateLeftActionsDropdownMenu(mode);
+            if (mode === 'term') { fitTerminal(); }
         }
         window.switchLeftMode = switchLeftMode;
+
+        // ── 終端機尺寸主動適配核心 (Adaptive Terminal Resize Guard) ───────────
+        function fitTerminal() {
+            if (!wtermInstance) return;
+            const container = document.getElementById('term-wterm-container');
+            if (!container || container.clientWidth < 120 || container.clientHeight < 60) return;
+            const charSize = (typeof wtermInstance._measureCharSize === 'function' ? wtermInstance._measureCharSize() : null) || { charWidth: 8.4, rowHeight: 17 };
+            const cw = charSize.charWidth || 8.4;
+            const rh = charSize.rowHeight || 17;
+            const availW = Math.max(0, container.clientWidth - 20);
+            const availH = Math.max(0, container.clientHeight - 20);
+            const cols = Math.max(30, Math.floor(availW / cw));
+            const rows = Math.max(5, Math.floor(availH / rh));
+            if (wtermInstance.cols !== cols || wtermInstance.rows !== rows) {
+                wtermInstance.resize(cols, rows);
+            }
+        }
+        window.fitTerminal = fitTerminal;
 
         // ── 左右面板收合與展開控制 (Collapsible Split Panels - 1366x768 適配) ──────────
         function toggleLeftPanelCollapse() {
@@ -15773,14 +15798,14 @@ Important guidelines:
             }
             if (window.lucide) lucide.createIcons();
 
-            // 在 CSS 過渡動畫 (220ms) 結束後重新派發 resize 並聚焦終端機輸入框
-            setTimeout(() => {
-                window.dispatchEvent(new Event('resize'));
-                const termInput = document.getElementById('term-input');
-                if (termInput && !isCollapsing) {
-                    termInput.focus();
-                }
-            }, 250);
+            if (!isCollapsing) {
+                fitTerminal();
+                setTimeout(() => {
+                    fitTerminal();
+                    const termInput = document.getElementById('term-input');
+                    if (termInput) termInput.focus();
+                }, 50);
+            }
         }
         window.toggleLeftPanelCollapse = toggleLeftPanelCollapse;
 

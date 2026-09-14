@@ -56,6 +56,8 @@
   user-select: text !important;
   -webkit-user-select: text !important;
   cursor: text;
+  overflow-x: auto !important;
+  overflow-y: auto !important;
 }
 
 .wterm:focus,
@@ -97,6 +99,8 @@
 .term-link {
   color: inherit;
   cursor: text;
+  overflow-x: auto !important;
+  overflow-y: auto !important;
 }
 
 .wterm.link-modifier-active .term-link:hover,
