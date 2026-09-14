@@ -44,7 +44,7 @@
     - 後端 Daemon 內建 `/api/audio/probe`（連接埠探針）與 `/api/audio/stream`（反向串流代理，防 CORS）
   - ⌨️ **鍵盤快捷鍵與自訂按鍵設置 (Keypad & Shortcuts Config)**
     - 終端機虛擬按鍵支援一鍵開關與自訂巨集按鈕（如 `clear`, `htop`, `ls -la`, `Esc`, `Ctrl+Z`, `Ctrl+L` 等）
-    - 遠端桌面支援自訂組合鍵按鈕（如 `Super/Win 徽標鍵`, `Ctrl+Alt+T`, `Ctrl+Esc`, `Alt+Tab`, `Alt+F4` 等）
+    - 遠端桌面支援自訂組合鍵按鈕（如 `Super/Win 標誌鍵`, `Ctrl+Alt+T`, `Ctrl+Esc`, `Alt+Tab`, `Alt+F4` 等）
     - 提供專屬「按鍵設置」對話盒，設定值自動持久化儲存於 `localStorage`，並支援一鍵恢復原廠設定
 - 📚 **RAG 知識庫管理員**（Chunk 分段 + 向量索引 + 即時搜尋測試）
   - **支援格式**：`.txt` / `.md` / `.json` / `.pdf` / `.docx` (Word) / `.xlsx` (Excel) / `.pptx` (PowerPoint) / 原始程式碼（`.py/.js/.sh/.bat/.ps1/...`）

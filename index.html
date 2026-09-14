@@ -3422,7 +3422,7 @@ startx                 # 標準 startx 啟動</pre>
                             </label>
                             <label class="flex items-center gap-1.5 cursor-pointer text-gray-300">
                                 <input id="cfg-chk-super" type="checkbox" checked class="rounded bg-gray-800 border-gray-700 text-purple-600 focus:ring-0">
-                                <span data-i18n="keySuper">Super / Win 徽標鍵</span>
+                                <span data-i18n="keySuper">Super / Win 標誌鍵</span>
                             </label>
                             <label class="flex items-center gap-1.5 cursor-pointer text-gray-300">
                                 <input id="cfg-chk-ctrlaltt" type="checkbox" checked class="rounded bg-gray-800 border-gray-700 text-purple-600 focus:ring-0">
@@ -4193,7 +4193,7 @@ ffmpeg -f pulse -i default -acodec libmp3lame -ab 128k -f mp3 -listen 1 http://0
             keyCad: "Ctrl+Alt+Del",
             keyAltTab: "Alt+Tab (切換視窗)",
             keyAltF4: "Alt+F4 (關閉視窗)",
-            keySuper: "Super / Win 徽標鍵",
+            keySuper: "Super / Win 標誌鍵",
             keyCtrlAltT: "Ctrl+Alt+T (開終端)",
             keyFullscreen: "全螢幕切換",
             customRemoteTitle: "自訂遠端組合鍵 (Custom Remote Combos)",
@@ -15167,7 +15167,7 @@ Important guidelines:
                 showCtrlAltT: true,
                 showFullscreen: true,
                 customKeys: [
-                    { id: "r1", label: "Win 徽標", action: "super" },
+                    { id: "r1", label: "Win 標誌", action: "super" },
                     { id: "r2", label: "Ctrl+Alt+T", action: "ctrl-alt-t" },
                     { id: "r3", label: "Ctrl+Esc", action: "ctrl-esc" }
                 ]
@@ -15194,6 +15194,13 @@ Important guidelines:
             if (!userKeyConfig.term) userKeyConfig.term = { ...DEFAULT_KEY_CONFIG.term };
             if (!userKeyConfig.remote) userKeyConfig.remote = { ...DEFAULT_KEY_CONFIG.remote };
             if (!userKeyConfig.audio) userKeyConfig.audio = { ...DEFAULT_KEY_CONFIG.audio };
+            if (userKeyConfig.remote && userKeyConfig.remote.customKeys) {
+                userKeyConfig.remote.customKeys.forEach(k => {
+                    if (k.label === 'Win 徽標') {
+                        k.label = 'Win 標誌';
+                    }
+                });
+            }
             return userKeyConfig;
         }
 
@@ -15267,10 +15274,15 @@ Important guidelines:
                 if (!el) return;
                 let html = '';
                 (cfg.customKeys || []).forEach(k => {
+                    let displayLabel = k.label;
+                    if (displayLabel === 'Win 徽標' || displayLabel === 'Win 標誌' || displayLabel === 'Win Key') {
+                        displayLabel = (typeof currentLang !== 'undefined' && currentLang === 'en') ? 'Win Key' : 'Win 標誌';
+                    }
+                    const btnTitle = (typeof currentLang !== 'undefined' && currentLang === 'en') ? `Send Remote Combo: ${displayLabel}` : `發送遠端組合鍵: ${displayLabel}`;
                     html += `<button type="button" onclick="executeRemoteShortcut('${k.action}')"
                         class="px-2 py-0.5 rounded bg-gray-800 hover:bg-gray-700 text-cyan-300 border border-cyan-800/40 font-mono text-[11px] transition cursor-pointer"
-                        title="發送遠端組合鍵: ${k.label}">
-                        <span>${k.label}</span>
+                        title="${btnTitle}">
+                        <span>${displayLabel}</span>
                     </button>`;
                 });
                 el.innerHTML = html;
