@@ -1501,10 +1501,14 @@
                             </div>
                         </div>
 
-                        <!-- Middle Row: Base URL Pill Bar -->
+                        <!-- Middle Row: Base URL & Recommended Model Pill Bar -->
                         <div class="flex items-center justify-between gap-2 bg-black/60 border border-purple-900/50 rounded-lg px-2.5 py-1.5 text-xs">
                             <span class="text-[11px] text-gray-400 font-sans shrink-0 font-medium">Base URL</span>
                             <code class="text-purple-300 font-mono font-bold select-all truncate text-xs">https://tokentable.asia/v1</code>
+                        </div>
+                        <div class="flex items-center justify-between gap-2 bg-purple-950/40 border border-purple-800/40 rounded-lg px-2.5 py-1 text-xs">
+                            <span class="text-[11px] text-purple-300 font-sans shrink-0 font-medium" data-i18n="tokenTableRecModel">推薦模型</span>
+                            <span class="inline-flex items-center gap-1"><code class="text-amber-300 font-mono font-bold text-xs">qwen3.8-max</code><span class="text-[10px] text-gray-400 font-sans">(自動交互/終端調用)</span></span>
                         </div>
 
                         <!-- Bottom Row: 2-Column Action Buttons Grid -->
@@ -3093,6 +3097,7 @@ mousepad &</pre>
                 presetTokenTable: "✨ TokenTable (推薦)",
                 tokenTableRecHint: "推薦端點：",
                 tokenTableApplyShort: "推薦申請 Key",
+                tokenTableRecModel: "推薦模型：",
                 addProfile: "新增節點",
                 deleteProfile: "刪除",
                 profileNameLabel: "顯示名稱 (Profile Name)",
@@ -3661,6 +3666,7 @@ mousepad &</pre>
                 presetTokenTable: "✨ TokenTable (Rec)",
                 tokenTableRecHint: "Recommended Endpoint: ",
                 tokenTableApplyShort: "Get API Key",
+                tokenTableRecModel: "Recommended Model: ",
                 addProfile: "Add Profile",
                 deleteProfile: "Delete",
                 profileNameLabel: "Profile Name",
@@ -4175,7 +4181,7 @@ mousepad &</pre>
             activeProfile: "local",
             activeAltProfile: "local", // For API↔API pairing: the 2nd side profile key
             profiles: {
-                "tokentable": { name: "TokenTable (推薦)", endpoint: "https://tokentable.asia/v1", key: "", model: "gpt-4o" },
+                "tokentable": { name: "TokenTable (推薦)", endpoint: "https://tokentable.asia/v1", key: "", model: "qwen3.8-max" },
                 "local": { name: "Local LM Studio", endpoint: "http://127.0.0.1:1234/v1", key: "sk-lm-7FMYE40J:38643aAIDPN7LFS9Ky81", model: "auto" },
                 "ollama": { name: "Ollama (Qwen3.5 0.8B Vision)", endpoint: "http://127.0.0.1:11434/v1", key: "ollama", model: "qwen3.5:0.8b" },
                 "openrouter": { name: "OpenRouter", endpoint: "https://openrouter.ai/api/v1", key: "", model: "anthropic/claude-3.5-sonnet" },
@@ -4332,6 +4338,15 @@ mousepad &</pre>
         if (!validOnnxModels.includes(appSettings.altOnnxModel)) {
             appSettings.altOnnxModel = "onnx-community/Bonsai-1.7B-ONNX";
         }
+        // Multi-device LAN auto-detection: when accessed from another device (tablet, phone, remote PC),
+        // dynamically resolve daemonEndpoint to the serving host's IP on port 8001
+        if (typeof window !== 'undefined' && window.location && window.location.protocol && window.location.protocol.startsWith('http')) {
+            const locHost = window.location.hostname;
+            const isLocalClient = (locHost === '127.0.0.1' || locHost === 'localhost');
+            if (!isLocalClient && (!appSettings.daemonEndpoint || appSettings.daemonEndpoint.includes('127.0.0.1') || appSettings.daemonEndpoint.includes('localhost'))) {
+                appSettings.daemonEndpoint = `${window.location.protocol}//${locHost}:8001`;
+            }
+        }
         if (!appSettings.daemonEndpoint) appSettings.daemonEndpoint = "http://127.0.0.1:8001";
         if (!appSettings.mcpEndpoint) appSettings.mcpEndpoint = "http://127.0.0.1:8001/mcp";
         if (!appSettings.profiles || typeof appSettings.profiles !== 'object' || Object.keys(appSettings.profiles).length === 0) {
@@ -4343,14 +4358,17 @@ mousepad &</pre>
                 appSettings.profiles[pKey] = defaultSettings.profiles[pKey];
             }
         });
-        // Ensure TokenTable profile is always present and up-to-date with proper Base URL
+        // Ensure TokenTable profile is always present and up-to-date with proper Base URL and qwen3.8-max model
         if (!appSettings.profiles["tokentable"] || !appSettings.profiles["tokentable"].endpoint) {
             appSettings.profiles["tokentable"] = {
                 name: "TokenTable (推薦)",
                 endpoint: "https://tokentable.asia/v1",
                 key: (appSettings.profiles["tokentable"] && appSettings.profiles["tokentable"].key) || "",
-                model: (appSettings.profiles["tokentable"] && appSettings.profiles["tokentable"].model) || "gpt-4o"
+                model: (appSettings.profiles["tokentable"] && appSettings.profiles["tokentable"].model) || "qwen3.8-max"
             };
+        } else if (!appSettings.profiles["tokentable"].model || appSettings.profiles["tokentable"].model === "gpt-4o") {
+            // Automatically upgrade legacy default gpt-4o to qwen3.8-max
+            appSettings.profiles["tokentable"].model = "qwen3.8-max";
         }
         if (!appSettings.activeProfile || !appSettings.profiles[appSettings.activeProfile]) {
             appSettings.activeProfile = Object.keys(appSettings.profiles)[0] || "local";
@@ -7145,8 +7163,10 @@ mousepad &</pre>
                         name: "TokenTable (推薦)",
                         endpoint: "https://tokentable.asia/v1",
                         key: "",
-                        model: "gpt-4o"
+                        model: "qwen3.8-max"
                     };
+                } else {
+                    appSettings.profiles["tokentable"].model = "qwen3.8-max";
                 }
                 saveModalProfileToState();
                 editingProfileId = "tokentable";
@@ -7170,8 +7190,10 @@ mousepad &</pre>
                             name: "TokenTable (推薦)",
                             endpoint: "https://tokentable.asia/v1",
                             key: "",
-                            model: "gpt-4o"
+                            model: "qwen3.8-max"
                         };
+                    } else if (!appSettings.profiles["tokentable"].model || appSettings.profiles["tokentable"].model === 'gpt-4o') {
+                        appSettings.profiles["tokentable"].model = "qwen3.8-max";
                     }
                     saveModalProfileToState();
                     editingProfileId = "tokentable";
@@ -8339,15 +8361,18 @@ ffmpeg -f pulse -i default -acodec libmp3lame -ab 128k -f mp3 -listen 1 http://0
                 }
 
                 let tools = [
-                    `1. execute_shell: Execute local shell commands via daemon. Args: {"command": "string"}`,
-                    `2. read_file: Read local file. Args: {"filepath": "path"}`,
-                    `3. write_file: Write local file. Args: {"filepath": "path", "content": "content"}`,
-                    `4. execute_ssh: Run command via SSH. Args: {"host": "IP", "username": "user", "password": "pwd", "command": "cmd"}`,
-                    `5. execute_telnet: Run command via Telnet. Args: {"host": "IP", "port": 23, "username": "user", "password": "pwd", "command": "cmd", "cmd_prompt": "#"}`,
-                    `6. execute_serial: Send command via serial port. Args: {"port": "path", "baudrate": 9600, "command": "cmd"}`,
-                    `7. read_frontend_terminal: Read latest left terminal output. Args: {}`,
-                    `8. write_frontend_terminal: Send command directly to the active left terminal. Args: {"command": "string"}`,
-                    `9. launch_daemon: Start background daemon service on port 8001. Args: {}`
+                    `1. write_frontend_terminal: Send and execute command directly in the active left terminal. Args: {"command": "cmd string"} (e.g. dir, ls -la, ip a, wsl -l -v)`,
+                    `2. read_frontend_terminal: Read latest screen output from the left terminal. Args: {}`,
+                    `3. execute_shell: Execute local shell command via backend daemon with echo to terminal. Args: {"command": "cmd string"}`,
+                    `4. switch_left_mode: Switch the left workspace view mode. Args: {"mode": "term" | "novnc" | "xorg"}`,
+                    `5. launch_wsl_app: Launch a GUI application on the left Xorg display. Args: {"app": "app name"} (e.g. xclock, gedit, thunar)`,
+                    `6. control_wsl_desktop: Control WSL desktop service on the left workspace. Args: {"action": "start" | "stop"}`,
+                    `7. read_file: Read local file. Args: {"filepath": "path"}`,
+                    `8. write_file: Write local file. Args: {"filepath": "path", "content": "content"}`,
+                    `9. execute_ssh: Run command via SSH. Args: {"host": "IP", "username": "user", "password": "pwd", "command": "cmd"}`,
+                    `10. execute_telnet: Run command via Telnet. Args: {"host": "IP", "port": 23, "username": "user", "password": "pwd", "command": "cmd", "cmd_prompt": "#"}`,
+                    `11. execute_serial: Send command via serial port. Args: {"port": "path", "baudrate": 9600, "command": "cmd"}`,
+                    `12. launch_daemon: Start background daemon service on port 8001. Args: {}`
                 ];
 
                 let contextStr = `\n\n[Current Environment] Time: ${timeString} | Terminal: [${activeTermContext.protocol.toUpperCase()}] | Daemon(8001): [${isDaemonOnline ? 'ONLINE' : 'OFFLINE'}]\n`;
@@ -8357,11 +8382,11 @@ ffmpeg -f pulse -i default -acodec libmp3lame -ab 128k -f mp3 -listen 1 http://0
                 }
 
                 if (webToggle.checked) {
-                    tools.push(`10. web_search: Search web information. Args: {"query": "search query"}`);
+                    tools.push(`13. web_search: Search web information. Args: {"query": "search query"}`);
                 }
 
                 if (ragToggle.checked) {
-                    tools.push(`11. query_knowledge_base: Search local RAG knowledge base. Args: {"query": "search keywords"}`);
+                    tools.push(`14. query_knowledge_base: Search local RAG knowledge base. Args: {"query": "search keywords"}`);
                 }
 
                 if (mcpToggle.checked && discoveredMcpTools.length > 0) {
@@ -8372,7 +8397,16 @@ ffmpeg -f pulse -i default -acodec libmp3lame -ab 128k -f mp3 -listen 1 http://0
 
                 if (ragContext) contextStr += ragContext;
 
-                return `You are an AI Agent with terminal control capabilities.\nWhen the user asks you to execute commands, read files, or control hardware, output tool calls in XML format:\n<tool_call>{"name": "tool_name", "args": {"arg_name": "arg_value"}}</tool_call>\n\nAvailable Tools:\n${tools.join('\n')}${contextStr}\n\n[Artifact & Multi-Part Continuation Guidelines]
+                return `You are an AI Agent with full left workspace & terminal control capabilities.
+Your left workspace contains Terminal (term), Remote Desktop (novnc), and Window Connection (xorg).
+[Interaction Principle]: When the user asks to operate the left panel, execute commands, inspect terminal output, or switch view modes, you MUST immediately output a <tool_call> to automatically interact with the left panel!
+Output tool calls in XML format:
+<tool_call>{"name": "tool_name", "arguments": {"arg_name": "arg_value"}}</tool_call>
+
+Available Tools:
+${tools.join('\n')}${contextStr}
+
+[Artifact & Multi-Part Continuation Guidelines]
 When producing standalone code (e.g. HTML/JS/CSS web apps, Python/Bash scripts, SVG, or full Markdown documents), wrap in:
 <artifact identifier="unique-id" type="code|html|svg|markdown" language="lang" title="Title">
 ...content...
@@ -8381,7 +8415,13 @@ If output is interrupted by token limit or user asks to continue, use the SAME i
 <artifact identifier="unique-id" mode="continue">
 ...subsequent content...
 </artifact>
-The system will automatically merge all parts into a single completed file without duplication.\n\nRules:\n1. For general conversation, questions, or self-introductions, answer directly with text. Do NOT call tools.\n2. Only call tools when the user explicitly requests command execution or device control.\n3. Call one tool at a time.`;
+The system will automatically merge all parts into a single completed file without duplication.
+
+Rules:
+1. When asked to execute commands or interact with the left workspace, ALWAYS call the appropriate tool via <tool_call>.
+2. The frontend will automatically execute your tool call and return the result in <tool_response>. Summarize the result for the user once received.
+3. For general conceptual questions or greetings, answer directly with text without calling tools.
+4. Call one tool at a time.`;
             } else {
                 const timeString = now.toLocaleString('zh-TW', { timeZone: 'Asia/Taipei' });
                 if (!enableAgent) {
@@ -8394,15 +8434,18 @@ The system will automatically merge all parts into a single completed file witho
                 }
 
                 let tools = [
-                    `1. execute_shell: 執行本機指令 (透過後端 Daemon)。參數: {"command": "指令字串"}`,
-                    `2. read_file: 讀取本機檔案。參數: {"filepath": "路徑"}`,
-                    `3. write_file: 寫入本機檔案。參數: {"filepath": "路徑", "content": "檔案內容"}`,
-                    `4. execute_ssh: 透過 SSH 執行指令。參數: {"host": "IP", "username": "帳號", "password": "密碼", "command": "指令"}`,
-                    `5. execute_telnet: 透過 Telnet 執行指令。參數: {"host": "IP", "port": 23, "username": "帳號", "password": "密碼", "command": "指令", "cmd_prompt": "提示字元"}`,
-                    `6. execute_serial: 透過序列埠發送指令。參數: {"port": "設備路徑", "baudrate": 9600, "command": "指令"}`,
-                    `7. read_frontend_terminal: 讀取左側終端機畫面輸出。無參數: {}`,
-                    `8. write_frontend_terminal: 在左側終端機輸入指令。參數: {"command": "指令字串"}`,
-                    `9. launch_daemon: 在背景啟動或重啟 Port 8001 常駐服務。無參數: {}`
+                    `1. write_frontend_terminal: 在左側終端機輸入並直接執行指令。參數: {"command": "指令字串"} (例如 dir, ls -la, ip a, wsl -l -v)`,
+                    `2. read_frontend_terminal: 讀取左側終端機畫面最新的輸出文字。無參數: {}`,
+                    `3. execute_shell: 執行本機指令 (透過後端 Daemon，並自動回顯輸出至左側終端機)。參數: {"command": "指令字串"}`,
+                    `4. switch_left_mode: 切換左側工作區的顯示模式。參數: {"mode": "term" | "novnc" | "xorg"}`,
+                    `5. launch_wsl_app: 在左側 Xorg 畫面啟動 WSL GUI 應用程式。參數: {"app": "應用程式名稱"} (例如 xclock, gedit, thunar)`,
+                    `6. control_wsl_desktop: 控制左側 WSL 遠端桌面服務。參數: {"action": "start" | "stop"}`,
+                    `7. read_file: 讀取本機檔案。參數: {"filepath": "路徑"}`,
+                    `8. write_file: 寫入本機檔案。參數: {"filepath": "路徑", "content": "檔案內容"}`,
+                    `9. execute_ssh: 透過 SSH 執行指令。參數: {"host": "IP", "username": "帳號", "password": "密碼", "command": "指令"}`,
+                    `10. execute_telnet: 透過 Telnet 執行指令。參數: {"host": "IP", "port": 23, "username": "帳號", "password": "密碼", "command": "指令", "cmd_prompt": "提示字元"}`,
+                    `11. execute_serial: 透過序列埠發送指令。參數: {"port": "設備路徑", "baudrate": 9600, "command": "指令"}`,
+                    `12. launch_daemon: 在背景啟動或重啟 Port 8001 常駐服務。無參數: {}`
                 ];
 
                 let contextStr = `\n\n【當前環境】時間: ${timeString} | 終端機: [${activeTermContext.protocol.toUpperCase()}] | 常駐程式(8001): [${isDaemonOnline ? '已連線' : '離線'}]\n`;
@@ -8412,11 +8455,11 @@ The system will automatically merge all parts into a single completed file witho
                 }
 
                 if (webToggle.checked) {
-                    tools.push(`10. web_search: 搜尋網際網路資訊。參數: {"query": "搜尋關鍵字"}`);
+                    tools.push(`13. web_search: 搜尋網際網路資訊。參數: {"query": "搜尋關鍵字"}`);
                 }
 
                 if (ragToggle.checked) {
-                    tools.push(`11. query_knowledge_base: 檢索本地 RAG 知識庫。參數: {"query": "關鍵字"}`);
+                    tools.push(`14. query_knowledge_base: 檢索本地 RAG 知識庫。參數: {"query": "關鍵字"}`);
                 }
 
                 if (mcpToggle.checked && discoveredMcpTools.length > 0) {
@@ -8427,7 +8470,18 @@ The system will automatically merge all parts into a single completed file witho
 
                 if (ragContext) contextStr += ragContext;
 
-                return `【語言要求】請使用【繁體中文】回答。\n你是一個具備系統操作與終端機控制能力的 AI 助理 (Agent)。\n你可以感測左側終端機畫面，並在使用者明確要求執行指令、檔案操作或控制設備時使用工具。\n要使用工具時，請輸出 XML 格式：\n<tool_call>{"name": "工具名稱", "args": {"參數名": "參數值"}}</tool_call>\n\n可用工具：\n${tools.join('\n')}${contextStr}\n\n【Artifact 程式碼與多段接續規範】
+                return `【語言要求】請使用【繁體中文】回答。
+你是一個具備全方位「左側工作區」與終端機控制能力的 AI 助理 (Agent)。
+你的左側為多功能工作區，包含三大模式：終端機 (Terminal)、遠端桌面 (noVNC)、視窗連線 (Xorg)。你可即時感知左側畫面並下達指令互動。
+【調用左側核心原則】當使用者要求調用左側、操作終端機、下指令、查詢終端機畫面或切換模式時，你必須立即輸出 <tool_call> 主動調用工具！
+工具呼叫請嚴格輸出 XML 格式：
+<tool_call>{"name": "工具名稱", "arguments": {"參數名": "參數值"}}</tool_call>
+（亦相容 "args" 欄位）
+
+可用工具：
+${tools.join('\n')}${contextStr}
+
+【Artifact 程式碼與多段接續規範】
 當你要輸出可獨立執行的程式碼（如 HTML/JS/CSS 網頁應用、Python/Bash 腳本、SVG 向量圖或結構化長文件）時，請使用 Artifact 標籤輸出：
 <artifact identifier="唯一英文ID" type="code|html|svg|markdown" language="語言" title="檔案標題">
 你的完整內容
@@ -8436,9 +8490,13 @@ The system will automatically merge all parts into a single completed file witho
 <artifact identifier="相同ID" mode="continue">
 緊接上次中斷處的接續程式碼
 </artifact>
-控制台將自動把多段接續內容無縫縫合為單一完整文件，避開字數上限打斷問題！\n\n重要準則：\n1. 一般日常問答、諮詢或自我介紹時，請直接以繁體中文文字回答，嚴禁呼叫任何工具。\n2. 只有在使用者明確要求執行命令、讀寫檔案或操作終端機時，才調用對應工具。\n3. 每次只能呼叫一個工具，輸出 <tool_call> 後等待系統回傳 <tool_response>。`;
+控制台將自動把多段接續內容無縫縫合為單一完整文件，避開字數上限打斷問題！
 
-
+重要行為準則：
+1. 當使用者要求操作左側、調用左側、執行命令或查詢系統時，務必輸出 <tool_call> 調用對應工具（如 write_frontend_terminal 或 read_frontend_terminal）。
+2. 前端系統會自動攔截工具呼叫、執行動作並回傳 <tool_response>，收到回傳後請根據結果為使用者整理並直接給出完整繁體中文回答。
+3. 日常閒聊、概念諮詢或自我介紹時，直接以繁體中文文字回答，無需呼叫工具。
+4. 每次只呼叫一個工具。`;
             }
         }
 
@@ -11087,7 +11145,7 @@ Important guidelines:
             };
         }
 
-        function extractToolCall(text) {
+        function extractToolCall(text, userPrompt = "") {
             if (!text || typeof text !== 'string') return null;
 
             // 如果內容包含 SVG 向量圖標籤且沒有明確的 <tool_call>，視為繪圖內容而非工具呼叫
@@ -11097,40 +11155,123 @@ Important guidelines:
                 'execute_shell', 'read_file', 'write_file', 'execute_ssh',
                 'execute_telnet', 'execute_serial', 'read_frontend_terminal',
                 'write_frontend_terminal', 'launch_daemon', 'web_search', 'query_knowledge_base',
-                'svg', 'draw_svg', 'draw'
+                'svg', 'draw_svg', 'draw', 'switch_left_mode', 'launch_wsl_app', 'control_wsl_desktop'
             ];
             if (typeof discoveredMcpTools !== 'undefined' && Array.isArray(discoveredMcpTools)) {
                 discoveredMcpTools.forEach(t => registeredToolNames.push(t.name));
             }
 
-            const isValidTool = (d) => d && typeof d === 'object' && d.name && (registeredToolNames.includes(d.name) || d.name.startsWith('mcp_') || d.name.startsWith('MCP_'));
+            const toolAliases = {
+                'write_terminal': 'write_frontend_terminal',
+                'terminal_write': 'write_frontend_terminal',
+                'terminal': 'write_frontend_terminal',
+                'write_term': 'write_frontend_terminal',
+                'send_terminal': 'write_frontend_terminal',
+                'send_command': 'write_frontend_terminal',
+                'exec_terminal': 'write_frontend_terminal',
+                'frontend_terminal': 'write_frontend_terminal',
+                'read_terminal': 'read_frontend_terminal',
+                'terminal_read': 'read_frontend_terminal',
+                'read_term': 'read_frontend_terminal',
+                'get_terminal': 'read_frontend_terminal',
+                'bash': 'execute_shell',
+                'shell': 'execute_shell',
+                'cmd': 'execute_shell',
+                'exec': 'execute_shell',
+                'exec_shell': 'execute_shell',
+                'run_command': 'execute_shell',
+                'execute_command': 'execute_shell',
+                'wsl': 'execute_shell',
+                'switch_mode': 'switch_left_mode',
+                'switch_view': 'switch_left_mode',
+                'switch_tab': 'switch_left_mode',
+                'change_mode': 'switch_left_mode',
+                'launch_app': 'launch_wsl_app',
+                'start_app': 'launch_wsl_app',
+                'run_app': 'launch_wsl_app',
+                'open_app': 'launch_wsl_app',
+                'start_desktop': 'control_wsl_desktop',
+                'wsl_desktop': 'control_wsl_desktop',
+                'desktop': 'control_wsl_desktop'
+            };
 
-            // 1. XML <tool_call>...</tool_call>
-            const xmlMatch = text.match(/<tool_call>([\s\S]*?)<\/tool_call>/i);
+            const normalizeToolCall = (d) => {
+                if (!d) return null;
+                if (Array.isArray(d) && d.length > 0) d = d[0];
+                if (typeof d === 'object') {
+                    if (d.tool_calls && Array.isArray(d.tool_calls) && d.tool_calls.length > 0) {
+                        d = d.tool_calls[0];
+                    }
+                    if (d.function && typeof d.function === 'object') {
+                        d = { name: d.function.name, arguments: d.function.arguments };
+                    }
+                    let name = d.name;
+                    if (!name || typeof name !== 'string') return null;
+                    const canonName = toolAliases[name.toLowerCase()] || name;
+                    if (registeredToolNames.includes(canonName) || canonName.startsWith('mcp_') || canonName.startsWith('MCP_')) {
+                        let rawArgs = (d.args !== undefined) ? d.args : ((d.arguments !== undefined) ? d.arguments : (d.params || {}));
+                        if (typeof rawArgs === 'string') {
+                            try { rawArgs = JSON.parse(rawArgs); } catch (e) { rawArgs = { command: rawArgs }; }
+                        }
+                        if (!rawArgs || typeof rawArgs !== 'object') {
+                            rawArgs = { command: String(rawArgs) };
+                        }
+                        return { name: canonName, args: rawArgs };
+                    }
+                }
+                return null;
+            };
+
+            // 1. XML <tool_call>...</tool_call> or unclosed <tool_call>...
+            const xmlMatch = text.match(/<tool_call>([\s\S]*?)(?:<\/tool_call>|$)/i);
             if (xmlMatch) {
+                const body = xmlMatch[1].trim();
                 try {
-                    const data = JSON.parse(xmlMatch[1].trim());
-                    if (isValidTool(data)) return data;
+                    const data = JSON.parse(body);
+                    const norm = normalizeToolCall(data);
+                    if (norm) return norm;
+                } catch (e) {
+                    // Try Qwen XML tags <function=name><parameter=cmd>...
+                    const fnMatch = body.match(/<function=([a-zA-Z0-9_\-]+)>/i);
+                    if (fnMatch) {
+                        const fnName = fnMatch[1];
+                        const paramMatch = body.match(/<parameter=([a-zA-Z0-9_\-]+)>([\s\S]*?)<\/parameter>/i);
+                        const args = paramMatch ? { [paramMatch[1]]: paramMatch[2].trim() } : {};
+                        const norm = normalizeToolCall({ name: fnName, args: args });
+                        if (norm) return norm;
+                    }
+                    // Try extracting inner JSON inside <tool_call>
+                    const b1 = body.indexOf('{');
+                    const b2 = body.lastIndexOf('}');
+                    if (b1 !== -1 && b2 > b1) {
+                        try {
+                            const innerJson = JSON.parse(body.substring(b1, b2 + 1));
+                            const norm = normalizeToolCall(innerJson);
+                            if (norm) return norm;
+                        } catch (err) {}
+                    }
+                }
+            }
+
+            // 2. Markdown ```json / ```tool_call / ```tool / ```xml
+            const codeBlockMatches = text.matchAll(/```(?:json|tool_call|tool|xml)?\s*([\s\S]*?)\s*```/gi);
+            for (const m of codeBlockMatches) {
+                try {
+                    const data = JSON.parse(m[1].trim());
+                    const norm = normalizeToolCall(data);
+                    if (norm) return norm;
                 } catch (e) { }
             }
 
-            // 2. Markdown ```json ... ```
-            const codeBlockMatch = text.match(/```(?:json)?\s*([\s\S]*?)\s*```/i);
-            if (codeBlockMatch) {
-                try {
-                    const data = JSON.parse(codeBlockMatch[1].trim());
-                    if (isValidTool(data)) return data;
-                } catch (e) { }
-            }
-
-            // 3. Balanced Top-level JSON Object extraction (嚴格比對已註冊的有效工具)
+            // 3. Balanced Top-level JSON Object extraction
             const firstBrace = text.indexOf('{');
             const lastBrace = text.lastIndexOf('}');
             if (firstBrace !== -1 && lastBrace > firstBrace) {
                 const potentialJson = text.substring(firstBrace, lastBrace + 1).trim();
                 try {
                     const data = JSON.parse(potentialJson);
-                    if (isValidTool(data)) return data;
+                    const norm = normalizeToolCall(data);
+                    if (norm) return norm;
                 } catch (e) {
                     try {
                         const jsonMatches = text.match(/\{[\s\S]*?"name"[\s\S]*?\}/g);
@@ -11138,11 +11279,27 @@ Important guidelines:
                             for (const jsonStr of jsonMatches) {
                                 try {
                                     const d = JSON.parse(jsonStr);
-                                    if (isValidTool(d)) return d;
+                                    const norm = normalizeToolCall(d);
+                                    if (norm) return norm;
                                 } catch (err) { }
                             }
                         }
                     } catch (err) { }
+                }
+            }
+
+            // 4. Fallback: Command code block auto-interaction
+            // When user requested command execution or terminal/left-side action, and model outputs a standalone bash/sh/cmd code block:
+            const cmdBlockMatch = text.match(/```(?:bash|sh|shell|cmd|powershell)\s*\n([\s\S]*?)\n```/i);
+            if (cmdBlockMatch) {
+                const rawCmd = cmdBlockMatch[1].trim();
+                const uPrompt = (userPrompt || (typeof lastUserPrompt !== 'undefined' ? lastUserPrompt : "") || "").toLowerCase();
+                const isLeftAction = uPrompt.includes("左側") || uPrompt.includes("左边") || uPrompt.includes("終端") || uPrompt.includes("终端") || uPrompt.includes("terminal") || uPrompt.includes("執行") || uPrompt.includes("执行") || uPrompt.includes("run") || uPrompt.includes("cmd") || uPrompt.includes("指令") || uPrompt.includes("命令") || uPrompt.includes("調用") || uPrompt.includes("调用");
+                if (rawCmd && !rawCmd.startsWith('#') && rawCmd.length < 1000 && (isLeftAction || text.includes("左側") || text.includes("終端機") || text.includes("執行指令"))) {
+                    return {
+                        name: 'write_frontend_terminal',
+                        args: { command: rawCmd }
+                    };
                 }
             }
 
@@ -11241,8 +11398,58 @@ Important guidelines:
                 return JSON.stringify({ status: "success", content: buffer });
             }
 
+            if (toolName === 'switch_left_mode') {
+                const targetMode = (args.mode || args.view || args.tab || 'term').toLowerCase();
+                const normalizedMode = (targetMode.includes('vnc') || targetMode.includes('desk')) ? 'novnc' : (targetMode.includes('xorg') || targetMode.includes('win') || targetMode.includes('app') ? 'xorg' : 'term');
+                if (typeof switchLeftMode === 'function') {
+                    switchLeftMode(normalizedMode);
+                    const modeName = normalizedMode === 'term' ? (currentLang === 'en' ? 'Terminal' : '終端機') : (normalizedMode === 'novnc' ? (currentLang === 'en' ? 'Remote Desktop (noVNC)' : '遠端桌面 (noVNC)') : (currentLang === 'en' ? 'Window (Xorg)' : '視窗連線 (Xorg)'));
+                    const resultEl = document.createElement('div');
+                    resultEl.className = 'mt-1 p-1 rounded bg-indigo-900/30 text-indigo-300 text-xs font-mono';
+                    resultEl.textContent = `🖥️ ${currentLang === 'en' ? 'Left workspace switched to: ' : '已切換左側工作區至：'}${modeName}`;
+                    logEl.appendChild(resultEl);
+                    scrollToBottom();
+                    return JSON.stringify({ status: "success", mode: normalizedMode, message: `已成功切換左側工作區至 ${modeName}` });
+                }
+                return JSON.stringify({ status: "error", error: "switchLeftMode function unavailable" });
+            }
+
+            if (toolName === 'launch_wsl_app') {
+                const app = args.app || args.command || args.name || 'xclock';
+                if (typeof launchWslApp === 'function') {
+                    launchWslApp(app);
+                    const resultEl = document.createElement('div');
+                    resultEl.className = 'mt-1 p-1 rounded bg-purple-900/30 text-purple-300 text-xs font-mono';
+                    resultEl.textContent = `🚀 ${currentLang === 'en' ? 'Launched WSL GUI App: ' : '已在左側啟動 WSL 應用程式：'}${app}`;
+                    logEl.appendChild(resultEl);
+                    scrollToBottom();
+                    return JSON.stringify({ status: "success", app: app, message: `已在左側啟動 WSL 應用程式: ${app}` });
+                }
+                return JSON.stringify({ status: "error", error: "launchWslApp function unavailable" });
+            }
+
+            if (toolName === 'control_wsl_desktop') {
+                const action = (args.action || args.cmd || 'start').toLowerCase();
+                const resultEl = document.createElement('div');
+                resultEl.className = 'mt-1 p-1 rounded bg-blue-900/30 text-blue-300 text-xs font-mono';
+                if (action === 'stop') {
+                    if (typeof stopWslDesktopService === 'function') stopWslDesktopService();
+                    resultEl.textContent = `⏹️ ${currentLang === 'en' ? 'WSL Desktop Service stopped' : '已停止 WSL 桌面服務'}`;
+                    logEl.appendChild(resultEl);
+                    scrollToBottom();
+                    return JSON.stringify({ status: "success", action: "stop", message: "已停止 WSL 桌面服務" });
+                } else {
+                    if (typeof startWslDesktopAndConnect === 'function') startWslDesktopAndConnect();
+                    resultEl.textContent = `▶️ ${currentLang === 'en' ? 'WSL Desktop Service started & connecting' : '已啟動 WSL 桌面服務並連線'}`;
+                    logEl.appendChild(resultEl);
+                    scrollToBottom();
+                    return JSON.stringify({ status: "success", action: "start", message: "已啟動 WSL 桌面服務並連線" });
+                }
+            }
+
             if (toolName === 'write_frontend_terminal') {
-                const cmd = args.command || "";
+                let cmd = args.command || args.cmd || args.input || args.code || args.text || (typeof args === 'string' ? args : "");
+                if (typeof cmd !== 'string') cmd = JSON.stringify(cmd);
                 await sendCommandToTerminal(cmd);
                 return JSON.stringify({ status: "success", executed: cmd });
             }
@@ -13167,7 +13374,8 @@ Important guidelines:
                                 if (cleanLine.startsWith("data: ")) {
                                     try {
                                         const json = JSON.parse(cleanLine.slice(6));
-                                        const content = json.choices[0]?.delta?.content || "";
+                                        const delta = json.choices[0]?.delta || {};
+                                        const content = delta.content || delta.reasoning_content || "";
                                         if (content) {
                                             fullAiResponse += content;
                                             generatedTokens += Math.max(1, Math.round(content.length / 2.6));
@@ -13191,14 +13399,20 @@ Important guidelines:
                     }
 
                     // Robust multi-format tool call extractor (supports <tool_call>, ```json, and raw JSON objects)
-                    const toolData = extractToolCall(fullAiResponse);
+                    const toolData = extractToolCall(fullAiResponse, prompt);
                     console.log("[Agent Loop] AI Response:", fullAiResponse, "Extracted Tool:", toolData);
 
                     if (toolData && toolData.name) {
                         chatHistory.push({ role: "assistant", content: fullAiResponse });
                         try {
-                            const toolArgs = toolData.args || toolData.arguments || toolData.params || {};
-                            const toolResult = await executeTool(toolData.name, toolArgs, containerEl);
+                            let toolArgs = toolData.args || toolData.arguments || toolData.params || {};
+                            if (typeof toolArgs === 'string') {
+                                try { toolArgs = JSON.parse(toolArgs); } catch (e) { toolArgs = { command: toolArgs }; }
+                            }
+                            if (!toolArgs || typeof toolArgs !== 'object') {
+                                toolArgs = { command: String(toolArgs) };
+                            }
+                            const toolResult = await executeTool(toolData.name, toolArgs, containerEl, fullAiResponse);
                             let responseMsg = `<tool_response>${toolResult}</tool_response>\n${currentLang === 'en' ? '【System Notification】Tool has finished executing. Please read the data in <tool_response> above and provide a complete summary/answer to the user.' : '【系統通知】工具已成功執行完畢！請直接讀取上方 <tool_response> 中的資料，為使用者整理並直接給出完整答案。'}`;
                             if (toolData.name === 'svg' || toolData.name === 'draw_svg' || toolData.name === 'draw') {
                                 responseMsg = `<tool_response>${toolResult}</tool_response>\n${currentLang === 'en' ? '【System Notification】SVG graphic is rendered on the screen. Task is complete. Briefly introduce the artwork to the user, and do NOT execute any terminal commands.' : '【系統通知】SVG 向量圖已成功在前端畫面即時渲染！繪圖任務已完成，請簡短向使用者介紹這幅畫，絕對不要再發送終端機指令或存檔。'}`;
@@ -13227,11 +13441,11 @@ Important guidelines:
                             2. <strong>WebGPU Engine</strong>: ${currentLang === 'en' ? 'Or switch Engine to "⚡ WebGPU Browser Local" to run completely offline on your GPU without server!' : '或者在上方切換至「⚡ WebGPU 瀏覽器純本機」模式，直接在您的顯示卡上純離線運行！'}<br>
                             3. <strong>Router</strong>: ${currentLang === 'en' ? 'Click "Router Settings" and use "Test Connection".' : '點擊右上角「Router 設定」可使用「測試此節點連線」即時診斷。'}
                         </div>`;
-                    } else if (err.message.includes("401")) {
-                        extraTip = `<div class="mt-2 text-xs text-gray-400 bg-gray-950/80 p-2.5 rounded-lg border border-gray-800 leading-relaxed">
-                            <strong>${currentLang === 'en' ? 'Troubleshooting (401 Unauthorized):' : '排查建議 (401 授權失敗)：'}</strong><br>
-                            1. ${currentLang === 'en' ? 'Click "Router Settings" and enter valid API Key.' : '請點擊「Router 設定」，在 API Key 填入正確的 Token。'}<br>
-                            2. ${currentLang === 'en' ? 'In LM Studio Developer tab, copy valid Token or turn off Require Token.' : '若使用 LM Studio，可在 Developer 分頁複製有效的 API Token，或關閉「Require API Token」功能。'}
+                    } else if (err.message.includes("401") || err.message.includes("authorization") || err.message.includes("FST_ERR_VALIDATION")) {
+                        extraTip = `<div class="mt-2 text-xs text-gray-400 bg-gray-950/80 p-2.5 rounded-lg border border-purple-800/60 leading-relaxed">
+                            <strong>${currentLang === 'en' ? 'API Key Required / 401 Unauthorized:' : '排查建議 (API Key 缺失或授權失敗)：'}</strong><br>
+                            1. ${currentLang === 'en' ? 'Click "Router Settings", select TokenTable/Profile and enter your API Key.' : '請點擊右上角「Router 設定」，確認已選取正確節點並填入有效 API Key。'}<br>
+                            2. <a href="https://top.yia.app/token" target="_blank" class="text-purple-400 hover:underline font-bold">✨ ${currentLang === 'en' ? 'Apply for TokenTable API Key (Base URL: https://tokentable.asia/v1)' : '推薦申請 TokenTable API Key (端點: https://tokentable.asia/v1)'} &rarr;</a>
                         </div>`;
                     }
                     containerEl.innerHTML += `<div class="text-red-400 mt-2 text-xs">⚠️ ${friendlyMsg}${extraTip}</div>`;
