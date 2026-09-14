@@ -1315,6 +1315,12 @@
                         <i data-lucide="cpu" class="w-3.5 h-3.5"></i> <span data-i18n="btnMcpManager">MCP 工具</span>
                     </button>
 
+                    <button id="btn-compress-context" type="button"
+                        class="text-xs text-purple-300 hover:text-purple-200 bg-purple-950/40 hover:bg-purple-900/60 border border-purple-800/50 px-2 py-1 rounded-md flex items-center gap-1 transition shadow-sm ml-1 cursor-pointer"
+                        title="壓縮對話上下文 (減少 Token 負載，防止長對話當機)" data-i18n-title="tooltipCompressContext">
+                        <i data-lucide="shrink" class="w-3.5 h-3.5 text-purple-400"></i>
+                        <span id="context-tokens-badge" class="font-mono text-[11px]">~0 tok</span>
+                    </button>
                     <button id="btn-clear"
                         class="text-xs text-red-400 hover:text-red-300 flex items-center gap-1 font-medium transition ml-1">
                         <i data-lucide="trash-2" class="w-3.5 h-3.5"></i> <span data-i18n="clearChat">清空</span>
@@ -3609,6 +3615,8 @@ ffmpeg -f pulse -i default -acodec libmp3lame -ab 128k -f mp3 -listen 1 http://0
                 tooltipOpenArtifact: "開啟 Artifact 成果工坊與獨立沙箱",
                 btnUserGuide: "操作說明",
                 guideModalTitle: "雙引擎 AI 控制台・系統操作與排障手冊",
+                tooltipCompressContext: "壓縮對話上下文 (減少 Token 負載，防止長對話當機)",
+                contextCompressedToast: "✅ 對話歷史已最佳化壓縮 (已節省上下文空間)",
                 clearChat: "清空",
                 btnStop: "停止",
                 btnRetry: "重試",
@@ -4332,6 +4340,8 @@ ffmpeg -f pulse -i default -acodec libmp3lame -ab 128k -f mp3 -listen 1 http://0
                 tooltipOpenArtifact: "Open Artifact Workbench & Sandbox",
                 btnUserGuide: "User Guide",
                 guideModalTitle: "Dual-Engine AI Console User Manual & Diagnostics",
+                tooltipCompressContext: "Compress Context (Reduces tokens & prevents payload overload)",
+                contextCompressedToast: "✅ Conversation context compressed & optimized!",
                 clearChat: "Clear",
                 btnStop: "Stop",
                 btnRetry: "Retry",
@@ -9107,6 +9117,151 @@ ffmpeg -f pulse -i default -acodec libmp3lame -ab 128k -f mp3 -listen 1 http://0
         let sessionChatLog = [];
         let isGenerating = false;
 
+        function estimateTokens(msgs) {
+            if (!msgs || !Array.isArray(msgs)) return 0;
+            let totalChars = 0;
+            for (const m of msgs) {
+                if (!m) continue;
+                if (typeof m.content === 'string') {
+                    totalChars += m.content.length;
+                } else if (Array.isArray(m.content)) {
+                    for (const p of m.content) {
+                        if (p.type === 'text') totalChars += (p.text || '').length;
+                        else if (p.type === 'image_url' || p.type === 'image') totalChars += 400;
+                    }
+                }
+            }
+            return Math.ceil(totalChars / 2.5);
+        }
+
+        function updateContextBadge() {
+            const badge = document.getElementById('context-tokens-badge');
+            if (!badge) return;
+            const est = estimateTokens(chatHistory);
+            let budget = (appSettings.engineMode === 'onnx' || appSettings.engineMode === 'webgpu') ? 2048 : 4096;
+            badge.textContent = `~${est} / ${budget} tok`;
+            if (est > budget * 0.85) {
+                badge.className = "font-mono text-[11px] text-red-400 font-bold animate-pulse";
+            } else if (est > budget * 0.6) {
+                badge.className = "font-mono text-[11px] text-amber-300 font-bold";
+            } else {
+                badge.className = "font-mono text-[11px] text-purple-300";
+            }
+        }
+
+        function compressChatHistory(history, aggressive = false) {
+            if (!history || !Array.isArray(history) || history.length === 0) return history;
+
+            const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en');
+            let maxBudget = (appSettings.engineMode === 'onnx' || appSettings.engineMode === 'webgpu') ? 2200 : 3600;
+            if (aggressive) {
+                maxBudget = Math.min(1800, maxBudget);
+            }
+
+            // 1. Check if system prompt exists at history[0]
+            if (history[0] && history[0].role === 'system') {
+                let sys = history[0].content || "";
+                if (aggressive) {
+                    sys = sys.replace(/【當前環境感知】[\s\S]*?(?=【|$)/, '')
+                             .replace(/\[Dynamic Environment Perception\][\s\S]*?(?=\[|$)/, '')
+                             .replace(/【左側終端機畫面[\s\S]*?```[\s\S]*?```/, '')
+                             .replace(/\[Left Terminal Screen Perception\][\s\S]*?```[\s\S]*?```/, '');
+                } else if (sys.length > 3000) {
+                    sys = sys.replace(/(```\r?\n)([\s\S]*?)(```)/, (m, p1, p2, p3) => {
+                        const lines = p2.split('\n').filter(l => l.trim());
+                        if (lines.length > 12) {
+                            return p1 + lines.slice(-10).join('\n') + p3;
+                        }
+                        return m;
+                    });
+                }
+                history[0].content = sys;
+            }
+
+            // 2. Trim bloated elements from all historical turns (except the very latest user query)
+            const lastIdx = history.length - 1;
+            for (let i = 1; i < lastIdx; i++) {
+                const msg = history[i];
+                if (!msg) continue;
+
+                // A. Base64 Images: If not the latest turn, replace raw base64 data to avoid megabyte payloads!
+                if (Array.isArray(msg.content)) {
+                    msg.content = msg.content.map(part => {
+                        if (part.type === 'image_url' && part.image_url && part.image_url.url) {
+                            if (part.image_url.url.startsWith('data:image')) {
+                                return { type: 'text', text: isEn ? "[Attached image: Analyzed in previous turn]" : "[已於前輪對話分析之歷史附圖]" };
+                            }
+                        } else if (part.type === 'image') {
+                            return { type: 'text', text: isEn ? "[Attached image: Analyzed in previous turn]" : "[已於前輪對話分析之歷史附圖]" };
+                        }
+                        return part;
+                    });
+                    const textParts = msg.content.filter(p => p.type === 'text').map(p => p.text).join('\n');
+                    if (textParts) msg.content = textParts;
+                }
+
+                // B. Large Tool Responses: Truncate inner tool responses (>300 chars)
+                if (typeof msg.content === 'string') {
+                    if (msg.content.includes('<tool_response>')) {
+                        msg.content = msg.content.replace(/<tool_response>([\s\S]*?)<\/tool_response>/g, (m, inner) => {
+                            const trimmed = inner.trim();
+                            if (trimmed.length > 300) {
+                                const head = trimmed.slice(0, 120);
+                                const tail = trimmed.slice(-60);
+                                const omitted = trimmed.length - 180;
+                                return `<tool_response>${head}\n... [${isEn ? 'Tool output truncated' : '工具輸出已節錄'} ${omitted} chars] ...\n${tail}</tool_response>`;
+                            }
+                            return m;
+                        });
+                    }
+
+                    // C. Large Historical Assistant/User Text (e.g. converted documents, long essays)
+                    const maxMsgLen = aggressive ? 600 : 1200;
+                    if (msg.content.length > maxMsgLen) {
+                        const head = msg.content.slice(0, Math.floor(maxMsgLen * 0.6));
+                        const tail = msg.content.slice(-Math.floor(maxMsgLen * 0.25));
+                        msg.content = `${head}\n\n... [${isEn ? 'Historical dialogue compressed to preserve context window' : '歷史對話內容已自動節錄壓縮以保護上下文視窗'}] ...\n\n${tail}`;
+                    }
+                }
+            }
+
+            // 3. Sliding Window: If total estimated tokens still exceed budget, prune oldest turns!
+            let curTokens = estimateTokens(history);
+            if (aggressive && history.length > 3) {
+                while (history.length > 3) {
+                    history.splice(1, 1);
+                }
+            } else {
+                while (curTokens > maxBudget && history.length > 3) {
+                    history.splice(1, 1);
+                    curTokens = estimateTokens(history);
+                }
+            }
+
+            // Inject a compression marker note at index 1 if history was pruned and not already present
+            if (history.length >= 2 && history[0].role === 'system') {
+                const markerTag = "[System Note: Earlier conversation turns compressed";
+                const markerTagZh = "【系統防護：歷史對話輪次已自動壓縮";
+                const hasMarker = history.some(m => typeof m.content === 'string' && (m.content.includes(markerTag) || m.content.includes(markerTagZh)));
+                if (!hasMarker && history.length > 2) {
+                    history.splice(1, 0, {
+                        role: "system",
+                        content: isEn
+                            ? "[System Note: Earlier conversation turns compressed to keep within model context limits]"
+                            : "【系統防護：更早期的對話紀錄已自動摘要壓縮，以維持模型最佳上下文視窗】"
+                    });
+                }
+            }
+
+            if (typeof updateContextBadge === 'function') {
+                updateContextBadge();
+            }
+            return history;
+        }
+        window.compressChatHistory = compressChatHistory;
+        window.estimateTokens = estimateTokens;
+        window.updateContextBadge = updateContextBadge;
+
         const termInput = document.getElementById('term-input');
         const connProtocol = document.getElementById('conn-protocol');
         const connFields = document.getElementById('conn-fields');
@@ -12217,6 +12372,7 @@ Important guidelines:
                 } else {
                     chatHistory.push({ role: role, content: content });
                 }
+                if (typeof updateContextBadge === 'function') updateContextBadge();
             }
             return {
                 contentDiv: contentDiv || innerDiv,
@@ -12834,6 +12990,7 @@ Important guidelines:
                     currentAbortController = new AbortController();
 
                     chatHistory[0].content = buildSystemPrompt(isAgentEnabled, prompt);
+                    compressChatHistory(chatHistory, false);
 
                     let fullAiResponse = "";
                     const textBlock = document.createElement('div');
@@ -13166,15 +13323,31 @@ Important guidelines:
                                 }
                                 return m;
                             });
-                            chunks = await engine.chat.completions.create({
-                                messages: webllmMsgs,
-                                temperature: 0.6,
-                                top_p: 0.85,
-                                presence_penalty: 0.3,
-                                frequency_penalty: 0.3,
-                                max_tokens: 4096,
-                                stream: true
-                            });
+                            let wgpuRetryCount = 0;
+                            while (true) {
+                                try {
+                                    chunks = await engine.chat.completions.create({
+                                        messages: webllmMsgs,
+                                        temperature: 0.6,
+                                        top_p: 0.85,
+                                        presence_penalty: 0.3,
+                                        frequency_penalty: 0.3,
+                                        max_tokens: 4096,
+                                        stream: true
+                                    });
+                                    break;
+                                } catch (wgpuErr) {
+                                    const errMsg = String(wgpuErr.message || wgpuErr).toLowerCase();
+                                    const isContextError = errMsg.includes("context") || errMsg.includes("token") || errMsg.includes("oom") || errMsg.includes("memory") || errMsg.includes("length");
+                                    if (wgpuRetryCount === 0 && isContextError && chatHistory.length > 2 && isGenerating) {
+                                        wgpuRetryCount++;
+                                        console.warn("[WebGPU Context Overflow] Auto-compressing history and retrying...", wgpuErr);
+                                        compressChatHistory(chatHistory, true);
+                                        continue;
+                                    }
+                                    throw wgpuErr;
+                                }
+                            }
 
                             for await (const chunk of chunks) {
                                 if (!isGenerating || (currentAbortController && currentAbortController.signal.aborted)) {
@@ -13346,16 +13519,33 @@ Important guidelines:
 
                             const url = buildApiUrl(activeProf.endpoint, '/chat/completions');
 
-                            const response = await fetch(url, {
-                                method: 'POST',
-                                headers: reqHeaders,
-                                body: JSON.stringify({ model: targetModel, messages: chatHistory, stream: true }),
-                                signal: currentAbortController.signal
-                            });
+                            let response = null;
+                            let coApiRetry = 0;
+                            while (true) {
+                                try {
+                                    response = await fetch(url, {
+                                        method: 'POST',
+                                        headers: reqHeaders,
+                                        body: JSON.stringify({ model: targetModel, messages: chatHistory, stream: true }),
+                                        signal: currentAbortController.signal
+                                    });
 
-                            if (!response.ok) {
-                                const errText = await response.text();
-                                throw new Error(`HTTP ${response.status}: ${errText}`);
+                                    if (!response.ok) {
+                                        const errText = await response.text();
+                                        throw new Error(`HTTP ${response.status}: ${errText}`);
+                                    }
+                                    break;
+                                } catch (cErr) {
+                                    const errMsg = String(cErr.message || cErr).toLowerCase();
+                                    const isContextError = errMsg.includes("context") || errMsg.includes("token") || errMsg.includes("length") || errMsg.includes("payload") || errMsg.includes("413") || errMsg.includes("400") || errMsg.includes("oom") || errMsg.includes("out of memory");
+                                    if (coApiRetry === 0 && isContextError && chatHistory.length > 2 && isGenerating) {
+                                        coApiRetry++;
+                                        console.warn("[CoThink API Context Overflow] Auto-compressing history and retrying...", cErr);
+                                        compressChatHistory(chatHistory, true);
+                                        continue;
+                                    }
+                                    throw cErr;
+                                }
                             }
 
                             const reader = response.body.getReader();
@@ -14507,16 +14697,37 @@ Important guidelines:
 
                         const url = buildApiUrl(activeProf.endpoint, '/chat/completions');
 
-                        const response = await fetch(url, {
-                            method: 'POST',
-                            headers: reqHeaders,
-                            body: JSON.stringify({ model: targetModel, messages: chatHistory, stream: true }),
-                            signal: currentAbortController.signal
-                        });
+                        let response = null;
+                        let apiRetryCount = 0;
+                        while (true) {
+                            try {
+                                response = await fetch(url, {
+                                    method: 'POST',
+                                    headers: reqHeaders,
+                                    body: JSON.stringify({ model: targetModel, messages: chatHistory, stream: true }),
+                                    signal: currentAbortController.signal
+                                });
 
-                        if (!response.ok) {
-                            const errText = await response.text();
-                            throw new Error(`HTTP ${response.status}: ${errText}`);
+                                if (!response.ok) {
+                                    const errText = await response.text();
+                                    throw new Error(`HTTP ${response.status}: ${errText}`);
+                                }
+                                break;
+                            } catch (fetchErr) {
+                                const errMsg = String(fetchErr.message || fetchErr).toLowerCase();
+                                const isContextError = errMsg.includes("context") || errMsg.includes("token") || errMsg.includes("length") || errMsg.includes("payload") || errMsg.includes("413") || errMsg.includes("400") || errMsg.includes("oom") || errMsg.includes("out of memory");
+                                if (apiRetryCount === 0 && isContextError && chatHistory.length > 2 && isGenerating) {
+                                    apiRetryCount++;
+                                    console.warn("[API Context Overflow] Auto-compressing history and retrying...", fetchErr);
+                                    const warnNotice = document.createElement('div');
+                                    warnNotice.className = "text-amber-400 text-xs my-1 font-mono p-2 bg-amber-950/60 rounded-lg border border-amber-700/60 flex items-center gap-1.5 shadow-sm";
+                                    warnNotice.innerHTML = `<span>⚠️ ${currentLang === 'en' ? 'Context window exceeded. Auto-compressed conversation history & retrying...' : '偵測到對話上下文負載超額，已自動深度壓縮歷史記錄並重試中...'}</span>`;
+                                    containerEl.appendChild(warnNotice);
+                                    compressChatHistory(chatHistory, true);
+                                    continue;
+                                }
+                                throw fetchErr;
+                            }
                         }
 
                         const reader = response.body.getReader();
@@ -15046,10 +15257,18 @@ Important guidelines:
         window.handleSendMessage = handleSendMessage;
 
         document.getElementById('btn-send')?.addEventListener('click', handleSend);
+        document.getElementById('btn-compress-context')?.addEventListener('click', () => {
+            compressChatHistory(chatHistory, true);
+            updateContextBadge();
+            const isEn = currentLang === 'en';
+            showUploadToast(isEn ? "✅ Conversation context successfully compressed & optimized!" : "✅ 對話歷史已最佳化壓縮 (已節省上下文空間)", false);
+        });
+
         document.getElementById('btn-clear')?.addEventListener('click', () => {
             chatHistory = [];
             if (typeof sessionChatLog !== 'undefined') sessionChatLog = [];
             chatBox.innerHTML = '';
+            updateContextBadge();
         });
 
         // Daemon Launcher & Reset Modal Logic
