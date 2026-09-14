@@ -5099,6 +5099,31 @@ ffmpeg -f pulse -i default -acodec libmp3lame -ab 128k -f mp3 -listen 1 http://0
             },
             ragDocs: [
                 {
+                    id: "doc_pcb_dxf_geojson_manual",
+                    category: "hardware_pcb",
+                    title: "PCB 高精度微型尺寸 DXF ⟷ GeoJSON 轉檔讀取與幾何重構工程手冊 (High-Precision PCB DXF-GeoJSON Manual)",
+                    content: `【PCB 高精度微型尺寸 DXF ⟷ GeoJSON 轉檔讀取與幾何重構工程手冊】\n1. 微型尺寸精度保全：PCB 電路板常用單位為毫米 (mm)、微米 (µm) 或密爾 (mil，1 mil = 0.0254 mm)。針對 0.25mm BGA 焊盤、4mil/0.1mm 走線、0.2mm 導孔與 SMD 0402 貼片，本系統以 mm 為基準，採用 10^-6 mm (1 奈米) 浮點數精度保護，杜絕常規 GIS 經緯度截斷造成的幾何變形。\n2. LWPOLYLINE 圓弧凸度 (Bulge) 重構：DXF 圓弧凸度 b = tan(θ/4)。圓弧半徑 R = (chord / 2) * |b + 1/b|，弦心距 d = (chord / 2) * (1 - b²) / (2b)。依弦差誤差（預設 0.01 mm = 10 µm）動態細分，精確重構板框 90° 圓角 (b ≈ 0.41421356)、淚滴焊盤與圓弧走線。\n3. PCB 圖元與圖層映射：LINE ➔ LineString；LWPOLYLINE ➔ Polygon/LineString；CIRCLE ➔ 32~96 頂點 Polygon (保留 center, radius, diameter, is_drill, is_pad)；SOLID ➔ 貼片矩形焊盤 Polygon；TEXT ➔ Point (含字高、旋轉角)；INSERT ➔ 遞迴炸開 Block 並應用旋轉位移矩陣。\n4. 單位自動換算：讀取 $INSUNITS (4: mm, 9: mil, 1: inch, 13: um)，支援 1000 mil 自動乘 0.0254 轉為 25.40 mm。\n5. 雙向 DXF ⟷ GeoJSON 轉檔：支援 dxf_to_geojson 與 geojson_to_dxf。`,
+                    chunks: [
+                        "【PCB 微型小尺寸 DXF 轉 GeoJSON 精度原則】PCB 電路板特徵尺寸（0.25mm BGA 焊盤、4mil/0.1mm 走線、0.2mm 導孔）需在 mm 基準下保全 6 位小數（1 奈米精度），避免一般 GIS 經緯度小數點截斷造成的幾何變形。支援單位換算：1 mil = 0.0254 mm，1 inch = 25.4 mm，1 um = 0.001 mm。",
+                        "【LWPOLYLINE 圓弧凸度 Bulge 重構演算法】DXF 圓弧凸度 b = tan(θ/4)。圓弧半徑 R = (chord / 2) * |b + 1/b|，弦心距 d = (chord / 2) * (1 - b²) / (2b)。法向量方向由 b 之正負符號決定（b>0 為逆時針，b<0 為順時針）。依據弦差誤差容許值（預設 0.01 mm = 10 µm）動態細分，重構出平滑多邊形頂點。",
+                        "【PCB 實體對映與圖層感知規範】LINE 對映為 LineString；封閉 LWPOLYLINE 對映為 Polygon（如 Edge.Cuts 板框）；CIRCLE 對映為 32~96 邊封閉 Polygon，並於 properties 標記 radius、diameter、center、is_drill；SOLID 對映為 SMD 貼片焊盤 Polygon；INSERT 遞迴炸開 Block 並應用旋轉矩陣；TEXT 保留字高與旋轉角。",
+                        "【板框幾何與面積分析規範】系統自動計算全局 Bounding Box [Xmin, Ymin, Xmax, Ymax]，產出 PCB 總寬度 width = Xmax - Xmin、總高度 height = Ymax - Ymin、板面積 area_mm2 = width * height 以及 area_cm2 = area_mm2 / 100，並統計各圖層（Edge.Cuts, F.Cu, Drill, F.SilkS）實體分佈。"
+                    ],
+                    date: new Date().toISOString()
+                },
+                {
+                    id: "doc_pcb_dxf_geojson_llm_tooling",
+                    category: "hardware_pcb",
+                    title: "LLM 智慧調用指南：PCB DXF 轉 GeoJSON 與板框幾何分析工具 API 規範 (PCB DXF-GeoJSON LLM Tooling Guide)",
+                    content: `【LLM 智慧調用指南：PCB DXF 轉 GeoJSON 與板框幾何分析工具 API 規範】\n1. LLM 工具調用總覽：當使用者要求「分析 PCB DXF 檔案」、「讀取 DXF 電路板尺寸」、「將 DXF 轉為 GeoJSON」、「重構 PCB 板框圓角」時，LLM 可直接調用 MCP / REST API 工具。\n2. 工具名稱：mcp_analyze_pcb_dxf。功能：分析 PCB DXF 檔案，精確計算板框長寬 (mm)、面積 (mm² 與 cm²)、圖層統計 (Edge.Cuts, F.Cu, Drill, F.SilkS) 與零件/鑽孔數量。參數：dxf_path 或 dxf_content。\n3. 工具名稱：mcp_convert_pcb_dxf_to_geojson。功能：將 PCB DXF 轉換為高精度 GeoJSON FeatureCollection，保全奈米/微米級幾何特徵。參數：dxf_path, output_geojson_path, unit (預設 mm), tolerance (預設 0.01)。\n4. Python 程式碼直接調用：from scripts.pcb_dxf_geojson import PcbDxfGeoJsonConverter, analyze_pcb_dxf。\n5. 常駐 REST API 端點 (Port 8001)：POST /api/pcb/analyze, POST /api/pcb/dxf2geojson, POST /api/pcb/geojson2dxf。`,
+                    chunks: [
+                        "【LLM 呼叫 mcp_analyze_pcb_dxf 工具】當使用者提問「分析 DXF 尺寸」、「這塊 PCB 有多大」、「算一下 DXF 板框面積」時，LLM 應調用 mcp_analyze_pcb_dxf 工具，傳入 dxf_path 或 dxf_content，即時獲取板長、板寬、面積 (cm²) 與圖層實體統計。",
+                        "【LLM 呼叫 mcp_convert_pcb_dxf_to_geojson 工具】當使用者要求「將 DXF 轉為 GeoJSON」、「輸出 PCB 幾何數據」時，LLM 應調用 mcp_convert_pcb_dxf_to_geojson，指定 dxf_path 與 output_geojson_path，自動完成次毫米精度轉檔並平滑重構圓弧。",
+                        "【PCB DXF 轉換 Python 與 REST API 調用方式】支援 Python import `from scripts.pcb_dxf_geojson import PcbDxfGeoJsonConverter, analyze_pcb_dxf`；或透過 Daemon REST API `POST /api/pcb/analyze` 與 `POST /api/pcb/dxf2geojson` 完成非同步幾何計算。"
+                    ],
+                    date: new Date().toISOString()
+                },
+                {
                     id: "doc_wifi_poe_pse_hardware_eval",
                     category: "hardware_pcb",
                     title: "WiFi 4+4+4 與雙 PoE+PSE 硬體架構與 PCB 面積評估指南 (WiFi 4+4+4 & Dual PoE+PSE Hardware & PCB Sizing Guide)",
@@ -8395,10 +8420,16 @@ ffmpeg -f pulse -i default -acodec libmp3lame -ab 128k -f mp3 -listen 1 http://0
                     else d.category = 'general_knowledge';
                 }
             });
-            // 若預設旗艦硬體評估文件尚未收錄，自動補入
-            const hasHwDoc = appSettings.ragDocs.some(d => d.id === 'doc_wifi_poe_pse_hardware_eval');
-            if (!hasHwDoc && defaultSettings.ragDocs && defaultSettings.ragDocs[0]) {
-                appSettings.ragDocs.unshift(defaultSettings.ragDocs[0]);
+            // 若預設旗艦硬體與 PCB DXF/GeoJSON 文件尚未收錄，自動補入
+            const pcbDocIds = ['doc_pcb_dxf_geojson_manual', 'doc_pcb_dxf_geojson_llm_tooling', 'doc_wifi_poe_pse_hardware_eval'];
+            if (defaultSettings.ragDocs) {
+                pcbDocIds.reverse().forEach(reqId => {
+                    const exists = appSettings.ragDocs.some(d => d.id === reqId);
+                    if (!exists) {
+                        const defDoc = defaultSettings.ragDocs.find(d => d.id === reqId);
+                        if (defDoc) appSettings.ragDocs.unshift(defDoc);
+                    }
+                });
             }
         }
 
@@ -8692,6 +8723,9 @@ ffmpeg -f pulse -i default -acodec libmp3lame -ab 128k -f mp3 -listen 1 http://0
             if (!appSettings.ragDocs || appSettings.ragDocs.length === 0 || !query) return [];
 
             const SYNONYMS = {
+                'dxf': ['dxf', 'cad', 'pcb', 'geojson', '板框', 'bulge', '0.25mm', '焊盤', '走線', 'mcp_analyze_pcb_dxf', 'mcp_convert_pcb_dxf_to_geojson'],
+                'geojson': ['geojson', 'dxf', 'pcb', 'cad', '幾何', '特徵', 'feature', 'linestring', 'polygon'],
+                'pcb': ['pcb', 'dxf', 'geojson', '硬體', '電路板', '板框', '面積', '尺寸', '0402', 'bga', 'drill', 'edge.cuts'],
                 '貓': ['cat', 'feline', 'animal', 'animals', 'cat_00001'],
                 '狗': ['dog', 'canine', 'animal', 'animals'],
                 '鳥': ['bird', 'animal', 'animals'],

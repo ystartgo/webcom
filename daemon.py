@@ -1712,6 +1712,30 @@ def list_mcp_tools():
                     },
                     "required": ["path"]
                 }
+            },
+            {
+                "name": "mcp_analyze_pcb_dxf",
+                "description": "分析 PCB 電路板 DXF 檔案，精確計算外框長寬 (mm)、面積 (mm² / cm²)、圖層統計 (Edge.Cuts, F.Cu, Drill, F.SilkS 等) 與零件/鑽孔數量",
+                "inputSchema": {
+                    "type": "object",
+                    "properties": {
+                        "dxf_path": {"type": "string", "description": "DXF 檔案路徑 (例如 board.dxf)"},
+                        "dxf_content": {"type": "string", "description": "DXF 原始文字內容 (選填)"}
+                    }
+                }
+            },
+            {
+                "name": "mcp_convert_pcb_dxf_to_geojson",
+                "description": "將 PCB 電路板 DXF 轉換為高精度 GeoJSON FeatureCollection，保全奈米/微米級幾何特徵 (BGA 焊盤、0.1mm 走線、圓角弧度)",
+                "inputSchema": {
+                    "type": "object",
+                    "properties": {
+                        "dxf_path": {"type": "string", "description": "DXF 檔案路徑"},
+                        "output_geojson_path": {"type": "string", "description": "輸出 GeoJSON 檔案路徑 (選填)"},
+                        "unit": {"type": "string", "description": "目標單位: 'mm', 'mil', 'inch', 'um' (預設 'mm')"},
+                        "tolerance": {"type": "number", "description": "圓弧弦差容許值 (mm，預設 0.01)"}
+                    }
+                }
             }
         ]
     }
@@ -1765,6 +1789,65 @@ def call_mcp_tool(req: MCPCallRequest):
             }
         except Exception as e:
             return {"isError": True, "content": [{"type": "text", "text": str(e)}]}
+
+    if tool_name == "mcp_analyze_pcb_dxf":
+        try:
+            from scripts.pcb_dxf_geojson import analyze_pcb_dxf
+            dxf_target = args.get("dxf_path") or args.get("path")
+            dxf_content = args.get("dxf_content")
+            if not dxf_target and not dxf_content:
+                return {"isError": True, "content": [{"type": "text", "text": "請提供 dxf_path 或 dxf_content 參數"}]}
+            input_data = dxf_content if dxf_content else dxf_target
+            res = analyze_pcb_dxf(input_data)
+            summary = (
+                f"=== PCB 電路板 DXF 幾何與尺寸分析報告 ===\n"
+                f"• 電路板長寬: {res['width_mm']} mm × {res['height_mm']} mm\n"
+                f"• 電路板面積: {res['area_mm2']} mm² ({res['area_cm2']} cm²)\n"
+                f"• 外框 BBox: [Xmin: {res['bbox'][0]}, Ymin: {res['bbox'][1]}, Xmax: {res['bbox'][2]}, Ymax: {res['bbox'][3]}]\n"
+                f"• 實體總數: {res['total_features']} 個\n"
+                f"• 圖層分佈:\n"
+            )
+            for l, c in res['layer_breakdown'].items():
+                summary += f"  - [{l}]: {c} 個圖元\n"
+            return {"content": [{"type": "text", "text": summary}]}
+        except Exception as e:
+            return {"isError": True, "content": [{"type": "text", "text": f"PCB 分析失敗: {e}"}]}
+
+    if tool_name == "mcp_convert_pcb_dxf_to_geojson":
+        try:
+            from scripts.pcb_dxf_geojson import PcbDxfGeoJsonConverter
+            dxf_target = args.get("dxf_path") or args.get("path")
+            dxf_content = args.get("dxf_content")
+            out_path = args.get("output_geojson_path")
+            target_unit = args.get("unit", "mm")
+            tolerance = float(args.get("tolerance", 0.01))
+            if not dxf_target and not dxf_content:
+                return {"isError": True, "content": [{"type": "text", "text": "請提供 dxf_path 或 dxf_content 參數"}]}
+            converter = PcbDxfGeoJsonConverter(target_unit=target_unit, default_tolerance=tolerance)
+            input_data = dxf_content if dxf_content else dxf_target
+            geojson_data = converter.dxf_to_geojson(input_data)
+            dims = geojson_data['metadata']['board_dimensions']
+            summary = (
+                f"✅ PCB DXF 成功轉為高精度 GeoJSON！\n"
+                f"• 單位: {target_unit}\n"
+                f"• 尺寸: {dims['width']} mm × {dims['height']} mm (面積: {dims['area_cm2']} cm²)\n"
+                f"• 幾何圖元數: {geojson_data['metadata']['total_features']} 個 Feature\n"
+            )
+            if out_path:
+                import json
+                with open(out_path, "w", encoding="utf-8") as f:
+                    json.dump(geojson_data, f, indent=2, ensure_ascii=False)
+                summary += f"• 檔案已儲存至: {out_path}\n"
+            else:
+                import json
+                j_str = json.dumps(geojson_data, ensure_ascii=False)
+                if len(j_str) > 1500:
+                    summary += f"• GeoJSON 特徵預覽 (前 1500 字元):\n{j_str[:1500]}...\n"
+                else:
+                    summary += f"• GeoJSON 完整內容:\n{j_str}\n"
+            return {"content": [{"type": "text", "text": summary}]}
+        except Exception as e:
+            return {"isError": True, "content": [{"type": "text", "text": f"PCB 轉檔失敗: {e}"}]}
 
     if tool_name == "mcp_list_processes":
         import psutil

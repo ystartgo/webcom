@@ -229,13 +229,16 @@ class PcbDxfGeoJsonConverter:
             import io
             text_stream = io.StringIO(dxf_input.decode('utf-8', errors='ignore'))
             doc = ezdxf.read(text_stream)
-        elif os.path.exists(dxf_input):
-            doc = ezdxf.readfile(dxf_input)
-        else:
-            # Assume raw string content
-            import io
-            text_stream = io.StringIO(dxf_input)
-            doc = ezdxf.read(text_stream)
+        elif isinstance(dxf_input, str):
+            if os.path.exists(dxf_input):
+                doc = ezdxf.readfile(dxf_input)
+            elif dxf_input.strip().lower().endswith('.dxf') or ('\n' not in dxf_input and '\r' not in dxf_input):
+                raise FileNotFoundError(f"DXF 檔案不存在: {dxf_input}")
+            else:
+                # Raw DXF string content
+                import io
+                text_stream = io.StringIO(dxf_input)
+                doc = ezdxf.read(text_stream)
 
         detected_unit = self.detect_dxf_unit(doc)
         scale = self.compute_scale(detected_unit, input_unit)

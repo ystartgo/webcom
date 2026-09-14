@@ -1,0 +1,41 @@
+{
+  "manifest": {
+    "format": "ragpack",
+    "version": "1.0",
+    "packId": "pack_pcb_dxf_geojson_v1",
+    "name": "PCB 高精度微型尺寸 DXF ⟷ GeoJSON 轉檔與分析知識包 (High-Precision PCB DXF-GeoJSON Knowledge Pack)",
+    "category": "hardware_pcb",
+    "author": "Webcom Engineering Team",
+    "createdAt": "2026-09-15T00:00:00Z",
+    "validUntil": "2028-12-31T23:59:59Z",
+    "license": "Commercial Enterprise Subscription / Annual Maintenance",
+    "documentCount": 2
+  },
+  "documents": [
+    {
+      "id": "doc_pcb_dxf_geojson_manual",
+      "category": "hardware_pcb",
+      "title": "PCB 高精度微型尺寸 DXF ⟷ GeoJSON 轉檔讀取與幾何重構工程手冊 (High-Precision PCB DXF-GeoJSON Manual)",
+      "content": "【PCB 高精度微型尺寸 DXF ⟷ GeoJSON 轉檔讀取與幾何重構工程手冊】\n1. 微型尺寸精度保全 (Micro-scale Dimension Preservation)：\nPCB 電路板常用單位為公釐 (mm)、微米 (µm) 或密爾 (mil/thou，1 mil = 0.0254 mm)。\n典型特徵包括：\n- 板框外型 (Edge.Cuts)：20 mm ~ 300 mm。\n- BGA / QFN 封裝焊盤：直徑 0.20 mm ~ 0.35 mm，焊盤間距 (Pitch) 0.4 mm ~ 0.5 mm。\n- 走線與線距 (Trace / Clearance)：0.10 mm ~ 0.25 mm (4 mil ~ 10 mil)。\n- 貫孔與通孔 (Via / Drill)：鑽孔徑 0.20 mm，焊環外徑 0.45 mm。\n- 貼片阻容 (SMD 0402 / 0201)：0.5 mm × 0.6 mm 焊盤。\n傳統 GIS 系統之 GeoJSON 常因以經緯度 (WGS84) 運算而截斷小數點（5-6 位小數度數為公尺級），若用於 CAD 會造成次毫米焊盤潰散或走線變形。本系統以 mm 為基準，採用 10^-6 mm (1 奈米) 浮點數精度保護，確保 PCB 微型元件位置與尺寸完全不失真。\n\n2. LWPOLYLINE 圓弧凸度 (Bulge) 嚴密幾何重構：\nDXF 輕量多段線 (LWPOLYLINE) 在頂點間採用凸度因子 (Bulge factor, b) 表示圓弧：\n公式：b = tan(θ / 4)，其中 θ 為圓弧圓心夾角（b > 0 為逆時針 CCW，b < 0 為順時針 CW）。\n圓弧幾何重構推導：\n- 弦長 chord = √((x2 - x1)² + (y2 - y1)²)\n- 圓弧半徑 R = chord / (2 × |sin(θ / 2)|) = (chord / 2) × |b + 1/b|\n- 弦心距 d = (chord / 2) × (1 - b²) / (2 × b)\n- 圓心坐標 C(cx, cy) = 弦中點 M + d × 法向量 N\n本系統依據弦差容許誤差 (Tolerance，預設 0.01 mm = 10 µm) 動態細分取樣點數，精準重構板框 90° 圓角 (b ≈ 0.41421356)、淚滴焊盤與曲線走線。\n\n3. PCB 實體與圖層結構映射：\n- LINE ➔ LineString (附帶長度屬性 length)\n- LWPOLYLINE / POLYLINE ➔ 封閉多邊形 Polygon (外框閉合) 或連續走線 LineString\n- CIRCLE ➔ 高解析度封閉多邊形 Polygon (32~96 頂點，弦差 < 5 µm)，並在 properties 記錄 center, radius, diameter, is_drill, is_pad\n- ARC ➔ 平滑 LineString (含 center, radius, start_angle, end_angle)\n- SOLID / 3DFACE ➔ 修正頂點交錯順序 (p0, p1, p3, p2, p0) 重構貼片矩形焊盤\n- TEXT / MTEXT ➔ Point 標記 (含 text, height, rotation)\n- INSERT (Block Reference) ➔ 遞迴炸開 (Explode)，應用旋轉矩陣與縮放平移子實體\n圖層自動識別：Edge.Cuts (板框)、F.Cu / B.Cu (頂/底層銅箔)、Drill (鑽孔)、F.SilkS (絲印標註)、F.Mask (防焊層)。\n\n4. 單位自動識別與換算：\n自動讀取 DXF 標頭之 $INSUNITS (4: 毫米、9: Mils、1: 英吋、13: 微米、0: 無單位)。\n若來源 DXF 為 1000 mils，自動乘以 0.0254 精確換算為 25.4000 mm。\n\n5. 雙向 DXF ⟷ GeoJSON 轉檔：\n- dxf_to_geojson：產出包含 board_dimensions (寬、高、面積 mm² 與 cm²)、bbox、layer_breakdown 與 features 的完整 GeoJSON。\n- geojson_to_dxf：讀取 GeoJSON FeatureCollection 還原為標準 AutoCAD DXF 檔案。",
+      "chunks": [
+        "【PCB 微型小尺寸 DXF 轉 GeoJSON 精度原則】PCB 電路板特徵尺寸（0.25mm BGA 焊盤、4mil/0.1mm 走線、0.2mm 導孔）需在 mm 基準下保全 6 位小數（1 奈米精度），避免一般 GIS 經緯度小數點截斷造成的幾何變形。支援單位換算：1 mil = 0.0254 mm，1 inch = 25.4 mm，1 um = 0.001 mm。",
+        "【LWPOLYLINE 圓弧凸度 Bulge 重構演算法】DXF 圓弧凸度 b = tan(θ/4)。圓弧半徑 R = (chord / 2) * |b + 1/b|，弦心距 d = (chord / 2) * (1 - b²) / (2b)。法向量方向由 b 之正負符號決定（b>0 為逆時針，b<0 為順時針）。依據弦差誤差容許值（預設 0.01 mm = 10 µm）動態細分，重構出平滑多邊形頂點。",
+        "【PCB 實體對映與圖層感知規範】LINE 對映為 LineString；封閉 LWPOLYLINE 對映為 Polygon（如 Edge.Cuts 板框）；CIRCLE 對映為 32~96 邊封閉 Polygon，並於 properties 標記 radius、diameter、center、is_drill；SOLID 對映為 SMD 貼片焊盤 Polygon；INSERT 遞迴炸開 Block 並應用旋轉矩陣；TEXT 保留字高與旋轉角。",
+        "【板框幾何與面積分析規範】系統自動計算全局 Bounding Box [Xmin, Ymin, Xmax, Ymax]，產出 PCB 總寬度 width = Xmax - Xmin、總高度 height = Ymax - Ymin、板面積 area_mm2 = width * height 以及 area_cm2 = area_mm2 / 100，並統計各圖層（Edge.Cuts, F.Cu, Drill, F.SilkS）實體分佈。"
+      ],
+      "date": "2026-09-15T00:00:00Z"
+    },
+    {
+      "id": "doc_pcb_dxf_geojson_llm_tooling",
+      "category": "hardware_pcb",
+      "title": "LLM 智慧調用指南：PCB DXF 轉 GeoJSON 與板框幾何分析工具 API 規範 (PCB DXF-GeoJSON LLM Tooling Guide)",
+      "content": "【LLM 智慧調用指南：PCB DXF 轉 GeoJSON 與板框幾何分析工具 API 規範】\n1. LLM 工具調用總覽 (Tool Calling Overview)：\n當使用者要求「分析 PCB DXF 檔案」、「讀取 DXF 電路板尺寸」、「將 DXF 轉為 GeoJSON」、「重構 PCB 板框圓角」時，LLM 可直接調用以下 MCP / 本地 API 工具完成任務：\n\n2. 工具名稱：mcp_analyze_pcb_dxf\n• 功能：快速分析 PCB 電路板 DXF 檔案，精確計算板框長寬 (mm)、面積 (mm² 與 cm²)、圖層統計與零件數量。\n• 參數：\n  - dxf_path (字串，必填或選填): DXF 檔案路徑，例如 \"C:/Apps/Webcom/board.dxf\" 或相對路徑。\n  - dxf_content (字串，選填): 若使用者在對話中提供了 DXF 檔案文本，可直接作為參數傳入。\n• 回傳結果範例：\n  - 電路板尺寸: 100.00 mm × 60.00 mm\n  - 電路板面積: 6000.00 mm² (60.00 cm²)\n  - 圖層分佈: Edge.Cuts: 1, F.Cu: 19, Drill: 4, F.SilkS: 3\n\n3. 工具名稱：mcp_convert_pcb_dxf_to_geojson\n• 功能：將 PCB 電路板 DXF 轉換為高精度 GeoJSON FeatureCollection，保全奈米/微米級幾何特徵。\n• 參數：\n  - dxf_path (字串): DXF 檔案路徑。\n  - output_geojson_path (字串，選填): 輸出 GeoJSON 檔案路徑。\n  - unit (字串，選填): \"mm\", \"mil\", \"inch\", \"um\" (預設 \"mm\")。\n  - tolerance (數值，選填): 弧度弦差容許值 (mm，預設 0.01)。\n\n4. Python 程式碼直接調用範例：\n```python\nfrom scripts.pcb_dxf_geojson import PcbDxfGeoJsonConverter, analyze_pcb_dxf\n\n# 快速分析尺寸\ninfo = analyze_pcb_dxf(\"my_board.dxf\")\nprint(f\"寬: {info['width_mm']} mm, 高: {info['height_mm']} mm, 面積: {info['area_cm2']} cm²\")\n\n# 轉檔為 GeoJSON\nconverter = PcbDxfGeoJsonConverter(target_unit=\"mm\", default_tolerance=0.01)\ngeojson = converter.dxf_to_geojson(\"my_board.dxf\")\n\n# 匯出 GeoJSON 為 DXF\nconverter.geojson_to_dxf(geojson, \"exported_board.dxf\")\n```\n\n5. 常駐 REST API 端點 (Port 8001)：\n• POST http://127.0.0.1:8001/api/pcb/analyze (JSON payload: {\"dxf_content\": \"...\"} 或 {\"data_base64\": \"...\"})\n• POST http://127.0.0.1:8001/api/pcb/dxf2geojson (JSON payload: {\"dxf_content\": \"...\", \"unit\": \"mm\"})\n• POST http://127.0.0.1:8001/api/pcb/geojson2dxf (JSON payload: {\"geojson\": {...}, \"filename\": \"out.dxf\"})",
+      "chunks": [
+        "【LLM 呼叫 mcp_analyze_pcb_dxf 工具】當使用者提問「分析 DXF 尺寸」、「這塊 PCB 有多大」、「算一下 DXF 板框面積」時，LLM 應調用 mcp_analyze_pcb_dxf 工具，傳入 dxf_path 或 dxf_content，即時獲取板長、板寬、面積 (cm²) 與圖層實體統計。",
+        "【LLM 呼叫 mcp_convert_pcb_dxf_to_geojson 工具】當使用者要求「將 DXF 轉為 GeoJSON」、「輸出 PCB 幾何數據」時，LLM 應調用 mcp_convert_pcb_dxf_to_geojson，指定 dxf_path 與 output_geojson_path，自動完成次毫米精度轉檔並平滑重構圓弧。",
+        "【PCB DXF 轉換 Python 與 REST API 調用方式】支援 Python import `from scripts.pcb_dxf_geojson import PcbDxfGeoJsonConverter, analyze_pcb_dxf`；或透過 Daemon REST API `POST /api/pcb/analyze` 與 `POST /api/pcb/dxf2geojson` 完成非同步幾何計算。"
+      ],
+      "date": "2026-09-15T00:00:00Z"
+    }
+  ]
+}
