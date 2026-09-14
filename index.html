@@ -3523,7 +3523,7 @@ ffmpeg -f pulse -i default -acodec libmp3lame -ab 128k -f mp3 -listen 1 http://0
                 </div>
             </div>
         </div>
-    </div>iv>
+    </div>
 
 
     <script>
@@ -15771,21 +15771,11 @@ Important guidelines:
             } else {
                 leftPanel.classList.remove('panel-collapsed-left');
             }
-            window.dispatchEvent(new Event('resize'));
             if (window.lucide) lucide.createIcons();
 
-            // 在 CSS 過渡動畫 (220ms) 結束後重新派發 resize、重繪 WTerm 並聚焦終端機輸入框
+            // 在 CSS 過渡動畫 (220ms) 結束後重新派發 resize 並聚焦終端機輸入框
             setTimeout(() => {
                 window.dispatchEvent(new Event('resize'));
-                const container = document.getElementById('term-wterm-container');
-                if (container) {
-                    try {
-                        const wtermEl = container.querySelector('.wterm') || container.querySelector('.has-scrollback') || container.firstElementChild;
-                        if (wtermEl) {
-                            wtermEl.scrollTop = wtermEl.scrollHeight;
-                        }
-                    } catch (e) {}
-                }
                 const termInput = document.getElementById('term-input');
                 if (termInput && !isCollapsing) {
                     termInput.focus();
@@ -15805,20 +15795,10 @@ Important guidelines:
             } else {
                 rightPanel.classList.remove('panel-collapsed-right');
             }
-            window.dispatchEvent(new Event('resize'));
             if (window.lucide) lucide.createIcons();
 
             setTimeout(() => {
                 window.dispatchEvent(new Event('resize'));
-                const container = document.getElementById('term-wterm-container');
-                if (container) {
-                    try {
-                        const wtermEl = container.querySelector('.wterm') || container.querySelector('.has-scrollback') || container.firstElementChild;
-                        if (wtermEl) {
-                            wtermEl.scrollTop = wtermEl.scrollHeight;
-                        }
-                    } catch (e) {}
-                }
             }, 250);
         }
         window.toggleRightPanelCollapse = toggleRightPanelCollapse;
