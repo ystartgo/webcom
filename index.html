@@ -313,7 +313,11 @@
             </div>
 
             <!-- 終端機模式控制項 (Terminal Actions) -->
-            <div id="actions-left-term" class="flex items-center gap-3">
+            <div id="actions-left-term" class="flex items-center gap-2.5">
+                <span id="ai-active-badge" class="hidden text-[11px] px-2 py-0.5 rounded bg-purple-950/80 text-purple-300 border border-purple-700/60 items-center gap-1 font-mono transition-all">
+                    <i data-lucide="bot" class="w-3.5 h-3.5 text-purple-400 animate-pulse"></i>
+                    <span id="ai-active-badge-text">AI 執行中</span>
+                </span>
                 <button id="btn-export-log"
                     class="text-xs text-blue-400 hover:text-blue-300 flex items-center gap-1 font-medium transition"
                     title="匯出終端機日誌" data-i18n-title="tooltipExportLog">
@@ -9000,6 +9004,33 @@ ${tools.join('\n')}${contextStr}
             termInput.focus();
         });
 
+        let _aiBadgeTimeout = null;
+        function setAiActivityState(active, text = "") {
+            const badge = document.getElementById('ai-active-badge');
+            const badgeText = document.getElementById('ai-active-badge-text');
+            if (!badge || !badgeText) return;
+            if (_aiBadgeTimeout) {
+                clearTimeout(_aiBadgeTimeout);
+                _aiBadgeTimeout = null;
+            }
+            if (active) {
+                badgeText.textContent = text || (currentLang === 'en' ? 'AI Executing...' : 'AI 執行指令中...');
+                badge.classList.remove('hidden');
+                badge.classList.add('inline-flex');
+            } else {
+                if (text) {
+                    badgeText.textContent = text;
+                    _aiBadgeTimeout = setTimeout(() => {
+                        badge.classList.add('hidden');
+                        badge.classList.remove('inline-flex');
+                    }, 2500);
+                } else {
+                    badge.classList.add('hidden');
+                    badge.classList.remove('inline-flex');
+                }
+            }
+        }
+
         function printToTerminal(text, type = 'info') {
             const rawText = String(text ?? "");
             if (wtermInstance) {
@@ -9008,6 +9039,17 @@ ${tools.join('\n')}${contextStr}
                     wtermInstance.write(normalized);
                 } else if (type === 'command') {
                     wtermInstance.write(`\r\n\x1b[1;34m❯ ${rawText}\x1b[0m\r\n`);
+                } else if (type === 'ai_command') {
+                    wtermInstance.write(`\r\n\x1b[1;35m🤖 [AI Agent 指令] ❯ \x1b[1;36m${rawText}\x1b[0m\r\n`);
+                } else if (type === 'ai_status') {
+                    const normalized = rawText.trimEnd().replace(/\r?\n/g, '\r\n');
+                    wtermInstance.write(`\x1b[1;35m🤖 [AI Agent] \x1b[0;33m${normalized}\x1b[0m\r\n`);
+                } else if (type === 'ai_success') {
+                    const normalized = rawText.trimEnd().replace(/\r?\n/g, '\r\n');
+                    wtermInstance.write(`\x1b[1;32m✔ [AI 執行完成] \x1b[0;32m${normalized}\x1b[0m\r\n`);
+                } else if (type === 'ai_error') {
+                    const normalized = rawText.trimEnd().replace(/\r?\n/g, '\r\n');
+                    wtermInstance.write(`\x1b[1;31m✖ [AI 執行失敗] \x1b[0;31m${normalized}\x1b[0m\r\n`);
                 } else if (type === 'error') {
                     const normalized = rawText.trimEnd().replace(/\r?\n/g, '\r\n');
                     wtermInstance.write(`\x1b[1;31m✖ ${normalized}\x1b[0m\r\n`);
@@ -9024,11 +9066,14 @@ ${tools.join('\n')}${contextStr}
             // Sync fallback text element
             const termOutput = document.getElementById('term-output');
             if (termOutput) {
-                if (type === 'stream') {
-                    termOutput.innerText += rawText;
-                } else {
-                    termOutput.innerText += '\n' + rawText;
-                }
+                let prefix = '';
+                if (type === 'ai_command') prefix = '\n🤖 [AI Agent 指令] ❯ ';
+                else if (type === 'ai_status') prefix = '\n🤖 [AI Agent] ';
+                else if (type === 'ai_success') prefix = '\n✔ [AI 執行完成] ';
+                else if (type === 'ai_error') prefix = '\n✖ [AI 執行失敗] ';
+                else if (type !== 'stream') prefix = '\n';
+
+                termOutput.innerText += prefix + rawText;
                 if (termOutput.innerText.length > 50000) {
                     termOutput.innerText = termOutput.innerText.slice(-30000);
                 }
@@ -9234,7 +9279,7 @@ ${tools.join('\n')}${contextStr}
             }
         });
 
-        async function sendCommandToTerminal(cmd) {
+        async function sendCommandToTerminal(cmd, isAi = false) {
             if (cmd && cmd.trim()) {
                 const trimmed = cmd.trim();
                 if (termCommandHistory.length === 0 || termCommandHistory[termCommandHistory.length - 1] !== trimmed) {
@@ -9245,25 +9290,39 @@ ${tools.join('\n')}${contextStr}
                 termTempInput = "";
             }
 
+            // 若由 AI 觸發且目前非終端機視圖，自動切換至終端機確保人類能即時觀看交互除錯
+            if (isAi && typeof switchLeftMode === 'function' && typeof currentLeftMode !== 'undefined' && currentLeftMode !== 'term') {
+                switchLeftMode('term');
+            }
+
+            if (isAi && typeof setAiActivityState === 'function') {
+                setAiActivityState(true, `執行指令: ${cmd.slice(0, 18)}`);
+            }
+
             if (activeTermContext.protocol === 'webserial') {
                 if (webSerialPort && webSerialPort.writable) {
-                    printToTerminal(`${cmd}`, 'command');
+                    printToTerminal(`${cmd}`, isAi ? 'ai_command' : 'command');
                     const writer = webSerialPort.writable.getWriter();
                     const data = new TextEncoder().encode(cmd + '\r\n');
                     await writer.write(data);
                     writer.releaseLock();
+                    if (isAi) {
+                        printToTerminal('指令已透過 Web Serial 送出', 'ai_success');
+                        setAiActivityState(false, '完成');
+                    }
                     scrollToTerminalBottom();
                     termInput.focus();
                     return { status: 'success', message: 'Command sent via Web Serial' };
                 } else {
                     printToTerminal('Web Serial not ready.', 'error');
+                    if (isAi) setAiActivityState(false, 'Serial 離線');
                     scrollToTerminalBottom();
                     termInput.focus();
                     return { status: 'error', error: 'Web Serial not ready' };
                 }
             }
 
-            printToTerminal(`${cmd}`, 'command');
+            printToTerminal(`${cmd}`, isAi ? 'ai_command' : 'command');
             let endpoint = "/tools/execute_shell";
             let payload = { command: cmd };
             if (activeTermContext.protocol === 'wsl') {
@@ -9287,10 +9346,19 @@ ${tools.join('\n')}${contextStr}
 
                 if (data.stdout !== undefined) {
                     if (data.stdout.trim() === '') printToTerminal('[No output]', 'info');
-                    else printToTerminal(data.stdout);
+                    else printToTerminal(data.stdout, 'stream');
                 }
                 if (data.stderr) printToTerminal(data.stderr, 'error');
                 if (data.error) printToTerminal(`Daemon Error: ${data.error}`, 'error');
+
+                if (isAi) {
+                    if (data.status === 'success' && !data.error) {
+                        printToTerminal(`指令執行完成`, 'ai_success');
+                    } else {
+                        printToTerminal(`指令異常: ${data.error || data.stderr || 'Exit with error'}`, 'ai_error');
+                    }
+                    if (typeof setAiActivityState === 'function') setAiActivityState(false, '完成');
+                }
 
                 // Print fresh prompt line with cursor in terminal
                 if (wtermInstance) {
@@ -9308,7 +9376,8 @@ ${tools.join('\n')}${contextStr}
                         ? `Unable to connect to Daemon (${appSettings.daemonEndpoint}).\n[Tip] Run start_daemon.bat or python daemon.py to use Local Shell/SSH.\n[Tip] Switch to 'Web Serial (Browser Direct)' above to operate hardware directly without daemon.`
                         : `無法連線至本地後端 Daemon (${appSettings.daemonEndpoint})。\n[提示] 若要使用 Local Shell (WSL) / SSH / Telnet，請執行 start_daemon.bat 或 python daemon.py\n[提示] 若要直接操作序列埠設備 (COM / UART)，請在上方下拉選單切換至【Web Serial (Browser Direct)】（不需 8001 Daemon）。`;
                 }
-                printToTerminal(`Error: ${errMsg}`, 'error');
+                printToTerminal(`Error: ${errMsg}`, isAi ? 'ai_error' : 'error');
+                if (isAi && typeof setAiActivityState === 'function') setAiActivityState(false, '連線異常');
                 if (wtermInstance) {
                     wtermInstance.write(`\r\n\x1b[1;32m${termPrompt.textContent}\x1b[0m `);
                 }
@@ -11388,6 +11457,8 @@ Important guidelines:
             }
 
             if (toolName === 'read_frontend_terminal') {
+                if (typeof setAiActivityState === 'function') setAiActivityState(true, '感知識別終端機...');
+                printToTerminal('正在感知識別左側終端機畫面快照...', 'ai_status');
                 const fullText = getTerminalScreenText();
                 const buffer = fullText.slice(-2500);
                 const resultEl = document.createElement('div');
@@ -11395,6 +11466,8 @@ Important guidelines:
                 resultEl.textContent = currentLang === 'en' ? '✅ Successfully read left terminal output' : '✅ 成功讀取前端終端機畫面';
                 logEl.appendChild(resultEl);
                 scrollToBottom();
+                printToTerminal(`終端機感知完成 (已傳遞最後 ${buffer.length} 字元至 LLM)`, 'ai_success');
+                if (typeof setAiActivityState === 'function') setAiActivityState(false, '完成');
                 return JSON.stringify({ status: "success", content: buffer });
             }
 
@@ -11404,6 +11477,7 @@ Important guidelines:
                 if (typeof switchLeftMode === 'function') {
                     switchLeftMode(normalizedMode);
                     const modeName = normalizedMode === 'term' ? (currentLang === 'en' ? 'Terminal' : '終端機') : (normalizedMode === 'novnc' ? (currentLang === 'en' ? 'Remote Desktop (noVNC)' : '遠端桌面 (noVNC)') : (currentLang === 'en' ? 'Window (Xorg)' : '視窗連線 (Xorg)'));
+                    printToTerminal(`切換左側工作區視圖至: ${modeName}`, 'ai_status');
                     const resultEl = document.createElement('div');
                     resultEl.className = 'mt-1 p-1 rounded bg-indigo-900/30 text-indigo-300 text-xs font-mono';
                     resultEl.textContent = `🖥️ ${currentLang === 'en' ? 'Left workspace switched to: ' : '已切換左側工作區至：'}${modeName}`;
@@ -11418,6 +11492,7 @@ Important guidelines:
                 const app = args.app || args.command || args.name || 'xclock';
                 if (typeof launchWslApp === 'function') {
                     launchWslApp(app);
+                    printToTerminal(`在左側 Xorg 視窗啟動 WSL GUI 應用程式: ${app}`, 'ai_status');
                     const resultEl = document.createElement('div');
                     resultEl.className = 'mt-1 p-1 rounded bg-purple-900/30 text-purple-300 text-xs font-mono';
                     resultEl.textContent = `🚀 ${currentLang === 'en' ? 'Launched WSL GUI App: ' : '已在左側啟動 WSL 應用程式：'}${app}`;
@@ -11434,12 +11509,14 @@ Important guidelines:
                 resultEl.className = 'mt-1 p-1 rounded bg-blue-900/30 text-blue-300 text-xs font-mono';
                 if (action === 'stop') {
                     if (typeof stopWslDesktopService === 'function') stopWslDesktopService();
+                    printToTerminal('停止 WSL 桌面服務', 'ai_status');
                     resultEl.textContent = `⏹️ ${currentLang === 'en' ? 'WSL Desktop Service stopped' : '已停止 WSL 桌面服務'}`;
                     logEl.appendChild(resultEl);
                     scrollToBottom();
                     return JSON.stringify({ status: "success", action: "stop", message: "已停止 WSL 桌面服務" });
                 } else {
                     if (typeof startWslDesktopAndConnect === 'function') startWslDesktopAndConnect();
+                    printToTerminal('啟動 WSL 桌面服務並連線', 'ai_status');
                     resultEl.textContent = `▶️ ${currentLang === 'en' ? 'WSL Desktop Service started & connecting' : '已啟動 WSL 桌面服務並連線'}`;
                     logEl.appendChild(resultEl);
                     scrollToBottom();
@@ -11450,13 +11527,15 @@ Important guidelines:
             if (toolName === 'write_frontend_terminal') {
                 let cmd = args.command || args.cmd || args.input || args.code || args.text || (typeof args === 'string' ? args : "");
                 if (typeof cmd !== 'string') cmd = JSON.stringify(cmd);
-                await sendCommandToTerminal(cmd);
+                await sendCommandToTerminal(cmd, true);
                 return JSON.stringify({ status: "success", executed: cmd });
             }
 
             if (toolName === 'web_search') {
                 const query = (args.query || args.keyword || "").trim();
                 const qLower = query.toLowerCase();
+                if (typeof setAiActivityState === 'function') setAiActivityState(true, `搜尋: ${query.slice(0, 15)}`);
+                printToTerminal(`網頁搜尋: 「${query}」`, 'ai_status');
 
                 // 1. 優先透過後端 Daemon 執行 (Python 原生發送，無瀏覽器 CORS/混合內容/廣告攔截器阻擋)
                 try {
@@ -11474,6 +11553,8 @@ Important guidelines:
                             resultEl.textContent = `✅ 搜尋完成：「${query}」`;
                             logEl.appendChild(resultEl);
                             scrollToBottom();
+                            printToTerminal(`✔ 網頁搜尋完成：「${query}」`, 'ai_success');
+                            if (typeof setAiActivityState === 'function') setAiActivityState(false, '完成');
                             return JSON.stringify(data);
                         }
                     }
@@ -11494,6 +11575,8 @@ Important guidelines:
                                 resultEl.textContent = `✅ GEO IP 定位完成：${d.ip} (${d.city}, ${d.country})`;
                                 logEl.appendChild(resultEl);
                                 scrollToBottom();
+                                printToTerminal(`✔ GEO IP 定位完成：${d.ip} (${d.city}, ${d.country})`, 'ai_success');
+                                if (typeof setAiActivityState === 'function') setAiActivityState(false, '完成');
                                 return JSON.stringify({ status: "success", query: query, result: geoInfo });
                             }
                         }
@@ -11527,6 +11610,8 @@ Important guidelines:
                             resultEl.textContent = `✅ 即時氣象查詢完成：${cityName} (${cur.temperature_2m}°C)`;
                             logEl.appendChild(resultEl);
                             scrollToBottom();
+                            printToTerminal(`✔ 即時氣象查詢完成：${cityName} (${cur.temperature_2m}°C)`, 'ai_success');
+                            if (typeof setAiActivityState === 'function') setAiActivityState(false, '完成');
                             return JSON.stringify({ status: "success", query: query, result: weatherText });
                         }
                     } catch (e) { }
@@ -11544,6 +11629,8 @@ Important guidelines:
                             resultEl.textContent = `✅ 維基百科檢索完成：「${query}」`;
                             logEl.appendChild(resultEl);
                             scrollToBottom();
+                            printToTerminal(`✔ 維基百科檢索完成：「${query}」`, 'ai_success');
+                            if (typeof setAiActivityState === 'function') setAiActivityState(false, '完成');
                             return JSON.stringify({ status: "success", query: query, result: snippets.join('\n---\n') });
                         }
                     }
@@ -11554,16 +11641,22 @@ Important guidelines:
                 failEl.textContent = `⚠️ 搜尋端點無回應，已回傳提示給 Agent`;
                 logEl.appendChild(failEl);
                 scrollToBottom();
+                printToTerminal(`⚠️ 網路搜尋無回應`, 'ai_error');
+                if (typeof setAiActivityState === 'function') setAiActivityState(false, '搜尋超時');
                 return JSON.stringify({ status: "error", error: "外部網路搜尋端點無回應，請確認網路連線或啟動 Daemon (Port 8001)。" });
             }
 
             if (toolName === 'query_knowledge_base') {
+                if (typeof setAiActivityState === 'function') setAiActivityState(true, '檢索知識庫');
+                printToTerminal(`檢索本地 RAG 知識庫: 「${args.query || ''}」`, 'ai_status');
                 const matches = retrieveRelevantKnowledge(args.query || "", 3);
                 const resultEl = document.createElement('div');
                 resultEl.className = 'mt-1 p-1 rounded bg-emerald-900/30 text-emerald-400 text-xs';
                 resultEl.textContent = currentLang === 'en' ? `✅ RAG Retrieved ${matches.length} chunks` : `✅ RAG 知識庫已檢索出 ${matches.length} 個相關片段`;
                 logEl.appendChild(resultEl);
                 scrollToBottom();
+                printToTerminal(`✔ RAG 知識庫檢索完成 (獲取 ${matches.length} 筆資料)`, 'ai_success');
+                if (typeof setAiActivityState === 'function') setAiActivityState(false, '完成');
                 return JSON.stringify({ status: "success", count: matches.length, matches });
             }
 
@@ -11588,12 +11681,55 @@ Important guidelines:
                 }
 
                 let endpoint = "";
-                if (toolName === 'execute_shell') endpoint = "/tools/execute_shell";
-                else if (toolName === 'read_file') endpoint = "/tools/read_file";
-                else if (toolName === 'write_file') endpoint = "/tools/write_file";
-                else if (toolName === 'execute_ssh') endpoint = "/tools/execute_ssh";
-                else if (toolName === 'execute_telnet') endpoint = "/tools/execute_telnet";
-                else if (toolName === 'execute_serial') endpoint = "/tools/execute_serial";
+                let shellCmd = "";
+                if (toolName === 'execute_shell') {
+                    endpoint = "/tools/execute_shell";
+                    shellCmd = args.command || args.cmd || "";
+                    if (typeof shellCmd !== 'string') shellCmd = JSON.stringify(shellCmd);
+                    // 自動切換到終端機分頁讓使用者能即時觀看交互
+                    if (typeof switchLeftMode === 'function' && typeof currentLeftMode !== 'undefined' && currentLeftMode !== 'term') {
+                        switchLeftMode('term');
+                    }
+                    // 加入終端機指令歷史記錄方便除錯與重放
+                    if (shellCmd && shellCmd.trim()) {
+                        const trimmed = shellCmd.trim();
+                        if (termCommandHistory.length === 0 || termCommandHistory[termCommandHistory.length - 1] !== trimmed) {
+                            termCommandHistory.push(trimmed);
+                            if (termCommandHistory.length > 200) termCommandHistory.shift();
+                        }
+                        termHistoryIndex = -1;
+                    }
+                    printToTerminal(shellCmd, 'ai_command');
+                    if (typeof setAiActivityState === 'function') setAiActivityState(true, `Shell: ${shellCmd.slice(0, 16)}`);
+                }
+                else if (toolName === 'read_file') {
+                    endpoint = "/tools/read_file";
+                    printToTerminal(`讀取本機檔案: ${args.filepath}`, 'ai_status');
+                    if (typeof setAiActivityState === 'function') setAiActivityState(true, `讀取檔案`);
+                }
+                else if (toolName === 'write_file') {
+                    endpoint = "/tools/write_file";
+                    printToTerminal(`寫入本機檔案: ${args.filepath} (${(args.content || '').length} 字元)`, 'ai_status');
+                    if (typeof setAiActivityState === 'function') setAiActivityState(true, `寫入檔案`);
+                }
+                else if (toolName === 'execute_ssh') {
+                    endpoint = "/tools/execute_ssh";
+                    shellCmd = args.command || "";
+                    printToTerminal(`[SSH: ${args.host || ''}] ❯ ${shellCmd}`, 'ai_command');
+                    if (typeof setAiActivityState === 'function') setAiActivityState(true, `SSH: ${shellCmd.slice(0, 16)}`);
+                }
+                else if (toolName === 'execute_telnet') {
+                    endpoint = "/tools/execute_telnet";
+                    shellCmd = args.command || "";
+                    printToTerminal(`[Telnet: ${args.host || ''}] ❯ ${shellCmd}`, 'ai_command');
+                    if (typeof setAiActivityState === 'function') setAiActivityState(true, `Telnet: ${shellCmd.slice(0, 16)}`);
+                }
+                else if (toolName === 'execute_serial') {
+                    endpoint = "/tools/execute_serial";
+                    shellCmd = args.command || "";
+                    printToTerminal(`[Serial: ${args.port || ''}] ❯ ${shellCmd}`, 'ai_command');
+                    if (typeof setAiActivityState === 'function') setAiActivityState(true, `Serial: ${shellCmd.slice(0, 16)}`);
+                }
                 else throw new Error(`Unknown tool: ${toolName}`);
 
                 const res = await fetchWithTimeout(`${appSettings.daemonEndpoint}${endpoint}`, {
@@ -11606,9 +11742,23 @@ Important guidelines:
 
                 if (data.stdout !== undefined) {
                     if (data.stdout.trim() === '') printToTerminal('[No output]', 'info');
-                    else printToTerminal(data.stdout);
+                    else printToTerminal(data.stdout, 'stream');
                 }
                 if (data.stderr) printToTerminal(data.stderr, 'error');
+
+                if (data.status === 'success') {
+                    if (toolName === 'read_file') printToTerminal(`✔ 檔案讀取成功 (${(data.content || '').length} 字元)`, 'ai_success');
+                    else if (toolName === 'write_file') printToTerminal(`✔ 檔案寫入成功: ${args.filepath}`, 'ai_success');
+                    else if (shellCmd) printToTerminal(`✔ 指令執行完成`, 'ai_success');
+                } else {
+                    printToTerminal(`✖ 執行失敗: ${data.error || data.stderr || '未知錯誤'}`, 'ai_error');
+                }
+
+                if (typeof setAiActivityState === 'function') setAiActivityState(false, '完成');
+
+                if (wtermInstance && termPrompt && (toolName === 'execute_shell' || toolName.startsWith('execute_'))) {
+                    wtermInstance.write(`\r\n\x1b[1;32m${termPrompt.textContent}\x1b[0m `);
+                }
 
                 const resultEl = document.createElement('div');
                 resultEl.className = `mt-1 p-1 rounded text-xs ${data.status === 'success' ? 'bg-green-900/30 text-green-400' : 'bg-red-900/30 text-red-400'}`;
