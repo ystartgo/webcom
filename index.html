@@ -1362,42 +1362,44 @@
     <!-- Artifact Side Drawer & Interactive Workbench Modal -->
     <div id="artifact-drawer-modal"
         class="fixed inset-0 bg-black/75 backdrop-blur-md z-[110] hidden flex flex-col justify-end items-end transition-opacity duration-300">
-        <div class="bg-gray-900 border-l border-gray-700 w-full lg:w-4/5 xl:w-3/4 h-full shadow-2xl flex flex-col overflow-hidden">
+        <div class="bg-gray-900 border-l border-gray-700 w-full sm:w-[98%] md:w-[96%] lg:w-[94%] xl:w-[92%] 2xl:w-[88%] max-w-[1700px] h-full shadow-2xl flex flex-col overflow-hidden">
             <!-- Header -->
-            <div class="px-5 py-3 border-b border-gray-800 flex items-center justify-between bg-gray-950 shrink-0">
-                <div class="flex items-center gap-3 min-w-0">
-                    <div id="drawer-artifact-icon" class="p-2 rounded-xl bg-indigo-500/20 text-indigo-400 border border-indigo-500/30 shrink-0">
-                        <i data-lucide="layout" class="w-5 h-5"></i>
+            <div class="px-3 sm:px-5 py-2.5 sm:py-3 border-b border-gray-800 flex items-center justify-between bg-gray-950 shrink-0 gap-2 relative">
+                <!-- Left Title & Meta -->
+                <div class="flex items-center gap-2 sm:gap-3 min-w-0 flex-shrink truncate">
+                    <div id="drawer-artifact-icon" class="p-1.5 sm:p-2 rounded-xl bg-indigo-500/20 text-indigo-400 border border-indigo-500/30 shrink-0">
+                        <i data-lucide="layout" class="w-4 h-4 sm:w-5 sm:h-5"></i>
                     </div>
-                    <div class="min-w-0">
-                        <div class="flex items-center gap-2">
-                            <h2 id="drawer-artifact-title" class="text-base font-bold text-white truncate" data-i18n="artifactDrawerTitle">Artifact 預覽工坊</h2>
+                    <div class="min-w-0 max-w-[130px] sm:max-w-[200px] md:max-w-xs">
+                        <div class="flex items-center gap-1.5 sm:gap-2">
+                            <h2 id="drawer-artifact-title" class="text-sm sm:text-base font-bold text-white truncate" data-i18n="artifactDrawerTitle">Artifact 預覽工坊</h2>
                             <span id="drawer-artifact-lang" class="text-[10px] font-mono uppercase px-1.5 py-0.5 rounded bg-gray-800 text-gray-300">HTML</span>
                             <span id="drawer-artifact-parts" class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-emerald-950/80 border border-emerald-500/40 text-emerald-300 hidden">已接續 2 段</span>
                         </div>
-                        <div class="text-xs text-gray-400 font-mono truncate" id="drawer-artifact-id">ID: app</div>
+                        <div class="text-[11px] sm:text-xs text-gray-400 font-mono truncate" id="drawer-artifact-id">ID: app</div>
                     </div>
                 </div>
 
-                <div class="flex items-center gap-2 shrink-0">
+                <!-- Center / Right Actions Toolbar -->
+                <div class="flex-1 flex items-center justify-end gap-1.5 min-w-0 overflow-x-auto no-scrollbar py-0.5">
                     <!-- Responsive Device Toggle (for web app / HTML) -->
-                    <div id="drawer-device-toggles" class="hidden sm:flex items-center bg-gray-900 border border-gray-800 rounded-lg p-0.5 gap-0.5 text-xs">
-                        <button type="button" class="drawer-device-btn px-2 py-1 rounded text-gray-300 hover:text-white transition active-device" data-device="100%" title="桌面全寬 (100%)" data-i18n-title="artifactDeviceDesktopTitle">
+                    <div id="drawer-device-toggles" class="hidden md:flex items-center bg-gray-900 border border-gray-800 rounded-lg p-0.5 gap-0.5 text-xs shrink-0">
+                        <button type="button" class="drawer-device-btn px-1.5 py-1 rounded text-gray-300 hover:text-white transition active-device" data-device="100%" title="桌面全寬 (100%)" data-i18n-title="artifactDeviceDesktopTitle">
                             <i data-lucide="monitor" class="w-3.5 h-3.5"></i>
                         </button>
-                        <button type="button" class="drawer-device-btn px-2 py-1 rounded text-gray-400 hover:text-white transition" data-device="768px" title="平板 (768px)" data-i18n-title="artifactDeviceTabletTitle">
+                        <button type="button" class="drawer-device-btn px-1.5 py-1 rounded text-gray-400 hover:text-white transition" data-device="768px" title="平板 (768px)" data-i18n-title="artifactDeviceTabletTitle">
                             <i data-lucide="tablet" class="w-3.5 h-3.5"></i>
                         </button>
-                        <button type="button" class="drawer-device-btn px-2 py-1 rounded text-gray-400 hover:text-white transition" data-device="375px" title="手機 (375px)" data-i18n-title="artifactDeviceMobileTitle">
+                        <button type="button" class="drawer-device-btn px-1.5 py-1 rounded text-gray-400 hover:text-white transition" data-device="375px" title="手機 (375px)" data-i18n-title="artifactDeviceMobileTitle">
                             <i data-lucide="smartphone" class="w-3.5 h-3.5"></i>
                         </button>
                     </div>
 
                     <!-- Version Control Toolbar -->
-                    <div id="drawer-version-control" class="flex items-center bg-gray-900 border border-gray-800 rounded-lg p-0.5 gap-1 text-xs">
+                    <div id="drawer-version-control" class="flex items-center bg-gray-900 border border-gray-800 rounded-lg p-0.5 gap-1 text-xs shrink-0">
                         <div class="flex items-center px-1.5 py-0.5 gap-1 text-indigo-400 font-mono">
                             <i data-lucide="git-branch" class="w-3.5 h-3.5 shrink-0"></i>
-                            <select id="drawer-version-select" class="bg-transparent text-xs text-indigo-300 font-bold focus:outline-none cursor-pointer max-w-[260px] md:max-w-[340px] truncate" title="切換檢視歷史版本" data-i18n-title="tooltipVersionSelect">
+                            <select id="drawer-version-select" class="bg-transparent text-xs text-indigo-300 font-bold focus:outline-none cursor-pointer max-w-[95px] sm:max-w-[140px] truncate" title="切換檢視歷史版本" data-i18n-title="tooltipVersionSelect">
                                 <option value="1">v1 (最新)</option>
                             </select>
                         </div>
@@ -1410,43 +1412,81 @@
                     </div>
 
                     <!-- View Mode Toggle: Preview / Split / Code / Diff -->
-                    <div class="flex items-center bg-gray-900 border border-gray-800 rounded-lg p-0.5 gap-0.5 text-xs">
+                    <div class="flex items-center bg-gray-900 border border-gray-800 rounded-lg p-0.5 gap-0.5 text-xs shrink-0">
                         <button id="drawer-tab-preview" type="button" class="px-2.5 py-1 rounded font-medium bg-indigo-600 text-white transition flex items-center gap-1">
                             <i data-lucide="eye" class="w-3 h-3"></i> <span data-i18n="artifactPreview">預覽</span>
                         </button>
-                        <button id="drawer-tab-split" type="button" class="px-2.5 py-1 rounded font-medium text-gray-400 hover:text-white transition flex items-center gap-1 hidden md:flex">
+                        <button id="drawer-tab-split" type="button" class="px-2.5 py-1 rounded font-medium text-gray-400 hover:text-white transition flex items-center gap-1 hidden lg:flex">
                             <i data-lucide="columns-2" class="w-3 h-3"></i> <span data-i18n="artifactSplit">並排</span>
                         </button>
                         <button id="drawer-tab-code" type="button" class="px-2.5 py-1 rounded font-medium text-gray-400 hover:text-white transition flex items-center gap-1">
                             <i data-lucide="code" class="w-3 h-3"></i> <span data-i18n="artifactCode">代碼</span>
                         </button>
-                        <button id="drawer-tab-diff" type="button" class="px-2.5 py-1 rounded font-medium text-gray-400 hover:text-white transition flex items-center gap-1 hidden sm:flex" title="查看與上一版本或初始版本的差異" data-i18n-title="tooltipVersionDiff">
+                        <button id="drawer-tab-diff" type="button" class="px-2.5 py-1 rounded font-medium text-gray-400 hover:text-white transition flex items-center gap-1 hidden md:flex" title="查看與上一版本或初始版本的差異" data-i18n-title="tooltipVersionDiff">
                             <i data-lucide="git-compare" class="w-3 h-3"></i> <span data-i18n="artifactDiff">比對</span>
                         </button>
                     </div>
 
-                    <button id="drawer-btn-refresh" type="button" class="text-xs p-1.5 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-300 hover:text-white transition" title="重新載入沙箱" data-i18n-title="artifactReloadSandbox">
-                        <i data-lucide="rotate-cw" class="w-3.5 h-3.5"></i>
-                    </button>
-                    <button id="drawer-btn-open-tab" type="button" class="text-xs p-1.5 rounded-lg bg-gray-800 hover:bg-gray-700 text-cyan-400 hover:text-cyan-300 transition" title="在新視窗獨立開啟" data-i18n-title="artifactOpenNewTab">
-                        <i data-lucide="external-link" class="w-3.5 h-3.5"></i>
-                    </button>
-                    <button id="drawer-btn-copy" type="button" class="text-xs px-2.5 py-1 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-200 hover:text-white transition flex items-center gap-1" title="複製全檔代碼" data-i18n-title="artifactCopyAllCode">
-                        <i data-lucide="copy" class="w-3.5 h-3.5"></i> <span data-i18n="artifactCopy">複製</span>
-                    </button>
-                    <button id="drawer-btn-download" type="button" class="text-xs px-2.5 py-1 rounded-lg bg-emerald-600/80 hover:bg-emerald-500 text-white transition flex items-center gap-1" title="下載完整檔案" data-i18n-title="artifactDownloadFullFile">
-                        <i data-lucide="download" class="w-3.5 h-3.5"></i> <span data-i18n="artifactDownload">下載</span>
-                    </button>
-                    <button id="drawer-btn-continue" type="button" class="text-xs px-2.5 py-1 rounded-lg bg-purple-600/80 hover:bg-purple-500 text-white transition flex items-center gap-1" title="請求 LLM 接續此檔案" data-i18n-title="artifactRequestContinue">
-                        <i data-lucide="play" class="w-3.5 h-3.5"></i> <span data-i18n="artifactContinue">接續</span>
-                    </button>
-                    <button id="drawer-btn-save-to-lib" type="button" class="text-xs px-2.5 py-1 rounded-lg bg-violet-950/80 hover:bg-violet-900 border border-violet-700/50 text-violet-300 hover:text-white transition flex items-center gap-1 font-medium" title="收藏至自建應用庫" data-i18n-title="tooltipSaveToAppLib">
-                        <i data-lucide="bookmark-plus" class="w-3.5 h-3.5"></i> <span data-i18n="artifactSaveToLib">存入應用庫</span>
-                    </button>
-                    <button id="btn-close-artifact-drawer" type="button" class="text-gray-400 hover:text-white p-1 rounded-lg hover:bg-gray-800 transition ml-1" title="關閉 (Esc)" data-i18n-title="artifactCloseDrawer">
-                        <i data-lucide="x" class="w-5 h-5"></i>
-                    </button>
+                    <!-- Secondary Actions Dropdown (三 / 更多操作) -->
+                    <div class="relative inline-block text-left shrink-0" id="drawer-more-dropdown-container">
+                        <button id="drawer-btn-more-menu" type="button" onclick="toggleDrawerMoreDropdown(event)"
+                            class="text-xs px-2.5 py-1.5 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-200 hover:text-white border border-gray-700 transition flex items-center gap-1.5 font-medium shadow-sm cursor-pointer"
+                            title="更多操作選單" data-i18n-title="artifactMoreActions">
+                            <i data-lucide="menu" class="w-3.5 h-3.5"></i>
+                            <span class="hidden sm:inline text-xs font-semibold">功能</span>
+                            <i data-lucide="chevron-down" class="w-3 h-3 text-gray-400"></i>
+                        </button>
+                        <!-- Dropdown Menu -->
+                        <div id="dropdown-drawer-more"
+                            class="hidden absolute right-0 mt-1.5 w-44 origin-top-right rounded-xl bg-gray-900 border border-gray-700 shadow-2xl p-1.5 z-50 flex flex-col gap-1 backdrop-blur-lg">
+                            <button id="drawer-btn-refresh" type="button" onclick="closeDrawerMoreDropdown()"
+                                class="w-full text-left text-xs px-2.5 py-1.5 rounded-lg hover:bg-gray-800 text-gray-200 hover:text-white transition flex items-center gap-2 cursor-pointer"
+                                title="重新載入沙箱" data-i18n-title="artifactReloadSandbox">
+                                <i data-lucide="rotate-cw" class="w-3.5 h-3.5 text-indigo-400 shrink-0"></i>
+                                <span data-i18n="artifactReloadSandbox">重新載入</span>
+                            </button>
+                            <button id="drawer-btn-open-tab" type="button" onclick="closeDrawerMoreDropdown()"
+                                class="w-full text-left text-xs px-2.5 py-1.5 rounded-lg hover:bg-gray-800 text-cyan-300 hover:text-cyan-200 transition flex items-center gap-2 cursor-pointer"
+                                title="在新視窗獨立開啟" data-i18n-title="artifactOpenNewTab">
+                                <i data-lucide="external-link" class="w-3.5 h-3.5 text-cyan-400 shrink-0"></i>
+                                <span data-i18n="artifactOpenNewTab">新分頁開啟</span>
+                            </button>
+                            <div class="h-px bg-gray-800 my-0.5"></div>
+                            <button id="drawer-btn-copy" type="button" onclick="closeDrawerMoreDropdown()"
+                                class="w-full text-left text-xs px-2.5 py-1.5 rounded-lg hover:bg-gray-800 text-gray-200 hover:text-white transition flex items-center gap-2 cursor-pointer"
+                                title="複製全檔代碼" data-i18n-title="artifactCopyAllCode">
+                                <i data-lucide="copy" class="w-3.5 h-3.5 text-amber-400 shrink-0"></i>
+                                <span data-i18n="artifactCopy">複製代碼</span>
+                            </button>
+                            <button id="drawer-btn-download" type="button" onclick="closeDrawerMoreDropdown()"
+                                class="w-full text-left text-xs px-2.5 py-1.5 rounded-lg hover:bg-emerald-950/60 text-emerald-300 hover:text-white transition flex items-center gap-2 cursor-pointer"
+                                title="下載完整檔案" data-i18n-title="artifactDownloadFullFile">
+                                <i data-lucide="download" class="w-3.5 h-3.5 text-emerald-400 shrink-0"></i>
+                                <span data-i18n="artifactDownload">下載檔案</span>
+                            </button>
+                            <button id="drawer-btn-continue" type="button" onclick="closeDrawerMoreDropdown()"
+                                class="w-full text-left text-xs px-2.5 py-1.5 rounded-lg hover:bg-purple-950/60 text-purple-300 hover:text-white transition flex items-center gap-2 cursor-pointer"
+                                title="請求 LLM 接續此檔案" data-i18n-title="artifactRequestContinue">
+                                <i data-lucide="play" class="w-3.5 h-3.5 text-purple-400 shrink-0"></i>
+                                <span data-i18n="artifactContinue">接續撰寫</span>
+                            </button>
+                            <button id="drawer-btn-save-to-lib" type="button" onclick="closeDrawerMoreDropdown()"
+                                class="w-full text-left text-xs px-2.5 py-1.5 rounded-lg hover:bg-violet-950/60 text-violet-300 hover:text-white transition flex items-center gap-2 cursor-pointer"
+                                title="收藏至自建應用庫" data-i18n-title="tooltipSaveToAppLib">
+                                <i data-lucide="bookmark-plus" class="w-3.5 h-3.5 text-violet-400 shrink-0"></i>
+                                <span data-i18n="artifactSaveToLib">存入應用庫</span>
+                            </button>
+                        </div>
+                    </div>
                 </div>
+
+                <!-- Far Right Pinned Exit Button: 100% ALWAYS visible, prominent rose/red badge with "離開" -->
+                <button id="btn-close-artifact-drawer" type="button"
+                    class="shrink-0 flex items-center gap-1.5 px-3 py-1.5 bg-rose-950/80 hover:bg-rose-900 text-rose-300 hover:text-white border border-rose-700/60 rounded-lg text-xs font-bold transition shadow-sm cursor-pointer ml-1 z-10"
+                    title="離開 / 關閉 (Esc)" data-i18n-title="artifactCloseDrawer">
+                    <i data-lucide="x" class="w-4 h-4 text-rose-400"></i>
+                    <span class="whitespace-nowrap font-bold">離開</span>
+                </button>
             </div>
 
             <!-- Content Area -->
@@ -3583,7 +3623,8 @@ startx                 # 標準 startx 啟動</pre>
                 artifactCopyAllCode: "複製全檔代碼",
                 artifactDownloadFullFile: "下載完整檔案",
                 artifactRequestContinue: "請求 LLM 接續此檔案",
-                artifactCloseDrawer: "關閉 (Esc)",
+                artifactMoreActions: "更多功能選單",
+                artifactCloseDrawer: "離開 / 關閉預覽工坊 (Esc)",
                 artifactEditInCard: "在對話框內直接編輯此代碼",
                 artifactExpandWorkbench: "展開大視窗與獨立除錯",
                 artifactContinuationBtnTitle: "發送指令讓 AI 接續輸出此 Artifact 的未完內容",
@@ -4160,7 +4201,8 @@ startx                 # 標準 startx 啟動</pre>
                 artifactCopyAllCode: "Copy Complete Code",
                 artifactDownloadFullFile: "Download Complete File",
                 artifactRequestContinue: "Request LLM to Continue File",
-                artifactCloseDrawer: "Close (Esc)",
+                artifactMoreActions: "More Actions Menu",
+                artifactCloseDrawer: "Exit / Close Workbench (Esc)",
                 artifactEditInCard: "Edit code directly in chat card",
                 artifactExpandWorkbench: "Open workbench drawer for full debugging",
                 artifactContinuationBtnTitle: "Send instruction to let AI continue outputting this Artifact",
@@ -15470,6 +15512,24 @@ Important guidelines:
         }
         window.toggleXorgToolbars = toggleXorgToolbars;
 
+        // ── Artifact Drawer 更多功能下拉選單 ──
+        function toggleDrawerMoreDropdown(e) {
+            if (e) e.stopPropagation();
+            const dd = document.getElementById('dropdown-drawer-more');
+            if (!dd) return;
+            dd.classList.toggle('hidden');
+            if (window.lucide) lucide.createIcons();
+        }
+        window.toggleDrawerMoreDropdown = toggleDrawerMoreDropdown;
+
+        function closeDrawerMoreDropdown() {
+            const dd = document.getElementById('dropdown-drawer-more');
+            if (dd && !dd.classList.contains('hidden')) {
+                dd.classList.add('hidden');
+            }
+        }
+        window.closeDrawerMoreDropdown = closeDrawerMoreDropdown;
+
         // 全域點擊外部自動關閉下拉選單
         document.addEventListener('click', (e) => {
             if (!e.target.closest('#btn-top-tools-menu') && !e.target.closest('#dropdown-top-tools')) {
@@ -15485,6 +15545,9 @@ Important guidelines:
             if (!e.target.closest('#btn-xorg-ctrl-menu') && !e.target.closest('#dropdown-xorg-ctrl')) {
                 const d = document.getElementById('dropdown-xorg-ctrl');
                 if (d && !d.classList.contains('hidden')) d.classList.add('hidden');
+            }
+            if (!e.target.closest('#drawer-btn-more-menu') && !e.target.closest('#dropdown-drawer-more')) {
+                closeDrawerMoreDropdown();
             }
         });
 
