@@ -20,3 +20,4 @@ pdfplumber>=0.11.0
 pypdfium2>=4.30.0
 cobble>=0.1.4
 beautifulsoup4>=4.12.0
+ezdxf>=1.4.0

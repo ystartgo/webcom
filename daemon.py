@@ -267,6 +267,121 @@ def convert_markitdown(req: MarkItDownConvertRequest):
             except Exception: pass
 
 
+# ── PCB DXF <-> GeoJSON 高精度微型尺寸轉檔 API ─────────────────────────────────
+class PcbDxfToGeoJsonRequest(BaseModel):
+    filename: Optional[str] = "pcb.dxf"
+    dxf_content: Optional[str] = None
+    data_base64: Optional[str] = None
+    unit: Optional[str] = "mm"
+    tolerance: Optional[float] = 0.01
+    precision: Optional[int] = 6
+
+class PcbGeoJsonToDxfRequest(BaseModel):
+    geojson: dict
+    filename: Optional[str] = "pcb_converted.dxf"
+    unit: Optional[str] = "mm"
+
+class PcbDxfAnalyzeRequest(BaseModel):
+    dxf_content: Optional[str] = None
+    data_base64: Optional[str] = None
+
+
+@app.post("/api/pcb/dxf2geojson")
+def api_pcb_dxf2geojson(req: PcbDxfToGeoJsonRequest):
+    """
+    將 PCB DXF 格式轉檔為高精度 GeoJSON FeatureCollection：
+    - 精確保留微米級幾何特徵 (BGA 焊盤、0.1mm 走線、爬電間距)
+    - 重構圓角與走線弧度 (Bulge 圓弧精算)
+    - 完整提取 Edge.Cuts、F.Cu、Drill、F.SilkS 等電路板圖層
+    """
+    try:
+        from scripts.pcb_dxf_geojson import PcbDxfGeoJsonConverter
+        converter = PcbDxfGeoJsonConverter(
+            target_unit=req.unit or "mm",
+            default_tolerance=req.tolerance or 0.01,
+            precision=req.precision or 6
+        )
+
+        dxf_bytes = None
+        if req.data_base64:
+            raw_b64 = req.data_base64
+            if "base64," in raw_b64:
+                raw_b64 = raw_b64.split("base64,", 1)[1]
+            dxf_bytes = base64.b64decode(raw_b64)
+        elif req.dxf_content:
+            dxf_bytes = req.dxf_content.encode("utf-8", errors="ignore")
+        else:
+            raise HTTPException(status_code=400, detail="請提供 dxf_content 或 data_base64")
+
+        geojson_result = converter.dxf_to_geojson(dxf_bytes)
+        return {
+            "status": "success",
+            "filename": req.filename,
+            "data": geojson_result
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"PCB DXF 轉換失敗: {e}")
+
+
+@app.post("/api/pcb/analyze")
+def api_pcb_analyze(req: PcbDxfAnalyzeRequest):
+    """
+    快速分析 PCB DXF 電路板尺寸、面積 (mm² / cm²) 與圖層實體統計
+    """
+    try:
+        from scripts.pcb_dxf_geojson import analyze_pcb_dxf
+        dxf_bytes = None
+        if req.data_base64:
+            raw_b64 = req.data_base64
+            if "base64," in raw_b64:
+                raw_b64 = raw_b64.split("base64,", 1)[1]
+            dxf_bytes = base64.b64decode(raw_b64)
+        elif req.dxf_content:
+            dxf_bytes = req.dxf_content.encode("utf-8", errors="ignore")
+        else:
+            raise HTTPException(status_code=400, detail="請提供 dxf_content 或 data_base64")
+
+        analysis = analyze_pcb_dxf(dxf_bytes)
+        return {
+            "status": "success",
+            "data": analysis
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"PCB 分析失敗: {e}")
+
+
+@app.post("/api/pcb/geojson2dxf")
+def api_pcb_geojson2dxf(req: PcbGeoJsonToDxfRequest):
+    """
+    將 GeoJSON FeatureCollection 重新匯出為標準 AutoCAD DXF 檔案
+    """
+    temp_path = None
+    try:
+        from scripts.pcb_dxf_geojson import PcbDxfGeoJsonConverter
+        converter = PcbDxfGeoJsonConverter(target_unit=req.unit or "mm")
+
+        with tempfile.NamedTemporaryFile(suffix=".dxf", delete=False) as f:
+            temp_path = f.name
+
+        converter.geojson_to_dxf(req.geojson, temp_path)
+        with open(temp_path, "r", encoding="utf-8", errors="ignore") as f:
+            dxf_text = f.read()
+
+        return {
+            "status": "success",
+            "filename": req.filename,
+            "dxf_content": dxf_text
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"GeoJSON 轉 DXF 失敗: {e}")
+    finally:
+        if temp_path and os.path.exists(temp_path):
+            try:
+                os.remove(temp_path)
+            except Exception:
+                pass
+
+
 @app.get("/api/local_models")
 def get_local_models():
     """Detect and return locally downloaded WebLLM model folders"""
