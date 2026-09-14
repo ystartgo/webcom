@@ -110,6 +110,11 @@ assets_dir = os.path.join(webcom_dir, "assets")
 if os.path.exists(assets_dir):
     app.mount("/assets", StaticFiles(directory=assets_dir), name="assets")
 
+# 掛載 rag_docs 子目錄 (儲存 PDF/文件轉換後之 Markdown 文件)
+rag_docs_dir = os.path.join(webcom_dir, "rag_docs")
+os.makedirs(rag_docs_dir, exist_ok=True)
+app.mount("/rag_docs", StaticFiles(directory=rag_docs_dir), name="rag_docs")
+
 # 掛載 MarkItDown Website (提供 http://127.0.0.1:8001/markitdown/)
 markitdown_dir = os.path.join(webcom_dir, "markitdown")
 if not os.path.exists(markitdown_dir):
@@ -183,6 +188,41 @@ class MarkItDownConvertRequest(BaseModel):
     filename: str
     data_base64: str
 
+
+def save_converted_markdown(filename: str, markdown_content: str):
+    """
+    將 MarkItDown / PDF 轉檔後的 Markdown 永久儲存至本機檔案系統：
+    1. C:\Apps\Webcom\rag_docs\<filename>.md (使用者最直覺的一級資料夾)
+    2. C:\Apps\Webcom\assets\RAG\Converted\<filename>.md (RAG 知識庫內建歸檔資料夾)
+    """
+    stem = os.path.splitext(filename)[0]
+    safe_stem = "".join(c for c in stem if c.isalnum() or c in (" ", "-", "_", "(", ")", ".", "（", "）", "【", "】")).strip() or "document"
+    md_filename = f"{safe_stem}.md"
+
+    rag_docs_dir = os.path.join(webcom_dir, "rag_docs")
+    os.makedirs(rag_docs_dir, exist_ok=True)
+    rag_converted_dir = os.path.join(webcom_dir, "assets", "RAG", "Converted")
+    os.makedirs(rag_converted_dir, exist_ok=True)
+
+    path_root = os.path.join(rag_docs_dir, md_filename)
+    path_conv = os.path.join(rag_converted_dir, md_filename)
+
+    try:
+        with open(path_root, "w", encoding="utf-8", errors="replace") as f_out:
+            f_out.write(markdown_content)
+        with open(path_conv, "w", encoding="utf-8", errors="replace") as f_out:
+            f_out.write(markdown_content)
+        logging.info(f"MarkItDown converted {filename} -> saved to {path_root} and {path_conv}")
+    except Exception as e:
+        logging.warning(f"Failed to persist converted markdown: {e}")
+
+    return {
+        "saved_path": os.path.abspath(path_conv).replace("\\", "/"),
+        "saved_root_path": os.path.abspath(path_root).replace("\\", "/"),
+        "saved_filename": md_filename,
+        "download_url": f"/rag_docs/{md_filename}"
+    }
+
 @app.post("/api/convert")
 @app.post("/api/convert_markitdown")
 def convert_markitdown(req: MarkItDownConvertRequest):
@@ -209,13 +249,15 @@ def convert_markitdown(req: MarkItDownConvertRequest):
         result = md_engine.convert(temp_path)
         markdown_text = result.text_content or ""
         title = getattr(result, "title", None) or os.path.splitext(req.filename)[0]
+        save_info = save_converted_markdown(req.filename, markdown_text)
         return {
             "status": "success",
             "filename": req.filename,
             "title": title,
             "markdown": markdown_text,
             "charCount": len(markdown_text),
-            "lineCount": len(markdown_text.splitlines())
+            "lineCount": len(markdown_text.splitlines()),
+            **save_info
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"MarkItDown 轉換失敗: {e}")
@@ -1287,6 +1329,7 @@ def parse_document(req: DocumentParseRequest):
             return {"status": "error", "error": f"文件 ({req.filename}) 解析成功，但未能提取到文字或圖片內容"}
 
         char_count = len(text)
+        save_info = save_converted_markdown(req.filename, text)
         return {
             "status": "success",
             "filename": req.filename,
@@ -1298,7 +1341,8 @@ def parse_document(req: DocumentParseRequest):
             "images_count": len(extracted_images),
             "images": extracted_images,
             "text": text,
-            "markdown": text
+            "markdown": text,
+            **save_info
         }
 
     except Exception as e:
@@ -1329,32 +1373,111 @@ def api_convert_document(req: DocumentParseRequest):
         raise HTTPException(status_code=500, detail=err)
 
 
+class RevealPathRequest(BaseModel):
+    path: str
+
+@app.post("/api/reveal_file")
+def reveal_file_in_os(req: RevealPathRequest):
+    """在 Windows 檔案總管或系統檔案瀏覽器中選取並顯示該檔案"""
+    p = os.path.abspath(req.path)
+    if not os.path.exists(p):
+        cand1 = os.path.join(webcom_dir, "rag_docs", os.path.basename(req.path))
+        cand2 = os.path.join(webcom_dir, "assets", "RAG", "Converted", os.path.basename(req.path))
+        if os.path.exists(cand1):
+            p = cand1
+        elif os.path.exists(cand2):
+            p = cand2
+        else:
+            return {"status": "error", "error": f"檔案或目錄不存在: {p}"}
+    try:
+        if sys.platform == "win32" or os.name == "nt":
+            if os.path.isfile(p):
+                subprocess.Popen(f'explorer.exe /select,"{p}"', shell=True)
+            else:
+                subprocess.Popen(f'explorer.exe "{p}"', shell=True)
+        else:
+            subprocess.Popen(["xdg-open", os.path.dirname(p) if os.path.isfile(p) else p])
+        return {"status": "success", "path": p}
+    except Exception as e:
+        return {"status": "error", "error": str(e)}
+
+class RagSaveDocRequest(BaseModel):
+    filename: str
+    content: str
+
+@app.post("/api/rag/save")
+def api_save_rag_document(req: RagSaveDocRequest):
+    """手動將 RAG 知識庫文件或筆記儲存至 rag_docs/ 實體目錄"""
+    try:
+        save_info = save_converted_markdown(req.filename, req.content)
+        return {"status": "success", **save_info}
+    except Exception as e:
+        return {"status": "error", "error": str(e)}
+
 @app.get("/api/rag/list")
 def list_rag_assets():
-    """自動掃描 assets/RAG/ 目錄下的所有知識庫文件與範本 (支援 SVG、純文字、Markdown 等)"""
+    """自動掃描 assets/RAG/ 及 rag_docs/ 目錄下的所有知識庫文件與範本 (支援 SVG、純文字、Markdown 等)"""
     rag_root = os.path.join(webcom_dir, "assets", "RAG")
+    rag_docs_dir = os.path.join(webcom_dir, "rag_docs")
     if not os.path.exists(rag_root):
         os.makedirs(rag_root, exist_ok=True)
+    if not os.path.exists(rag_docs_dir):
+        os.makedirs(rag_docs_dir, exist_ok=True)
     
     docs = []
+    seen_ids = set()
+
+    # 1. 優先掃描使用者一級目錄 rag_docs/
+    if os.path.exists(rag_docs_dir):
+        for f in os.listdir(rag_docs_dir):
+            full_path = os.path.join(rag_docs_dir, f)
+            if os.path.isfile(full_path):
+                ext = os.path.splitext(f)[1].lower()
+                if ext in (".md", ".txt", ".json", ".csv", ".xml", ".svg"):
+                    doc_id = f"rag_doc_{f}"
+                    seen_ids.add(doc_id)
+                    try:
+                        with open(full_path, "r", encoding="utf-8", errors="replace") as fh:
+                            content = fh.read()
+                        docs.append({
+                            "id": doc_id,
+                            "title": f,
+                            "filename": f,
+                            "rel_path": f"rag_docs/{f}",
+                            "saved_path": os.path.abspath(full_path).replace("\\", "/"),
+                            "category": "rag_docs",
+                            "content": content,
+                            "ext": ext,
+                            "download_url": f"/rag_docs/{f}"
+                        })
+                    except Exception as ex:
+                        logging.warning(f"Failed to read rag_doc {full_path}: {ex}")
+
+    # 2. 掃描 assets/RAG/ 子目錄與範本
     for root, dirs, files in os.walk(rag_root):
         for f in files:
             full_path = os.path.join(root, f)
             rel_path = os.path.relpath(full_path, rag_root)
             category = os.path.basename(root) if root != rag_root else "General"
             ext = os.path.splitext(f)[1].lower()
+            doc_id = f"rag_{rel_path.replace(os.sep, '_')}"
+            if doc_id in seen_ids or f"rag_doc_{f}" in seen_ids:
+                continue
+            seen_ids.add(doc_id)
             try:
                 if ext in (".svg", ".txt", ".md", ".json", ".csv", ".xml", ".py", ".yaml", ".yml"):
                     with open(full_path, "r", encoding="utf-8", errors="replace") as fh:
                         content = fh.read()
                     docs.append({
-                        "id": f"rag_{rel_path.replace(os.sep, '_')}",
+                        "id": doc_id,
                         "title": f"{category}: {f}",
                         "filename": f,
                         "rel_path": rel_path.replace("\\", "/"),
+                        "saved_path": os.path.abspath(full_path).replace("\\", "/"),
                         "category": category,
                         "content": content,
-                        "ext": ext
+                        "ext": ext,
+                        "download_url": f"/assets/RAG/{rel_path.replace(os.sep, '/')}"
                     })
             except Exception as ex:
                 logging.warning(f"Failed to read RAG file {full_path}: {ex}")

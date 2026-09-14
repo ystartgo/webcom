@@ -60,7 +60,8 @@
   - **瀏覽器視覺化診斷**：頂部導航列 `[🩺 自我檢測]` Modal 視窗，即時檢查 WebGPU、Daemon、MarkItDown 引擎與 API Router 連線狀態。
 - 📄 **Microsoft MarkItDown 智慧文件上傳與轉檔**：
   - 對話列右下角精簡為 2 顆核心按鈕（【上傳文件】與【清除對話】）。
-  - 上傳 PDF、Word (DOCX)、Excel (XLSX)、PPTX、HTML、CSV、EPUB 時，自動調用後端原生 Microsoft MarkItDown 核心精準提取結構化 Markdown 餵入 LLM，支援萬字長文件智慧分塊與提問。
+  - 上傳 PDF、Word (DOCX)、Excel (XLSX)、PPTX、HTML、CSV、EPUB 時，自動調用後端原生 Microsoft MarkItDown 核心精準提取結構化 Markdown 餵入 LLM，支援萬字長文件智慧分塊與提問，並自動永久儲存至本機 
+ag_docs/ 資料夾（支援在檔案總管開啟與一鍵下載 .md 檔）。
 - 🛜 **純斷網模擬開關**：一鍵封鎖所有非 `127.0.0.1` 外部請求，免拔網路線測試離線情境
 - 🖹 **6 頁完整使用手冊**（雙語 zh-TW / EN）：快速上手、終端機協定、AI + RAG、離線 WinPE、常見問題、**版權 & 致謝**
 - 🌍 **完整 zh-TW / English 雙語 UI**：頂部語言切換鈕即時生效
@@ -87,6 +88,7 @@ webcom/
 ├── WinPE_Autorun.bat           ← WinPE 環境自動啟動腳本
 ├── diagnose_system.py          ← 32 項全方位硬體、相依性與完整性自我檢測工具 (CLI)
 ├── self_test.bat               ← Windows 一鍵執行系統自我檢測批次檔
+├── rag_docs/                   ← PDF/文件經 MarkItDown 轉檔後之 Markdown (.md) 實體儲存目錄
 ├── mcp/
 │   └── mcp_servers.json        ← MCP Server 設定
 └── assets/                     ← 前端依賴（不含 *.wasm 引擎，見下方說明）

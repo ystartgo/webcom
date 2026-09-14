@@ -1952,6 +1952,22 @@
                             class="w-full bg-black border border-gray-700 rounded-lg p-2.5 text-xs text-gray-200 focus:border-emerald-500 focus:outline-none resize-none font-mono"
                             placeholder="貼上文件文本內容..."></textarea>
                     </div>
+                    <!-- 轉檔與實體硬碟儲存狀態條 (Persistent Saved Banner) -->
+                    <div id="rag-saved-banner" class="hidden p-2 rounded-lg bg-emerald-950/60 border border-emerald-500/40 text-[11px] text-emerald-300 flex items-center justify-between font-mono">
+                        <div class="flex items-center gap-1.5 min-w-0 flex-1 pr-2 truncate">
+                            <i data-lucide="file-check" class="w-3.5 h-3.5 text-emerald-400 shrink-0"></i>
+                            <span class="text-gray-400 shrink-0" data-i18n="ragSavedToLabel">已存檔:</span>
+                            <span id="rag-saved-path-text" class="text-emerald-200 truncate select-all font-mono text-[10.5px]"></span>
+                        </div>
+                        <div class="flex items-center gap-1.5 shrink-0">
+                            <button id="btn-reveal-rag-file" type="button" class="px-2 py-0.5 rounded bg-gray-800 hover:bg-gray-700 text-cyan-300 border border-cyan-800/50 flex items-center gap-1 text-[10px] cursor-pointer" title="在檔案總管中選取並開啟" data-i18n-title="ragBtnRevealTitle">
+                                <i data-lucide="folder" class="w-3 h-3"></i> <span data-i18n="ragBtnReveal">資料夾</span>
+                            </button>
+                            <button id="btn-download-rag-file" type="button" class="px-2 py-0.5 rounded bg-gray-800 hover:bg-gray-700 text-emerald-300 border border-emerald-800/50 flex items-center gap-1 text-[10px] cursor-pointer" title="下載 Markdown (.md) 檔" data-i18n-title="ragBtnDownloadTitle">
+                                <i data-lucide="download" class="w-3 h-3"></i> <span data-i18n="ragBtnDownload">下載 .md</span>
+                            </button>
+                        </div>
+                    </div>
                     <div class="flex justify-between items-center pt-1">
                         <div class="flex items-center gap-2">
                             <span class="text-xs text-gray-400" data-i18n="ragChunkSize">分塊大小:</span>
@@ -3555,6 +3571,18 @@ ffmpeg -f pulse -i default -acodec libmp3lame -ab 128k -f mp3 -listen 1 http://0
                 audioPlaying: "音訊: 播放中",
                 audioTestTone: "測試音",
                 keySettingsTitle: "按鍵與快捷鍵自訂設置",
+            btnDelete: "刪除",
+            noCustomKeysTerm: "尚未添加自訂按鍵",
+            noCustomKeysRemote: "尚未添加自訂遠端快捷鍵",
+            promptEnterTermKey: "請輸入按鍵標籤與送出指令",
+            promptEnterRemoteKey: "請輸入按鍵標籤",
+            ragSavedToLabel: "已存檔:",
+            ragBtnReveal: "資料夾",
+            ragBtnDownload: "下載 .md",
+            ragBtnRevealTitle: "在檔案總管中選取並開啟所在資料夾",
+            ragBtnDownloadTitle: "下載 Markdown (.md) 檔案",
+            ragSavedSuccess: "文件解析完成，已轉為 Markdown 並存至資料夾：",
+
                 btnKeySettings: "按鍵設置",
                 tabTermKeys: "終端機按鍵",
                 tabRemoteKeys: "遠端桌面快捷鍵",
@@ -4884,6 +4912,18 @@ ffmpeg -f pulse -i default -acodec libmp3lame -ab 128k -f mp3 -listen 1 http://0
                 audioVolume: "Volume:",
                 keySettingsBtn: "Key Settings",
             keySettingsTitle: "Keypad & Shortcuts Settings",
+            btnDelete: "Delete",
+            noCustomKeysTerm: "No custom macro keys added",
+            noCustomKeysRemote: "No custom remote combos added",
+            promptEnterTermKey: "Please enter key label and command",
+            promptEnterRemoteKey: "Please enter key label",
+            ragSavedToLabel: "Saved:",
+            ragBtnReveal: "Folder",
+            ragBtnDownload: "Download .md",
+            ragBtnRevealTitle: "Select and reveal file in File Explorer",
+            ragBtnDownloadTitle: "Download Markdown (.md) file",
+            ragSavedSuccess: "Document parsed, converted to Markdown and saved to:",
+
             tabTermKeys: "Terminal Keys",
             tabRemoteKeys: "Remote Desktop Keys",
             tabAudioConfig: "Audio Config",
@@ -6616,6 +6656,8 @@ ffmpeg -f pulse -i default -acodec libmp3lame -ab 128k -f mp3 -listen 1 http://0
             renderGuideContent(currentLang);
             if (typeof renderMainProfileSelect === 'function') renderMainProfileSelect();
             if (typeof renderModalProfileSelect === 'function') renderModalProfileSelect();
+            if (typeof syncKeySettingsToModal === 'function') syncKeySettingsToModal();
+            if (typeof renderRemoteShortcuts === 'function') renderRemoteShortcuts();
 
             // ── Daemon Modal 含 HTML 內容的翻譯 (innerHTML, not textContent) ──
             const daemonRestartDesc = document.getElementById('daemon-restart-desc');
@@ -8278,6 +8320,47 @@ ffmpeg -f pulse -i default -acodec libmp3lame -ab 128k -f mp3 -listen 1 http://0
             return chunks.length > 0 ? chunks : [text];
         }
 
+        function downloadMarkdownFile(filename, content) {
+            if (!filename) filename = 'document.md';
+            if (!filename.endsWith('.md')) filename += '.md';
+            const blob = new Blob(['\uFEFF', content], { type: 'text/markdown;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.style.display = 'none';
+            a.href = url;
+            a.download = filename;
+            a.setAttribute('download', filename);
+            document.body.appendChild(a);
+            a.click();
+            setTimeout(() => {
+                try {
+                    if (a.parentNode) a.parentNode.removeChild(a);
+                    URL.revokeObjectURL(url);
+                } catch (e) {}
+            }, 2500);
+        }
+        window.downloadMarkdownFile = downloadMarkdownFile;
+
+        async function revealFileInOs(path) {
+            if (!path) return;
+            try {
+                const ep = (typeof appSettings !== 'undefined' && appSettings?.daemonEndpoint) ? appSettings.daemonEndpoint : 'http://127.0.0.1:8001';
+                const res = await fetchWithTimeout(`${ep}/api/reveal_file`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ path }),
+                    timeout: 4000
+                });
+                const data = await res.json();
+                if (data.status !== 'success') {
+                    showUploadToast(`❌ ${data.error || '無法開啟路徑'}`, true);
+                }
+            } catch (e) {
+                showUploadToast(`❌ 常駐服務未連線: ${e.message}`, true);
+            }
+        }
+        window.revealFileInOs = revealFileInOs;
+
         function renderRagDocList() {
             const listEl = document.getElementById('rag-doc-list');
             const totalChunksEl = document.getElementById('rag-total-chunks');
@@ -8291,27 +8374,60 @@ ffmpeg -f pulse -i default -acodec libmp3lame -ab 128k -f mp3 -listen 1 http://0
                 return;
             }
 
+            const dlTitle = (typeof currentLang !== 'undefined' && currentLang === 'en') ? 'Download Markdown (.md)' : '下載 Markdown (.md)';
+            const folderTitle = (typeof currentLang !== 'undefined' && currentLang === 'en') ? 'Reveal in Explorer' : '在檔案總管開啟所在資料夾';
+
             appSettings.ragDocs.forEach((doc, idx) => {
                 totalChunks += doc.chunks?.length || 1;
                 const div = document.createElement('div');
                 div.className = "p-2.5 rounded-lg bg-black border border-gray-800 flex justify-between items-center text-xs";
+                const hasPath = !!doc.savedPath;
+                const pathDisplay = hasPath ? (doc.savedPath.split(/[\\/]/).pop()) : '';
                 div.innerHTML = `
                     <div class="flex-1 min-w-0 pr-2">
-                        <div class="font-bold text-emerald-400 truncate">${doc.title || 'Untitled'}</div>
+                        <div class="font-bold text-emerald-400 truncate flex items-center gap-1.5">
+                            <span class="truncate">${escapeHtml(doc.title || 'Untitled')}</span>
+                            ${hasPath ? '<span class="text-[9px] px-1 py-0.2 rounded bg-emerald-950 text-emerald-300 border border-emerald-800/80 font-mono shrink-0">MD 實體檔案</span>' : ''}
+                        </div>
                         <div class="text-[11px] text-gray-400 flex items-center gap-2 mt-0.5 font-mono">
                             <span>${doc.chunks?.length || 1} ${t('ragChunksUnit')}</span>
                             <span>•</span>
-                            <span>${doc.content.length} ${t('ragCharsUnit')}</span>
+                            <span>${(doc.content || '').length} ${t('ragCharsUnit')}</span>
+                            ${hasPath ? `<span class="text-gray-500 truncate max-w-[180px]" title="${escapeHtml(doc.savedPath)}">• ${escapeHtml(pathDisplay)}</span>` : ''}
                         </div>
                     </div>
-                    <button class="btn-del-rag text-red-400 hover:text-red-300 p-1 rounded hover:bg-gray-800 transition" data-idx="${idx}" title="${t('ragDelete')}">
-                        <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
-                    </button>
+                    <div class="flex items-center gap-1 shrink-0">
+                        ${hasPath ? `
+                        <button class="btn-reveal-rag-item text-gray-400 hover:text-cyan-300 p-1 rounded hover:bg-gray-800 transition cursor-pointer" data-path="${escapeHtml(doc.savedPath)}" title="${folderTitle}">
+                            <i data-lucide="folder" class="w-3.5 h-3.5"></i>
+                        </button>` : ''}
+                        <button class="btn-download-rag-item text-gray-400 hover:text-emerald-300 p-1 rounded hover:bg-gray-800 transition cursor-pointer" data-idx="${idx}" title="${dlTitle}">
+                            <i data-lucide="download" class="w-3.5 h-3.5"></i>
+                        </button>
+                        <button class="btn-del-rag text-red-400 hover:text-red-300 p-1 rounded hover:bg-gray-800 transition cursor-pointer" data-idx="${idx}" title="${t('ragDelete')}">
+                            <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                        </button>
+                    </div>
                 `;
                 listEl.appendChild(div);
             });
 
             totalChunksEl.textContent = `${totalChunks} ${t('ragChunksUnit')}`;
+
+            listEl.querySelectorAll('.btn-reveal-rag-item').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const p = e.currentTarget.getAttribute('data-path');
+                    if (p) revealFileInOs(p);
+                });
+            });
+
+            listEl.querySelectorAll('.btn-download-rag-item').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const idx = parseInt(e.currentTarget.getAttribute('data-idx'));
+                    const doc = appSettings.ragDocs[idx];
+                    if (doc) downloadMarkdownFile(doc.title, doc.content);
+                });
+            });
 
             listEl.querySelectorAll('.btn-del-rag').forEach(btn => {
                 btn.addEventListener('click', (e) => {
@@ -8321,7 +8437,7 @@ ffmpeg -f pulse -i default -acodec libmp3lame -ab 128k -f mp3 -listen 1 http://0
                     renderRagDocList();
                 });
             });
-            lucide.createIcons();
+            if (window.lucide) lucide.createIcons();
         }
 
         function retrieveRelevantKnowledge(query, topK = 3) {
@@ -8480,7 +8596,7 @@ ffmpeg -f pulse -i default -acodec libmp3lame -ab 128k -f mp3 -listen 1 http://0
                         reader.onerror = rej;
                         reader.readAsDataURL(file);
                     });
-                    showUploadToast(`⏳ 正在由 Microsoft MarkItDown 轉檔 <b>${file.name}</b>...`);
+                    showUploadToast(currentLang === 'en' ? `⏳ Converting <b>${escapeHtml(file.name)}</b> via Microsoft MarkItDown...` : `⏳ 正在由 Microsoft MarkItDown 轉檔 <b>${escapeHtml(file.name)}</b>...`);
                     const res = await fetchWithTimeout(`${appSettings.daemonEndpoint}/tools/parse_document`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
@@ -8491,9 +8607,31 @@ ffmpeg -f pulse -i default -acodec libmp3lame -ab 128k -f mp3 -listen 1 http://0
                     const data = await res.json();
                     if (data.status === 'success') {
                         const mdText = data.text || data.markdown || '';
-                        document.getElementById('rag-doc-title').value = file.name;
+                        const savedPath = data.saved_root_path || data.saved_path || '';
+                        const savedFilename = data.saved_filename || (file.name.replace(/\.[^/.]+$/, "") + ".md");
+                        document.getElementById('rag-doc-title').value = savedFilename;
                         document.getElementById('rag-doc-content').value = mdText;
-                        showUploadToast(`✅ <b>${file.name}</b> 已由 MarkItDown 轉為 Markdown (${(data.char_count || mdText.length).toLocaleString()} 字) 並填入知識庫！`);
+
+                        window.lastUploadedRagDoc = {
+                            savedPath: savedPath,
+                            downloadUrl: data.download_url || '',
+                            filename: savedFilename,
+                            content: mdText
+                        };
+
+                        const banner = document.getElementById('rag-saved-banner');
+                        const pathTxt = document.getElementById('rag-saved-path-text');
+                        if (banner && pathTxt) {
+                            pathTxt.textContent = savedPath;
+                            pathTxt.title = savedPath;
+                            banner.classList.remove('hidden');
+                            if (window.lucide) lucide.createIcons();
+                        }
+
+                        const toastMsg = (typeof currentLang !== 'undefined' && currentLang === 'en')
+                            ? `✅ <b>${escapeHtml(file.name)}</b> converted to Markdown and saved to folder:<br><code class="text-[10px] text-emerald-300 select-all">${escapeHtml(savedPath)}</code>`
+                            : `✅ <b>${escapeHtml(file.name)}</b> 已由 MarkItDown 轉為 Markdown 並永久儲存至資料夾：<br><code class="text-[10px] text-emerald-300 select-all">${escapeHtml(savedPath)}</code>`;
+                        showUploadToast(toastMsg);
                     } else {
                         alert(`❌ ${file.name} 解析失敗: ${data.error}`);
                     }
@@ -8504,12 +8642,53 @@ ffmpeg -f pulse -i default -acodec libmp3lame -ab 128k -f mp3 -listen 1 http://0
             e.target.value = '';
         });
 
-        document.getElementById('btn-add-rag-doc').addEventListener('click', () => {
+        // Banner 按鈕監聽 (Reveal in Folder & Download .md)
+        document.getElementById('btn-reveal-rag-file')?.addEventListener('click', () => {
+            if (window.lastUploadedRagDoc?.savedPath) {
+                revealFileInOs(window.lastUploadedRagDoc.savedPath);
+            }
+        });
+        document.getElementById('btn-download-rag-file')?.addEventListener('click', () => {
+            if (window.lastUploadedRagDoc?.content) {
+                downloadMarkdownFile(window.lastUploadedRagDoc.filename || 'document.md', window.lastUploadedRagDoc.content);
+            }
+        });
+
+        document.getElementById('btn-add-rag-doc').addEventListener('click', async () => {
             const title = document.getElementById('rag-doc-title').value.trim() || 'Untitled Document';
             const content = document.getElementById('rag-doc-content').value.trim();
             const chunkSize = parseInt(document.getElementById('rag-chunk-size').value) || 400;
 
             if (!content) return alert(currentLang === 'en' ? 'Please enter or upload document content.' : '請輸入或上傳文件內容！');
+
+            let savedPath = (window.lastUploadedRagDoc && (window.lastUploadedRagDoc.filename === title || window.lastUploadedRagDoc.content === content))
+                ? window.lastUploadedRagDoc.savedPath : '';
+            let downloadUrl = (window.lastUploadedRagDoc && (window.lastUploadedRagDoc.filename === title || window.lastUploadedRagDoc.content === content))
+                ? window.lastUploadedRagDoc.downloadUrl : '';
+
+            // 若為手動貼入文字且後端在線，自動存檔至 rag_docs/ 目錄
+            if (!savedPath && typeof checkDaemonHealth === 'function') {
+                try {
+                    const isOnline = await checkDaemonHealth();
+                    if (isOnline) {
+                        const ep = (typeof appSettings !== 'undefined' && appSettings?.daemonEndpoint) ? appSettings.daemonEndpoint : 'http://127.0.0.1:8001';
+                        const fn = title.endsWith('.md') ? title : `${title}.md`;
+                        const res = await fetchWithTimeout(`${ep}/api/rag/save`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ filename: fn, content: content }),
+                            timeout: 5000
+                        });
+                        if (res.ok) {
+                            const data = await res.json();
+                            if (data.status === 'success') {
+                                savedPath = data.saved_root_path || data.saved_path || '';
+                                downloadUrl = data.download_url || '';
+                            }
+                        }
+                    }
+                } catch(e) {}
+            }
 
             const chunks = chunkText(content, chunkSize);
             const docObj = {
@@ -8517,6 +8696,8 @@ ffmpeg -f pulse -i default -acodec libmp3lame -ab 128k -f mp3 -listen 1 http://0
                 title,
                 content,
                 chunks,
+                savedPath,
+                downloadUrl,
                 date: new Date().toISOString()
             };
 
@@ -8526,6 +8707,10 @@ ffmpeg -f pulse -i default -acodec libmp3lame -ab 128k -f mp3 -listen 1 http://0
 
             document.getElementById('rag-doc-title').value = '';
             document.getElementById('rag-doc-content').value = '';
+            const banner = document.getElementById('rag-saved-banner');
+            if (banner) banner.classList.add('hidden');
+            window.lastUploadedRagDoc = null;
+
             alert(currentLang === 'en' ? `Successfully added & indexed (${chunks.length} chunks)` : `文件已成功收錄並建立 ${chunks.length} 個分塊索引！`);
         });
 
@@ -14611,6 +14796,7 @@ Important guidelines:
             let extractedImages = [];
             let tablesCount = 0;
             let engineUsed = 'markitdown';
+            let savedDiskPath = '';
 
             if (isDaemonOnline) {
                 try {
@@ -14637,6 +14823,7 @@ Important guidelines:
                             extractedImages = data.images || [];
                             tablesCount = data.tables_count || 0;
                             engineUsed = data.engine || 'markitdown';
+                            savedDiskPath = data.saved_root_path || data.saved_path || '';
                         }
                     }
                 } catch (err) {
@@ -14679,7 +14866,7 @@ Important guidelines:
             }
 
             // 2. 加入附件膠囊列
-            attachedDocs.push({ name: file.name, sizeKb, charCount, markdown: parsedText });
+            attachedDocs.push({ name: file.name, sizeKb, charCount, markdown: parsedText, savedPath: savedDiskPath });
             renderDocAttachments();
 
             // 3. 自動建立 RAG 向量知識庫索引
@@ -14691,6 +14878,7 @@ Important guidelines:
                     title: file.name,
                     content: parsedText,
                     chunks: chunks,
+                    savedPath: savedDiskPath,
                     date: new Date().toISOString()
                 };
                 appSettings.ragDocs = appSettings.ragDocs || [];
@@ -15411,6 +15599,11 @@ Important guidelines:
 
             // Render Term custom keys list in modal
             const listEl = document.getElementById('cfg-term-custom-list');
+            const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en');
+            const delBtnText = isEn ? 'Delete' : '刪除';
+            const emptyTermText = isEn ? 'No custom macro keys added' : '尚未添加自訂按鍵';
+            const emptyRemoteText = isEn ? 'No custom remote combos added' : '尚未添加自訂遠端快捷鍵';
+
             if (listEl) {
                 let html = '';
                 (tc.customKeys || []).forEach((k, idx) => {
@@ -15419,12 +15612,12 @@ Important guidelines:
                             <span class="px-2 py-0.5 rounded font-mono font-bold bg-purple-950 text-purple-300 border border-purple-800">${k.label}</span>
                             <span class="font-mono text-gray-400 text-[11px]">${k.cmd.replace(/\n/g, ' ↵')}</span>
                         </div>
-                        <button type="button" onclick="deleteCustomTermKey(${idx})" class="text-rose-400 hover:text-rose-300 px-2 py-0.5 rounded hover:bg-gray-800 cursor-pointer">
-                            刪除
+                        <button type="button" onclick="deleteCustomTermKey(${idx})" class="text-rose-400 hover:text-rose-300 px-2 py-0.5 rounded hover:bg-gray-800 cursor-pointer" title="${delBtnText}">
+                            ${delBtnText}
                         </button>
                     </div>`;
                 });
-                listEl.innerHTML = html || '<div class="text-gray-500 text-[11px]">尚未添加自訂按鍵</div>';
+                listEl.innerHTML = html || `<div class="text-gray-500 text-[11px]">${emptyTermText}</div>`;
             }
 
             // Remote Presets
@@ -15441,17 +15634,21 @@ Important guidelines:
             if (rListEl) {
                 let html = '';
                 (rc.customKeys || []).forEach((k, idx) => {
+                    let displayLabel = k.label;
+                    if (displayLabel === 'Win 徽標' || displayLabel === 'Win 標誌' || displayLabel === 'Win Key') {
+                        displayLabel = isEn ? 'Win Key' : 'Win 標誌';
+                    }
                     html += `<div class="flex items-center justify-between p-2 bg-gray-900 rounded border border-gray-800 text-xs">
                         <div class="flex items-center gap-2">
-                            <span class="px-2 py-0.5 rounded font-mono font-bold bg-cyan-950 text-cyan-300 border border-cyan-800">${k.label}</span>
+                            <span class="px-2 py-0.5 rounded font-mono font-bold bg-cyan-950 text-cyan-300 border border-cyan-800">${displayLabel}</span>
                             <span class="font-mono text-gray-400 text-[11px]">${k.action}</span>
                         </div>
-                        <button type="button" onclick="deleteCustomRemoteKey(${idx})" class="text-rose-400 hover:text-rose-300 px-2 py-0.5 rounded hover:bg-gray-800 cursor-pointer">
-                            刪除
+                        <button type="button" onclick="deleteCustomRemoteKey(${idx})" class="text-rose-400 hover:text-rose-300 px-2 py-0.5 rounded hover:bg-gray-800 cursor-pointer" title="${delBtnText}">
+                            ${delBtnText}
                         </button>
                     </div>`;
                 });
-                rListEl.innerHTML = html || '<div class="text-gray-500 text-[11px]">尚未添加自訂遠端快捷鍵</div>';
+                rListEl.innerHTML = html || `<div class="text-gray-500 text-[11px]">${emptyRemoteText}</div>`;
             }
 
             // Audio settings in modal
@@ -15471,7 +15668,7 @@ Important guidelines:
             const cmd = (document.getElementById('cfg-new-term-cmd')?.value || '').trim();
             const color = document.getElementById('cfg-new-term-color')?.value || 'gray';
             if (!label || !cmd) {
-                alert('請輸入按鍵標籤與送出指令');
+                alert((typeof currentLang !== 'undefined' && currentLang === 'en') ? 'Please enter key label and command' : '請輸入按鍵標籤與送出指令');
                 return;
             }
             if (!userKeyConfig.term.customKeys) userKeyConfig.term.customKeys = [];
@@ -15494,7 +15691,7 @@ Important guidelines:
             const label = (document.getElementById('cfg-new-remote-label')?.value || '').trim();
             const action = document.getElementById('cfg-new-remote-action')?.value || 'f11';
             if (!label) {
-                alert('請輸入按鍵標籤');
+                alert((typeof currentLang !== 'undefined' && currentLang === 'en') ? 'Please enter key label' : '請輸入按鍵標籤');
                 return;
             }
             if (!userKeyConfig.remote.customKeys) userKeyConfig.remote.customKeys = [];
