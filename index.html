@@ -9348,8 +9348,14 @@ ffmpeg -f pulse -i default -acodec libmp3lame -ab 128k -f mp3 -listen 1 http://0
                 if (retrieved.length > 0) {
                     const isEn = (currentLang === 'en');
                     const guidance = isEn
-                        ? `\n\n[RAG Focus Rule]: The retrieved knowledge context above is your primary source of truth. Focus directly on the retrieved knowledge chunks without being distracted by earlier irrelevant historical dialogue.`
-                        : `\n\n【RAG 專注回答準則】：上方檢索之文件知識為當前問題之最高權威依據。請直接依據上述檢索內容作答，無需受限或過度追溯過往離題之歷史對話紀錄。`;
+                        ? `\n\n[RAG Knowledge Integration & Engineering Evaluation Rules]:
+1. [Specifications Grounding]: The retrieved knowledge context provides factual basis and component specifications for your answer.
+2. [Active Technical Evaluation & Sizing]: When the user asks for evaluations, sizing, estimations, or architecture design (e.g. PCB area/dimensions, WiFi 4+4+4 RF frontend, dual PoE, switchable PSE), NEVER refuse to evaluate simply because the text lacks ready-made dimensions! Actively break down modules (RF FEM, PoE PD/transformers, PSE MOSFETs/DC-DC, SoC/power), compute modular footprints, and deliver concrete recommended dimensions (length x width in mm, area in cm², and recommended PCB layer counts).`
+                        : `\n\n【RAG 知識整合與專業工程推估準則】：
+1. 【規格與基準依據】：上方檢索到的知識庫內容為相關元件、協定與系統規格之基準依據，請專注針對當前問題作答。
+2. 【積極專業評估與工程推算】：若使用者提出「評估」、「估算」、「可行性分析」、「尺寸/面積計算」、「架構設計」等實務工程問題（例如：評估 PCB 尺寸、WiFi 4+4+4 射頻前端、雙 PoE 輸入與可切換 PSE 佔板面積）：
+   - 即使檢索文件中沒有現成的固定尺寸或現成解答，也【絕對不可拒絕評估或不敢推估】！
+   - 請以資深硬體／系統架構師的專業視角，積極結合檢索到的元件參數與業界通用工程設計規範（如常見晶片封裝、RF 前端 FEM/天線佈局、PoE 變壓器、大功率 PSE MOSFET 散熱、安全間距與走線通道），條理清晰地拆解各模組面積，並給出具體明確的建議 PCB 尺寸（長×寬 mm、總面積 cm²、建議板層數）與佈局建議！`;
                     ragContext = `\n\n【RAG 知識庫檢索結果 (Knowledge Context)】\n` +
                         retrieved.map((r, i) => `[文件: ${r.docTitle}] (相關度: ${r.score})\n${r.chunk}`).join('\n---\n') + guidance;
                 }
@@ -9477,10 +9483,11 @@ The system will automatically merge all parts into a single completed file witho
 
 Rules:
 1. [Web Search Priority]: When Web Search toggle is active and user asks general/live/weather/news/factual questions, PRIORITIZE calling web_search or using retrieved web results! NEVER call read_frontend_terminal for web queries!
-2. When asked to execute commands or interact with the left workspace, call the appropriate tool via <tool_call>.
-3. The frontend will automatically execute your tool call and return the result in <tool_response>. Summarize the result for the user once received.
-4. For general conceptual questions or greetings, answer directly with text without calling tools.
-5. Call one tool at a time.`;
+2. [Engineering Evaluation Principle]: When asked for design evaluations, sizing, or hardware layout estimations (e.g. PCB area for WiFi RF, PoE, PSE), actively break down component footprints and provide concrete numerical estimates. Never refuse to evaluate due to lack of a ready-made number in the text.
+3. When asked to execute commands or interact with the left workspace, call the appropriate tool via <tool_call>.
+4. The frontend will automatically execute your tool call and return the result in <tool_response>. Summarize the result for the user once received.
+5. For general conceptual questions or greetings, answer directly with text without calling tools.
+6. Call one tool at a time.`;
             } else {
                 const timeString = now.toLocaleString('zh-TW', { timeZone: 'Asia/Taipei' });
                 if (!enableAgent) {
@@ -9563,10 +9570,11 @@ ${tools.join('\n')}${contextStr}
 
 重要行為準則：
 1. 【聯網搜尋最高優先準則】：當「聯網」開關開啟時，若使用者提問涉及時事、新聞、天氣、查詢資料、名詞概念、外部知識或非終端機指令問題，你【必須優先調用 web_search 工具】或直接依據檢索結果作答！【嚴禁答非所問】：絕不可在此類提問時去呼叫 read_frontend_terminal 或觀看左側終端機！
-2. 當使用者明確要求操作左側終端、執行命令（如 dir, ls, shell）或查詢本機狀態時，輸出 <tool_call> 調用對應終端機工具。
-3. 前端系統會自動攔截工具呼叫、執行動作並回傳 <tool_response>，收到回傳後請根據結果為使用者整理並直接給出完整回答。
-4. 日常閒聊、概念諮詢或自我介紹時，直接以文字回答，無需呼叫工具。
-5. 每次只呼叫一個工具。`;
+2. 【工程評估與規格延伸原則】：當使用者要求進行評估、估算、硬體佈局（例如 PCB 尺寸、WiFi 射頻、PoE、PSE 面積）或技術方案時，即使檢索資料未記載現成數值，也請以資深工程專家角度積極拆解各子模組進行推估與面積加總，給出具體明確的數據與建議尺寸，切勿拒絕評估！
+3. 當使用者明確要求操作左側終端、執行命令（如 dir, ls, shell）或查詢本機狀態時，輸出 <tool_call> 調用對應終端機工具。
+4. 前端系統會自動攔截工具呼叫、執行動作並回傳 <tool_response>，收到回傳後請根據結果為使用者整理並直接給出完整回答。
+5. 日常閒聊、概念諮詢或自我介紹時，直接以文字回答，無需呼叫工具。
+6. 每次只呼叫一個工具。`;
             }
         }
 
