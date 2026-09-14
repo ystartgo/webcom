@@ -313,17 +313,23 @@
             </div>
 
             <!-- 終端機模式控制項 (Terminal Actions) -->
-            <div id="actions-left-term" class="flex items-center gap-2.5">
+            <div id="actions-left-term" class="flex items-center gap-2">
                 <span id="ai-active-badge" class="hidden text-[11px] px-2 py-0.5 rounded bg-purple-950/80 text-purple-300 border border-purple-700/60 items-center gap-1 font-mono transition-all">
                     <i data-lucide="bot" class="w-3.5 h-3.5 text-purple-400 animate-pulse"></i>
                     <span id="ai-active-badge-text">AI 執行中</span>
                 </span>
+                <button id="btn-term-xinit" type="button" onclick="runXinitInTerm()"
+                    class="text-xs px-2 py-0.5 rounded bg-emerald-950/80 hover:bg-emerald-900 text-emerald-300 border border-emerald-600/50 flex items-center gap-1 font-mono transition cursor-pointer"
+                    title="在終端機執行 xinit 並自動切換至 Xorg 視窗" data-i18n-title="tooltipTermXinit">
+                    <i data-lucide="play" class="w-3 h-3 text-emerald-400"></i>
+                    <span data-i18n="btnTermXinit">xinit 桌面</span>
+                </button>
+                <span class="text-gray-700">|</span>
                 <button id="btn-export-log"
                     class="text-xs text-blue-400 hover:text-blue-300 flex items-center gap-1 font-medium transition"
                     title="匯出終端機日誌" data-i18n-title="tooltipExportLog">
                     <i data-lucide="download" class="w-3.5 h-3.5"></i> <span data-i18n="exportLog">匯出 LOG</span>
                 </button>
-                <span class="text-gray-700">|</span>
                 <button id="btn-clear-term"
                     class="text-xs text-gray-400 hover:text-white flex items-center gap-1 font-medium transition">
                     <i data-lucide="eraser" class="w-3.5 h-3.5"></i> <span data-i18n="clearTerm">清除畫面</span>
@@ -346,6 +352,11 @@
 
             <!-- Xorg 模式控制項 (Xorg Actions) -->
             <div id="actions-left-xorg" class="flex items-center gap-2 hidden">
+                <button id="btn-xorg-xinit" type="button" onclick="handleXinitLaunch()"
+                    class="text-xs px-2 py-0.5 rounded bg-teal-950/80 hover:bg-teal-900 text-teal-300 border border-teal-600/50 flex items-center gap-1 font-mono transition cursor-pointer"
+                    title="透過 xinit 啟動 / 重啟 X 會話並即時連線" data-i18n-title="tooltipXorgXinit">
+                    <i data-lucide="zap" class="w-3 h-3 text-teal-400"></i> <span data-i18n="btnXorgXinit">xinit 啟動</span>
+                </button>
                 <button id="btn-xorg-wizard" type="button" onclick="openXorgWizardModal()"
                     class="text-xs px-2 py-0.5 rounded bg-emerald-950/80 hover:bg-emerald-900 text-emerald-300 border border-emerald-600/50 flex items-center gap-1 font-medium transition"
                     title="WSL2 / Linux Xorg 一鍵啟動精靈與指令範例" data-i18n-title="tooltipXorgWizard">
@@ -727,6 +738,11 @@
                         class="px-2 py-0.5 rounded bg-gray-800 hover:bg-gray-700 text-emerald-300 border border-emerald-700/50 flex items-center gap-1 text-[11px] cursor-pointer transition shadow-sm"
                         title="在 Xorg 視窗啟動 XFCE 終端機" data-i18n-title="xorgAppTerminalTooltip">
                         <i data-lucide="terminal" class="w-3 h-3 text-emerald-400"></i> <span data-i18n="xorgAppTerminal">終端機</span>
+                    </button>
+                    <button type="button" onclick="handleXinitLaunch('xfce4-session')"
+                        class="px-2 py-0.5 rounded bg-teal-950/80 hover:bg-teal-900 text-teal-300 border border-teal-700/50 flex items-center gap-1 text-[11px] cursor-pointer transition shadow-sm"
+                        title="透過 xinit 啟動 XFCE4 桌面會話" data-i18n-title="xorgAppXinitTooltip">
+                        <i data-lucide="zap" class="w-3 h-3 text-teal-400"></i> <span data-i18n="xorgAppXinit">xinit 桌面</span>
                     </button>
                     <button type="button" onclick="launchWslApp('thunar')"
                         class="px-2 py-0.5 rounded bg-gray-800 hover:bg-gray-700 text-blue-300 border border-blue-700/50 flex items-center gap-1 text-[11px] cursor-pointer transition shadow-sm"
@@ -3012,6 +3028,25 @@ xfce4-terminal &
 thunar &
 mousepad &</pre>
                 </div>
+
+                <div class="p-4 bg-teal-950/20 rounded-xl border border-teal-800/40 space-y-2.5">
+                    <div class="flex items-center justify-between font-bold text-white">
+                        <span class="flex items-center gap-1.5 text-teal-300">
+                            <i data-lucide="zap" class="w-4 h-4"></i> <span data-i18n="xorgModalOpt3">方案三：標準 Linux xinit / startx 會話 (已內建支援)</span>
+                        </span>
+                        <button type="button" onclick="copyXorgCommands('xinit')" class="text-xs px-2 py-0.5 rounded bg-teal-800/60 hover:bg-teal-700 text-teal-200 border border-teal-600/40 cursor-pointer">複製指令</button>
+                    </div>
+                    <pre id="code-xorg-xinit" class="bg-black/70 p-3 rounded-lg border border-gray-800 font-mono text-[11px] text-gray-200 overflow-x-auto select-all"># 支援標準 xinit / startx 指令（自動橋接虛擬 X 顯示器與 HTML5 視窗）
+xinit                  # 啟動完整 XFCE 桌面會話
+xinit xfce4-terminal   # 以 xinit 啟動獨立終端機
+xinit thunar           # 以 xinit 啟動檔案總管
+startx                 # 標準 startx 啟動</pre>
+                    <div class="flex items-center gap-2 pt-1">
+                        <button type="button" onclick="runXorgCommandsInTerm('xinit')" class="px-3 py-1.5 bg-teal-700 hover:bg-teal-600 text-white rounded-lg font-semibold flex items-center gap-1.5 cursor-pointer shadow">
+                            <i data-lucide="play" class="w-3.5 h-3.5 fill-current"></i> <span data-i18n="xorgModalBtnExecXinitInWsl">在終端機執行 xinit 並連線</span>
+                        </button>
+                    </div>
+                </div>
             </div>
             <div class="px-5 py-3 bg-gray-900 border-t border-gray-800 flex justify-between items-center shrink-0">
                 <button type="button" onclick="checkWslStatus(true)" class="text-teal-400 hover:underline text-xs flex items-center gap-1 cursor-pointer">
@@ -3535,11 +3570,13 @@ mousepad &</pre>
                 novncStatusDisconnected: "未連線 (請確認 websockify 服務或 VNC 伺服器運作中)",
                 xorgLaunchAppLabel: "啟動 App:",
                 xorgAppTerminal: "終端機",
+                xorgAppXinit: "xinit 桌面",
                 xorgAppFiles: "檔案總管",
                 xorgAppEditor: "編輯器",
                 xorgAppCalc: "計算機",
                 xorgAppXeyes: "xeyes",
                 xorgAppTerminalTooltip: "在 Xorg 視窗啟動 XFCE 終端機",
+                xorgAppXinitTooltip: "透過 xinit 啟動 XFCE4 桌面會話",
                 xorgAppFilesTooltip: "在 Xorg 視窗啟動 Thunar 檔案總管",
                 xorgAppEditorTooltip: "在 Xorg 視窗啟動 Mousepad 文字編輯器",
                 xorgAppCalcTooltip: "在 Xorg 視窗啟動 X11 計算機",
@@ -3555,6 +3592,10 @@ mousepad &</pre>
                 xorgDisconnectedTitle: "Xorg 視窗伺服器未連線 (DISPLAY=:1)",
                 xorgShortcutsLabel: "視窗快捷鍵:",
                 xorgBtnWizard: "一鍵配置精靈",
+                btnTermXinit: "xinit 桌面",
+                tooltipTermXinit: "在終端機執行 xinit 並自動切換至 Xorg 視窗",
+                btnXorgXinit: "xinit 啟動",
+                tooltipXorgXinit: "透過 xinit 啟動 / 重啟 X 會話並即時連線",
                 xorgEmptyHeroTitle: "Xorg GUI 虛擬視窗環境 (DISPLAY=:1)",
                 xorgEmptyHeroDesc: "可於 Windows/WSL2 或 Docker 中無縫執行 Linux GUI 圖形化程式（如 終端機、Thunar 檔案總管、Mousepad、Firefox 等），並透過 HTML5 零延遲畫布呈現。",
                 xorgBtnViewWslCmd: "查看 WSL 啟動指令",
@@ -3567,8 +3608,10 @@ mousepad &</pre>
                 xorgModalHowItWorks: "工作原理說明",
                 xorgModalOpt1: "方案一：完整桌面服務 (Xvfb + x11vnc + XFCE4 + websockify)",
                 xorgModalOpt2: "方案二：單一 GUI 程式 (Direct App)",
+                xorgModalOpt3: "方案三：標準 Linux xinit / startx 會話 (已內建支援)",
                 xorgModalBtnCopy: "複製指令",
                 xorgModalBtnExecInWsl: "直接於 Webcom WSL 終端機執行",
+                xorgModalBtnExecXinitInWsl: "在終端機執行 xinit 並連線",
                 xorgModalBtnTroubleshoot: "排查 WSL 連線問題",
                 xorgModalBtnClose: "關閉",
                 diagModalTitle: "系統與功能自我檢測工具",
@@ -4104,11 +4147,13 @@ mousepad &</pre>
                 novncStatusDisconnected: "Disconnected (Ensure websockify or VNC server is running)",
                 xorgLaunchAppLabel: "Launch App:",
                 xorgAppTerminal: "Terminal",
+                xorgAppXinit: "xinit Desktop",
                 xorgAppFiles: "Files",
                 xorgAppEditor: "Editor",
                 xorgAppCalc: "Calculator",
                 xorgAppXeyes: "xeyes",
                 xorgAppTerminalTooltip: "Launch XFCE Terminal in Xorg window",
+                xorgAppXinitTooltip: "Launch XFCE4 session via xinit",
                 xorgAppFilesTooltip: "Launch Thunar File Manager in Xorg window",
                 xorgAppEditorTooltip: "Launch Mousepad Text Editor in Xorg window",
                 xorgAppCalcTooltip: "Launch X11 Calculator in Xorg window",
@@ -4124,6 +4169,10 @@ mousepad &</pre>
                 xorgDisconnectedTitle: "Xorg Window Server Disconnected (DISPLAY=:1)",
                 xorgShortcutsLabel: "Window Shortcuts:",
                 xorgBtnWizard: "Setup Wizard",
+                btnTermXinit: "xinit Desktop",
+                tooltipTermXinit: "Run xinit in terminal and switch to Xorg window",
+                btnXorgXinit: "xinit Session",
+                tooltipXorgXinit: "Launch / restart X session via xinit and connect",
                 xorgEmptyHeroTitle: "Xorg GUI Virtual Window Environment (DISPLAY=:1)",
                 xorgEmptyHeroDesc: "Run Linux GUI applications (Terminal, Thunar, Mousepad, Firefox, etc.) seamlessly in Windows/WSL2 or Docker, rendered via low-latency HTML5 canvas.",
                 xorgBtnViewWslCmd: "View WSL Commands",
@@ -4136,8 +4185,10 @@ mousepad &</pre>
                 xorgModalHowItWorks: "How It Works",
                 xorgModalOpt1: "Option 1: Full Desktop Service (Xvfb + x11vnc + XFCE4 + websockify)",
                 xorgModalOpt2: "Option 2: Single GUI Application (Direct App)",
+                xorgModalOpt3: "Option 3: Standard Linux xinit / startx Session (Built-in Support)",
                 xorgModalBtnCopy: "Copy Command",
                 xorgModalBtnExecInWsl: "Run directly in Webcom WSL Terminal",
+                xorgModalBtnExecXinitInWsl: "Run xinit in Terminal & Connect",
                 xorgModalBtnTroubleshoot: "Troubleshoot WSL Connection",
                 xorgModalBtnClose: "Close",
                 diagModalTitle: "System & Functional Self-Test",
@@ -15458,7 +15509,7 @@ Important guidelines:
         window.closeXorgWizardModal = closeXorgWizardModal;
 
         function copyXorgCommands(scheme) {
-            const id = scheme === 'fluxbox' ? 'code-xorg-fluxbox' : 'code-xorg-singleapp';
+            const id = scheme === 'fluxbox' ? 'code-xorg-fluxbox' : (scheme === 'xinit' ? 'code-xorg-xinit' : 'code-xorg-singleapp');
             const el = document.getElementById(id);
             if (el) {
                 navigator.clipboard.writeText(el.innerText || el.textContent || '').then(() => {
@@ -15473,7 +15524,7 @@ Important guidelines:
         async function runXorgCommandsInTerm(scheme) {
             closeXorgWizardModal();
             switchLeftMode('term');
-            const id = scheme === 'fluxbox' ? 'code-xorg-fluxbox' : 'code-xorg-singleapp';
+            const id = scheme === 'fluxbox' ? 'code-xorg-fluxbox' : (scheme === 'xinit' ? 'code-xorg-xinit' : 'code-xorg-singleapp');
             const el = document.getElementById(id);
             if (!el) return;
             const raw = (el.innerText || el.textContent || '').trim();
@@ -15483,9 +15534,51 @@ Important guidelines:
                     await sendCommandToTerminal(cmd);
                 }
             }
-            alert('已將 Xorg 啟動指令依序發送至終端機執行！完成後切換至「Xorg 視窗」分頁即可開始使用。');
+            alert('已將 Xorg / xinit 啟動指令依序發送至終端機執行！完成後切換至「Xorg 視窗」分頁即可開始使用。');
         }
         window.runXorgCommandsInTerm = runXorgCommandsInTerm;
+
+        async function runXinitInTerm() {
+            switchLeftMode('term');
+            const protoSelect = document.getElementById('conn-protocol');
+            if (protoSelect) {
+                protoSelect.value = 'wsl';
+                if (typeof updateConnFields === 'function') updateConnFields();
+            }
+            if (typeof sendCommandToTerminal === 'function') {
+                await sendCommandToTerminal('xinit');
+            }
+            setTimeout(() => {
+                switchLeftMode('xorg');
+                handleXorgConnect();
+            }, 1200);
+        }
+        window.runXinitInTerm = runXinitInTerm;
+
+        async function handleXinitLaunch(client = 'xfce4-session') {
+            const ep = (typeof appSettings !== 'undefined' && appSettings?.daemonEndpoint) ? appSettings.daemonEndpoint : 'http://127.0.0.1:8001';
+            const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en');
+            const statusEl = document.getElementById('xorg-status');
+            if (statusEl) {
+                statusEl.innerHTML = `<span class="w-2 h-2 rounded-full bg-teal-400 animate-pulse"></span> <span class="text-teal-300">${isEn ? 'Initializing xinit session...' : '透過 xinit 初始化 X 視窗會話中...'}</span>`;
+            }
+            try {
+                const res = await fetch(`${ep}/api/wsl/xinit`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ client, display: ':1' })
+                });
+                if (!res.ok) {
+                    const errData = await res.json().catch(() => ({}));
+                    throw new Error(errData.detail || `HTTP ${res.status}`);
+                }
+                await new Promise(r => setTimeout(r, 600));
+                await handleXorgConnect();
+            } catch (err) {
+                alert((isEn ? 'xinit launch failed: ' : 'xinit 啟動失敗：') + err.message);
+            }
+        }
+        window.handleXinitLaunch = handleXinitLaunch;
 
         // ── WSL 狀態檢查與桌面管理函式 ───────────────────────────────────────
         let lastWslStatus = null;

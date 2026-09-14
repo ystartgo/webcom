@@ -508,6 +508,109 @@ def launch_wsl_app(req: LaunchAppRequest):
     return {"status": "ok", "cmd": clean_cmd, "display": display}
 
 
+def _ensure_wsl_xinit_config():
+    """確保 WSL 內部的 xinit、startx、xserverrc 與 xinitrc 已正確配置為支援 Webcom 虛擬顯示器"""
+    if not shutil.which("wsl.exe"):
+        return
+    try:
+        check_cmd = "[ -x /usr/local/bin/xinit ] && [ -f /etc/X11/xinit/xserverrc ] && grep -q 'Xvfb' /etc/X11/xinit/xserverrc 2>/dev/null"
+        res = subprocess.run(["wsl.exe", "-e", "bash", "-c", check_cmd], capture_output=True, timeout=3)
+        if res.returncode == 0:
+            return
+        
+        # 透過 root 寫入配置
+        init_script = (
+            "mount -o remount,rw /tmp/.X11-unix 2>/dev/null || true; chmod 1777 /tmp/.X11-unix 2>/dev/null || true; "
+            "cat << 'EOF' > /etc/X11/xinit/xserverrc\n"
+            "#!/bin/bash\n"
+            "mount -o remount,rw /tmp/.X11-unix 2>/dev/null || true; chmod 1777 /tmp/.X11-unix 2>/dev/null || true;\n"
+            "DPY=':1'\n"
+            "for arg in \"$@\"; do if [[ \"$arg\" =~ ^:[0-9]+$ ]]; then DPY=\"$arg\"; break; fi; done\n"
+            "DPY_NUM=$(echo \"$DPY\" | sed 's/[^0-9]//g'); [ -z \"$DPY_NUM\" ] && DPY_NUM=1;\n"
+            "VNC_PORT=$((5900 + DPY_NUM)); WS_PORT=6080;\n"
+            "rm -f \"/tmp/.X${DPY_NUM}-lock\" \"/tmp/.X11-unix/X${DPY_NUM}\" 2>/dev/null || true;\n"
+            "(\n"
+            "  for i in $(seq 1 40); do [ -S \"/tmp/.X11-unix/X${DPY_NUM}\" ] || [ -e \"/tmp/.X11-unix/X${DPY_NUM}\" ] && break; sleep 0.05; done;\n"
+            "  if ! pgrep -f \"x11vnc.*${DPY}\" >/dev/null 2>&1; then env -u WAYLAND_DISPLAY x11vnc -display \"$DPY\" -rfbport \"$VNC_PORT\" -nopw -listen 0.0.0.0 -forever -shared -bg -noxrandr -noxdamage >/dev/null 2>&1 || true; fi;\n"
+            "  if ! pgrep -f \"websockify.*${WS_PORT}\" >/dev/null 2>&1; then websockify -D --web /usr/share/novnc \"$WS_PORT\" \"localhost:$VNC_PORT\" >/dev/null 2>&1 || true; fi;\n"
+            ") &\n"
+            "exec /usr/bin/Xvfb \"$DPY\" -screen 0 1920x1080x24 -ac \"$@\"\n"
+            "EOF\n"
+            "chmod 755 /etc/X11/xinit/xserverrc;\n"
+            "cat << 'EOF' > /usr/local/bin/xinit\n"
+            "#!/bin/bash\n"
+            "has_server_args=0; for arg in \"$@\"; do if [ \"$arg\" = \"--\" ]; then has_server_args=1; break; fi; done;\n"
+            "is_d1=0; if [ -e /tmp/.X11-unix/X1 ] || ss -tlpn 2>/dev/null | grep -q \":5901 \"; then is_d1=1; fi;\n"
+            "if [ \"$is_d1\" -eq 1 ] && [ \"$#\" -gt 0 ] && [ \"$has_server_args\" -eq 0 ]; then\n"
+            "  echo '================================================================';\n"
+            "  echo 'ℹ️  [Webcom Xinit] X 伺服器已在運行中 (DISPLAY=:1, Port: 5901, WS: 6080)';\n"
+            "  echo '🚀 正在將應用程式傳送至現有的 DISPLAY=:1 顯示器執行...';\n"
+            "  echo '================================================================';\n"
+            "  export DISPLAY=:1; unset WAYLAND_DISPLAY; export GDK_BACKEND=x11; export QT_QPA_PLATFORM=xcb; exec \"$@\";\n"
+            "elif [ \"$is_d1\" -eq 1 ] && [ \"$#\" -eq 0 ]; then\n"
+            "  echo '================================================================';\n"
+            "  echo 'ℹ️  [Webcom Xinit] X 桌面環境已在運行中！';\n"
+            "  echo '📺 虛擬顯示器: DISPLAY=:1 | RFB 埠: 5901 | WebSocket: 6080';\n"
+            "  echo '👉 請在 Webcom 左側視窗點擊 [noVNC] 或 [Xorg] 分頁直接檢視與操作。';\n"
+            "  echo '================================================================';\n"
+            "  exit 0;\n"
+            "fi;\n"
+            "echo '================================================================';\n"
+            "echo '🚀 [Webcom Xinit] 初始化虛擬 X11 顯示環境 (DISPLAY=:1)';\n"
+            "echo '📺 虛擬顯示器: DISPLAY=:1 | 支援 Xvfb + x11vnc (5901) + WebSockify (6080)';\n"
+            "echo '👉 執行中，請在 Webcom 左側切換至 [noVNC] 或 [Xorg] 分頁！';\n"
+            "echo '================================================================';\n"
+            "if [ \"$has_server_args\" -eq 0 ]; then exec /usr/bin/xinit \"$@\" -- :1; else exec /usr/bin/xinit \"$@\"; fi;\n"
+            "EOF\n"
+            "chmod 755 /usr/local/bin/xinit;\n"
+            "echo '#!/bin/bash\nexec /usr/local/bin/xinit \"$@\"' > /usr/local/bin/startx && chmod 755 /usr/local/bin/startx;\n"
+        )
+        subprocess.run(["wsl.exe", "-u", "root", "-e", "bash", "-c", init_script], capture_output=True, timeout=5)
+    except Exception as e:
+        logging.warning(f"WSL xinit 配置初始化異常: {e}")
+
+
+class XinitRequest(BaseModel):
+    client: Optional[str] = "xfce4-session"
+    display: Optional[str] = ":1"
+
+
+@app.post("/api/wsl/xinit")
+def api_wsl_xinit(req: Optional[XinitRequest] = None):
+    """透過 xinit 啟動 WSL X 視窗會話 (支援自訂 client 如 xfce4-session, thunar 等)"""
+    if not shutil.which("wsl.exe"):
+        raise HTTPException(status_code=400, detail="本地未偵測到 WSL 環境")
+    
+    _ensure_wsl_xinit_config()
+    client = (req.client if req and req.client else "xfce4-session").strip()
+    display = (req.display if req and req.display else ":1").strip() or ":1"
+
+    # 若服務已運行且請求為完整桌面，直接回傳就緒狀態
+    if (_is_tcp_port_open(5901) and _is_tcp_port_open(6080)) and (client in ("xfce4-session", "startxfce4", "")):
+        return get_wsl_desktop_status()
+
+    # 確保 /tmp/.X11-unix 讀寫
+    subprocess.run(
+        ["wsl.exe", "-u", "root", "-e", "bash", "-c", "mount -o remount,rw /tmp/.X11-unix 2>/dev/null || true; chmod 1777 /tmp/.X11-unix 2>/dev/null || true"],
+        capture_output=True, timeout=5
+    )
+
+    # 透過 xinit 啟動
+    run_cmd = f"setsid /usr/local/bin/xinit {client} -- {display} </dev/null >/dev/null 2>&1 &"
+    try:
+        subprocess.run(["wsl.exe", "-e", "bash", "-c", run_cmd], capture_output=True, timeout=5)
+    except Exception as e:
+        logging.warning(f"WSL xinit 啟動異常: {e}")
+
+    import time
+    for _ in range(10):
+        if _is_tcp_port_open(5901) and _is_tcp_port_open(6080):
+            break
+        time.sleep(0.2)
+
+    return get_wsl_desktop_status()
+
+
 import logging
 import threading
 import urllib.request
@@ -715,7 +818,7 @@ def execute_shell(req: ShellRequest):
                     continue
             return raw_bytes.decode("utf-8", errors="replace")
 
-        if is_windows and (req.protocol == "wsl" or req.target == "wsl" or cmd.startswith("wsl ")):
+        if is_windows and (req.protocol == "wsl" or req.target == "wsl" or cmd.startswith("wsl ") or cmd.startswith("xinit") or cmd.startswith("startx")):
             if shutil.which("wsl.exe"):
                 actual_cmd = cmd[4:].strip() if cmd.startswith("wsl ") else cmd
                 try:
