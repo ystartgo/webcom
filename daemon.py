@@ -834,12 +834,13 @@ def execute_shell(req: ShellRequest):
 
         if process is None:
             if is_windows:
-                # WinPE & Windows Execution: Prefer powershell with UTF-8 console encoding if available, fallback cleanly to cmd.exe
-                if shutil.which("powershell.exe"):
+                # Fast-path for Windows: Common commands run directly via cmd.exe in ~30ms instead of waiting for PowerShell cold-start
+                needs_ps = req.protocol == "powershell" or any(cmd.strip().startswith(p) for p in ["$", "Get-", "Set-", "New-", "Remove-", "Start-", "Stop-", "Restart-"]) or "| %" in cmd or "| ?" in cmd or "Select-Object" in cmd
+                if not needs_ps:
                     try:
-                        ps_cmd = f"chcp 65001 >$null; $OutputEncoding = [System.Text.Encoding]::UTF8; [Console]::OutputEncoding = [System.Text.Encoding]::UTF8; [Console]::InputEncoding = [System.Text.Encoding]::UTF8; {cmd}"
                         process = subprocess.run(
-                            ["powershell.exe", "-NoProfile", "-Command", ps_cmd],
+                            f'cmd.exe /c "chcp 65001 >nul 2>&1 && {cmd}"',
+                            shell=True,
                             capture_output=True,
                             text=False,
                             timeout=30,
@@ -848,16 +849,20 @@ def execute_shell(req: ShellRequest):
                     except Exception:
                         process = None
 
-                if process is None:
-                    # Native CMD execution (100% available in all WinPE builds)
-                    process = subprocess.run(
-                        f'cmd.exe /c "chcp 65001 >nul 2>&1 && {cmd}"',
-                        shell=True,
-                        capture_output=True,
-                        text=False,
-                        timeout=30,
-                        env=env
-                    )
+                # Fallback to PowerShell if cmd failed or command specifically needs PowerShell
+                if process is None or (needs_ps and shutil.which("powershell.exe")):
+                    if shutil.which("powershell.exe"):
+                        try:
+                            ps_cmd = f"chcp 65001 >$null; $OutputEncoding = [System.Text.Encoding]::UTF8; [Console]::OutputEncoding = [System.Text.Encoding]::UTF8; [Console]::InputEncoding = [System.Text.Encoding]::UTF8; {cmd}"
+                            process = subprocess.run(
+                                ["powershell.exe", "-NonInteractive", "-NoLogo", "-NoProfile", "-Command", ps_cmd],
+                                capture_output=True,
+                                text=False,
+                                timeout=30,
+                                env=env
+                            )
+                        except Exception:
+                            process = None
             else:
                 process = subprocess.run(
                     cmd,

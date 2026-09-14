@@ -287,7 +287,7 @@
 <body class="bg-gray-950 text-gray-100 h-screen w-full flex overflow-hidden font-sans antialiased relative text-sm">
 
     <!-- 左側：工作區 (終端機 / noVNC / Xorg) -->
-    <div id="left-panel" class="flex-1 flex flex-col border-r border-gray-800 bg-black min-w-0 transition-all duration-200 relative">
+    <div id="left-panel" class="flex-1 flex flex-col border-r border-gray-800 bg-black min-w-0 h-full overflow-hidden transition-all duration-200 relative">
         <!-- 展開條 (當面板往左縮排收合時顯示) -->
         <div id="left-panel-collapsed-strip" class="hidden h-full w-full flex-col items-center py-3 bg-gray-950 border-r border-gray-800 gap-4 select-none">
             <button type="button" onclick="toggleLeftPanelCollapse()"
@@ -314,7 +314,7 @@
         </div>
 
         <!-- 完整工作區內容 (在展開時顯示) -->
-        <div id="left-panel-content" class="flex-1 flex flex-col min-h-0 min-w-0">
+        <div id="left-panel-content" class="flex-1 flex flex-col h-full min-h-0 min-w-0 overflow-hidden">
             <!-- 頂部列：收合按鈕 + 標題 + 狀態 + 手機式「三」工具選單 -->
             <div class="px-3 py-2 border-b border-gray-800 bg-gray-900 flex items-center justify-between gap-2 shrink-0 select-none">
                 <div class="flex items-center gap-2 min-w-0">
@@ -399,7 +399,7 @@
                 <div class="flex items-center gap-1.5 relative">
                     <span id="ai-active-badge" class="hidden text-[11px] px-2 py-0.5 rounded bg-purple-950/80 text-purple-300 border border-purple-700/60 items-center gap-1 font-mono transition-all">
                         <i data-lucide="bot" class="w-3 h-3 text-purple-400 animate-pulse"></i>
-                        <span id="ai-active-badge-text" class="hidden sm:inline">AI 執行中</span>
+                        <span id="ai-active-badge-text" class="hidden sm:inline" data-i18n="aiActiveRunning">AI 執行中</span>
                     </span>
 
                     <!-- 終端機模式快捷 -->
@@ -411,8 +411,8 @@
                             <span data-i18n="btnTermXinit">xinit 桌面</span>
                         </button>
                         <!-- 保留供相容性呼叫 -->
-                        <button id="btn-export-log" type="button" class="hidden" title="匯出終端機日誌"></button>
-                        <button id="btn-clear-term" type="button" class="hidden" title="清除畫面"></button>
+                        <button id="btn-export-log" type="button" class="hidden" title="匯出終端機日誌" data-i18n-title="exportLog"></button>
+                        <button id="btn-clear-term" type="button" class="hidden" title="清除畫面" data-i18n-title="clearTerm"></button>
                     </div>
 
                     <!-- noVNC 模式快捷 -->
@@ -454,7 +454,7 @@
                 </div>
             </div>
 
-        <div id="view-container-term" class="flex-1 flex flex-col min-h-0 min-w-0">
+        <div id="view-container-term" class="flex-1 flex flex-col h-full min-h-0 min-w-0 overflow-hidden">
         <div
             class="bg-gray-800 px-3 py-2 flex flex-wrap items-center gap-2.5 border-b border-gray-700 text-xs shrink-0">
             <select id="conn-protocol"
@@ -561,7 +561,7 @@
                     </button>
                     <button id="vkey-esc" type="button" onclick="handleSpecialKey('esc')"
                         class="px-2.5 py-1 bg-gray-900 hover:bg-gray-800 text-amber-300 border border-gray-700 rounded-md font-mono text-xs font-bold transition flex items-center gap-1 shadow-sm cursor-pointer"
-                        title="發送 Escape (Esc) 鍵">
+                        title="發送 Escape (Esc) 鍵" data-i18n-title="tooltipVkeyEsc">
                         <span>Esc ⎋</span>
                     </button>
                 </div>
@@ -570,7 +570,7 @@
                     <button id="btn-config-vkeys" type="button" onclick="openKeySettingsModal('term')"
                         class="px-2 py-1 bg-purple-950/60 hover:bg-purple-900 active:bg-purple-800 text-purple-300 border border-purple-700/60 rounded-md font-mono text-xs font-bold transition flex items-center gap-1 shadow-sm cursor-pointer"
                         title="按鍵與快捷鍵設置 (自訂虛擬按鍵/巨集/遠端快捷鍵)" data-i18n-title="tooltipKeySettings">
-                        <i data-lucide="settings" class="w-3.5 h-3.5"></i> <span>設置</span>
+                        <i data-lucide="settings" class="w-3.5 h-3.5"></i> <span data-i18n="vkeySettings">設置</span>
                     </button>
                 </div>
             </div>
@@ -584,132 +584,181 @@
         </div>
 
         <!-- noVNC HTML5 遠端桌面視圖 (Remote Desktop View) -->
-        <div id="view-container-novnc" class="flex-1 flex flex-col min-h-0 min-w-0 bg-gray-950 hidden">
-            <!-- noVNC 連線工具列 (Toolbar) -->
-            <div class="bg-gray-900/90 px-3 py-2 flex flex-wrap items-center gap-2 border-b border-gray-800 text-xs shrink-0">
-                <div class="flex items-center gap-1 bg-black/60 px-2 py-1 rounded border border-gray-800">
-                    <span class="text-gray-400 font-mono">Host:</span>
-                    <input id="novnc-host" type="text" value="127.0.0.1" class="bg-transparent text-white w-24 font-mono focus:outline-none" placeholder="127.0.0.1">
-                </div>
-                <div class="flex items-center gap-1 bg-black/60 px-2 py-1 rounded border border-gray-800">
-                    <span class="text-gray-400 font-mono">Port:</span>
-                    <input id="novnc-port" type="number" value="6080" class="bg-transparent text-white w-16 font-mono focus:outline-none" placeholder="6080">
-                </div>
-                <div class="flex items-center gap-1 bg-black/60 px-2 py-1 rounded border border-gray-800">
-                    <span class="text-gray-400 font-mono">Path:</span>
-                    <input id="novnc-path" type="text" value="websockify" class="bg-transparent text-white w-20 font-mono focus:outline-none" placeholder="websockify">
-                </div>
-                <div class="flex items-center gap-1 bg-black/60 px-2 py-1 rounded border border-gray-800">
-                    <span class="text-gray-400 font-mono">Pwd:</span>
-                    <input id="novnc-password" type="password" class="bg-transparent text-white w-20 font-mono focus:outline-none" placeholder="選填密碼" data-i18n-placeholder="wslPasswordPlaceholder">
-                </div>
-                
-                <label class="flex items-center gap-1 text-gray-400 cursor-pointer select-none text-[11px]">
-                    <input id="novnc-view-only" type="checkbox" class="rounded bg-gray-800 border-gray-700 text-purple-600 focus:ring-0">
-                    <span data-i18n="wslViewOnly">僅檢視</span>
-                </label>
-
-                <label class="flex items-center gap-1 text-gray-400 cursor-pointer select-none text-[11px]">
-                    <input id="novnc-mode-iframe" type="checkbox" class="rounded bg-gray-800 border-gray-700 text-blue-600 focus:ring-0">
-                    <span data-i18n="wslWebMode">Web 模式</span>
-                </label>
-
-                <button id="btn-novnc-probe" type="button" onclick="probeVncPort('novnc')"
-                    class="px-2 py-1 rounded bg-gray-800 hover:bg-gray-700 text-cyan-300 border border-cyan-700/50 flex items-center gap-1 transition text-xs cursor-pointer"
-                    title="測試 8001 後端 TCP 探測連接埠" data-i18n-title="wslProbeTooltip">
-                    <i data-lucide="activity" class="w-3.5 h-3.5"></i> <span>探測</span>
-                </button>
-
-                <button id="btn-novnc-connect" type="button" onclick="handleNoVncConnect()"
-                    class="bg-blue-600 hover:bg-blue-500 text-white px-3 py-1 rounded-md transition flex items-center gap-1.5 font-medium shadow-sm ml-auto text-xs cursor-pointer">
-                    <i data-lucide="play" class="w-3.5 h-3.5 fill-current"></i> <span data-i18n="novncConnect">連線桌面</span>
-                </button>
-                <button id="btn-novnc-disconnect" type="button" onclick="handleNoVncDisconnect()"
-                    class="bg-red-600 hover:bg-red-500 text-white px-3 py-1 rounded-md transition flex items-center gap-1.5 font-medium shadow-sm hidden ml-auto text-xs cursor-pointer">
-                    <i data-lucide="power-off" class="w-3.5 h-3.5"></i> <span data-i18n="novncDisconnect">斷開連線</span>
-                </button>
-            </div>
-
-            <!-- noVNC WSL 整合狀態列 (WSL Status & 1-Click Launch) -->
-            <div class="bg-gray-900/70 px-3 py-1.5 flex flex-wrap items-center justify-between gap-2 border-b border-gray-800 text-xs shrink-0 select-none">
-                <div class="flex items-center gap-2 flex-wrap">
-                    <span id="novnc-wsl-status" class="flex items-center gap-1.5 px-2 py-0.5 rounded bg-black/60 border border-gray-800 font-mono text-[11px] text-gray-300">
-                        <span class="w-2 h-2 rounded-full bg-gray-500"></span> <span>WSL: 尚未檢測</span>
+        <div id="view-container-novnc" class="flex-1 flex flex-col h-full min-h-0 min-w-0 bg-gray-950 overflow-hidden hidden">
+            <!-- noVNC 整合主控制列 (單列簡約排版，消除 1366x768 擁擠與多餘工具列) -->
+            <div class="bg-gray-900 px-3 py-1.5 flex items-center justify-between border-b border-gray-800 text-xs shrink-0 select-none">
+                <!-- 左側：狀態與連線按鈕 -->
+                <div class="flex items-center gap-2 min-w-0">
+                    <span id="novnc-status" class="flex items-center gap-1.5 font-mono text-[11px] text-gray-300 bg-black/60 px-2 py-0.5 rounded border border-gray-800 truncate">
+                        <span class="w-2 h-2 rounded-full bg-gray-500"></span> <span data-i18n="novncStatusDisconnected">未連線</span>
                     </span>
-                    <button id="btn-novnc-wsl-check" type="button" onclick="checkWslStatus(true)"
-                        class="px-2 py-0.5 rounded bg-gray-800 hover:bg-gray-700 text-teal-300 border border-teal-700/40 text-[11px] flex items-center gap-1 cursor-pointer transition">
-                        <i data-lucide="check-circle-2" class="w-3 h-3 text-teal-400"></i> <span data-i18n="wslBtnCheck">檢查 WSL</span>
+                    <button id="btn-novnc-connect" type="button" onclick="handleNoVncConnect()"
+                        class="bg-blue-600 hover:bg-blue-500 text-white px-2.5 py-1 rounded-md transition flex items-center gap-1 font-medium shadow-sm text-xs cursor-pointer shrink-0">
+                        <i data-lucide="play" class="w-3.5 h-3.5 fill-current"></i> <span data-i18n="novncConnect">連線桌面</span>
+                    </button>
+                    <button id="btn-novnc-disconnect" type="button" onclick="handleNoVncDisconnect()"
+                        class="bg-red-600 hover:bg-red-500 text-white px-2.5 py-1 rounded-md transition flex items-center gap-1 font-medium shadow-sm hidden text-xs cursor-pointer shrink-0">
+                        <i data-lucide="power-off" class="w-3.5 h-3.5"></i> <span data-i18n="novncDisconnect">斷開連線</span>
                     </button>
                     <button id="btn-novnc-wsl-start" type="button" onclick="startWslDesktopAndConnect('novnc')"
-                        class="px-2.5 py-0.5 rounded bg-teal-900/80 hover:bg-teal-800 text-teal-200 border border-teal-600/50 text-[11px] font-medium flex items-center gap-1 cursor-pointer shadow-sm transition">
-                        <i data-lucide="rocket" class="w-3 h-3 text-teal-400"></i> <span data-i18n="wslBtnStart">一鍵啟動 WSL 桌面</span>
-                    </button>
-                    <button id="btn-novnc-wsl-stop" type="button" onclick="stopWslDesktopService('novnc')"
-                        class="px-2 py-0.5 rounded bg-rose-950/60 hover:bg-rose-900 text-rose-300 border border-rose-800/40 text-[11px] flex items-center gap-1 cursor-pointer transition">
-                        <i data-lucide="square" class="w-3 h-3 text-rose-400"></i> <span data-i18n="wslBtnStop">停止 WSL 桌面</span>
+                        class="hidden sm:flex px-2 py-1 rounded bg-teal-900/80 hover:bg-teal-800 text-teal-200 border border-teal-600/50 text-[11px] font-medium items-center gap-1 cursor-pointer transition shrink-0"
+                        title="在 WSL2 自動啟動 noVNC 桌面會話並即時連線" data-i18n-title="tooltipWslStartNoVnc">
+                        <i data-lucide="rocket" class="w-3 h-3 text-teal-400"></i> <span data-i18n="wslBtnStart">啟動 WSL 桌面</span>
                     </button>
                 </div>
-                <div class="text-[11px] text-gray-400 font-mono flex items-center gap-2">
-                    <span class="text-teal-400/80">WSL2 Debian</span>
-                    <span class="text-gray-600">|</span>
-                    <span>VNC: 5901</span>
-                    <span class="text-gray-600">|</span>
-                    <span>WebSockify: 6080</span>
-                </div>
-            </div>
 
-            <!-- noVNC 音訊控制與快捷鍵工具列 (Audio & Shortcuts Bar) -->
-            <div class="bg-gray-950/90 px-3 py-1.5 flex flex-wrap items-center justify-between gap-2 border-b border-gray-800 text-xs shrink-0 select-none">
-                <!-- 左側：音訊串流控制 (Audio Stream Controls) -->
-                <div class="flex items-center gap-2 flex-wrap">
-                    <button id="btn-novnc-audio-toggle" type="button" onclick="toggleAudioStream('novnc')"
-                        class="px-2 py-0.5 rounded bg-gray-900 hover:bg-gray-800 text-gray-300 border border-gray-700 flex items-center gap-1 font-medium transition cursor-pointer"
-                        title="開啟 / 關閉音訊串流 (支援 PulseAudio / HTTP MP3 / AAC)" data-i18n-title="audioStreamTooltip">
-                        <i id="icon-novnc-audio" data-lucide="volume-x" class="w-3.5 h-3.5 text-gray-400"></i>
-                        <span id="txt-novnc-audio" data-i18n="audioMuted">音訊: 關閉</span>
-                    </button>
-
-                    <div class="flex items-center gap-1 bg-black/60 px-2 py-0.5 rounded border border-gray-800">
-                        <span class="text-gray-400 text-[11px]" data-i18n="audioVolumeLabel">音量:</span>
-                        <input id="novnc-audio-vol" type="range" min="0" max="100" value="80" oninput="setAudioVolume(this.value, 'novnc')"
-                            class="w-16 h-1 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-purple-500">
-                        <span id="novnc-audio-vol-txt" class="text-[11px] text-gray-300 w-6 font-mono">80%</span>
+                <!-- 右側：整併為手機式下拉選單（⚡ 快速預設 + ⚙️ 控制與設置 + ⌨️ CAD + ⛶ 全螢幕） -->
+                <div class="flex items-center gap-1.5 shrink-0 relative">
+                    <!-- 1. ⚡ 快速連線預設下拉選單 -->
+                    <div class="relative">
+                        <button id="btn-novnc-preset-menu" type="button" onclick="toggleNoVncPresetDropdown(event)"
+                            class="px-2.5 py-1 rounded-lg bg-gray-800 hover:bg-gray-700 text-blue-300 border border-gray-700 flex items-center gap-1.5 transition text-xs cursor-pointer select-none"
+                            title="快速切換連線目標與探測" data-i18n-title="tooltipNoVncPresetMenu">
+                            <i data-lucide="zap" class="w-3.5 h-3.5 text-yellow-400"></i>
+                            <span class="font-medium" data-i18n="novncQuickPresets">快速預設</span>
+                            <i data-lucide="chevron-down" class="w-3 h-3 text-gray-400"></i>
+                        </button>
+                        <div id="dropdown-novnc-presets" class="hidden absolute right-0 top-full mt-1.5 w-60 bg-gray-900 border border-gray-700 rounded-xl shadow-2xl py-2 z-50 text-xs select-none space-y-1">
+                            <div class="px-3 py-1 text-[10px] font-bold text-gray-400 uppercase tracking-wider border-b border-gray-800" data-i18n="novncQuickPresets">常用連線目標</div>
+                            <button type="button" onclick="applyVncPreset('novnc', '127.0.0.1', 6080, 'websockify'); closeNoVncDropdowns();"
+                                class="w-full px-3 py-1.5 hover:bg-gray-800 text-left flex items-center justify-between text-blue-300 transition cursor-pointer">
+                                <span class="flex items-center gap-1.5"><i data-lucide="monitor" class="w-3.5 h-3.5"></i> <span data-i18n="novncPresetLocal">本機 6080</span></span>
+                                <span class="text-[10px] font-mono text-gray-500">127.0.0.1:6080</span>
+                            </button>
+                            <button type="button" onclick="applyVncPreset('novnc', '127.0.0.1', 5900, ''); closeNoVncDropdowns();"
+                                class="w-full px-3 py-1.5 hover:bg-gray-800 text-left flex items-center justify-between text-cyan-300 transition cursor-pointer">
+                                <span class="flex items-center gap-1.5"><i data-lucide="server" class="w-3.5 h-3.5"></i> <span data-i18n="novncPresetNative">原生 VNC 5900</span></span>
+                                <span class="text-[10px] font-mono text-gray-500">127.0.0.1:5900</span>
+                            </button>
+                            <button type="button" onclick="applyVncPreset('novnc', '192.168.1.100', 6080, 'websockify'); closeNoVncDropdowns();"
+                                class="w-full px-3 py-1.5 hover:bg-gray-800 text-left flex items-center justify-between text-emerald-300 transition cursor-pointer">
+                                <span class="flex items-center gap-1.5"><i data-lucide="network" class="w-3.5 h-3.5"></i> <span data-i18n="novncPresetLan">區網 6080</span></span>
+                                <span class="text-[10px] font-mono text-gray-500">192.168.1.100</span>
+                            </button>
+                            <div class="border-t border-gray-800 pt-1 px-2">
+                                <button id="btn-novnc-probe" type="button" onclick="probeVncPort('novnc'); closeNoVncDropdowns();"
+                                    class="w-full px-2 py-1.5 rounded bg-gray-800 hover:bg-gray-700 text-cyan-300 border border-cyan-700/50 flex items-center justify-center gap-1.5 transition text-[11px] cursor-pointer"
+                                    title="測試 8001 後端 TCP 探測連接埠" data-i18n-title="wslProbeTooltip">
+                                    <i data-lucide="activity" class="w-3.5 h-3.5 text-cyan-400"></i> <span data-i18n="wslProbe">探測服務埠</span>
+                                </button>
+                            </div>
+                        </div>
                     </div>
 
-                    <div class="flex items-center gap-1 bg-black/60 px-2 py-0.5 rounded border border-gray-800 text-[11px]">
-                        <span class="text-gray-400">URL:</span>
-                        <input id="novnc-audio-url" type="text" value="http://127.0.0.1:8000/audio"
-                            class="bg-transparent text-gray-200 font-mono w-40 focus:outline-none" placeholder="http://127.0.0.1:8000/audio">
+                    <!-- 2. ⚙️ 控制與設置下拉選單 -->
+                    <div class="relative">
+                        <button id="btn-novnc-ctrl-menu" type="button" onclick="toggleNoVncCtrlDropdown(event)"
+                            class="px-2.5 py-1 rounded-lg bg-gray-800 hover:bg-gray-700 text-cyan-300 border border-gray-700 flex items-center gap-1.5 transition text-xs cursor-pointer select-none"
+                            title="連線參數、WSL 管理與音訊設定" data-i18n-title="tooltipXorgControls">
+                            <i data-lucide="settings" class="w-3.5 h-3.5 text-cyan-400"></i>
+                            <span class="font-medium" data-i18n="xorgControlsTitle">控制與設置</span>
+                            <i data-lucide="chevron-down" class="w-3 h-3 text-gray-400"></i>
+                        </button>
+                        <div id="dropdown-novnc-ctrl" class="hidden absolute right-0 top-full mt-1.5 w-72 bg-gray-900 border border-gray-700 rounded-xl shadow-2xl p-3 z-50 text-xs select-none space-y-2.5">
+                            <!-- 連線參數 -->
+                            <div>
+                                <div class="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1.5" data-i18n="xorgConnParams">連線參數</div>
+                                <div class="grid grid-cols-2 gap-1.5">
+                                    <div class="flex items-center gap-1 bg-black/60 px-2 py-1 rounded border border-gray-800">
+                                        <span class="text-gray-400 font-mono text-[11px]">Host:</span>
+                                        <input id="novnc-host" type="text" value="127.0.0.1" class="bg-transparent text-white w-20 font-mono text-[11px] focus:outline-none" placeholder="127.0.0.1">
+                                    </div>
+                                    <div class="flex items-center gap-1 bg-black/60 px-2 py-1 rounded border border-gray-800">
+                                        <span class="text-gray-400 font-mono text-[11px]">Port:</span>
+                                        <input id="novnc-port" type="number" value="6080" class="bg-transparent text-white w-14 font-mono text-[11px] focus:outline-none" placeholder="6080">
+                                    </div>
+                                    <div class="flex items-center gap-1 bg-black/60 px-2 py-1 rounded border border-gray-800">
+                                        <span class="text-gray-400 font-mono text-[11px]">Path:</span>
+                                        <input id="novnc-path" type="text" value="websockify" class="bg-transparent text-white w-20 font-mono text-[11px] focus:outline-none" placeholder="websockify">
+                                    </div>
+                                    <div class="flex items-center gap-1 bg-black/60 px-2 py-1 rounded border border-gray-800">
+                                        <span class="text-gray-400 font-mono text-[11px]">Pwd:</span>
+                                        <input id="novnc-password" type="password" class="bg-transparent text-white w-16 font-mono text-[11px] focus:outline-none" placeholder="選填" data-i18n-placeholder="wslPasswordPlaceholder">
+                                    </div>
+                                    <div class="col-span-2 flex items-center justify-between pt-0.5">
+                                        <label class="flex items-center gap-1 text-gray-300 cursor-pointer select-none text-[11px]">
+                                            <input id="novnc-view-only" type="checkbox" class="rounded bg-gray-800 border-gray-700 text-purple-600 focus:ring-0">
+                                            <span data-i18n="wslViewOnly">僅檢視</span>
+                                        </label>
+                                        <label class="flex items-center gap-1 text-gray-300 cursor-pointer select-none text-[11px]">
+                                            <input id="novnc-mode-iframe" type="checkbox" class="rounded bg-gray-800 border-gray-700 text-blue-600 focus:ring-0">
+                                            <span data-i18n="wslWebMode">Web 模式</span>
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- WSL 服務管理 -->
+                            <div class="border-t border-gray-800 pt-2">
+                                <div class="flex items-center justify-between mb-1.5">
+                                    <span class="text-[10px] font-bold text-gray-400 uppercase tracking-wider" data-i18n="wslServiceTitle">WSL 服務</span>
+                                    <span id="novnc-wsl-status" class="font-mono text-[10px] text-teal-400" data-i18n="wslStatusUnchecked">未檢測</span>
+                                </div>
+                                <div class="grid grid-cols-2 gap-1.5">
+                                    <button id="btn-novnc-wsl-check" type="button" onclick="checkWslStatus(true)"
+                                        class="px-2 py-1 rounded bg-gray-800 hover:bg-gray-700 text-teal-300 border border-teal-700/40 text-[11px] flex items-center justify-center gap-1 cursor-pointer">
+                                        <i data-lucide="check-circle-2" class="w-3 h-3 text-teal-400"></i> <span data-i18n="wslCheckBtn">檢查 WSL</span>
+                                    </button>
+                                    <button id="btn-novnc-wsl-stop" type="button" onclick="stopWslDesktopService('novnc')"
+                                        class="px-2 py-1 rounded bg-rose-950/60 hover:bg-rose-900 text-rose-300 border border-rose-800/40 text-[11px] flex items-center justify-center gap-1 cursor-pointer">
+                                        <i data-lucide="square" class="w-3 h-3 text-rose-400"></i> <span data-i18n="wslStopBtn">停止 WSL</span>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- 音訊串流設定 -->
+                            <div class="border-t border-gray-800 pt-2">
+                                <div class="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1.5" data-i18n="audioStreamTitle">音訊串流</div>
+                                <div class="flex items-center gap-1.5 mb-1.5">
+                                    <button id="btn-novnc-audio-toggle" type="button" onclick="toggleAudioStream('novnc')"
+                                        class="flex-1 px-2 py-1 rounded bg-gray-800 hover:bg-gray-700 text-gray-300 border border-gray-700 flex items-center justify-center gap-1 text-[11px] cursor-pointer">
+                                        <i id="icon-novnc-audio" data-lucide="volume-x" class="w-3 h-3 text-gray-400"></i>
+                                        <span id="txt-novnc-audio" data-i18n="audioDisabled">音訊: 關閉</span>
+                                    </button>
+                                    <button type="button" onclick="playTestTone()"
+                                        class="px-2 py-1 rounded bg-gray-800 hover:bg-gray-700 text-cyan-300 border border-cyan-800/40 text-[11px] flex items-center gap-1 cursor-pointer"
+                                        title="播放 Web Audio 測試鈴聲" data-i18n-title="audioTestToneTooltip">
+                                        <i data-lucide="bell" class="w-3 h-3 text-cyan-400"></i> <span data-i18n="audioTestTone">測試音</span>
+                                    </button>
+                                </div>
+                                <div class="flex items-center gap-1 bg-black/60 px-2 py-1 rounded border border-gray-800 mb-1.5">
+                                    <span class="text-gray-400 text-[11px]" data-i18n="audioVolume">音量:</span>
+                                    <input id="novnc-audio-vol" type="range" min="0" max="100" value="80" oninput="setAudioVolume(this.value, 'novnc')"
+                                        class="flex-1 h-1 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-purple-500">
+                                    <span id="novnc-audio-vol-txt" class="text-[11px] text-gray-300 w-7 text-right font-mono">80%</span>
+                                </div>
+                                <div class="flex items-center gap-1 bg-black/60 px-2 py-1 rounded border border-gray-800 text-[11px]">
+                                    <span class="text-gray-400">URL:</span>
+                                    <input id="novnc-audio-url" type="text" value="http://127.0.0.1:8000/audio"
+                                        class="bg-transparent text-gray-200 font-mono flex-1 min-w-0 focus:outline-none" placeholder="http://127.0.0.1:8000/audio">
+                                </div>
+                            </div>
+
+                            <!-- 快速設置 -->
+                            <div class="border-t border-gray-800 pt-2 flex items-center justify-between">
+                                <div id="novnc-remote-shortcuts" class="flex items-center gap-1"></div>
+                                <button type="button" onclick="openKeySettingsModal('novnc'); closeNoVncDropdowns();"
+                                    class="w-full px-2 py-1 rounded bg-purple-950/60 hover:bg-purple-900 text-purple-300 border border-purple-700/50 flex items-center justify-center gap-1 text-[11px] font-medium transition cursor-pointer"
+                                    data-i18n-title="keySettingsTooltip">
+                                    <i data-lucide="settings" class="w-3 h-3"></i> <span data-i18n="keySettingsBtn">按鍵設置</span>
+                                </button>
+                            </div>
+                        </div>
                     </div>
 
-                    <button type="button" onclick="playTestTone()"
-                        class="px-2 py-0.5 rounded bg-gray-900 hover:bg-gray-800 text-cyan-300 border border-cyan-800/40 text-[11px] flex items-center gap-1 cursor-pointer"
-                        title="使用 Web Audio API 播放測試鈴聲" data-i18n-title="audioTestToneTooltip">
-                        <i data-lucide="bell" class="w-3 h-3 text-cyan-400"></i> <span data-i18n="audioTestTone">測試音</span>
+                    <!-- 3. CAD 按鈕 -->
+                    <button id="btn-novnc-cad" type="button" onclick="sendNoVncCtrlAltDel()"
+                        class="px-2 py-1 rounded bg-gray-800 hover:bg-gray-700 text-amber-300 border border-amber-600/40 text-xs flex items-center gap-1 transition cursor-pointer"
+                        title="送出 Ctrl+Alt+Delete" data-i18n-title="novncActionCad">
+                        <span class="font-mono text-[10px]">CAD</span>
                     </button>
-                </div>
 
-                <!-- 右側：遠端桌面快捷鍵與按鍵設置 (Remote Shortcuts & Config) -->
-                <div class="flex items-center gap-1.5 flex-wrap">
-                    <div id="novnc-remote-shortcuts" class="flex items-center gap-1"></div>
-                    <button type="button" onclick="openKeySettingsModal('novnc')"
-                        class="px-2 py-0.5 rounded bg-purple-950/60 hover:bg-purple-900 text-purple-300 border border-purple-700/50 flex items-center gap-1 text-[11px] font-medium transition cursor-pointer"
-                        title="按鍵與快捷鍵自訂設置" data-i18n-title="keySettingsTooltip">
-                        <i data-lucide="settings" class="w-3 h-3"></i> <span data-i18n="btnKeySettings">按鍵設置</span>
+                    <!-- 4. 全螢幕按鈕 -->
+                    <button id="btn-novnc-fs" type="button" onclick="toggleNoVncFullscreen()"
+                        class="px-2 py-1 rounded bg-gray-800 hover:bg-gray-700 text-blue-300 border border-blue-600/40 text-xs flex items-center gap-1 transition cursor-pointer"
+                        title="全螢幕桌面" data-i18n-title="novncActionFullscreen">
+                        <i data-lucide="maximize" class="w-3 h-3"></i>
                     </button>
-                </div>
-            </div>
-
-            <!-- noVNC 狀態列 (Status bar) -->
-            <div class="px-3 py-1 bg-black/40 border-b border-gray-800/80 text-[11px] font-mono flex items-center justify-between text-gray-400 shrink-0">
-                <span id="novnc-status" class="flex items-center gap-1.5">
-                    <span class="w-2 h-2 rounded-full bg-gray-500"></span> <span data-i18n="novncStatusDisconnected">未連線 (請確認 websockify 服務或 VNC 伺服器運作中)</span>
-                </span>
-                <div class="flex items-center gap-2">
-                    <span class="text-gray-500" data-i18n="novncQuickPresets">快速預設:</span>
-                    <button type="button" onclick="applyVncPreset('novnc', '127.0.0.1', 6080, 'websockify')" class="hover:text-blue-300 underline cursor-pointer" data-i18n="novncPresetLocal">本機 6080</button>
-                    <button type="button" onclick="applyVncPreset('novnc', '127.0.0.1', 5900, '')" class="hover:text-blue-300 underline cursor-pointer">VNC 5900</button>
-                    <button type="button" onclick="applyVncPreset('novnc', '192.168.1.100', 6080, 'websockify')" class="hover:text-blue-300 underline cursor-pointer" data-i18n="novncPresetLan">區網 6080</button>
                 </div>
             </div>
 
@@ -722,7 +771,7 @@
                             <i data-lucide="monitor" class="w-8 h-8"></i>
                         </div>
                         <h3 class="text-sm font-bold text-gray-300 mb-1" data-i18n="novncDisconnectedTitle">noVNC HTML5 遠端桌面未連線</h3>
-                        <p class="text-xs text-gray-500 leading-relaxed mb-4">支援標準 RFB 協定、Tight/ZRLE 編碼，相容 x11vnc、TigerVNC、TightVNC 及 websockify 代理。</p>
+                        <p class="text-xs text-gray-500 leading-relaxed mb-4" data-i18n="novncPlaceholderDesc">支援標準 RFB 協定、Tight/ZRLE 編碼，相容 x11vnc、TigerVNC、TightVNC 及 websockify 代理。</p>
                         <button type="button" onclick="handleNoVncConnect()" class="px-4 py-1.5 bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold rounded-lg transition shadow-md inline-flex items-center gap-1.5 cursor-pointer">
                             <i data-lucide="plug" class="w-3.5 h-3.5"></i> <span data-i18n="novncBtnConnectNow">立即連線</span>
                         </button>
@@ -734,13 +783,13 @@
         </div>
 
         <!-- Xorg GUI 虛擬視窗視圖 (X11 Display View) -->
-        <div id="view-container-xorg" class="flex-1 flex flex-col min-h-0 min-w-0 bg-gray-950 hidden">
+        <div id="view-container-xorg" class="flex-1 flex flex-col h-full min-h-0 min-w-0 bg-gray-950 overflow-hidden hidden">
             <!-- Xorg 整合主控制列 (單列簡約排版，消除 1366x768 擁擠與多餘工具列) -->
             <div class="bg-gray-900 px-3 py-1.5 flex items-center justify-between border-b border-gray-800 text-xs shrink-0 select-none">
                 <!-- 左側：狀態與連線按鈕 -->
                 <div class="flex items-center gap-2 min-w-0">
                     <span id="xorg-status" class="flex items-center gap-1.5 font-mono text-[11px] text-gray-300 bg-black/60 px-2 py-0.5 rounded border border-gray-800 truncate">
-                        <span class="w-2 h-2 rounded-full bg-gray-500"></span> <span>DISPLAY=:1 (未連線)</span>
+                        <span class="w-2 h-2 rounded-full bg-gray-500"></span> <span data-i18n="xorgStatusDisconnected">DISPLAY=:1 (未連線)</span>
                     </span>
                     <button id="btn-xorg-connect" type="button" onclick="handleXorgConnect()"
                         class="bg-emerald-600 hover:bg-emerald-500 text-white px-2.5 py-1 rounded-md transition flex items-center gap-1 font-medium shadow-sm text-xs cursor-pointer shrink-0">
@@ -752,8 +801,8 @@
                     </button>
                     <button id="btn-xorg-wsl-start" type="button" onclick="startWslDesktopAndConnect('xorg')"
                         class="hidden sm:flex px-2 py-1 rounded bg-emerald-950/80 hover:bg-emerald-900 text-emerald-300 border border-emerald-700/50 text-[11px] font-medium items-center gap-1 cursor-pointer transition shrink-0"
-                        title="在 WSL2 自動啟動 Xorg 桌面會話並即時連線">
-                        <i data-lucide="rocket" class="w-3 h-3 text-emerald-400"></i> <span>啟動 WSL 桌面</span>
+                        title="在 WSL2 自動啟動 Xorg 桌面會話並即時連線" data-i18n-title="tooltipWslStartXorg">
+                        <i data-lucide="rocket" class="w-3 h-3 text-emerald-400"></i> <span data-i18n="wslBtnStart">啟動 WSL 桌面</span>
                     </button>
                 </div>
 
@@ -942,8 +991,8 @@
                         <div class="w-16 h-16 rounded-full bg-gray-900 border border-gray-800 flex items-center justify-center mx-auto mb-3 text-emerald-400">
                             <i data-lucide="layout-grid" class="w-8 h-8"></i>
                         </div>
-                        <h3 class="text-sm font-bold text-gray-300 mb-1">Xorg GUI 虛擬視窗環境 (DISPLAY=:1)</h3>
-                        <p class="text-xs text-gray-500 leading-relaxed mb-4">
+                        <h3 class="text-sm font-bold text-gray-300 mb-1" data-i18n="xorgPlaceholderTitle">Xorg GUI 虛擬視窗環境 (DISPLAY=:1)</h3>
+                        <p class="text-xs text-gray-500 leading-relaxed mb-4" data-i18n="xorgPlaceholderDesc">
                             可於 Windows/WSL2 或 Docker 中無縫執行 Linux GUI 圖形化程式（如 終端機、Thunar 檔案總管、Mousepad、Firefox 等），並透過 HTML5 零延遲畫布呈現。
                         </p>
                         <div class="flex items-center justify-center gap-2">
@@ -963,7 +1012,7 @@
 </div>
 
     <!-- 右側：AI 對話與設定區塊 (Collapsible Right Panel) -->
-    <div id="right-panel" class="flex-1 flex flex-col bg-gray-950 min-w-0 transition-all duration-200 relative">
+    <div id="right-panel" class="flex-1 flex flex-col bg-gray-950 min-w-0 h-full overflow-hidden transition-all duration-200 relative">
         <!-- 展開條 (當面板往右縮排收合時顯示) -->
         <div id="right-panel-collapsed-strip" class="hidden h-full w-full flex-col items-center py-3 bg-gray-950 border-l border-gray-800 gap-4 select-none">
             <button type="button" onclick="toggleRightPanelCollapse()"
@@ -985,7 +1034,7 @@
         </div>
 
         <!-- 完整右側內容 (在展開時顯示) -->
-        <div id="right-panel-content" class="flex-1 flex flex-col min-h-0 min-w-0">
+        <div id="right-panel-content" class="flex-1 flex flex-col h-full min-h-0 min-w-0 overflow-hidden">
         <div
             class="px-3 py-2 sm:px-4 sm:py-2.5 border-b border-gray-800 bg-gray-900 flex flex-wrap items-center justify-between gap-2 shrink-0">
             <!-- 雙 LLM 引擎切換器 (Dual Engine Mode Switcher) -->
@@ -1122,8 +1171,8 @@
                     <i data-lucide="globe" class="w-3.5 h-3.5 text-blue-400 shrink-0"></i>
                     <select id="lang-select"
                         class="bg-transparent text-xs text-gray-200 focus:outline-none cursor-pointer font-medium">
-                        <option value="zh-TW" class="bg-gray-900 text-white">繁體中文</option>
-                        <option value="en" class="bg-gray-900 text-white">English</option>
+                        <option value="zh-TW" class="bg-gray-900 text-white" data-i18n="langZhTw">繁體中文</option>
+                        <option value="en" class="bg-gray-900 text-white" data-i18n="langEn">English</option>
                     </select>
                 </div>
 
@@ -1277,7 +1326,7 @@
             <div id="webgpu-progress-container"
                 class="hidden mb-2 p-2.5 bg-cyan-950/60 border border-cyan-800/60 rounded-xl text-xs space-y-1.5">
                 <div class="flex justify-between items-center text-cyan-300 font-mono">
-                    <span id="webgpu-progress-text">⚡ 正在載入 WebGPU 本地模型權重...</span>
+                    <span id="webgpu-progress-text" data-i18n="webgpuLoadingWeights">⚡ 正在載入 WebGPU 本地模型權重...</span>
                     <span id="webgpu-progress-pct">0%</span>
                 </div>
                 <div class="w-full bg-gray-900 rounded-full h-1.5 overflow-hidden">
@@ -1290,7 +1339,7 @@
             <div id="onnx-progress-container"
                 class="hidden mb-2 p-2.5 bg-emerald-950/60 border border-emerald-800/60 rounded-xl text-xs space-y-1.5">
                 <div class="flex justify-between items-center text-emerald-300 font-mono">
-                    <span id="onnx-progress-text">📦 正在載入 ONNX Runtime 本地模型...</span>
+                    <span id="onnx-progress-text" data-i18n="onnxLoadingWeights">📦 正在載入 ONNX Runtime 本地模型...</span>
                     <span id="onnx-progress-pct">0%</span>
                 </div>
                 <div class="w-full bg-gray-900 rounded-full h-1.5 overflow-hidden">
@@ -1374,7 +1423,7 @@
                         <div class="flex items-center gap-1.5 sm:gap-2">
                             <h2 id="drawer-artifact-title" class="text-sm sm:text-base font-bold text-white truncate" data-i18n="artifactDrawerTitle">Artifact 預覽工坊</h2>
                             <span id="drawer-artifact-lang" class="text-[10px] font-mono uppercase px-1.5 py-0.5 rounded bg-gray-800 text-gray-300">HTML</span>
-                            <span id="drawer-artifact-parts" class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-emerald-950/80 border border-emerald-500/40 text-emerald-300 hidden">已接續 2 段</span>
+                            <span id="drawer-artifact-parts" class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-emerald-950/80 border border-emerald-500/40 text-emerald-300 hidden" data-i18n="artifactPartsInit">已接續 2 段</span>
                         </div>
                         <div class="text-[11px] sm:text-xs text-gray-400 font-mono truncate" id="drawer-artifact-id">ID: app</div>
                     </div>
@@ -1400,7 +1449,7 @@
                         <div class="flex items-center px-1.5 py-0.5 gap-1 text-indigo-400 font-mono">
                             <i data-lucide="git-branch" class="w-3.5 h-3.5 shrink-0"></i>
                             <select id="drawer-version-select" class="bg-transparent text-xs text-indigo-300 font-bold focus:outline-none cursor-pointer max-w-[95px] sm:max-w-[140px] truncate" title="切換檢視歷史版本" data-i18n-title="tooltipVersionSelect">
-                                <option value="1">v1 (最新)</option>
+                                <option value="1" data-i18n="artifactLatestVer">v1 (最新)</option>
                             </select>
                         </div>
                         <button id="drawer-btn-create-version" type="button" class="px-2 py-1 rounded bg-purple-950/70 hover:bg-purple-900 text-purple-300 border border-purple-700/50 hover:text-white transition flex items-center gap-1 font-semibold" title="建立新版本快照" data-i18n-title="tooltipCreateVersion">
@@ -1508,8 +1557,8 @@
                                 <span data-i18n="artifactDiffTitle">版本差異比對</span>
                             </span>
                             <div class="flex items-center gap-1.5 font-mono text-[11px]">
-                                <span id="drawer-diff-added" class="text-emerald-400 font-bold bg-emerald-950/60 px-1.5 py-0.5 rounded border border-emerald-800/50">+0 行</span>
-                                <span id="drawer-diff-removed" class="text-rose-400 font-bold bg-rose-950/60 px-1.5 py-0.5 rounded border border-rose-800/50">-0 行</span>
+                                <span id="drawer-diff-added" class="text-emerald-400 font-bold bg-emerald-950/60 px-1.5 py-0.5 rounded border border-emerald-800/50" data-i18n="drawerDiffAddedZero">+0 行</span>
+                                <span id="drawer-diff-removed" class="text-rose-400 font-bold bg-rose-950/60 px-1.5 py-0.5 rounded border border-rose-800/50" data-i18n="drawerDiffRemovedZero">-0 行</span>
                             </div>
                         </div>
                         <div class="flex items-center gap-1.5 text-xs">
@@ -1528,18 +1577,18 @@
                     <div id="drawer-history-banner" class="hidden px-3.5 py-1.5 bg-amber-950/80 border-b border-amber-600/50 text-amber-300 text-xs flex justify-between items-center shrink-0">
                         <div class="flex items-center gap-2">
                             <i data-lucide="alert-circle" class="w-3.5 h-3.5 text-amber-400"></i>
-                            <span id="drawer-history-banner-text">您目前正在檢視歷史版本 (唯讀預覽模式)。若要恢復此版本，請點擊右側「還原此版」。</span>
+                            <span id="drawer-history-banner-text" data-i18n="drawerHistoryBannerText">您目前正在檢視歷史版本 (唯讀預覽模式)。若要恢復此版本，請點擊右側「還原此版」。</span>
                         </div>
-                        <button id="drawer-btn-banner-restore" type="button" class="px-2.5 py-0.5 rounded bg-amber-600 hover:bg-amber-500 text-black font-bold text-xs shadow transition">
+                        <button id="drawer-btn-banner-restore" type="button" class="px-2.5 py-0.5 rounded bg-amber-600 hover:bg-amber-500 text-black font-bold text-xs shadow transition" data-i18n="drawerRestoreVerBtn">
                             還原此版
                         </button>
                     </div>
 
                     <div class="px-3.5 py-2 border-b border-gray-800/80 bg-gray-900/60 flex flex-wrap justify-between items-center text-xs gap-2 shrink-0">
                         <div class="flex items-center gap-2 font-mono">
-                            <span id="drawer-code-stats" class="text-gray-400">0 行 · 0 字元</span>
+                            <span id="drawer-code-stats" class="text-gray-400" data-i18n="drawerCodeStatsInit">0 行 · 0 字元</span>
                             <span id="drawer-edit-status" class="text-emerald-400 text-[11px] flex items-center gap-1 font-sans">
-                                <i data-lucide="check" class="w-3 h-3"></i> <span>已儲存</span>
+                                <i data-lucide="check" class="w-3 h-3"></i> <span data-i18n="savedStatus">已儲存</span>
                             </span>
                         </div>
                         <div class="flex items-center gap-1.5 shrink-0">
@@ -1701,7 +1750,7 @@
                         </div>
                         <div class="flex items-center justify-between gap-2 bg-purple-950/40 border border-purple-800/40 rounded-lg px-2.5 py-1 text-xs">
                             <span class="text-[11px] text-purple-300 font-sans shrink-0 font-medium" data-i18n="tokenTableRecModel">推薦模型</span>
-                            <span class="inline-flex items-center gap-1"><code class="text-amber-300 font-mono font-bold text-xs">qwen3.8-max</code><span class="text-[10px] text-gray-400 font-sans">(自動交互/終端調用)</span></span>
+                            <span class="inline-flex items-center gap-1"><code class="text-amber-300 font-mono font-bold text-xs">qwen3.8-max</code><span class="text-[10px] text-gray-400 font-sans" data-i18n="tokenTableAutoTerm">(自動交互/終端調用)</span></span>
                         </div>
 
                         <!-- Bottom Row: 2-Column Action Buttons Grid -->
@@ -1942,7 +1991,7 @@
                     <div class="flex justify-between items-center mb-2">
                         <label class="block text-xs text-gray-300 font-bold"
                             data-i18n="ragIndexedListTitle">已收錄文件清單</label>
-                        <span id="rag-total-chunks" class="text-xs text-emerald-400 font-mono">0 個分塊</span>
+                        <span id="rag-total-chunks" class="text-xs text-emerald-400 font-mono" data-i18n="ragTotalChunksInit">0 個分塊</span>
                     </div>
                     <div id="rag-doc-list" class="space-y-2 max-h-48 overflow-y-auto"></div>
                 </div>
@@ -1991,7 +2040,7 @@
                     <div class="flex justify-between items-center mb-2">
                         <label class="block text-xs text-gray-300 font-bold" data-i18n="mcpActiveToolsTitle">已就緒之 MCP
                             工具清單</label>
-                        <span id="mcp-tools-count" class="text-xs text-amber-400 font-mono">0 個工具</span>
+                        <span id="mcp-tools-count" class="text-xs text-amber-400 font-mono" data-i18n="mcpToolsCountInit">0 個工具</span>
                     </div>
                     <div id="mcp-tools-list" class="space-y-2.5 max-h-60 overflow-y-auto"></div>
                 </div>
@@ -2036,10 +2085,10 @@
                         <div class="text-gray-400 text-[11px]" data-i18n="diagOverallStatus">綜合健康度診斷狀態</div>
                         <div id="diag-summary-title" class="text-sm font-bold text-gray-200 mt-0.5 flex items-center gap-2 font-mono">
                             <span class="w-2.5 h-2.5 rounded-full bg-yellow-500 animate-pulse"></span>
-                            <span>診斷準備中...</span>
+                            <span data-i18n="diagPreparing">診斷準備中...</span>
                         </div>
                     </div>
-                    <div id="diag-stats-badge" class="px-3 py-1 rounded-lg bg-gray-800 text-gray-300 font-mono text-xs border border-gray-700">
+                    <div id="diag-stats-badge" class="px-3 py-1 rounded-lg bg-gray-800 text-gray-300 font-mono text-xs border border-gray-700" data-i18n="diagStatsInit">
                         0 / 7 項目
                     </div>
                 </div>
@@ -2060,7 +2109,7 @@
                     </button>
                     <button type="button" onclick="closeDiagnosticsModal()"
                         class="px-3 py-1.5 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-300 transition cursor-pointer">
-                        <span>關閉</span>
+                        <span data-i18n="modalClose">關閉</span>
                     </button>
                 </div>
             </div>
@@ -2177,7 +2226,7 @@
                     <div>
                         <div class="flex items-center gap-2">
                             <h2 class="text-base font-bold text-white" data-i18n="appLibModalTitle">自建應用程式庫</h2>
-                            <span id="app-lib-count-badge" class="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-violet-950/80 border border-violet-500/40 text-violet-300">0 個應用</span>
+                            <span id="app-lib-count-badge" class="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-violet-950/80 border border-violet-500/40 text-violet-300" data-i18n="appLibCountInit">0 個應用</span>
                         </div>
                         <p class="text-xs text-gray-400 mt-0.5" data-i18n="appLibModalSubtitle">管理與執行您建立的單檔工具、自動化腳本或自訂助理，支援一鍵沙箱運行與 LLM 深度調用</p>
                     </div>
@@ -2297,7 +2346,7 @@
                         <label class="block text-gray-300 font-bold mb-1" data-i18n="appEditLabelIcon">圖示 / Emoji</label>
                         <input type="text" id="app-edit-icon"
                             class="w-full bg-black border border-gray-700 rounded-lg px-3 py-1.5 text-xs text-white focus:border-violet-500 focus:outline-none"
-                            placeholder="⏱️ 或 🛠️" value="⚡">
+                            placeholder="⏱️ 或 🛠️" value="⚡" data-i18n-placeholder="appEditIconPlaceholder">
                     </div>
                     <div>
                         <label class="block text-gray-300 font-bold mb-1" data-i18n="appEditLabelVersion">版本號</label>
@@ -2328,7 +2377,7 @@
                     <div class="flex justify-between items-center mb-1">
                         <label class="block text-gray-300 font-bold" data-i18n="appEditLabelCode">應用程式碼 / 內容 *</label>
                         <div class="flex items-center gap-2">
-                            <span id="app-edit-code-stats" class="text-[11px] text-gray-400 font-mono">0 行 · 0 字</span>
+                            <span id="app-edit-code-stats" class="text-[11px] text-gray-400 font-mono" data-i18n="appEditCodeStatsInit">0 行 · 0 字</span>
                             <button id="btn-app-edit-copy-code" type="button" class="text-[11px] text-emerald-400 hover:text-emerald-300 underline font-medium" data-i18n="appEditBtnCopyCode">複製代碼</button>
                             <button id="btn-app-edit-sample-code" type="button" class="text-[11px] text-violet-400 hover:text-violet-300 underline font-medium" data-i18n="appEditBtnSampleCode">填入範本代碼</button>
                         </div>
@@ -3139,18 +3188,18 @@
                             <i data-lucide="activity" class="w-4 h-4"></i> <span data-i18n="xorgModalEnvStatus">WSL 當前環境檢測狀態</span>
                         </span>
                         <div class="flex items-center gap-1.5">
-                            <button type="button" onclick="checkWslStatus(true)" class="px-2 py-0.5 rounded bg-gray-800 hover:bg-gray-700 text-teal-300 border border-teal-700/40 text-[11px] cursor-pointer">
+                            <button type="button" onclick="checkWslStatus(true)" class="px-2 py-0.5 rounded bg-gray-800 hover:bg-gray-700 text-teal-300 border border-teal-700/40 text-[11px] cursor-pointer" data-i18n="diagBtnRerun">
                                 重新檢測
                             </button>
-                            <button type="button" onclick="startWslDesktopAndConnect('xorg')" class="px-2.5 py-0.5 rounded bg-teal-800 hover:bg-teal-700 text-white font-medium text-[11px] cursor-pointer shadow">
+                            <button type="button" onclick="startWslDesktopAndConnect('xorg')" class="px-2.5 py-0.5 rounded bg-teal-800 hover:bg-teal-700 text-white font-medium text-[11px] cursor-pointer shadow" data-i18n="wslBtnStart">
                                 一鍵啟動桌面
                             </button>
-                            <button type="button" onclick="stopWslDesktopService('xorg')" class="px-2 py-0.5 rounded bg-rose-950 hover:bg-rose-900 text-rose-300 border border-rose-800 text-[11px] cursor-pointer">
+                            <button type="button" onclick="stopWslDesktopService('xorg')" class="px-2 py-0.5 rounded bg-rose-950 hover:bg-rose-900 text-rose-300 border border-rose-800 text-[11px] cursor-pointer" data-i18n="wslBtnStop">
                                 停止桌面
                             </button>
                         </div>
                     </div>
-                    <div id="modal-wsl-status" class="p-2.5 bg-black/60 rounded-lg border border-gray-800 font-mono text-[11px] text-gray-300">
+                    <div id="modal-wsl-status" class="p-2.5 bg-black/60 rounded-lg border border-gray-800 font-mono text-[11px] text-gray-300" data-i18n="modalWslUnchecked">
                         <span class="w-2 h-2 rounded-full bg-gray-500 inline-block mr-1"></span> WSL 尚未檢測，請點擊「重新檢測」。
                     </div>
                 </div>
@@ -3159,7 +3208,7 @@
                     <div class="font-bold text-emerald-300 mb-1 flex items-center gap-1.5">
                         <i data-lucide="info" class="w-4 h-4"></i> <span data-i18n="xorgModalHowItWorks">工作原理說明</span>
                     </div>
-                    <p class="text-gray-400 leading-relaxed text-[11px]">
+                    <p class="text-gray-400 leading-relaxed text-[11px]" data-i18n-html="wslHowItWorksDesc">
                         WSL2 桌面運作方式：透過 <strong>Xvfb + x11vnc</strong> 在 WSL 內啟動 <code>:1</code> 虛擬顯示器並運行 <strong>XFCE4</strong> 視窗管理與桌面，監聽 5901 埠；同時透過 <strong>websockify</strong> 橋接為 WebSocket (6080) 與 HTTP 伺服器，前端即可透過 HTML5 Canvas 零延遲順暢操控！
                     </p>
                 </div>
@@ -3169,7 +3218,7 @@
                         <span class="flex items-center gap-1.5 text-emerald-300">
                             <i data-lucide="terminal" class="w-4 h-4"></i> <span data-i18n="xorgModalOpt1">方案一：完整桌面服務 (Xvfb + x11vnc + XFCE4 + websockify)</span>
                         </span>
-                        <button type="button" onclick="copyXorgCommands('fluxbox')" class="text-xs px-2 py-0.5 rounded bg-emerald-800/60 hover:bg-emerald-700 text-emerald-200 border border-emerald-600/40 cursor-pointer">複製指令</button>
+                        <button type="button" onclick="copyXorgCommands('fluxbox')" class="text-xs px-2 py-0.5 rounded bg-emerald-800/60 hover:bg-emerald-700 text-emerald-200 border border-emerald-600/40 cursor-pointer" data-i18n="daemonCopyCmd">複製指令</button>
                     </div>
                     <pre id="code-xorg-fluxbox" class="bg-black/70 p-3 rounded-lg border border-gray-800 font-mono text-[11px] text-gray-200 overflow-x-auto select-all"># 1. 確保 /tmp/.X11-unix 具備讀寫權限
 sudo mount -o remount,rw /tmp/.X11-unix
@@ -3192,7 +3241,7 @@ websockify -D --web /usr/share/novnc 6080 localhost:5901</pre>
                         <span class="flex items-center gap-1.5 text-blue-300">
                             <i data-lucide="monitor" class="w-4 h-4"></i> <span data-i18n="xorgModalOpt2">方案二：單一 GUI 程式 (Direct App)</span>
                         </span>
-                        <button type="button" onclick="copyXorgCommands('singleapp')" class="text-xs px-2 py-0.5 rounded bg-gray-800 hover:bg-gray-700 text-gray-300 border border-gray-700 cursor-pointer">複製指令</button>
+                        <button type="button" onclick="copyXorgCommands('singleapp')" class="text-xs px-2 py-0.5 rounded bg-gray-800 hover:bg-gray-700 text-gray-300 border border-gray-700 cursor-pointer" data-i18n="daemonCopyCmd">複製指令</button>
                     </div>
                     <pre id="code-xorg-singleapp" class="bg-black/70 p-3 rounded-lg border border-gray-800 font-mono text-[11px] text-gray-200 overflow-x-auto select-all"># 於 WSL 終端機中，直接將任意 Linux GUI 程式指向 DISPLAY=:1
 export DISPLAY=:1
@@ -3207,7 +3256,7 @@ mousepad &</pre>
                         <span class="flex items-center gap-1.5 text-teal-300">
                             <i data-lucide="zap" class="w-4 h-4"></i> <span data-i18n="xorgModalOpt3">方案三：標準 Linux xinit / startx 會話 (已內建支援)</span>
                         </span>
-                        <button type="button" onclick="copyXorgCommands('xinit')" class="text-xs px-2 py-0.5 rounded bg-teal-800/60 hover:bg-teal-700 text-teal-200 border border-teal-600/40 cursor-pointer">複製指令</button>
+                        <button type="button" onclick="copyXorgCommands('xinit')" class="text-xs px-2 py-0.5 rounded bg-teal-800/60 hover:bg-teal-700 text-teal-200 border border-teal-600/40 cursor-pointer" data-i18n="daemonCopyCmd">複製指令</button>
                     </div>
                     <pre id="code-xorg-xinit" class="bg-black/70 p-3 rounded-lg border border-gray-800 font-mono text-[11px] text-gray-200 overflow-x-auto select-all"># 支援標準 xinit / startx 指令（自動橋接虛擬 X 顯示器與 HTML5 視窗）
 xinit                  # 啟動完整 XFCE 桌面會話
@@ -3225,7 +3274,7 @@ startx                 # 標準 startx 啟動</pre>
                 <button type="button" onclick="checkWslStatus(true)" class="text-teal-400 hover:underline text-xs flex items-center gap-1 cursor-pointer">
                     <i data-lucide="help-circle" class="w-3.5 h-3.5"></i> <span data-i18n="xorgModalBtnTroubleshoot">排查 WSL 連線問題</span>
                 </button>
-                <button type="button" onclick="closeXorgWizardModal()" class="px-4 py-1.5 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-lg font-medium cursor-pointer">關閉</button>
+                <button type="button" onclick="closeXorgWizardModal()" class="px-4 py-1.5 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-lg font-medium cursor-pointer" data-i18n="modalClose">關閉</button>
             </div>
         </div>
     </div>
@@ -3864,7 +3913,45 @@ startx                 # 標準 startx 啟動</pre>
                 audioStreamTitle: "音訊串流",
                 audioDisabled: "音訊: 關閉",
                 audioVolume: "音量:",
-                keySettingsBtn: "按鍵設置"
+                keySettingsBtn: "按鍵設置",
+                aiActiveRunning: "AI 執行中",
+                vkeySettings: "設置",
+                novncPresetNative: "原生 VNC 5900",
+                novncPlaceholderDesc: "支援標準 RFB 協定、Tight/ZRLE 編碼，相容 x11vnc、TigerVNC、TightVNC 及 websockify 代理。",
+                xorgStatusDisconnected: "DISPLAY=:1 (未連線)",
+                xorgPlaceholderTitle: "Xorg GUI 虛擬視窗環境 (DISPLAY=:1)",
+                xorgPlaceholderDesc: "可於 Windows/WSL2 或 Docker 中無縫執行 Linux GUI 圖形化程式（如 終端機、Thunar 檔案總管、Mousepad、Firefox 等），並透過 HTML5 零延遲畫布呈現。",
+                langZhTw: "繁體中文",
+                langEn: "English",
+                webgpuLoadingWeights: "⚡ 正在載入 WebGPU 本地模型權重...",
+                onnxLoadingWeights: "📦 正在載入 ONNX Runtime 本地模型...",
+                artifactPartsInit: "已接續 2 段",
+                artifactLatestVer: "v1 (最新)",
+                drawerDiffAddedZero: "+0 行",
+                drawerDiffRemovedZero: "-0 行",
+                drawerHistoryBannerText: "您目前正在檢視歷史版本 (唯讀預覽模式)。若要恢復此版本，請點擊右側「還原此版」。",
+                drawerRestoreVerBtn: "還原此版",
+                drawerCodeStatsInit: "0 行 · 0 字元",
+                savedStatus: "已儲存",
+                tokenTableAutoTerm: "(自動交互/終端調用)",
+                ragTotalChunksInit: "0 個分塊",
+                mcpToolsCountInit: "0 個工具",
+                diagPreparing: "診斷準備中...",
+                diagStatsInit: "0 / 7 項目",
+                appLibCountInit: "0 個應用",
+                appEditCodeStatsInit: "0 行 · 0 字",
+                modalWslUnchecked: "WSL 尚未檢測，請點擊「重新檢測」。",
+                wslHowItWorksDesc: "WSL2 桌面運作方式：透過 <strong>Xvfb + x11vnc</strong> 在 WSL 內啟動 <code>:1</code> 虛擬顯示器並運行 <strong>XFCE4</strong> 視窗管理與桌面，監聽 5901 埠；同時透過 <strong>websockify</strong> 橋接為 WebSocket (6080) 與 HTTP 伺服器，前端即可透過 HTML5 Canvas 零延遲順暢操控！",
+                tooltipTabTerm: "多協定終端機 (WSL Shell, SSH, Telnet, Serial)",
+                tooltipTabNoVNC: "noVNC HTML5 遠端桌面 (VNC / websockify)",
+                tooltipTabXorg: "Xorg GUI 視窗模式 (Linux/WSL2/Docker DISPLAY:1)",
+                tooltipVkeyEsc: "發送 Escape (Esc) 鍵",
+                tooltipWslStartNoVnc: "在 WSL2 自動啟動 noVNC 桌面會話並即時連線",
+                tooltipNoVncPresetMenu: "快速切換連線目標與探測",
+                tooltipWslStartXorg: "在 WSL2 自動啟動 Xorg 桌面會話並即時連線",
+                artifactSaveTitle: "儲存修改並同步至卡片與全域檔案",
+                artifactRevertTitle: "還原至 AI 產出的原始內容",
+                appEditIconPlaceholder: "⏱️ 或 🛠️",
             },
             "en": {
                 appTitle: "Dual-Engine AI Console",
@@ -4496,7 +4583,45 @@ startx                 # 標準 startx 啟動</pre>
                 audioStreamTitle: "Audio Stream",
                 audioDisabled: "Audio: Off",
                 audioVolume: "Volume:",
-                keySettingsBtn: "Key Settings"
+                keySettingsBtn: "Key Settings",
+                aiActiveRunning: "AI Running",
+                vkeySettings: "Settings",
+                novncPresetNative: "Native VNC 5900",
+                novncPlaceholderDesc: "Supports standard RFB protocol, Tight/ZRLE encoding, compatible with x11vnc, TigerVNC, TightVNC, and websockify proxy.",
+                xorgStatusDisconnected: "DISPLAY=:1 (Disconnected)",
+                xorgPlaceholderTitle: "Xorg GUI Virtual Window Environment (DISPLAY=:1)",
+                xorgPlaceholderDesc: "Seamlessly run Linux GUI applications (Terminal, Thunar, Mousepad, Firefox, etc.) in Windows/WSL2 or Docker with zero-latency HTML5 canvas.",
+                langZhTw: "Traditional Chinese",
+                langEn: "English",
+                webgpuLoadingWeights: "⚡ Loading WebGPU local model weights...",
+                onnxLoadingWeights: "📦 Loading ONNX Runtime local model...",
+                artifactPartsInit: "Joined 2 parts",
+                artifactLatestVer: "v1 (Latest)",
+                drawerDiffAddedZero: "+0 lines",
+                drawerDiffRemovedZero: "-0 lines",
+                drawerHistoryBannerText: "You are viewing a historical version (read-only preview). To restore this version, click 'Restore Version' on the right.",
+                drawerRestoreVerBtn: "Restore Version",
+                drawerCodeStatsInit: "0 lines · 0 chars",
+                savedStatus: "Saved",
+                tokenTableAutoTerm: "(Auto Interact / Terminal Tool)",
+                ragTotalChunksInit: "0 chunks",
+                mcpToolsCountInit: "0 tools",
+                diagPreparing: "Preparing diagnostics...",
+                diagStatsInit: "0 / 7 items",
+                appLibCountInit: "0 apps",
+                appEditCodeStatsInit: "0 lines · 0 chars",
+                modalWslUnchecked: "WSL not checked yet, please click 'Re-detect'.",
+                wslHowItWorksDesc: "WSL2 Desktop Architecture: Launches <code>:1</code> virtual display via <strong>Xvfb + x11vnc</strong> inside WSL running <strong>XFCE4</strong> window manager listening on port 5901; bridges to WebSocket (6080) and HTTP server via <strong>websockify</strong> for zero-latency HTML5 Canvas control!",
+                tooltipTabTerm: "Multi-Protocol Terminal (WSL Shell, SSH, Telnet, Serial)",
+                tooltipTabNoVNC: "noVNC HTML5 Remote Desktop (VNC / websockify)",
+                tooltipTabXorg: "Xorg GUI Window Mode (Linux/WSL2/Docker DISPLAY:1)",
+                tooltipVkeyEsc: "Send Escape (Esc) Key",
+                tooltipWslStartNoVnc: "Start noVNC desktop session in WSL2 and connect immediately",
+                tooltipNoVncPresetMenu: "Quick switch connection target and probe",
+                tooltipWslStartXorg: "Start Xorg desktop session in WSL2 and connect immediately",
+                artifactSaveTitle: "Save modifications and sync to card and global files",
+                artifactRevertTitle: "Revert to original AI generated content",
+                appEditIconPlaceholder: "⏱️ or 🛠️",
             }
         };
 
@@ -4753,7 +4878,8 @@ startx                 # 標準 startx 啟動</pre>
                         badge.innerHTML = `<span class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span> <span data-i18n="daemonOnline">${(typeof t === 'function' && t('daemonOnline')) ? t('daemonOnline') : '常駐程式 (8001): 連線中'}</span>`;
                     }
                     if (modalStatusText) {
-                        modalStatusText.innerHTML = `<span class="w-2.5 h-2.5 rounded-full bg-green-500 animate-pulse"></span> <span class="text-green-400 font-semibold">常駐程式已就緒 (Port 8001 連線中)</span>`;
+                        const isEn = (typeof currentLang !== 'undefined' ? currentLang : appSettings?.lang) === 'en';
+                        modalStatusText.innerHTML = `<span class="w-2.5 h-2.5 rounded-full bg-green-500 animate-pulse"></span> <span class="text-green-400 font-semibold">${isEn ? 'Daemon Ready (Port 8001 Online)' : '常駐程式已就緒 (Port 8001 連線中)'}</span>`;
                     }
                     if (typeof checkWslStatus === 'function' && (typeof lastWslStatus === 'undefined' || lastWslStatus === null)) {
                         checkWslStatus(false).catch(() => {});
@@ -4768,7 +4894,8 @@ startx                 # 標準 startx 啟動</pre>
                     badge.innerHTML = `<span class="w-2 h-2 rounded-full bg-red-500"></span> <span data-i18n="daemonOffline">${(typeof t === 'function' && t('daemonOffline')) ? t('daemonOffline') : '常駐程式 (8001): 離線'}</span>`;
                 }
                 if (modalStatusText) {
-                    modalStatusText.innerHTML = `<span class="w-2.5 h-2.5 rounded-full bg-red-500"></span> <span class="text-red-400 font-semibold">常駐程式未連線 (Port 8001 離線)</span>`;
+                    const isEn = (typeof currentLang !== 'undefined' ? currentLang : appSettings?.lang) === 'en';
+                    modalStatusText.innerHTML = `<span class="w-2.5 h-2.5 rounded-full bg-red-500"></span> <span class="text-red-400 font-semibold">${isEn ? 'Daemon Disconnected (Port 8001 Offline)' : '常駐程式未連線 (Port 8001 離線)'}</span>`;
                 }
                 return false;
             }
@@ -5993,6 +6120,13 @@ startx                 # 標準 startx 啟動</pre>
                 const key = el.getAttribute('data-i18n');
                 if (key && translations[currentLang][key]) {
                     el.textContent = translations[currentLang][key];
+                }
+            });
+
+            document.querySelectorAll('[data-i18n-html]').forEach(el => {
+                const key = el.getAttribute('data-i18n-html');
+                if (key && translations[currentLang] && translations[currentLang][key]) {
+                    el.innerHTML = translations[currentLang][key];
                 }
             });
 
@@ -14577,7 +14711,8 @@ Important guidelines:
                 </div>
             `;
             if (summaryTitle) {
-                summaryTitle.innerHTML = `<span class="w-2.5 h-2.5 rounded-full bg-yellow-500 animate-pulse"></span> <span class="text-yellow-400">診斷執行中...</span>`;
+                const isEn = (typeof currentLang !== 'undefined' ? currentLang : appSettings?.lang) === 'en';
+                summaryTitle.innerHTML = `<span class="w-2.5 h-2.5 rounded-full bg-yellow-500 animate-pulse"></span> <span class="text-yellow-400">${isEn ? 'Diagnostics running...' : '診斷執行中...'}</span>`;
             }
 
             const tests = [];
@@ -14773,16 +14908,18 @@ Important guidelines:
             listEl.innerHTML = html;
 
             if (statsBadge) {
+                const isEn = (typeof currentLang !== 'undefined' ? currentLang : appSettings?.lang) === 'en';
                 statsBadge.innerHTML = failedCount === 0 
-                    ? `<span class="text-emerald-400 font-bold">${passedCount} / ${total} 通過</span>` 
-                    : `<span class="text-red-400 font-bold">${passedCount} 通過, ${failedCount} 異常</span>`;
+                    ? `<span class="text-emerald-400 font-bold">${passedCount} / ${total} ${isEn ? 'Passed' : '通過'}</span>` 
+                    : `<span class="text-red-400 font-bold">${passedCount} ${isEn ? 'Passed' : '通過'}, ${failedCount} ${isEn ? 'Failed' : '異常'}</span>`;
             }
 
             if (summaryTitle) {
+                const isEn = (typeof currentLang !== 'undefined' ? currentLang : appSettings?.lang) === 'en';
                 if (failedCount === 0) {
-                    summaryTitle.innerHTML = `<span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span> <span class="text-emerald-400 font-bold">全數通過！所有核心功能運作良好</span>`;
+                    summaryTitle.innerHTML = `<span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span> <span class="text-emerald-400 font-bold">${isEn ? 'All Passed! All core features operating normally' : '全數通過！所有核心功能運作良好'}</span>`;
                 } else {
-                    summaryTitle.innerHTML = `<span class="w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse"></span> <span class="text-red-400 font-bold">檢測到 ${failedCount} 項異常，請查看詳情</span>`;
+                    summaryTitle.innerHTML = `<span class="w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse"></span> <span class="text-red-400 font-bold">${isEn ? `Detected ${failedCount} issue(s), please check details` : `檢測到 ${failedCount} 項異常，請查看詳情`}</span>`;
                 }
             }
             if (window.lucide) lucide.createIcons();
@@ -15192,7 +15329,7 @@ Important guidelines:
         window.saveAndApplyKeySettings = saveAndApplyKeySettings;
 
         function resetKeySettingsToDefault() {
-            if (confirm('確定要將所有按鍵與快捷鍵恢復為系統預設值嗎？')) {
+            const isEn = (typeof currentLang !== 'undefined' ? currentLang : appSettings?.lang) === 'en'; if (confirm(isEn ? 'Are you sure you want to restore all keys and shortcuts to defaults?' : '確定要將所有按鍵與快捷鍵恢復為系統預設值嗎？')) {
                 userKeyConfig = JSON.parse(JSON.stringify(DEFAULT_KEY_CONFIG));
                 saveKeySettings();
                 syncKeySettingsToModal();
@@ -15431,10 +15568,25 @@ Important guidelines:
                 leftPanel.classList.remove('panel-collapsed-left');
             }
             window.dispatchEvent(new Event('resize'));
-            if (typeof term !== 'undefined' && term && typeof fitAddon !== 'undefined' && fitAddon) {
-                try { fitAddon.fit(); } catch (e) {}
-            }
             if (window.lucide) lucide.createIcons();
+
+            // 在 CSS 過渡動畫 (220ms) 結束後重新派發 resize、重繪 WTerm 並聚焦終端機輸入框
+            setTimeout(() => {
+                window.dispatchEvent(new Event('resize'));
+                const container = document.getElementById('term-wterm-container');
+                if (container) {
+                    try {
+                        const wtermEl = container.querySelector('.wterm') || container.querySelector('.has-scrollback') || container.firstElementChild;
+                        if (wtermEl) {
+                            wtermEl.scrollTop = wtermEl.scrollHeight;
+                        }
+                    } catch (e) {}
+                }
+                const termInput = document.getElementById('term-input');
+                if (termInput && !isCollapsing) {
+                    termInput.focus();
+                }
+            }, 250);
         }
         window.toggleLeftPanelCollapse = toggleLeftPanelCollapse;
 
@@ -15450,10 +15602,20 @@ Important guidelines:
                 rightPanel.classList.remove('panel-collapsed-right');
             }
             window.dispatchEvent(new Event('resize'));
-            if (typeof term !== 'undefined' && term && typeof fitAddon !== 'undefined' && fitAddon) {
-                try { fitAddon.fit(); } catch (e) {}
-            }
             if (window.lucide) lucide.createIcons();
+
+            setTimeout(() => {
+                window.dispatchEvent(new Event('resize'));
+                const container = document.getElementById('term-wterm-container');
+                if (container) {
+                    try {
+                        const wtermEl = container.querySelector('.wterm') || container.querySelector('.has-scrollback') || container.firstElementChild;
+                        if (wtermEl) {
+                            wtermEl.scrollTop = wtermEl.scrollHeight;
+                        }
+                    } catch (e) {}
+                }
+            }, 250);
         }
         window.toggleRightPanelCollapse = toggleRightPanelCollapse;
 
@@ -15584,6 +15746,37 @@ Important guidelines:
         }
         window.updateLeftActionsDropdownMenu = updateLeftActionsDropdownMenu;
 
+        // ── noVNC 遠端桌面下拉選單 (noVNC Presets & Controls Dropdowns) ──────────────
+        function toggleNoVncPresetDropdown(e) {
+            if (e) e.stopPropagation();
+            const d = document.getElementById('dropdown-novnc-presets');
+            const dCtrl = document.getElementById('dropdown-novnc-ctrl');
+            if (dCtrl && !dCtrl.classList.contains('hidden')) dCtrl.classList.add('hidden');
+            if (!d) return;
+            d.classList.toggle('hidden');
+            if (window.lucide) lucide.createIcons();
+        }
+        window.toggleNoVncPresetDropdown = toggleNoVncPresetDropdown;
+
+        function toggleNoVncCtrlDropdown(e) {
+            if (e) e.stopPropagation();
+            const d = document.getElementById('dropdown-novnc-ctrl');
+            const dPreset = document.getElementById('dropdown-novnc-presets');
+            if (dPreset && !dPreset.classList.contains('hidden')) dPreset.classList.add('hidden');
+            if (!d) return;
+            d.classList.toggle('hidden');
+            if (window.lucide) lucide.createIcons();
+        }
+        window.toggleNoVncCtrlDropdown = toggleNoVncCtrlDropdown;
+
+        function closeNoVncDropdowns() {
+            const dPreset = document.getElementById('dropdown-novnc-presets');
+            const dCtrl = document.getElementById('dropdown-novnc-ctrl');
+            if (dPreset && !dPreset.classList.contains('hidden')) dPreset.classList.add('hidden');
+            if (dCtrl && !dCtrl.classList.contains('hidden')) dCtrl.classList.add('hidden');
+        }
+        window.closeNoVncDropdowns = closeNoVncDropdowns;
+
         // ── Xorg 視窗模式下拉選單 (Xorg Apps & Controls Dropdowns) ───────────────────
         function toggleXorgAppDropdown(e) {
             if (e) e.stopPropagation();
@@ -15646,6 +15839,14 @@ Important guidelines:
             if (!e.target.closest('#btn-left-actions-menu') && !e.target.closest('#dropdown-left-actions')) {
                 closeLeftActionsDropdown();
             }
+            if (!e.target.closest('#btn-novnc-preset-menu') && !e.target.closest('#dropdown-novnc-presets')) {
+                const d = document.getElementById('dropdown-novnc-presets');
+                if (d && !d.classList.contains('hidden')) d.classList.add('hidden');
+            }
+            if (!e.target.closest('#btn-novnc-ctrl-menu') && !e.target.closest('#dropdown-novnc-ctrl')) {
+                const d = document.getElementById('dropdown-novnc-ctrl');
+                if (d && !d.classList.contains('hidden')) d.classList.add('hidden');
+            }
             if (!e.target.closest('#btn-xorg-app-menu') && !e.target.closest('#dropdown-xorg-apps')) {
                 const d = document.getElementById('dropdown-xorg-apps');
                 if (d && !d.classList.contains('hidden')) d.classList.add('hidden');
@@ -15678,8 +15879,9 @@ Important guidelines:
             const port = parseInt(document.getElementById(isXorg ? 'xorg-port' : 'novnc-port')?.value || '6080');
             const statusEl = document.getElementById(isXorg ? 'xorg-status' : 'novnc-status');
 
+            const isEn = (typeof currentLang !== 'undefined' ? currentLang : appSettings?.lang) === 'en';
             if (statusEl) {
-                statusEl.innerHTML = `<span class="w-2 h-2 rounded-full bg-yellow-500 animate-ping"></span> <span>探測 ${host}:${port} 中...</span>`;
+                statusEl.innerHTML = `<span class="w-2 h-2 rounded-full bg-yellow-500 animate-ping"></span> <span>${isEn ? `Probing ${host}:${port}...` : `探測 ${host}:${port} 中...`}</span>`;
             }
 
             try {
@@ -15689,16 +15891,16 @@ Important guidelines:
                 const data = await resp.json();
                 if (data.open) {
                     if (statusEl) {
-                        statusEl.innerHTML = `<span class="w-2 h-2 rounded-full bg-emerald-500"></span> <span class="text-emerald-400">連接埠 ${host}:${port} 監聽中 (服務就緒)</span>`;
+                        statusEl.innerHTML = `<span class="w-2 h-2 rounded-full bg-emerald-500"></span> <span class="text-emerald-400">${isEn ? `Port ${host}:${port} listening (Ready)` : `連接埠 ${host}:${port} 監聽中 (服務就緒)`}</span>`;
                     }
                 } else {
                     if (statusEl) {
-                        statusEl.innerHTML = `<span class="w-2 h-2 rounded-full bg-rose-500"></span> <span class="text-rose-400">連接埠 ${host}:${port} 尚未啟動或拒絕連線</span>`;
+                        statusEl.innerHTML = `<span class="w-2 h-2 rounded-full bg-rose-500"></span> <span class="text-rose-400">${isEn ? `Port ${host}:${port} not active or refused` : `連接埠 ${host}:${port} 尚未啟動或拒絕連線`}</span>`;
                     }
                 }
             } catch (err) {
                 if (statusEl) {
-                    statusEl.innerHTML = `<span class="w-2 h-2 rounded-full bg-amber-500"></span> <span class="text-amber-400">探測失敗 (常駐 8001 服務未啟動): ${err.message}</span>`;
+                    statusEl.innerHTML = `<span class="w-2 h-2 rounded-full bg-amber-500"></span> <span class="text-amber-400">${isEn ? `Probe failed (Daemon 8001 not running): ${err.message}` : `探測失敗 (常駐 8001 服務未啟動): ${err.message}`}</span>`;
                 }
             }
         }
@@ -15752,8 +15954,9 @@ Important guidelines:
             if (canvasContainer) canvasContainer.classList.remove('hidden');
             if (placeholder) placeholder.classList.add('hidden');
 
+            const isEn = (typeof currentLang !== 'undefined' ? currentLang : appSettings?.lang) === 'en';
             if (statusEl) {
-                statusEl.innerHTML = `<span class="w-2 h-2 rounded-full bg-yellow-500 animate-ping"></span> <span>連線中: ws://${host}:${port}/${path}...</span>`;
+                statusEl.innerHTML = `<span class="w-2 h-2 rounded-full bg-yellow-500 animate-ping"></span> <span>${isEn ? `Connecting: ws://${host}:${port}/${path}...` : `連線中: ws://${host}:${port}/${path}...`}</span>`;
             }
 
             try {
@@ -15776,16 +15979,19 @@ Important guidelines:
                 rfbNovncInstance.resizeSession = true;
 
                 rfbNovncInstance.addEventListener('connect', () => {
+                    const isEnNow = (typeof currentLang !== 'undefined' ? currentLang : appSettings?.lang) === 'en';
                     if (statusEl) {
-                        statusEl.innerHTML = `<span class="w-2 h-2 rounded-full bg-emerald-500"></span> <span class="text-emerald-400">已連線至 noVNC 桌面 (${host}:${port})</span>`;
+                        statusEl.innerHTML = `<span class="w-2 h-2 rounded-full bg-emerald-500"></span> <span class="text-emerald-400">${isEnNow ? `Connected to noVNC Desktop (${host}:${port})` : `已連線至 noVNC 桌面 (${host}:${port})`}</span>`;
                     }
                     if (btnConn) btnConn.classList.add('hidden');
                     if (btnDisc) btnDisc.classList.remove('hidden');
                 });
 
                 rfbNovncInstance.addEventListener('disconnect', (e) => {
+                    const isEnNow = (typeof currentLang !== 'undefined' ? currentLang : appSettings?.lang) === 'en';
                     if (statusEl) {
-                        statusEl.innerHTML = `<span class="w-2 h-2 rounded-full bg-rose-500"></span> <span class="text-rose-400">已斷開桌面連線 ${e.detail?.clean ? '' : '(異常關閉)'}</span>`;
+                        const reason = e.detail?.clean ? '' : (isEnNow ? ' (Abnormal closure)' : ' (異常關閉)');
+                        statusEl.innerHTML = `<span class="w-2 h-2 rounded-full bg-rose-500"></span> <span class="text-rose-400">${isEnNow ? 'Disconnected from desktop' : '已斷開桌面連線'}${reason}</span>`;
                     }
                     if (btnConn) btnConn.classList.remove('hidden');
                     if (btnDisc) btnDisc.classList.add('hidden');
@@ -15793,14 +15999,16 @@ Important guidelines:
                 });
 
                 rfbNovncInstance.addEventListener('securityfailure', (e) => {
-                    alert('noVNC 認證失敗：' + (e.detail?.reason || '密碼錯誤或握手失敗'));
+                    const isEnNow = (typeof currentLang !== 'undefined' ? currentLang : appSettings?.lang) === 'en';
+                    alert((isEnNow ? 'noVNC authentication failed: ' : 'noVNC 認證失敗：') + (e.detail?.reason || (isEnNow ? 'Password incorrect or handshake failed' : '密碼錯誤或握手失敗')));
                 });
             } catch (err) {
+                const isEnNow = (typeof currentLang !== 'undefined' ? currentLang : appSettings?.lang) === 'en';
                 if (statusEl) {
-                    statusEl.innerHTML = `<span class="w-2 h-2 rounded-full bg-rose-500"></span> <span class="text-rose-400">連線失敗: ${err.message}</span>`;
+                    statusEl.innerHTML = `<span class="w-2 h-2 rounded-full bg-rose-500"></span> <span class="text-rose-400">${isEnNow ? 'Connection failed: ' : '連線失敗: '}${err.message}</span>`;
                 }
                 if (placeholder) placeholder.classList.remove('hidden');
-                alert('noVNC 連線發生錯誤：' + err.message);
+                alert((isEnNow ? 'noVNC connection error: ' : 'noVNC 連線發生錯誤：') + err.message);
             }
         }
         window.handleNoVncConnect = handleNoVncConnect;
@@ -15825,7 +16033,8 @@ Important guidelines:
 
             const statusEl = document.getElementById('novnc-status');
             if (statusEl) {
-                statusEl.innerHTML = `<span class="w-2 h-2 rounded-full bg-gray-500"></span> <span>已中斷連線</span>`;
+                const isEn = (typeof currentLang !== 'undefined' ? currentLang : appSettings?.lang) === 'en';
+                statusEl.innerHTML = `<span class="w-2 h-2 rounded-full bg-gray-500"></span> <span>${isEn ? 'Disconnected' : '已中斷連線'}</span>`;
             }
         }
         window.handleNoVncDisconnect = handleNoVncDisconnect;
@@ -15864,8 +16073,9 @@ Important guidelines:
             if (canvasContainer) canvasContainer.classList.remove('hidden');
             if (placeholder) placeholder.classList.add('hidden');
 
+            const isEn = (typeof currentLang !== 'undefined' ? currentLang : appSettings?.lang) === 'en';
             if (statusEl) {
-                statusEl.innerHTML = `<span class="w-2 h-2 rounded-full bg-yellow-500 animate-ping"></span> <span>連線 Xorg DISPLAY ${dpy} (Port ${port})...</span>`;
+                statusEl.innerHTML = `<span class="w-2 h-2 rounded-full bg-yellow-500 animate-ping"></span> <span>${isEn ? `Connecting Xorg DISPLAY ${dpy} (Port ${port})...` : `連線 Xorg DISPLAY ${dpy} (Port ${port})...`}</span>`;
             }
 
             try {
@@ -15893,16 +16103,19 @@ Important guidelines:
                 rfbXorgInstance.resizeSession = false; // 避免伺服器拒絕 resize 警告
 
                 rfbXorgInstance.addEventListener('connect', () => {
+                    const isEnNow = (typeof currentLang !== 'undefined' ? currentLang : appSettings?.lang) === 'en';
                     if (statusEl) {
-                        statusEl.innerHTML = `<span class="w-2 h-2 rounded-full bg-emerald-500"></span> <span class="text-emerald-400">已連線至 Xorg (DISPLAY=${dpy} @ Port ${port})</span>`;
+                        statusEl.innerHTML = `<span class="w-2 h-2 rounded-full bg-emerald-500"></span> <span class="text-emerald-400">${isEnNow ? `Connected to Xorg (DISPLAY=${dpy} @ Port ${port})` : `已連線至 Xorg (DISPLAY=${dpy} @ Port ${port})`}</span>`;
                     }
                     if (btnConn) btnConn.classList.add('hidden');
                     if (btnDisc) btnDisc.classList.remove('hidden');
                 });
 
                 rfbXorgInstance.addEventListener('disconnect', (e) => {
+                    const isEnNow = (typeof currentLang !== 'undefined' ? currentLang : appSettings?.lang) === 'en';
                     if (statusEl) {
-                        statusEl.innerHTML = `<span class="w-2 h-2 rounded-full bg-rose-500"></span> <span class="text-rose-400">Xorg 連線已斷開 ${e.detail?.clean ? '' : '(請確認 WSL 桌面服務運作中)'}</span>`;
+                        const note = e.detail?.clean ? '' : (isEnNow ? ' (Make sure WSL desktop is running)' : ' (請確認 WSL 桌面服務運作中)');
+                        statusEl.innerHTML = `<span class="w-2 h-2 rounded-full bg-rose-500"></span> <span class="text-rose-400">${isEnNow ? 'Xorg connection closed' : 'Xorg 連線已斷開'}${note}</span>`;
                     }
                     if (btnConn) btnConn.classList.remove('hidden');
                     if (btnDisc) btnDisc.classList.add('hidden');
@@ -15910,14 +16123,16 @@ Important guidelines:
                 });
 
                 rfbXorgInstance.addEventListener('securityfailure', (e) => {
-                    alert('Xorg 連線認證失敗：' + (e.detail?.reason || '握手失敗'));
+                    const isEnNow = (typeof currentLang !== 'undefined' ? currentLang : appSettings?.lang) === 'en';
+                    alert((isEnNow ? 'Xorg authentication failed: ' : 'Xorg 連線認證失敗：') + (e.detail?.reason || (isEnNow ? 'Handshake failed' : '握手失敗')));
                 });
             } catch (err) {
+                const isEnNow = (typeof currentLang !== 'undefined' ? currentLang : appSettings?.lang) === 'en';
                 if (statusEl) {
-                    statusEl.innerHTML = `<span class="w-2 h-2 rounded-full bg-rose-500"></span> <span class="text-rose-400">連線失敗: ${err.message}</span>`;
+                    statusEl.innerHTML = `<span class="w-2 h-2 rounded-full bg-rose-500"></span> <span class="text-rose-400">${isEnNow ? 'Connection failed: ' : '連線失敗: '}${err.message}</span>`;
                 }
                 if (placeholder) placeholder.classList.remove('hidden');
-                alert('Xorg 連線失敗：' + err.message + '\n請點擊「查看 WSL 啟動指令」或「一鍵啟動 WSL 桌面」。');
+                alert((isEnNow ? 'Xorg connection failed: ' : 'Xorg 連線失敗：') + err.message + (isEnNow ? '\nPlease check WSL startup commands or click "Start WSL Desktop".' : '\n請點擊「查看 WSL 啟動指令」或「一鍵啟動 WSL 桌面」。'));
             }
         }
         window.handleXorgConnect = handleXorgConnect;
@@ -15935,7 +16150,8 @@ Important guidelines:
             if (btnDisc) btnDisc.classList.add('hidden');
             const statusEl = document.getElementById('xorg-status');
             if (statusEl) {
-                statusEl.innerHTML = `<span class="w-2 h-2 rounded-full bg-gray-500"></span> <span>已中斷 Xorg 視窗連線</span>`;
+                const isEn = (typeof currentLang !== 'undefined' ? currentLang : appSettings?.lang) === 'en';
+                statusEl.innerHTML = `<span class="w-2 h-2 rounded-full bg-gray-500"></span> <span>${isEn ? 'Disconnected Xorg window' : '已中斷 Xorg 視窗連線'}</span>`;
             }
         }
         window.handleXorgDisconnect = handleXorgDisconnect;
