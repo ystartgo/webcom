@@ -1,0 +1,19 @@
+{
+  "name": "@webcom/pyodide",
+  "version": "1.0.0",
+  "description": "Independent WebAssembly Python (Pyodide) runner subproject for Webcom AI Console & Chrome Extension",
+  "main": "index.js",
+  "scripts": {
+    "download": "python download_pyodide.py",
+    "test": "node index.js"
+  },
+  "keywords": [
+    "pyodide",
+    "webassembly",
+    "python",
+    "webcom",
+    "chrome-extension"
+  ],
+  "author": "Webcom Project",
+  "license": "MIT"
+}
