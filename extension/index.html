@@ -1287,8 +1287,8 @@
                         <i data-lucide="layout" class="w-3.5 h-3.5"></i> <span data-i18n="btnArtifactWorkbench">Artifact 工坊</span>
                     </button>
 
-                    <button id="btn-open-app-lib"
-                        class="text-xs bg-violet-950/60 hover:bg-violet-900/80 text-violet-300 px-2 py-1 rounded-md border border-violet-700/50 flex items-center gap-1 font-medium transition shadow-sm"
+                    <button id="btn-open-app-lib" type="button" data-on-click="openAppLibraryModal()"
+                        class="text-xs bg-violet-950/60 hover:bg-violet-900/80 text-violet-300 px-2 py-1 rounded-md border border-violet-700/50 flex items-center gap-1 font-medium transition shadow-sm cursor-pointer"
                         title="開啟自建應用程式庫 (新建/編輯/管理/LLM調用)" data-i18n-title="tooltipOpenAppLib">
                         <i data-lucide="boxes" class="w-3.5 h-3.5"></i> <span data-i18n="btnAppLibrary">應用庫</span>
                     </button>
@@ -2275,11 +2275,11 @@
                     </div>
                 </div>
                 <div class="flex items-center gap-2">
-                    <button id="btn-new-custom-app" type="button"
+                    <button id="btn-new-custom-app" type="button" data-on-click="openEditCustomAppModal(null)"
                         class="px-3 py-1.5 rounded-lg bg-violet-600 hover:bg-violet-500 text-white text-xs font-bold transition flex items-center gap-1.5 shadow-lg shadow-violet-900/30">
                         <i data-lucide="plus" class="w-4 h-4"></i> <span data-i18n="appLibBtnNew">新建應用</span>
                     </button>
-                    <button id="btn-close-app-lib" type="button" class="text-gray-400 hover:text-white transition p-1.5 rounded-lg hover:bg-gray-800">
+                    <button id="btn-close-app-lib" type="button" data-on-click="closeAppLibraryModal()" class="text-gray-400 hover:text-white transition p-1.5 rounded-lg hover:bg-gray-800">
                         <i data-lucide="x" class="w-5 h-5"></i>
                     </button>
                 </div>
@@ -2288,12 +2288,12 @@
             <!-- Filter & Search Bar -->
             <div class="px-6 py-3 border-b border-gray-800 bg-gray-950/80 flex flex-wrap items-center justify-between gap-3 shrink-0">
                 <div class="flex items-center gap-1.5 overflow-x-auto text-xs" id="app-lib-category-filters">
-                    <button type="button" class="app-lib-filter-btn px-2.5 py-1 rounded-lg font-medium transition bg-violet-600 text-white" data-cat="all" data-i18n="appLibCatAll">全部應用</button>
-                    <button type="button" class="app-lib-filter-btn px-2.5 py-1 rounded-lg font-medium transition text-gray-400 hover:text-white hover:bg-gray-800" data-cat="html" data-i18n="appLibCatWeb">網頁互動 (HTML)</button>
-                    <button type="button" class="app-lib-filter-btn px-2.5 py-1 rounded-lg font-medium transition text-gray-400 hover:text-white hover:bg-gray-800" data-cat="py" data-i18n="appLibCatPy">Python 腳本</button>
-                    <button type="button" class="app-lib-filter-btn px-2.5 py-1 rounded-lg font-medium transition text-gray-400 hover:text-white hover:bg-gray-800" data-cat="sh" data-i18n="appLibCatShell">Shell / 批次</button>
-                    <button type="button" class="app-lib-filter-btn px-2.5 py-1 rounded-lg font-medium transition text-gray-400 hover:text-white hover:bg-gray-800" data-cat="prompt" data-i18n="appLibCatPrompt">提示詞助理</button>
-                    <button type="button" class="app-lib-filter-btn px-2.5 py-1 rounded-lg font-medium transition text-gray-400 hover:text-white hover:bg-gray-800" data-cat="json" data-i18n="appLibCatData">資料格式 (JSON)</button>
+                    <button type="button" data-on-click="filterAppLibraryCategory('all', this)" class="app-lib-filter-btn px-2.5 py-1 rounded-lg font-medium transition bg-violet-600 text-white" data-cat="all" data-i18n="appLibCatAll">全部應用</button>
+                    <button type="button" data-on-click="filterAppLibraryCategory('html', this)" class="app-lib-filter-btn px-2.5 py-1 rounded-lg font-medium transition text-gray-400 hover:text-white hover:bg-gray-800" data-cat="html" data-i18n="appLibCatWeb">網頁互動 (HTML)</button>
+                    <button type="button" data-on-click="filterAppLibraryCategory('py', this)" class="app-lib-filter-btn px-2.5 py-1 rounded-lg font-medium transition text-gray-400 hover:text-white hover:bg-gray-800" data-cat="py" data-i18n="appLibCatPy">Python 腳本</button>
+                    <button type="button" data-on-click="filterAppLibraryCategory('sh', this)" class="app-lib-filter-btn px-2.5 py-1 rounded-lg font-medium transition text-gray-400 hover:text-white hover:bg-gray-800" data-cat="sh" data-i18n="appLibCatShell">Shell / 批次</button>
+                    <button type="button" data-on-click="filterAppLibraryCategory('prompt', this)" class="app-lib-filter-btn px-2.5 py-1 rounded-lg font-medium transition text-gray-400 hover:text-white hover:bg-gray-800" data-cat="prompt" data-i18n="appLibCatPrompt">提示詞助理</button>
+                    <button type="button" data-on-click="filterAppLibraryCategory('json', this)" class="app-lib-filter-btn px-2.5 py-1 rounded-lg font-medium transition text-gray-400 hover:text-white hover:bg-gray-800" data-cat="json" data-i18n="appLibCatData">資料格式 (JSON)</button>
                 </div>
                 <div class="relative w-full sm:w-64">
                     <i data-lucide="search" class="w-3.5 h-3.5 text-gray-400 absolute left-2.5 top-1/2 -translate-y-1/2"></i>
@@ -2312,7 +2312,7 @@
                     <div class="w-12 h-12 rounded-2xl bg-violet-950/50 border border-violet-800/40 text-violet-400 flex items-center justify-center mx-auto text-xl">📦</div>
                     <h3 class="text-sm font-bold text-gray-300" data-i18n="appLibEmptyTitle">尚無自建應用程式</h3>
                     <p class="text-xs text-gray-500 max-w-sm mx-auto" data-i18n="appLibEmptyDesc">您可以點擊上方「新建應用」從頭建立，或點擊下方按鈕載入精選示範應用範本！</p>
-                    <button id="btn-load-sample-apps" type="button" class="px-3.5 py-1.5 bg-gray-800 hover:bg-gray-700 text-violet-300 border border-violet-700/50 rounded-lg text-xs font-semibold transition" data-i18n="appLibLoadSamplesBtn">
+                    <button id="btn-load-sample-apps" type="button" data-on-click="loadSampleAppsAction()" class="px-3.5 py-1.5 bg-gray-800 hover:bg-gray-700 text-violet-300 border border-violet-700/50 rounded-lg text-xs font-semibold transition" data-i18n="appLibLoadSamplesBtn">
                         ⚡ 載入精選示範範本
                     </button>
                 </div>
@@ -2324,14 +2324,14 @@
                     <span>💡 <span data-i18n="appLibFooterHint">支援在 Artifact 工坊中點擊「存入應用庫」收藏 LLM 即時產出的成果</span></span>
                 </div>
                 <div class="flex items-center gap-2">
-                    <button id="btn-export-apps" type="button" class="px-2.5 py-1 bg-gray-900 hover:bg-gray-800 text-gray-300 border border-gray-700 rounded-md transition text-[11px]" title="匯出所有自建應用程式為 JSON 備份" data-i18n-title="tooltipExportApps">
+                    <button id="btn-export-apps" type="button" data-on-click="exportCustomAppsAction()" class="px-2.5 py-1 bg-gray-900 hover:bg-gray-800 text-gray-300 border border-gray-700 rounded-md transition text-[11px]" title="匯出所有自建應用程式為 JSON 備份" data-i18n-title="tooltipExportApps">
                         <i data-lucide="download" class="w-3 h-3 inline"></i> <span data-i18n="appLibExportBtn">備份應用庫</span>
                     </button>
-                    <button id="btn-import-apps" type="button" class="px-2.5 py-1 bg-gray-900 hover:bg-gray-800 text-gray-300 border border-gray-700 rounded-md transition text-[11px]" title="匯入已備份之應用庫 JSON" data-i18n-title="tooltipImportApps">
+                    <button id="btn-import-apps" type="button" data-on-click="triggerImportApps()" class="px-2.5 py-1 bg-gray-900 hover:bg-gray-800 text-gray-300 border border-gray-700 rounded-md transition text-[11px]" title="匯入已備份之應用庫 JSON" data-i18n-title="tooltipImportApps">
                         <i data-lucide="upload" class="w-3 h-3 inline"></i> <span data-i18n="appLibImportBtn">匯入備份</span>
                     </button>
                     <input type="file" id="file-import-apps" class="hidden" accept=".json">
-                    <button id="btn-close-app-lib-footer" type="button" class="px-3 py-1 bg-gray-800 hover:bg-gray-700 text-white rounded-md transition" data-i18n="modalClose">關閉</button>
+                    <button id="btn-close-app-lib-footer" type="button" data-on-click="closeAppLibraryModal()" class="px-3 py-1 bg-gray-800 hover:bg-gray-700 text-white rounded-md transition" data-i18n="modalClose">關閉</button>
                 </div>
             </div>
         </div>
@@ -2349,7 +2349,7 @@
                     </div>
                     <h3 id="app-edit-modal-title" class="text-sm font-bold text-white" data-i18n="appEditTitleNew">新建自訂應用程式</h3>
                 </div>
-                <button id="btn-close-app-edit" type="button" class="text-gray-400 hover:text-white transition p-1">
+                <button id="btn-close-app-edit" type="button" data-on-click="closeAppEditModal()" class="text-gray-400 hover:text-white transition p-1">
                     <i data-lucide="x" class="w-5 h-5"></i>
                 </button>
             </div>
@@ -2433,15 +2433,15 @@
 
             <!-- Footer Actions -->
             <div class="px-6 py-3 border-t border-gray-800 bg-gray-950 flex justify-between items-center shrink-0">
-                <button id="btn-preview-custom-app" type="button"
+                <button id="btn-preview-custom-app" type="button" data-on-click="previewCustomAppFromModal()"
                     class="px-3 py-1.5 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-200 text-xs font-semibold transition flex items-center gap-1">
                     <i data-lucide="eye" class="w-3.5 h-3.5"></i> <span data-i18n="appEditBtnPreview">在沙箱預覽</span>
                 </button>
                 <div class="flex items-center gap-2">
-                    <button id="btn-cancel-custom-app" type="button"
+                    <button id="btn-cancel-custom-app" type="button" data-on-click="closeAppEditModal()"
                         class="px-3.5 py-1.5 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-300 text-xs font-semibold transition"
                         data-i18n="modalCancel">取消</button>
-                    <button id="btn-save-custom-app" type="button"
+                    <button id="btn-save-custom-app" type="button" data-on-click="saveCustomAppFromModal()"
                         class="px-4 py-1.5 rounded-lg bg-violet-600 hover:bg-violet-500 text-white text-xs font-bold transition flex items-center gap-1 shadow-lg shadow-violet-900/30">
                         <i data-lucide="save" class="w-3.5 h-3.5"></i> <span data-i18n="appEditBtnSave">儲存應用程式</span>
                     </button>

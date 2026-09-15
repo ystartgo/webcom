@@ -35,6 +35,8 @@ def build_extension():
     def script_extractor(match):
         code = match.group(1).strip()
         if code:
+            # 移除在 Chrome Extension 外部腳本中會拋出 DOMException 與違反 CSP 的 document.write CDN 備援碼
+            code = re.sub(r"document\.write\(['\"]<script src=['\"]https://[^'\"]+['\"]><\\/script>['\"]\);?", "// [MV3 Cleaned] CDN document.write removed", code)
             extracted_scripts.append(code)
         return "" # 從 HTML 中移除行內腳本
 

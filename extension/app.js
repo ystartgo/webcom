@@ -3,7 +3,7 @@
 /* ── Extracted Webcom Application Logic for Chrome MV3 ── */
 
 if (!window.tailwind) {
-            document.write('<script src="https://cdn.tailwindcss.com"><\/script>');
+            // [MV3 Cleaned] CDN document.write removed
         }
 
 if (window.tailwind) {
@@ -11,11 +11,11 @@ if (window.tailwind) {
         }
 
 if (!window.lucide) {
-            document.write('<script src="https://unpkg.com/lucide@latest"><\/script>');
+            // [MV3 Cleaned] CDN document.write removed
         }
 
 if (!window.marked) {
-            document.write('<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"><\/script>');
+            // [MV3 Cleaned] CDN document.write removed
         }
 
 if (window.WTermBundle && !window.WTerm) {
@@ -15491,8 +15491,9 @@ if __name__ == "__main__":
                 </div>`;
             }).join('');
 
-            lucide.createIcons();
-        }        window.runCustomAppInSandbox = function(appId) {
+            if (window.lucide && typeof lucide.createIcons === "function") { try { lucide.createIcons(); } catch(e) {} }
+        }
+        window.runCustomAppInSandbox = function(appId) {
             loadCustomAppsFromStorage();
             const app = customAppList.find(a => a.id === appId);
             if (!app) return;
@@ -15733,23 +15734,197 @@ if __name__ == "__main__":
             showNotificationToast(t('appLibDeletedSuccess').replace('{name}', app.name));
         }
 
+        // ── App Library Window Global Functions ──
+        window.openAppLibraryModal = function() {
+            try { loadCustomAppsFromStorage(); } catch(e) { console.warn(e); }
+            const modal = document.getElementById('app-library-modal');
+            if (modal) {
+                modal.classList.remove('hidden');
+                modal.style.display = 'flex';
+            }
+            try { renderAppLibraryGrid(); } catch(e) { console.warn('[App Library] Grid render warning:', e); }
+            if (window.lucide && typeof lucide.createIcons === 'function') {
+                try { lucide.createIcons(); } catch(e) {}
+            }
+        };
+
+        window.closeAppLibraryModal = function() {
+            const modal = document.getElementById('app-library-modal');
+            if (modal) {
+                modal.classList.add('hidden');
+                modal.style.display = 'none';
+            }
+        };
+
+        window.closeAppEditModal = function() {
+            const modal = document.getElementById('app-edit-modal');
+            if (modal) {
+                modal.classList.add('hidden');
+                modal.style.display = 'none';
+            }
+        };
+
+        window.closeAppDeleteModal = function() {
+            pendingDeleteAppId = null;
+            const modal = document.getElementById('app-delete-modal');
+            if (modal) {
+                modal.classList.add('hidden');
+                modal.style.display = 'none';
+            }
+        };
+
+        window.confirmDeleteAppAction = function() {
+            if (pendingDeleteAppId) {
+                executeDeleteApp(pendingDeleteAppId);
+            }
+        };
+
+        window.filterAppLibraryCategory = function(cat, btn) {
+            currentAppLibFilter = cat || 'all';
+            document.querySelectorAll('.app-lib-filter-btn').forEach(b => {
+                b.classList.remove('bg-violet-600', 'text-white');
+                b.classList.add('text-gray-400');
+            });
+            if (btn) {
+                btn.classList.add('bg-violet-600', 'text-white');
+                btn.classList.remove('text-gray-400');
+            }
+            renderAppLibraryGrid();
+        };
+
+        window.loadSampleAppsAction = function() {
+            customAppList = getSampleCustomApps();
+            saveCustomAppsToStorage();
+            renderAppLibraryGrid();
+            if (typeof showNotificationToast === 'function') {
+                showNotificationToast(typeof t === 'function' ? t('appLibLoadedSampleSuccess') : '已載入示範應用範本！');
+            }
+        };
+
+        window.triggerImportApps = function() {
+            const input = document.getElementById('file-import-apps');
+            if (input) input.click();
+        };
+
+        window.exportCustomAppsAction = function() {
+            try {
+                loadCustomAppsFromStorage();
+                const jsonStr = JSON.stringify(customAppList, null, 2);
+                const blob = new Blob([jsonStr], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `webcom_custom_apps_${new Date().toISOString().slice(0, 10)}.json`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                if (typeof showNotificationToast === 'function') {
+                    showNotificationToast(typeof t === 'function' ? t('appLibExportedSuccess') : '應用庫已成功匯出！');
+                }
+            } catch (err) {
+                alert((typeof currentLang !== 'undefined' && currentLang === 'en' ? 'Export failed: ' : '匯出失敗: ') + err.message);
+            }
+        };
+
+        window.saveCustomAppFromModal = function() {
+            const name = document.getElementById('app-edit-name')?.value.trim();
+            const id = document.getElementById('app-edit-id')?.value.trim();
+            const category = document.getElementById('app-edit-category')?.value || 'html';
+            const icon = document.getElementById('app-edit-icon')?.value.trim() || '⚡';
+            const version = document.getElementById('app-edit-version')?.value.trim() || 'v1.0';
+            const desc = document.getElementById('app-edit-desc')?.value.trim() || '';
+            const prompt = document.getElementById('app-edit-prompt')?.value.trim() || '';
+            const code = document.getElementById('app-edit-code')?.value || '';
+            const internalId = document.getElementById('app-edit-internal-id')?.value;
+
+            if (!name || !id || !code) {
+                alert(typeof currentLang !== 'undefined' && currentLang === 'en' ? 'Please fill in Name, ID, and Code!' : '請完整填寫應用名稱、識別碼與程式碼內容！');
+                return;
+            }
+
+            const existingIdx = customAppList.findIndex(a => a.id === (internalId || id));
+            const appData = {
+                id: internalId || id,
+                name: name,
+                category: category,
+                icon: icon,
+                version: version,
+                desc: desc,
+                prompt: prompt,
+                code: code,
+                createdAt: existingIdx >= 0 ? customAppList[existingIdx].createdAt : Date.now(),
+                updatedAt: Date.now()
+            };
+
+            if (existingIdx >= 0) {
+                customAppList[existingIdx] = appData;
+            } else {
+                customAppList.unshift(appData);
+            }
+
+            saveCustomAppsToStorage();
+            renderAppLibraryGrid();
+            window.closeAppEditModal();
+            if (typeof showNotificationToast === 'function') {
+                showNotificationToast((typeof t === 'function' ? t('appLibSavedSuccess') : '應用程式已儲存').replace('{name}', name));
+            }
+        };
+
+        window.previewCustomAppFromModal = function() {
+            const name = document.getElementById('app-edit-name')?.value.trim() || '自建預覽應用';
+            const id = document.getElementById('app-edit-id')?.value.trim() || 'preview_app';
+            const category = document.getElementById('app-edit-category')?.value || 'html';
+            const code = document.getElementById('app-edit-code')?.value || '';
+
+            if (!code) {
+                alert(typeof currentLang !== 'undefined' && currentLang === 'en' ? 'Please input code to preview!' : '請先輸入程式碼後再進行預覽！');
+                return;
+            }
+
+            const isHtml = category === 'html' || code.includes('<!DOCTYPE') || code.includes('<html');
+            const previewArt = {
+                id: id,
+                title: name,
+                type: isHtml ? 'html' : (category === 'json' ? 'json' : 'script'),
+                language: category,
+                fullContent: code,
+                originalContent: code,
+                userEdited: false,
+                parts: [{ content: code, timestamp: Date.now(), addedLines: code.split('\n').length }],
+                versions: [{
+                    version: 1,
+                    content: code,
+                    author: 'preview',
+                    actionType: 'preview',
+                    summary: '即時預覽',
+                    timestamp: Date.now(),
+                    lines: code.split('\n').length,
+                    chars: code.length
+                }],
+                activeVersion: 1,
+                isStreaming: false,
+                status: 'complete'
+            };
+
+            if (typeof globalArtifactStore !== 'undefined') {
+                globalArtifactStore.set(id, previewArt);
+                window.lastActiveArtifactId = id;
+            }
+            window.closeAppEditModal();
+            window.closeAppLibraryModal();
+            if (typeof openArtifactDrawer === 'function') {
+                openArtifactDrawer(id);
+            }
+        };
+
         // App Library DOM Event Listeners initialization
         function initAppLibraryEvents() {
-            loadCustomAppsFromStorage();
-            // Open App Library Modal
-            document.getElementById('btn-open-app-lib')?.addEventListener('click', () => {
-                loadCustomAppsFromStorage();
-                renderAppLibraryGrid();
-                document.getElementById('app-library-modal')?.classList.remove('hidden');
-            });
-
-            // Close App Library Modal
-            document.getElementById('btn-close-app-lib')?.addEventListener('click', () => {
-                document.getElementById('app-library-modal')?.classList.add('hidden');
-            });
-            document.getElementById('btn-close-app-lib-footer')?.addEventListener('click', () => {
-                document.getElementById('app-library-modal')?.classList.add('hidden');
-            });
+            try { loadCustomAppsFromStorage(); } catch(e) {}
+            // Bind header button
+            document.getElementById('btn-open-app-lib')?.addEventListener('click', window.openAppLibraryModal);
+            document.getElementById('btn-close-app-lib')?.addEventListener('click', window.closeAppLibraryModal);
+            document.getElementById('btn-close-app-lib-footer')?.addEventListener('click', window.closeAppLibraryModal);
 
             // Category filter clicks
             document.querySelectorAll('.app-lib-filter-btn').forEach(btn => {

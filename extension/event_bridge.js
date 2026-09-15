@@ -49,12 +49,14 @@
         }
     }
 
-    // 全域事件委派
+    // 全域事件委派 (同時相容 data-on-click 與動態渲染之 onclick)
     document.addEventListener('click', function(e) {
-        const target = e.target.closest('[data-on-click]');
+        const target = e.target.closest('[data-on-click], [onclick]');
         if (target) {
-            const expr = target.getAttribute('data-on-click');
-            executeActionString(expr, target, e);
+            const expr = target.getAttribute('data-on-click') || target.getAttribute('onclick');
+            if (expr) {
+                executeActionString(expr, target, e);
+            }
         }
     }, true);
 
