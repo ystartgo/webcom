@@ -9782,7 +9782,7 @@ Rules:
 3. When asked to execute commands or interact with the left workspace, call the appropriate tool via <tool_call>.
 4. The frontend will automatically execute your tool call and return the result in <tool_response>. Summarize the result for the user once received.
 5. For general conceptual questions or greetings, answer directly with text without calling tools.
-6. Call one tool at a time.`;
+6. [Parallel Multi-Tool Calling Supported]: If a task requires multiple independent operations (e.g. searching multiple queries, reading multiple files, running inspection commands), you can output multiple <tool_call> tags concurrently in a single response. The system will execute all tools in parallel and return all <tool_response> results together!`;
             } else {
                 const timeString = now.toLocaleString('zh-TW', { timeZone: 'Asia/Taipei' });
                 if (!enableAgent) {
@@ -9870,7 +9870,7 @@ ${tools.join('\n')}${contextStr}
 3. 當使用者明確要求操作左側終端、執行命令（如 dir, ls, shell）或查詢本機狀態時，輸出 <tool_call> 調用對應終端機工具。
 4. 前端系統會自動攔截工具呼叫、執行動作並回傳 <tool_response>，收到回傳後請根據結果為使用者整理並直接給出完整回答。
 5. 日常閒聊、概念諮詢或自我介紹時，直接以文字回答，無需呼叫工具。
-6. 每次只呼叫一個工具。`;
+6. 【支援並行多工具呼叫】：若任務包含多個獨立操作（例如同時搜尋多組關鍵字、同時讀取多個檔案、同時執行檢查指令），你可以在單次回應中同時輸出多個 <tool_call> 標籤！控制台將自動以 Promise.allSettled 並行並發執行所有工具，並將所有回傳彙整於各個 <tool_response> 一次提供給你。`;
             }
         }
 
@@ -12739,11 +12739,11 @@ Important guidelines:
             };
         }
 
-        function extractToolCall(text, userPrompt = "") {
-            if (!text || typeof text !== 'string') return null;
+        function extractAllToolCalls(text, userPrompt = "") {
+            if (!text || typeof text !== 'string') return [];
 
             // 如果內容包含 SVG 向量圖標籤且沒有明確的 <tool_call>，視為繪圖內容而非工具呼叫
-            if (text.includes('<svg') && !text.includes('<tool_call>')) return null;
+            if (text.includes('<svg') && !text.includes('<tool_call>')) return [];
 
             const registeredToolNames = [
                 'execute_shell', 'read_file', 'write_file', 'execute_ssh',
@@ -12797,11 +12797,7 @@ Important guidelines:
 
             const normalizeToolCall = (d) => {
                 if (!d) return null;
-                if (Array.isArray(d) && d.length > 0) d = d[0];
                 if (typeof d === 'object') {
-                    if (d.tool_calls && Array.isArray(d.tool_calls) && d.tool_calls.length > 0) {
-                        d = d.tool_calls[0];
-                    }
                     if (d.function && typeof d.function === 'object') {
                         d = { name: d.function.name, arguments: d.function.arguments };
                     }
@@ -12822,46 +12818,79 @@ Important guidelines:
                 return null;
             };
 
-            // 1. XML <tool_call>...</tool_call> or unclosed <tool_call>...
-            const xmlMatch = text.match(/<tool_call>([\s\S]*?)(?:<\/tool_call>|$)/i);
-            if (xmlMatch) {
-                const body = xmlMatch[1].trim();
+            const extractedTools = [];
+
+            // 1. XML <tool_call>...</tool_call> 全域多重匹配 (支援並行調用)
+            const xmlMatches = text.matchAll(/<tool_call>([\s\S]*?)(?:<\/tool_call>|$)/gi);
+            for (const match of xmlMatches) {
+                const body = match[1].trim();
+                if (!body) continue;
                 try {
                     const data = JSON.parse(body);
-                    const norm = normalizeToolCall(data);
-                    if (norm) return norm;
+                    if (Array.isArray(data)) {
+                        for (const item of data) {
+                            const norm = normalizeToolCall(item);
+                            if (norm) extractedTools.push(norm);
+                        }
+                    } else if (data && Array.isArray(data.tool_calls)) {
+                        for (const item of data.tool_calls) {
+                            const norm = normalizeToolCall(item);
+                            if (norm) extractedTools.push(norm);
+                        }
+                    } else {
+                        const norm = normalizeToolCall(data);
+                        if (norm) extractedTools.push(norm);
+                    }
                 } catch (e) {
                     // Try Qwen XML tags <function=name><parameter=cmd>...
-                    const fnMatch = body.match(/<function=([a-zA-Z0-9_\-]+)>/i);
-                    if (fnMatch) {
-                        const fnName = fnMatch[1];
-                        const paramMatch = body.match(/<parameter=([a-zA-Z0-9_\-]+)>([\s\S]*?)<\/parameter>/i);
+                    const fnMatches = body.matchAll(/<function=([a-zA-Z0-9_\-]+)>([\s\S]*?)(?:<\/function>|$)/gi);
+                    let foundQwen = false;
+                    for (const fm of fnMatches) {
+                        const fnName = fm[1];
+                        const paramBody = fm[2];
+                        const paramMatch = paramBody.match(/<parameter=([a-zA-Z0-9_\-]+)>([\s\S]*?)<\/parameter>/i);
                         const args = paramMatch ? { [paramMatch[1]]: paramMatch[2].trim() } : {};
                         const norm = normalizeToolCall({ name: fnName, args: args });
-                        if (norm) return norm;
+                        if (norm) { extractedTools.push(norm); foundQwen = true; }
                     }
-                    // Try extracting inner JSON inside <tool_call>
-                    const b1 = body.indexOf('{');
-                    const b2 = body.lastIndexOf('}');
-                    if (b1 !== -1 && b2 > b1) {
-                        try {
-                            const innerJson = JSON.parse(body.substring(b1, b2 + 1));
-                            const norm = normalizeToolCall(innerJson);
-                            if (norm) return norm;
-                        } catch (err) {}
+                    if (!foundQwen) {
+                        const b1 = body.indexOf('{');
+                        const b2 = body.lastIndexOf('}');
+                        if (b1 !== -1 && b2 > b1) {
+                            try {
+                                const innerJson = JSON.parse(body.substring(b1, b2 + 1));
+                                const norm = normalizeToolCall(innerJson);
+                                if (norm) extractedTools.push(norm);
+                            } catch (err) {}
+                        }
                     }
                 }
             }
 
-            // 2. Markdown ```json / ```tool_call / ```tool / ```xml
+            if (extractedTools.length > 0) return extractedTools;
+
+            // 2. Markdown ```json / ```tool_call 多重區塊比對
             const codeBlockMatches = text.matchAll(/```(?:json|tool_call|tool|xml)?\s*([\s\S]*?)\s*```/gi);
             for (const m of codeBlockMatches) {
                 try {
                     const data = JSON.parse(m[1].trim());
-                    const norm = normalizeToolCall(data);
-                    if (norm) return norm;
+                    if (Array.isArray(data)) {
+                        for (const item of data) {
+                            const norm = normalizeToolCall(item);
+                            if (norm) extractedTools.push(norm);
+                        }
+                    } else if (data && Array.isArray(data.tool_calls)) {
+                        for (const item of data.tool_calls) {
+                            const norm = normalizeToolCall(item);
+                            if (norm) extractedTools.push(norm);
+                        }
+                    } else {
+                        const norm = normalizeToolCall(data);
+                        if (norm) extractedTools.push(norm);
+                    }
                 } catch (e) { }
             }
+            if (extractedTools.length > 0) return extractedTools;
 
             // 3. Balanced Top-level JSON Object extraction
             const firstBrace = text.indexOf('{');
@@ -12870,8 +12899,20 @@ Important guidelines:
                 const potentialJson = text.substring(firstBrace, lastBrace + 1).trim();
                 try {
                     const data = JSON.parse(potentialJson);
-                    const norm = normalizeToolCall(data);
-                    if (norm) return norm;
+                    if (Array.isArray(data)) {
+                        for (const item of data) {
+                            const norm = normalizeToolCall(item);
+                            if (norm) extractedTools.push(norm);
+                        }
+                    } else if (data && Array.isArray(data.tool_calls)) {
+                        for (const item of data.tool_calls) {
+                            const norm = normalizeToolCall(item);
+                            if (norm) extractedTools.push(norm);
+                        }
+                    } else {
+                        const norm = normalizeToolCall(data);
+                        if (norm) extractedTools.push(norm);
+                    }
                 } catch (e) {
                     try {
                         const jsonMatches = text.match(/\{[\s\S]*?"name"[\s\S]*?\}/g);
@@ -12880,30 +12921,35 @@ Important guidelines:
                                 try {
                                     const d = JSON.parse(jsonStr);
                                     const norm = normalizeToolCall(d);
-                                    if (norm) return norm;
+                                    if (norm) extractedTools.push(norm);
                                 } catch (err) { }
                             }
                         }
                     } catch (err) { }
                 }
             }
+            if (extractedTools.length > 0) return extractedTools;
 
             // 4. Fallback: Command code block auto-interaction
-            // When user requested command execution or terminal/left-side action, and model outputs a standalone bash/sh/cmd code block:
             const cmdBlockMatch = text.match(/```(?:bash|sh|shell|cmd|powershell)\s*\n([\s\S]*?)\n```/i);
             if (cmdBlockMatch) {
                 const rawCmd = cmdBlockMatch[1].trim();
                 const uPrompt = (userPrompt || (typeof lastUserPrompt !== 'undefined' ? lastUserPrompt : "") || "").toLowerCase();
                 const isLeftAction = uPrompt.includes("左側") || uPrompt.includes("左边") || uPrompt.includes("終端") || uPrompt.includes("终端") || uPrompt.includes("terminal") || uPrompt.includes("執行") || uPrompt.includes("执行") || uPrompt.includes("run") || uPrompt.includes("cmd") || uPrompt.includes("指令") || uPrompt.includes("命令") || uPrompt.includes("調用") || uPrompt.includes("调用");
                 if (rawCmd && !rawCmd.startsWith('#') && rawCmd.length < 1000 && (isLeftAction || text.includes("左側") || text.includes("終端機") || text.includes("執行指令"))) {
-                    return {
+                    return [{
                         name: 'write_frontend_terminal',
                         args: { command: rawCmd }
-                    };
+                    }];
                 }
             }
 
-            return null;
+            return extractedTools;
+        }
+
+        function extractToolCall(text, userPrompt = "") {
+            const all = extractAllToolCalls(text, userPrompt);
+            return all.length > 0 ? all[0] : null;
         }
 
 
@@ -15175,28 +15221,56 @@ Important guidelines:
                         break;
                     }
 
-                    // Robust multi-format tool call extractor (supports <tool_call>, ```json, and raw JSON objects)
-                    const toolData = extractToolCall(fullAiResponse, prompt);
-                    console.log("[Agent Loop] AI Response:", fullAiResponse, "Extracted Tool:", toolData);
+                    // Robust multi-format tool call extractor (supports parallel <tool_call>, ```json, and raw JSON objects)
+                    const toolList = extractAllToolCalls(fullAiResponse, prompt);
+                    console.log("[Agent Loop] AI Response:", fullAiResponse, "Extracted Tools:", toolList);
 
-                    if (toolData && toolData.name) {
+                    if (toolList.length > 0) {
                         chatHistory.push({ role: "assistant", content: fullAiResponse });
                         try {
-                            let toolArgs = toolData.args || toolData.arguments || toolData.params || {};
-                            if (typeof toolArgs === 'string') {
-                                try { toolArgs = JSON.parse(toolArgs); } catch (e) { toolArgs = { command: toolArgs }; }
+                            if (toolList.length > 1) {
+                                const parallelBadge = document.createElement('div');
+                                parallelBadge.className = "text-xs text-indigo-400 mb-1.5 font-mono flex items-center gap-1.5 p-1.5 rounded-lg bg-indigo-950/40 border border-indigo-800/50";
+                                parallelBadge.innerHTML = `<i data-lucide="layers" class="w-3.5 h-3.5"></i> <span>⚡ ${currentLang === 'en' ? `Executing ${toolList.length} tools concurrently in parallel...` : `正在同步並行執行 ${toolList.length} 個多工工具...`}</span>`;
+                                containerEl.appendChild(parallelBadge);
+                                if (window.lucide) lucide.createIcons();
                             }
-                            if (!toolArgs || typeof toolArgs !== 'object') {
-                                toolArgs = { command: String(toolArgs) };
+
+                            // 🚀 平行多工具執行管線 (Parallel Multi-Tool Calling Pipeline via Promise.allSettled)
+                            const parallelResults = await Promise.allSettled(toolList.map(async (toolItem) => {
+                                let toolArgs = toolItem.args || toolItem.arguments || toolItem.params || {};
+                                if (typeof toolArgs === 'string') {
+                                    try { toolArgs = JSON.parse(toolArgs); } catch (e) { toolArgs = { command: toolArgs }; }
+                                }
+                                if (!toolArgs || typeof toolArgs !== 'object') {
+                                    toolArgs = { command: String(toolArgs) };
+                                }
+                                const res = await executeTool(toolItem.name, toolArgs, containerEl, fullAiResponse);
+                                return { name: toolItem.name, result: res };
+                            }));
+
+                            if (toolList.length === 1) {
+                                const single = parallelResults[0];
+                                const toolResult = single.status === 'fulfilled' ? single.value.result : `{"status": "error", "error": "${single.reason?.message || 'Execution error'}"}`;
+                                let responseMsg = `<tool_response>${toolResult}</tool_response>\n${currentLang === 'en' ? '【System Notification】Tool has finished executing. Please read the data in <tool_response> above and provide a complete summary/answer to the user.' : '【系統通知】工具已成功執行完畢！請直接讀取上方 <tool_response> 中的資料，為使用者整理並直接給出完整答案。'}`;
+                                if (toolList[0].name === 'svg' || toolList[0].name === 'draw_svg' || toolList[0].name === 'draw') {
+                                    responseMsg = `<tool_response>${toolResult}</tool_response>\n${currentLang === 'en' ? '【System Notification】SVG graphic is rendered on the screen. Task is complete. Briefly introduce the artwork to the user, and do NOT execute any terminal commands.' : '【系統通知】SVG 向量圖已成功在前端畫面即時渲染！繪圖任務已完成，請簡短向使用者介紹這幅畫，絕對不要再發送終端機指令或存檔。'}`;
+                                }
+                                chatHistory.push({ role: "user", content: responseMsg });
+                            } else {
+                                // 多工具並行回傳格式
+                                const responseParts = parallelResults.map((pr, idx) => {
+                                    const tName = toolList[idx].name;
+                                    const tRes = pr.status === 'fulfilled' ? pr.value.result : `{"status": "error", "error": "${pr.reason?.message || 'Execution error'}"}`;
+                                    return `<tool_response name="${escapeHtml(tName)}">\n${tRes}\n</tool_response>`;
+                                });
+                                const responseMsg = responseParts.join('\n\n') + `\n\n${currentLang === 'en' 
+                                    ? `【System Notification】All ${toolList.length} parallel tools have finished executing concurrently. Please synthesize the above <tool_response> outputs and provide a cohesive, complete response to the user.` 
+                                    : `【系統通知】共 ${toolList.length} 個並行工具已全部同步執行完畢！請綜合整合上述各 <tool_response> 的回傳資料，條理清晰地為使用者給出完整總結。`}`;
+                                chatHistory.push({ role: "user", content: responseMsg });
                             }
-                            const toolResult = await executeTool(toolData.name, toolArgs, containerEl, fullAiResponse);
-                            let responseMsg = `<tool_response>${toolResult}</tool_response>\n${currentLang === 'en' ? '【System Notification】Tool has finished executing. Please read the data in <tool_response> above and provide a complete summary/answer to the user.' : '【系統通知】工具已成功執行完畢！請直接讀取上方 <tool_response> 中的資料，為使用者整理並直接給出完整答案。'}`;
-                            if (toolData.name === 'svg' || toolData.name === 'draw_svg' || toolData.name === 'draw') {
-                                responseMsg = `<tool_response>${toolResult}</tool_response>\n${currentLang === 'en' ? '【System Notification】SVG graphic is rendered on the screen. Task is complete. Briefly introduce the artwork to the user, and do NOT execute any terminal commands.' : '【系統通知】SVG 向量圖已成功在前端畫面即時渲染！繪圖任務已完成，請簡短向使用者介紹這幅畫，絕對不要再發送終端機指令或存檔。'}`;
-                            }
-                            chatHistory.push({ role: "user", content: responseMsg });
                         } catch (execErr) {
-                            chatHistory.push({ role: "user", content: `<tool_response>{"status": "error", "error": "${execErr.message}"}</tool_response>\n${currentLang === 'en' ? 'Tool failed. Please report the error.' : '【系統通知】工具執行失敗，請向使用者回報錯誤原因。'}` });
+                            chatHistory.push({ role: "user", content: `<tool_response>{"status": "error", "error": "${execErr.message}"}</tool_response>\n${currentLang === 'en' ? 'Tools failed. Please report the error.' : '【系統通知】並行工具執行失敗，請向使用者回報錯誤原因。'}` });
                         }
 
 
