@@ -962,6 +962,40 @@ def execute_shell(req: ShellRequest):
             exe_dir = os.path.dirname(sys.executable)
             if exe_dir not in extra_paths and os.path.isdir(exe_dir):
                 extra_paths.append(exe_dir)
+        # 自動掃描並注入 Windows 常見應用程式目錄 (如 Notepad++, VS Code, Git 及 App Paths 登錄檔)
+        if is_windows:
+            candidate_dirs = [
+                r"C:\Program Files\Notepad++",
+                r"C:\Program Files (x86)\Notepad++",
+                r"C:\Program Files\Git\bin",
+                r"C:\Program Files\Git\cmd",
+                os.path.expandvars(r"%LOCALAPPDATA%\Programs\Microsoft VS Code\bin"),
+            ]
+            for c_dir in candidate_dirs:
+                if os.path.isdir(c_dir) and c_dir not in extra_paths:
+                    extra_paths.append(c_dir)
+            
+            try:
+                import winreg
+                for root_key in (winreg.HKEY_LOCAL_MACHINE, winreg.HKEY_CURRENT_USER):
+                    try:
+                        with winreg.OpenKey(root_key, r"SOFTWARE\Microsoft\Windows\CurrentVersion\App Paths") as k:
+                            for i in range(winreg.QueryInfoKey(k)[0]):
+                                try:
+                                    sub_name = winreg.EnumKey(k, i)
+                                    with winreg.OpenKey(k, sub_name) as sk:
+                                        val, _ = winreg.QueryValueEx(sk, "")
+                                        if val and os.path.exists(val):
+                                            app_dir = os.path.dirname(val)
+                                            if app_dir and os.path.isdir(app_dir) and app_dir not in extra_paths:
+                                                extra_paths.append(app_dir)
+                                except Exception:
+                                    pass
+                    except Exception:
+                        pass
+            except Exception:
+                pass
+
         if extra_paths:
             env["PATH"] = os.pathsep.join(extra_paths) + os.pathsep + env.get("PATH", "")
 
@@ -994,6 +1028,27 @@ def execute_shell(req: ShellRequest):
                 # Fast-path for Windows: Common commands run directly via cmd.exe in ~30ms instead of waiting for PowerShell cold-start
                 needs_ps = req.protocol == "powershell" or any(cmd.strip().startswith(p) for p in ["$", "Get-", "Set-", "New-", "Remove-", "Start-", "Stop-", "Restart-"]) or "| %" in cmd or "| ?" in cmd or "Select-Object" in cmd
                 if not needs_ps:
+                    # 偵測是否為獨立 GUI 視窗應用 (如 notepad++, notepad, calc, mspaint, code 等)
+                    # 自動透過 Popen 進行非阻塞式背景啟動，防止前景進程阻塞 10-30 秒導致終端機或 AI 調用超時中斷
+                    first_token = cmd.split()[0].lower() if cmd.split() else ""
+                    if first_token.endswith(".exe"):
+                        first_token = first_token[:-4]
+                    is_gui_app = first_token in ("notepad", "notepad++", "calc", "mspaint", "code", "explorer", "vlc", "write")
+                    if is_gui_app:
+                        exe = shutil.which(first_token, path=env.get("PATH", "")) or shutil.which(first_token + ".exe", path=env.get("PATH", ""))
+                        if exe:
+                            args_part = cmd[len(first_token):].strip()
+                            if args_part.lower().startswith(".exe"):
+                                args_part = args_part[4:].strip()
+                            run_target = f'"{exe}" {args_part}'.strip() if args_part else f'"{exe}"'
+                            subprocess.Popen(run_target, shell=True, env=env, close_fds=True)
+                            return {
+                                "status": "success",
+                                "returncode": 0,
+                                "stdout": f"[✔ 桌面視窗應用已成功啟動]: {run_target}\n",
+                                "stderr": ""
+                            }
+
                     try:
                         process = subprocess.run(
                             f'cmd.exe /c "chcp 65001 >nul 2>&1 && {cmd}"',
@@ -1121,6 +1176,82 @@ def python_info_endpoint():
         "daemon_executable": sys.executable,
         "version": sys.version
     }
+
+@app.get("/tools/system_info")
+@app.get("/tools/system_specs")
+def system_info_endpoint():
+    """查詢本機硬體與系統規格 (CPU、記憶體、GPU、磁碟、OS 及已安裝文字編輯器 Notepad++ 等)"""
+    try:
+        import platform, psutil
+        is_win = sys.platform.startswith("win")
+
+        # CPU
+        cpu_info = {
+            "processor": platform.processor(),
+            "cores_physical": psutil.cpu_count(logical=False),
+            "cores_logical": psutil.cpu_count(logical=True),
+        }
+
+        # RAM
+        mem = psutil.virtual_memory()
+        mem_info = {
+            "total_gb": round(mem.total / (1024**3), 2),
+            "available_gb": round(mem.available / (1024**3), 2),
+            "percent_used": mem.percent
+        }
+
+        # GPU
+        gpus = []
+        if is_win:
+            try:
+                p = subprocess.run(["cmd.exe", "/c", "wmic path win32_VideoController get name"], capture_output=True, text=True, timeout=3)
+                gpus = [line.strip() for line in p.stdout.splitlines() if line.strip() and line.strip() != "Name"]
+            except Exception:
+                pass
+
+        # Disks
+        disks = []
+        for part in psutil.disk_partitions(all=False):
+            if is_win and ("cdrom" in part.opts or part.fstype == ""):
+                continue
+            try:
+                usage = psutil.disk_usage(part.mountpoint)
+                disks.append({
+                    "device": part.device,
+                    "mountpoint": part.mountpoint,
+                    "total_gb": round(usage.total / (1024**3), 2),
+                    "free_gb": round(usage.free / (1024**3), 2),
+                    "percent_used": usage.percent
+                })
+            except Exception:
+                pass
+
+        # Tools & Editors
+        npp_candidate = r"C:\Program Files\Notepad++\notepad++.exe"
+        npp_candidate_x86 = r"C:\Program Files (x86)\Notepad++\notepad++.exe"
+        npp_path = npp_candidate if os.path.isfile(npp_candidate) else (npp_candidate_x86 if os.path.isfile(npp_candidate_x86) else None)
+
+        tools = {
+            "notepad": shutil.which("notepad") or "C:\\Windows\\System32\\notepad.exe",
+            "notepad++": npp_path is not None,
+            "notepad++_path": npp_path,
+            "wsl": shutil.which("wsl.exe") is not None,
+            "git": shutil.which("git") is not None,
+            "python": sys.executable
+        }
+
+        return {
+            "status": "success",
+            "os": f"{platform.system()} {platform.release()} (Build {platform.version()}) {platform.machine()}",
+            "hostname": platform.node(),
+            "cpu": cpu_info,
+            "memory": mem_info,
+            "gpu": gpus,
+            "disks": disks,
+            "tools": tools
+        }
+    except Exception as e:
+        return {"status": "error", "error": str(e)}
 
 class ScriptRunRequest(BaseModel):
     code: str

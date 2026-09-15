@@ -9788,7 +9788,8 @@ ffmpeg -f pulse -i default -acodec libmp3lame -ab 128k -f mp3 -listen 1 http://0
                     `${enToolOffset + 9}. execute_ssh: Run command via SSH. Args: {"host": "IP", "username": "user", "password": "pwd", "command": "cmd"}`,
                     `${enToolOffset + 10}. execute_telnet: Run command via Telnet. Args: {"host": "IP", "port": 23, "username": "user", "password": "pwd", "command": "cmd", "cmd_prompt": "#"}`,
                     `${enToolOffset + 11}. execute_serial: Send command via serial port. Args: {"port": "path", "baudrate": 9600, "command": "cmd"}`,
-                    `${enToolOffset + 12}. launch_daemon: Start background daemon service on port 8001. Args: {}`
+                    `${enToolOffset + 12}. launch_daemon: Start background daemon service on port 8001. Args: {}`,
+                    `${enToolOffset + 13}. get_system_specs: Retrieve host hardware and system specifications (CPU, RAM, GPU, OS, disk storage, and installed editors/tools like Notepad++, Python, WSL, Git). Args: {}`
                 );
 
                 let contextStr = `\n\n[Current Environment] Time: ${timeString} | Terminal: [${activeTermContext.protocol.toUpperCase()}] | Daemon(8001): [${isDaemonOnline ? 'ONLINE' : 'OFFLINE'}]\n`;
@@ -9874,7 +9875,8 @@ Rules:
                     `${zhToolOffset + 9}. execute_ssh: 透過 SSH 執行指令。參數: {"host": "IP", "username": "帳號", "password": "密碼", "command": "指令"}`,
                     `${zhToolOffset + 10}. execute_telnet: 透過 Telnet 執行指令。參數: {"host": "IP", "port": 23, "username": "帳號", "password": "密碼", "command": "指令", "cmd_prompt": "提示字元"}`,
                     `${zhToolOffset + 11}. execute_serial: 透過序列埠發送指令。參數: {"port": "設備路徑", "baudrate": 9600, "command": "指令"}`,
-                    `${zhToolOffset + 12}. launch_daemon: 在背景啟動或重啟 Port 8001 常駐服務。無參數: {}`
+                    `${zhToolOffset + 12}. launch_daemon: 在背景啟動或重啟 Port 8001 常駐服務。無參數: {}`,
+                    `${zhToolOffset + 13}. get_system_specs: 查詢本機硬體與系統規格 (包含 OS、CPU、RAM 記憶體容量、GPU 顯卡、磁碟空間、以及已安裝之文字編輯器 Notepad++、Python、WSL 等工具)。無參數: {}`
                 );
 
                 let contextStr = `\n\n【當前環境】時間: ${timeString} | 終端機: [${activeTermContext.protocol.toUpperCase()}] | 常駐程式(8001): [${isDaemonOnline ? '已連線' : '離線'}]\n`;
@@ -10903,6 +10905,37 @@ ${tools.join('\n')}${contextStr}
                 }
                 termHistoryIndex = -1;
                 termTempInput = "";
+            }
+
+            // 快捷查詢系統硬體與環境規格指令 (specs / sysinfo)
+            const lowerCmd = (cmd || "").trim().toLowerCase();
+            if (lowerCmd === 'specs' || lowerCmd === 'sysinfo') {
+                printToTerminal(cmd, isAi ? 'ai_command' : 'command');
+                try {
+                    const res = await fetchWithTimeout(`${appSettings.daemonEndpoint}/tools/system_info`, { timeout: 5000 });
+                    const s = await res.json();
+                    if (s.status === 'success') {
+                        let out = `\n================ [本機硬體與系統規格] ================\n`;
+                        out += `💻 作業系統: ${s.os}\n`;
+                        out += `⚡ 處理器:   ${s.cpu.processor} (${s.cpu.cores_physical} 核 / ${s.cpu.cores_logical} 緒)\n`;
+                        out += `🧠 記憶體:   ${s.memory.total_gb} GB (可用: ${s.memory.available_gb} GB, 已用: ${s.memory.percent_used}%)\n`;
+                        if (s.gpu && s.gpu.length > 0) out += `🎮 顯示卡:   ${s.gpu.join(', ')}\n`;
+                        if (s.disks && s.disks.length > 0) {
+                            out += `💾 磁碟空間:\n` + s.disks.map(d => `   - [${d.mountpoint}] 剩餘 ${d.free_gb} GB / 總量 ${d.total_gb} GB (使用率 ${d.percent_used}%)`).join('\n') + `\n`;
+                        }
+                        out += `🛠️ 工具檢測:\n`;
+                        out += `   - 微軟記事本 (Notepad): ${s.tools.notepad || '未找到'}\n`;
+                        out += `   - Notepad++: ${s.tools['notepad++'] ? `已安裝 (${s.tools['notepad++_path']})` : '未安裝'}\n`;
+                        out += `   - WSL Linux: ${s.tools.wsl ? '支援就緒' : '未安裝'}\n`;
+                        out += `   - Git: ${s.tools.git ? '已安裝' : '未找到'}\n`;
+                        out += `======================================================\n`;
+                        printToTerminal(out, 'stream');
+                        if (wtermInstance) wtermInstance.write(`\r\n\x1b[1;32m${termPrompt.textContent}\x1b[0m `);
+                        scrollToTerminalBottom();
+                        termInput.focus();
+                        return { status: 'success', stdout: out };
+                    }
+                } catch (e) { }
             }
 
             // 若由 AI 觸發且目前非終端機視圖，自動切換至終端機確保人類能即時觀看交互除錯
@@ -13568,6 +13601,45 @@ Important guidelines:
                     shellCmd = args.command || "";
                     printToTerminal(`[Serial: ${args.port || ''}] ❯ ${shellCmd}`, 'ai_command');
                     if (typeof setAiActivityState === 'function') setAiActivityState(true, `Serial: ${shellCmd.slice(0, 16)}`);
+                }
+                else if (toolName === 'get_system_specs') {
+                    endpoint = "/tools/system_info";
+                    printToTerminal(`自動檢測本機硬體與系統規格...`, 'ai_status');
+                    if (typeof setAiActivityState === 'function') setAiActivityState(true, `查詢系統規格`);
+                    const res = await fetchWithTimeout(`${appSettings.daemonEndpoint}${endpoint}`, {
+                        method: 'GET',
+                        headers: { 'Content-Type': 'application/json' },
+                        timeout: 10000
+                    });
+                    const data = await res.json();
+                    if (data.status === 'success') {
+                        let out = `\n================ [本機硬體與系統規格] ================\n`;
+                        out += `💻 作業系統: ${data.os}\n`;
+                        out += `⚡ 處理器:   ${data.cpu.processor} (${data.cpu.cores_physical} 核 / ${data.cpu.cores_logical} 緒)\n`;
+                        out += `🧠 記憶體:   ${data.memory.total_gb} GB (可用: ${data.memory.available_gb} GB, 已用: ${data.memory.percent_used}%)\n`;
+                        if (data.gpu && data.gpu.length > 0) out += `🎮 顯示卡:   ${data.gpu.join(', ')}\n`;
+                        if (data.disks && data.disks.length > 0) {
+                            out += `💾 磁碟空間:\n` + data.disks.map(d => `   - [${d.mountpoint}] 剩餘 ${d.free_gb} GB / 總量 ${d.total_gb} GB (使用率 ${d.percent_used}%)`).join('\n') + `\n`;
+                        }
+                        out += `🛠️ 工具檢測:\n`;
+                        out += `   - 微軟記事本 (Notepad): ${data.tools.notepad || '未找到'}\n`;
+                        out += `   - Notepad++: ${data.tools['notepad++'] ? `已安裝 (${data.tools['notepad++_path']})` : '未安裝'}\n`;
+                        out += `   - WSL Linux: ${data.tools.wsl ? '支援就緒' : '未安裝'}\n`;
+                        out += `   - Git: ${data.tools.git ? '已安裝' : '未找到'}\n`;
+                        out += `======================================================\n`;
+                        printToTerminal(out, 'stream');
+                        printToTerminal(`✔ 系統規格獲取完成`, 'ai_success');
+                    }
+                    if (typeof setAiActivityState === 'function') setAiActivityState(false, '完成');
+                    if (wtermInstance && termPrompt) {
+                        wtermInstance.write(`\r\n\x1b[1;32m${termPrompt.textContent}\x1b[0m `);
+                    }
+                    const resultEl = document.createElement('div');
+                    resultEl.className = `mt-1 p-1 rounded text-xs ${data.status === 'success' ? 'bg-green-900/30 text-green-400' : 'bg-red-900/30 text-red-400'}`;
+                    resultEl.textContent = data.status === 'success' ? '✅ System Specs Retrieved' : `❌ Failed: ${data.error}`;
+                    logEl.appendChild(resultEl);
+                    scrollToBottom();
+                    return JSON.stringify(data);
                 }
                 else throw new Error(`Unknown tool: ${toolName}`);
 
