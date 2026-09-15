@@ -27,9 +27,7 @@
     "tabs",
     "sidePanel",
     "contextMenus",
-    "system.display"
-  ],
-  "optional_permissions": [
+    "system.display",
     "serial"
   ],
   "content_security_policy": {

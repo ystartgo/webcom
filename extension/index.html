@@ -463,12 +463,12 @@
 
             <div id="conn-fields" class="flex flex-wrap items-center gap-2 flex-1"></div>
 
-            <button id="btn-apply-conn"
-                class="bg-blue-600 hover:bg-blue-500 text-white px-3 py-1 rounded-md transition flex items-center gap-1.5 font-medium shadow-sm">
+            <button id="btn-apply-conn" type="button" data-on-click="applyCurrentConnection()"
+                class="bg-blue-600 hover:bg-blue-500 text-white px-3 py-1 rounded-md transition flex items-center gap-1.5 font-medium shadow-sm cursor-pointer">
                 <i data-lucide="plug" class="w-3.5 h-3.5"></i> <span data-i18n="applyConn">套用連線</span>
             </button>
-            <button id="btn-disconnect"
-                class="bg-red-600 hover:bg-red-500 text-white px-3 py-1 rounded-md transition flex items-center gap-1.5 font-medium shadow-sm hidden">
+            <button id="btn-disconnect" type="button" data-on-click="disconnectWebSerial()"
+                class="bg-red-600 hover:bg-red-500 text-white px-3 py-1 rounded-md transition flex items-center gap-1.5 font-medium shadow-sm hidden cursor-pointer">
                 <i data-lucide="power-off" class="w-3.5 h-3.5"></i> <span data-i18n="disconnect">斷開</span>
             </button>
         </div>

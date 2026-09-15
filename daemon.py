@@ -1876,6 +1876,18 @@ def execute_serial(req: SerialRequest):
     except Exception as e:
         return {"status": "error", "error": f"Serial 操作失敗: {str(e)}"}
 
+@app.get("/tools/list_serial_ports")
+def list_serial_ports():
+    try:
+        import serial.tools.list_ports
+        ports = list(serial.tools.list_ports.comports())
+        return {
+            "status": "success",
+            "ports": [{"port": p.device, "description": p.description or p.device} for p in ports]
+        }
+    except Exception as e:
+        return {"status": "error", "error": str(e), "ports": []}
+
 class MCPCallRequest(BaseModel):
     name: str
     arguments: Optional[dict] = {}

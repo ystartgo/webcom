@@ -6929,10 +6929,13 @@ ${tools.join('\n')}${contextStr}
                         <button type="button" onclick="checkWslStatus(true)" class="px-2 py-0.5 bg-gray-800 hover:bg-gray-700 text-teal-300 rounded text-[11px] font-medium cursor-pointer border border-teal-700/40">檢查狀態</button>
                         <button type="button" onclick="startWslDesktopAndConnect('novnc')" class="px-2 py-0.5 bg-teal-800 hover:bg-teal-700 text-white rounded text-[11px] font-medium cursor-pointer">啟動桌面</button>`;
             } else if (proto === 'serial') {
-                html = `<input type="text" id="cfg-port" placeholder="Port (/dev/ttyS3)" class="bg-gray-900 border border-gray-700 rounded px-2 py-1 w-32 text-xs font-mono">
+                html = `<span class="text-amber-400 font-medium flex items-center gap-1"><i data-lucide="cpu" class="w-3.5 h-3.5"></i> 後端 COM 埠:</span>
+                        <input type="text" id="cfg-port" placeholder="COM1 或 /dev/ttyUSB0" value="COM1" class="bg-gray-900 border border-gray-700 rounded px-2 py-1 w-32 text-xs font-mono" list="serial-port-datalist">
+                        <datalist id="serial-port-datalist"><option value="COM1"><option value="COM2"><option value="COM3"><option value="COM4"></datalist>
                         <select id="cfg-baud" class="bg-gray-900 border border-gray-700 rounded px-2 py-1 text-xs font-mono">
-                            <option value="9600">9600</option><option value="115200" selected>115200</option>
-                        </select>`;
+                            <option value="9600">9600</option><option value="19200">19200</option><option value="38400">38400</option><option value="57600">57600</option><option value="115200" selected>115200</option>
+                        </select>
+                        <button type="button" onclick="probeBackendSerialPorts()" class="px-2 py-0.5 bg-gray-800 hover:bg-gray-700 text-amber-300 rounded text-[11px] font-medium border border-gray-700 cursor-pointer" title="偵測本機所有可用 COM 埠">🔍 偵測 COM 埠</button>`;
             } else if (proto === 'webserial') {
                 html = `<span class="text-yellow-400 ml-1 font-medium flex items-center gap-1"><i data-lucide="cpu" class="w-3.5 h-3.5"></i> Web Serial</span>
                         <select id="cfg-baud" class="bg-gray-900 border border-gray-700 rounded px-2 py-1 ml-1 text-xs font-mono" title="通訊鮑率 (Baud Rate)">
@@ -6978,25 +6981,68 @@ ${tools.join('\n')}${contextStr}
             }
         });
 
+        // ── 智能 Web Serial 連線引擎與環境防禦 ──
         async function connectWebSerial(baudRate) {
+            // 1. 檢查目前瀏覽器與協定環境
             if (!("serial" in navigator)) {
-                throw new Error(currentLang === 'en' ? "Your browser does not support Web Serial API." : "您的瀏覽器不支援 Web Serial API。");
+                const isFileProtocol = window.location.protocol === 'file:';
+                if (isFileProtocol) {
+                    printToTerminal(currentLang === 'en'
+                        ? '[Web Serial] Chrome Security Policy disables Web Serial under file:// scheme.'
+                        : '[Web Serial 限制] Chrome 安全政策禁止在 file:// 本地網址直接存取 USB 序列埠！', 'error');
+                    printToTerminal(currentLang === 'en'
+                        ? '💡 Solutions:\n  1. Open via Webcom Daemon: http://127.0.0.1:8001 (Web Serial Fully Enabled)\n  2. Or install the Webcom Chrome Extension\n  3. Or switch protocol above to "Backend Serial" (pyserial COM)'
+                        : '💡 建議解決方案：\n  1. 改用本機服務開啟: http://127.0.0.1:8001 (支援原生 Web Serial)\n  2. 或在上方下拉選單切換至「後端 Serial (限 Agent)」直接連線本機 COM 埠！\n  3. 或安裝 Webcom Chrome 擴充功能', 'info');
+                    throw new Error(currentLang === 'en'
+                        ? "Web Serial requires Secure Origin (http://127.0.0.1:8001 or Chrome Extension), not file://."
+                        : "Web Serial 須在安全環境 (http://127.0.0.1:8001 或 Chrome 擴充功能) 執行，請勿使用 file:// 模式。");
+                }
+                throw new Error(currentLang === 'en'
+                    ? "Your browser does not support Web Serial API. Please use Google Chrome or Microsoft Edge."
+                    : "您的瀏覽器不支援 Web Serial API，請使用 Google Chrome 或 Microsoft Edge 瀏覽器。");
             }
+
+            // 2. 清理先前未釋放之 Port 狀態
+            if (webSerialPort) {
+                try {
+                    keepReading = false;
+                    if (webSerialReader) await webSerialReader.cancel();
+                    await webSerialPort.close();
+                } catch (e) {}
+                webSerialPort = null;
+            }
+
+            // 3. 請求序列埠設備選取
             try {
                 webSerialPort = await navigator.serial.requestPort();
             } catch (e) {
-                if (e.name === 'NotFoundError' || (e.message && e.message.includes('No port selected'))) {
+                const errMsg = String(e.message || '');
+                // 針對 Chrome Side Panel 側邊欄彈窗限制之自動防禦
+                if (errMsg.includes('side panel') || errMsg.includes('dialog') || errMsg.includes('chooser')) {
+                    printToTerminal(currentLang === 'en'
+                        ? '[Web Serial] Chrome restricts device choosers inside Side Panel. Launching standalone 2/3 window...'
+                        : '[Web Serial] Chrome 規範側邊欄無法彈出硬體選單，正在為您以 2/3 獨立視窗展開...', 'info');
+                    if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.sendMessage) {
+                        chrome.runtime.sendMessage({ action: 'open_twothirds_window' });
+                    } else {
+                        window.open(window.location.href, '_blank', 'width=1280,height=850');
+                    }
+                    return;
+                }
+                if (e.name === 'NotFoundError' || errMsg.includes('No port selected') || errMsg.includes('User cancelled')) {
                     throw new Error(currentLang === 'en' ? "No serial port selected (User cancelled)." : "未選取序列埠設備（使用者已取消選取）。");
                 }
                 throw new Error(e.message);
             }
 
+            // 4. 開啟序列埠串流
             try {
-                await webSerialPort.open({ baudRate: baudRate });
-                webSerialHistoryText += `\n--- [Web Serial Connected @ ${baudRate} baud - ${new Date().toLocaleString()}] ---\n`;
+                const finalBaud = baudRate || 115200;
+                await webSerialPort.open({ baudRate: finalBaud });
+                webSerialHistoryText += `\n--- [Web Serial Connected @ ${finalBaud} baud - ${new Date().toLocaleString()}] ---\n`;
                 printToTerminal(currentLang === 'en'
-                    ? `[Web Serial] Connected (Baud: ${baudRate}). Listening to stream...`
-                    : `[Web Serial] 已連線 (鮑率: ${baudRate})，正在監聽串流輸出...`, 'success');
+                    ? `[Web Serial] Connected (Baud: ${finalBaud}). Listening to stream...`
+                    : `[Web Serial] 已連線 (鮑率: ${finalBaud})，正在監聽串流輸出...`, 'success');
                 btnApplyConn.classList.add('hidden');
                 btnDisconnect.classList.remove('hidden');
                 termPrompt.textContent = `WebSerial >`;
@@ -7012,6 +7058,29 @@ ${tools.join('\n')}${contextStr}
                 throw new Error(currentLang === 'en' ? `Failed to open port: ${e.message}` : `開啟序列埠失敗: ${e.message}`);
             }
         }
+        window.connectWebSerial = connectWebSerial;
+
+        // ── 偵測本機可用 COM 埠 (Backend Serial Prober) ──
+        async function probeBackendSerialPorts() {
+            try {
+                const res = await fetch(`${appSettings.daemonEndpoint}/tools/list_serial_ports`);
+                const data = await res.json();
+                if (data.status === 'success' && data.ports && data.ports.length > 0) {
+                    const datalist = document.getElementById('serial-port-datalist');
+                    if (datalist) {
+                        datalist.innerHTML = data.ports.map(p => `<option value="${p.port}">${p.description}</option>`).join('');
+                    }
+                    const inputPort = document.getElementById('cfg-port');
+                    if (inputPort) inputPort.value = data.ports[0].port;
+                    printToTerminal(`已偵測到可用序列埠: ${data.ports.map(p => p.port + ' (' + p.description + ')').join(', ')}`, 'success');
+                } else {
+                    printToTerminal('未偵測到作用中的 COM 序列埠設備，請確認硬體已連接。', 'info');
+                }
+            } catch (e) {
+                printToTerminal(`偵測序列埠失敗 (需常駐服務): ${e.message}`, 'error');
+            }
+        }
+        window.probeBackendSerialPorts = probeBackendSerialPorts;
 
         async function readSerialLoop() {
             while (webSerialPort && webSerialPort.readable && keepReading) {
@@ -7239,7 +7308,7 @@ ${tools.join('\n')}${contextStr}
         window.exportSerialLog = exportSerialLog;
         window.clearSerialLogHistory = clearSerialLogHistory;
 
-        btnApplyConn.addEventListener('click', async () => {
+        async function applyCurrentConnection() {
             const proto = connProtocol.value;
             let ctx = { protocol: proto };
             try {
@@ -7291,7 +7360,10 @@ ${tools.join('\n')}${contextStr}
                 printToTerminal(`${errPrefix}${e.message}`, 'error');
                 termInput.focus();
             }
-        });
+        }
+        window.applyCurrentConnection = applyCurrentConnection;
+        window.disconnectWebSerial = disconnectWebSerial;
+        btnApplyConn.addEventListener('click', applyCurrentConnection);
 
         async function sendCommandToTerminal(cmd, isAi = false) {
             if (cmd && cmd.trim()) {
