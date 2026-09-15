@@ -39,7 +39,7 @@ if (!window.WTerm && window.WTermBundle) {
                 protoSSH: "TCP/IP: SSH 遠端",
                 protoTelnet: "TCP/IP: Telnet 遠端",
                 protoWebSerial: "Web Serial (瀏覽器直連)",
-                protoSerial: "後端 Serial (限 Agent)",
+                protoSerial: "後端 Serial (8001 常駐服務 / COM 埠)",
                 tabTerm: "終端機",
                 tabNoVNC: "noVNC 桌面",
                 tabXorg: "Xorg 視窗",
@@ -786,7 +786,7 @@ if (!window.WTerm && window.WTermBundle) {
                 protoSSH: "TCP/IP: SSH",
                 protoTelnet: "TCP/IP: Telnet",
                 protoWebSerial: "Web Serial (Browser Direct)",
-                protoSerial: "Backend Serial (Agent Only)",
+                protoSerial: "Backend Serial (8001 Daemon / COM Port)",
                 tabTerm: "Terminal",
                 tabNoVNC: "noVNC Desktop",
                 tabXorg: "Xorg GUI",
@@ -6977,6 +6977,9 @@ ${tools.join('\n')}${contextStr}
             } else {
                 switchLeftMode('term');
                 renderConnFields();
+                if (val === 'serial') {
+                    probeBackendSerialPorts();
+                }
                 termInput.focus();
             }
         });
@@ -7029,6 +7032,9 @@ ${tools.join('\n')}${contextStr}
                         return;
                     }
                     if (e.name === 'NotFoundError' || errMsg.includes('No port selected') || errMsg.includes('User cancelled')) {
+                        printToTerminal(currentLang === 'en'
+                            ? '💡 Tip: To connect COM ports directly via Port 8001 Daemon (No browser popup required), switch protocol to "Backend Serial (8001 Daemon)".'
+                            : '💡 提示：若欲直接透過 8001 背景服務連線 COM 埠（免瀏覽器跳窗選設備），可將上方通訊協定切換為「後端 Serial (8001 常駐服務 / COM 埠)」！', 'info');
                         throw new Error(currentLang === 'en' ? "No serial port selected (User cancelled)." : "未選取序列埠設備（使用者已取消選取）。");
                     }
                     throw new Error(e.message);

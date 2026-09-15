@@ -904,7 +904,7 @@ class TelnetRequest(BaseModel):
 class SerialRequest(BaseModel):
     port: str
     baudrate: Optional[int] = 115200
-    command: str
+    command: Optional[str] = ""
 
 @app.get("/")
 @app.get("/health")
@@ -1865,9 +1865,11 @@ def execute_serial(req: SerialRequest):
     try:
         import serial
         import time
-        ser = serial.Serial(req.port, req.baudrate, timeout=3)
-        ser.write((req.command + "\r\n").encode('utf-8'))
-        time.sleep(0.5)
+        cmd = req.command if req.command is not None else ""
+        ser = serial.Serial(req.port, req.baudrate, timeout=2)
+        if cmd:
+            ser.write((cmd + "\r\n").encode('utf-8'))
+        time.sleep(0.3)
         out = ser.read_all().decode('utf-8', errors='replace')
         ser.close()
         return {"status": "success", "stdout": out}
