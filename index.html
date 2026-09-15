@@ -6,11 +6,11 @@
     作者 startgo (startgo@yia.app)
     授權預設 GPLv3
     時間戳記: 2026-09-14 15:30:00
-    版本號: v1.0.7-Dual-Engine-WebGPU-RAG-Supervise
+    版本號: v1.0.8-Dual-Engine-WebGPU-RAG-Supervise
     -->
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>雙引擎 AI 協同控制台 (Dual-Engine AI Console) - v1.0.7</title>
+    <title>雙引擎 AI 協同控制台 (Dual-Engine AI Console) - v1.0.8</title>
     <!-- 離線優先 Local-First 資源載入 (斷網零依賴 + CDN 自動容錯備援) -->
     <script src="./assets/tailwindcss.js"></script>
     <script>
@@ -338,7 +338,7 @@
                     </div>
                     <h1 class="text-xs sm:text-sm font-bold tracking-tight text-white flex items-center gap-1.5 truncate">
                         <span data-i18n="appTitle">雙引擎 AI 控制台</span>
-                        <span class="text-[10px] bg-purple-500/20 text-purple-300 px-1.5 py-0.2 rounded font-mono hidden sm:inline">v1.0.7</span>
+                        <span class="text-[10px] bg-purple-500/20 text-purple-300 px-1.5 py-0.2 rounded font-mono hidden sm:inline">v1.0.8</span>
                     </h1>
                 </div>
                 <div class="flex items-center gap-1.5 shrink-0 relative">
@@ -1027,7 +1027,7 @@
 </div>
 
     <!-- 左右分割拖曳把手 (Draggable Split Resizer Bar) -->
-    <div id="panel-resizer" class="w-1.5 hover:w-2 bg-gray-800 hover:bg-purple-600 transition-all cursor-col-resize flex flex-col items-center justify-center shrink-0 select-none z-20 group" title="拖曳調整左右寬度 (雙擊切換 2/3 : 1/3 或 1/2 : 1/2)">
+    <div id="panel-resizer" class="w-1.5 hover:w-2 bg-gray-800 hover:bg-purple-600 transition-all cursor-col-resize flex flex-col items-center justify-center shrink-0 select-none z-20 group" title="拖曳調整左右寬度 (雙擊切換 2/3 : 1/3 或 1/2 : 1/2)" data-i18n-title="tooltipPanelResizer">
         <div class="h-8 w-0.5 bg-gray-600 group-hover:bg-white rounded-full pointer-events-none"></div>
     </div>
 
@@ -1179,11 +1179,11 @@
                 </button>
 
                 <!-- 斷網/外網模擬開關 (Simulate Offline / Network Mock) -->
-                <button id="btn-toggle-offline-mock" type="button"
-                    class="text-xs px-2.5 py-1.5 rounded-lg border transition flex items-center gap-1.5 font-medium bg-gray-900 border-gray-700 text-gray-300 hover:border-gray-500 whitespace-nowrap shrink-0"
-                    title="點擊切換純斷網模擬：嚴格封鎖所有非 127.0.0.1 外網連線，免拔網路線驗證">
+                <button id="btn-toggle-offline-mock" type="button" onclick="toggleOfflineMock()" data-on-click="toggleOfflineMock()"
+                    class="text-xs px-2.5 py-1.5 rounded-lg border transition flex items-center gap-1.5 font-medium bg-gray-900 border-gray-700 text-gray-300 hover:border-gray-500 whitespace-nowrap shrink-0 cursor-pointer"
+                    title="點擊切換純斷網模擬：嚴格封鎖所有非 127.0.0.1 外網連線，免拔網路線驗證" data-i18n-title="offlineMockTooltip">
                     <i data-lucide="wifi" id="icon-offline-mock" class="w-3.5 h-3.5 text-emerald-400 shrink-0"></i>
-                    <span id="label-offline-mock" class="whitespace-nowrap">外網：連通</span>
+                    <span id="label-offline-mock" class="whitespace-nowrap" data-i18n="offlineMockOnline">外網：連通</span>
                 </button>
 
                 <!-- 語系切換器 (Language Selector) -->
@@ -2851,7 +2851,7 @@
                                 <div class="flex items-center gap-1.5">
                                     <i data-lucide="tag" class="w-3.5 h-3.5 text-indigo-400 shrink-0"></i>
                                     <span><strong class="text-gray-200">版本：</strong> <code
-                                            class="text-indigo-300">v1.0.7-Dual-Engine-WebGPU-RAG-Supervise</code></span>
+                                            class="text-indigo-300">v1.0.8-Dual-Engine-WebGPU-RAG-Supervise</code></span>
                                 </div>
                             </div>
                             <div class="space-y-1.5 text-[11px] text-gray-400">
@@ -3033,7 +3033,7 @@
                                 <div class="flex items-center gap-2">
                                     <i data-lucide="tag" class="w-3.5 h-3.5 text-indigo-400 shrink-0"></i>
                                     <span><strong class="text-gray-200">版本：</strong> <code
-                                            class="text-indigo-300">v1.0.7-Dual-Engine-WebGPU-RAG-Supervise</code></span>
+                                            class="text-indigo-300">v1.0.8-Dual-Engine-WebGPU-RAG-Supervise</code></span>
                                 </div>
                             </div>
                             <div class="space-y-2 text-[11px] text-gray-400">
@@ -3218,7 +3218,7 @@
             <div class="px-6 py-3 border-t border-gray-800 flex justify-between items-center bg-gray-950 shrink-0">
                 <div class="flex flex-col gap-0.5">
                     <span class="text-[11px] text-gray-400 font-mono font-semibold">Webcom Dual-Engine Console
-                        <span class="text-indigo-400">v1.0.7</span></span>
+                        <span class="text-indigo-400">v1.0.8</span></span>
                     <span class="text-[10px] text-gray-600">© 2026 startgo · Licensed under
                         <span class="text-green-600">GNU GPL v3.0</span> ·
                         <a href="mailto:startgo@yia.app"
@@ -3603,10 +3603,10 @@ ffmpeg -f pulse -i default -acodec libmp3lame -ab 128k -f mp3 -listen 1 http://0
                     </div>
                     <div>
                         <h3 class="text-sm font-bold text-white flex items-center gap-2">
-                            <span>Web Serial 完整會話日誌</span>
+                            <span data-i18n="serialLogModalTitle">Web Serial 完整會話日誌</span>
                             <span id="serial-log-stats" class="text-[11px] font-mono font-normal text-yellow-400 px-2 py-0.5 rounded bg-yellow-950/50 border border-yellow-800/40">0 字元 • 0 行</span>
                         </h3>
-                        <p class="text-[11px] text-gray-400">完整保存本連線所有字元，不受終端機顯示行數上限限制</p>
+                        <p class="text-[11px] text-gray-400" data-i18n="serialLogModalDesc">完整保存本連線所有字元，不受終端機顯示行數上限限制</p>
                     </div>
                 </div>
                 <button type="button" onclick="closeSerialLogModal()" class="text-gray-400 hover:text-white p-1 rounded-lg hover:bg-gray-800 transition">
@@ -3619,7 +3619,7 @@ ffmpeg -f pulse -i default -acodec libmp3lame -ab 128k -f mp3 -listen 1 http://0
                 <div class="flex items-center gap-2 flex-1 max-w-md">
                     <div class="relative w-full">
                         <i data-lucide="search" class="w-3.5 h-3.5 text-gray-500 absolute left-2.5 top-1/2 -translate-y-1/2"></i>
-                        <input id="serial-log-search-input" type="text" placeholder="即時搜尋或過濾日誌關鍵字 (如 error, boot, wifi)..." oninput="filterSerialLogDisplay()" class="w-full bg-gray-900 border border-gray-700 rounded-lg pl-8 pr-3 py-1 text-xs text-gray-200 placeholder-gray-500 focus:outline-none focus:border-yellow-500 font-mono">
+                        <input id="serial-log-search-input" type="text" placeholder="即時搜尋或過濾日誌關鍵字 (如 error, boot, wifi)..." data-i18n-placeholder="serialLogSearchPlaceholder" oninput="filterSerialLogDisplay()" class="w-full bg-gray-900 border border-gray-700 rounded-lg pl-8 pr-3 py-1 text-xs text-gray-200 placeholder-gray-500 focus:outline-none focus:border-yellow-500 font-mono">
                     </div>
                     <button type="button" onclick="clearSerialLogSearch()" class="px-2 py-1 bg-gray-800 hover:bg-gray-700 text-gray-400 rounded-lg shrink-0">清除</button>
                 </div>
@@ -3629,13 +3629,13 @@ ffmpeg -f pulse -i default -acodec libmp3lame -ab 128k -f mp3 -listen 1 http://0
                         <i data-lucide="arrow-down-to-line" class="w-3.5 h-3.5"></i> <span id="lbl-modal-serial-autoscroll">自動捲動: 開</span>
                     </button>
                     <button type="button" onclick="copyAllSerialLog()" class="px-2.5 py-1 rounded-lg bg-gray-800 hover:bg-gray-700 border border-gray-700 text-gray-200 font-medium flex items-center gap-1.5 transition">
-                        <i data-lucide="copy" class="w-3.5 h-3.5 text-gray-400"></i> <span>複製全部</span>
+                        <i data-lucide="copy" class="w-3.5 h-3.5 text-gray-400"></i> <span data-i18n="serialLogBtnCopy">複製全部</span>
                     </button>
                     <button type="button" onclick="exportSerialLog()" class="px-2.5 py-1 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-medium flex items-center gap-1.5 shadow-sm transition">
-                        <i data-lucide="download" class="w-3.5 h-3.5"></i> <span>下載 Log (.txt)</span>
+                        <i data-lucide="download" class="w-3.5 h-3.5"></i> <span data-i18n="serialLogBtnDownload">下載 Log (.txt)</span>
                     </button>
                     <button type="button" onclick="clearSerialLogHistory()" class="px-2.5 py-1 rounded-lg bg-red-950/40 hover:bg-red-900/60 border border-red-800/50 text-red-300 font-medium flex items-center gap-1.5 transition">
-                        <i data-lucide="trash-2" class="w-3.5 h-3.5"></i> <span>清空日誌</span>
+                        <i data-lucide="trash-2" class="w-3.5 h-3.5"></i> <span data-i18n="serialLogBtnClear">清空日誌</span>
                     </button>
                 </div>
             </div>
@@ -3907,6 +3907,19 @@ ffmpeg -f pulse -i default -acodec libmp3lame -ab 128k -f mp3 -listen 1 http://0
                 daemonDownloadAssets: "下載資源包",
                 daemonRegisterProtocol: "註冊協定",
                 offlineMockOnline: "外網：連通",
+                btnDownloadStandalone: "📥 下載單機版 HTML",
+                tooltipDownloadStandalone: "下載原生單檔 index.html (可離線使用、雙擊開啟或隨身攜帶)",
+                tooltipSnapTwoThirds: "自動將視窗佈局調整為 2/3 展開 (搭配左側 1/3 瀏覽器)",
+                keySettingsTooltip: "開啟自訂快捷鍵與按鍵對應設定",
+                tooltipPanelResizer: "拖曳調整左右寬度 (雙擊切換 2/3 : 1/3 或 1/2 : 1/2)",
+                serialLogModalTitle: "Web Serial 完整會話日誌",
+                serialLogModalDesc: "完整保存本連線所有字元，不受終端機顯示行數上限限制",
+                serialLogSearchPlaceholder: "即時搜尋或過濾日誌關鍵字 (如 error, boot, wifi)...",
+                serialLogBtnCopy: "複製全部",
+                serialLogBtnDownload: "下載 Log (.txt)",
+                serialLogBtnClear: "清空日誌",
+                serialLogScrollOn: "自動捲動: 開",
+                serialLogScrollOff: "自動捲動: 關",
                 offlineMockOffline: "純斷網模擬：已啟動",
                 offlineMockTooltip: "點擊切換純斷網模擬：嚴格封鎖所有非 127.0.0.1 外網連線，免拔網路線驗證",
                 // ── 工具列與按鈕提示詞 (Tooltips) ──
@@ -4641,7 +4654,22 @@ ffmpeg -f pulse -i default -acodec libmp3lame -ab 128k -f mp3 -listen 1 http://0
                 daemonDownloadModel: "Download Model",
                 daemonDownloadAssets: "Download Assets",
                 daemonRegisterProtocol: "Register Protocol",
-                offlineMockOnline: "Online",
+                offlineMockOnline: "Internet: Connected",
+                offlineMockOffline: "Offline Mock: Active",
+                offlineMockTooltip: "Click to toggle Simulated Offline Mode: blocks ALL non-127.0.0.1 external traffic to verify pure-offline/WinPE behavior.",
+                btnDownloadStandalone: "📥 Download Standalone HTML",
+                tooltipDownloadStandalone: "Download standalone index.html (runs offline, portable, open anywhere)",
+                tooltipSnapTwoThirds: "Snap window layout to 2/3 screen (pairs with 1/3 browser on the left)",
+                keySettingsTooltip: "Open custom shortcuts and key binding settings",
+                tooltipPanelResizer: "Drag to resize left/right panels (Double click to toggle 2/3 : 1/3 or 1/2 : 1/2)",
+                serialLogModalTitle: "Web Serial Complete Session Log",
+                serialLogModalDesc: "Captures and preserves all stream characters without terminal line limits",
+                serialLogSearchPlaceholder: "Search or filter log keywords (e.g. error, boot, wifi)...",
+                serialLogBtnCopy: "Copy All",
+                serialLogBtnDownload: "Download Log (.txt)",
+                serialLogBtnClear: "Clear Log",
+                serialLogScrollOn: "Auto-scroll: ON",
+                serialLogScrollOff: "Auto-scroll: OFF",
                 offlineMockOffline: "Offline (Mocked)",
                 offlineMockTooltip: "Click to toggle Simulated Offline Mode: blocks ALL non-127.0.0.1 external traffic. Lets you test pure-offline/WinPE scenarios without unplugging cables.",
                 // ── Tooltips ──
@@ -5483,23 +5511,52 @@ ffmpeg -f pulse -i default -acodec libmp3lame -ab 128k -f mp3 -listen 1 http://0
         const iconOfflineMock = document.getElementById('icon-offline-mock');
         const labelOfflineMock = document.getElementById('label-offline-mock');
 
-        btnOfflineMock?.addEventListener('click', () => {
-            isSimulateOffline = !isSimulateOffline;
+        function updateOfflineMockUI() {
+            const btn = document.getElementById('btn-toggle-offline-mock');
+            const icon = document.getElementById('icon-offline-mock');
+            const lbl = document.getElementById('label-offline-mock');
+            if (!btn || !lbl) return;
+
+            btn.title = t('offlineMockTooltip');
+            btn.setAttribute('data-i18n-title', 'offlineMockTooltip');
+
             if (isSimulateOffline) {
-                btnOfflineMock.className = "text-xs px-2.5 py-1.5 rounded-lg border transition flex items-center gap-1.5 font-medium bg-rose-950/80 border-rose-600 text-rose-300 shadow-md shadow-rose-900/30";
-                iconOfflineMock.setAttribute('data-lucide', 'wifi-off');
-                iconOfflineMock.className = "w-3.5 h-3.5 text-rose-400";
-                labelOfflineMock.textContent = currentLang === 'en' ? "Offline (Mocked)" : "純斷網模擬：已啟動";
-                printToTerminal(currentLang === 'en' ? "[System] Simulated Offline Mode ENABLED (All non-127.0.0.1 external traffic blocked)." : "[系統] 純斷網模擬模式已啟用（已嚴格封鎖所有非 127.0.0.1 外部網路，免拔網路線驗證）。", 'error');
+                btn.className = "text-xs px-2.5 py-1.5 rounded-lg border transition flex items-center gap-1.5 font-medium bg-rose-950/80 border-rose-600 text-rose-300 shadow-md shadow-rose-900/30 whitespace-nowrap shrink-0 cursor-pointer";
+                if (icon) {
+                    icon.setAttribute('data-lucide', 'wifi-off');
+                    icon.className = "w-3.5 h-3.5 text-rose-400 shrink-0";
+                }
+                lbl.setAttribute('data-i18n', 'offlineMockOffline');
+                lbl.textContent = t('offlineMockOffline');
             } else {
-                btnOfflineMock.className = "text-xs px-2.5 py-1.5 rounded-lg border transition flex items-center gap-1.5 font-medium bg-gray-900 border-gray-700 text-gray-300 hover:border-gray-500";
-                iconOfflineMock.setAttribute('data-lucide', 'wifi');
-                iconOfflineMock.className = "w-3.5 h-3.5 text-emerald-400";
-                labelOfflineMock.textContent = currentLang === 'en' ? "Online" : "外網：連通";
-                printToTerminal(currentLang === 'en' ? "[System] Simulated Offline Mode DISABLED (External traffic allowed)." : "[系統] 純斷網模擬模式已關閉（外網連線已恢復正常）。", 'success');
+                btn.className = "text-xs px-2.5 py-1.5 rounded-lg border transition flex items-center gap-1.5 font-medium bg-gray-900 border-gray-700 text-gray-300 hover:border-gray-500 whitespace-nowrap shrink-0 cursor-pointer";
+                if (icon) {
+                    icon.setAttribute('data-lucide', 'wifi');
+                    icon.className = "w-3.5 h-3.5 text-emerald-400 shrink-0";
+                }
+                lbl.setAttribute('data-i18n', 'offlineMockOnline');
+                lbl.textContent = t('offlineMockOnline');
             }
-            lucide.createIcons();
-        });
+            if (window.lucide) lucide.createIcons();
+        }
+        window.updateOfflineMockUI = updateOfflineMockUI;
+
+        function toggleOfflineMock() {
+            isSimulateOffline = !isSimulateOffline;
+            updateOfflineMockUI();
+            if (isSimulateOffline) {
+                printToTerminal(currentLang === 'en' 
+                    ? "[System] Simulated Offline Mode ENABLED (All non-127.0.0.1 external traffic blocked)." 
+                    : "[系統] 純斷網模擬模式已啟用（已嚴格封鎖所有非 127.0.0.1 外部網路，免拔網路線驗證）。", 'error');
+            } else {
+                printToTerminal(currentLang === 'en' 
+                    ? "[System] Simulated Offline Mode DISABLED (External traffic allowed)." 
+                    : "[系統] 純斷網模擬模式已關閉（外網連線已恢復正常）。", 'success');
+            }
+        }
+        window.toggleOfflineMock = toggleOfflineMock;
+
+        btnOfflineMock?.addEventListener('click', toggleOfflineMock);
 
         function buildApiUrl(baseEndpoint, path) {
             if (!baseEndpoint) return path || '';
@@ -6458,7 +6515,7 @@ ffmpeg -f pulse -i default -acodec libmp3lame -ab 128k -f mp3 -listen 1 http://0
                                 </div>
                                 <div class="flex items-center gap-2">
                                     <i data-lucide="tag" class="w-3.5 h-3.5 text-indigo-400 shrink-0"></i>
-                                    <span><strong class="text-gray-200">Version:</strong> <code class="text-indigo-300">v1.0.7-Dual-Engine-WebGPU-RAG-Supervise</code></span>
+                                    <span><strong class="text-gray-200">Version:</strong> <code class="text-indigo-300">v1.0.8-Dual-Engine-WebGPU-RAG-Supervise</code></span>
                                 </div>
                             </div>
                             <div class="space-y-2 text-[11px] text-gray-400">
@@ -6615,7 +6672,7 @@ ffmpeg -f pulse -i default -acodec libmp3lame -ab 128k -f mp3 -listen 1 http://0
                                 </div>
                                 <div class="flex items-center gap-2">
                                     <i data-lucide="tag" class="w-3.5 h-3.5 text-indigo-400 shrink-0"></i>
-                                    <span><strong class="text-gray-200">版本：</strong> <code class="text-indigo-300">v1.0.7-Dual-Engine-WebGPU-RAG-Supervise</code></span>
+                                    <span><strong class="text-gray-200">版本：</strong> <code class="text-indigo-300">v1.0.8-Dual-Engine-WebGPU-RAG-Supervise</code></span>
                                 </div>
                             </div>
                             <div class="space-y-2 text-[11px] text-gray-400">
@@ -6963,11 +7020,8 @@ ffmpeg -f pulse -i default -acodec libmp3lame -ab 128k -f mp3 -listen 1 http://0
             }
 
             // ── 外網狀態按鈕 (Offline Mock) 翻譯 & 狀態更新 ──
-            const btnOfflineMock = document.getElementById('btn-toggle-offline-mock');
-            const lblOfflineMock = document.getElementById('label-offline-mock');
-            if (btnOfflineMock) btnOfflineMock.title = t('offlineMockTooltip');
-            if (lblOfflineMock) {
-                lblOfflineMock.textContent = isSimulateOffline ? t('offlineMockOffline') : t('offlineMockOnline');
+            if (typeof updateOfflineMockUI === 'function') {
+                updateOfflineMockUI();
             }
 
             // ── 連線協定選項 (connProtocol) 明確更新確保翻譯生效 ──
@@ -10408,11 +10462,11 @@ ${tools.join('\n')}${contextStr}
 
                 const termIsEn = currentLang === 'en';
                 const bannerRaw = termIsEn ? [
-                    "\x1b[1;36mWebcom Multi-Protocol Terminal v1.0.7\x1b[0m  \x1b[33m(Powered by Vercel Labs wterm)\x1b[0m",
+                    "\x1b[1;36mWebcom Multi-Protocol Terminal v1.0.8\x1b[0m  \x1b[33m(Powered by Vercel Labs wterm)\x1b[0m",
                     "\x1b[32m● WASM Core (~12KB)\x1b[0m   \x1b[32m● DOM Native Rendering\x1b[0m   \x1b[32m● 24-bit True Color\x1b[0m",
                     "\x1b[90mSupports: Local Shell (WSL) / SSH / Telnet / Web Serial (Direct)\x1b[0m"
                 ] : [
-                    "\x1b[1;36mWebcom 多協定終端機 v1.0.7\x1b[0m  \x1b[33m(Powered by Vercel Labs wterm)\x1b[0m",
+                    "\x1b[1;36mWebcom 多協定終端機 v1.0.8\x1b[0m  \x1b[33m(Powered by Vercel Labs wterm)\x1b[0m",
                     "\x1b[32m● WASM 核心 (~12KB)\x1b[0m   \x1b[32m● DOM 原生渲染\x1b[0m   \x1b[32m● 24-bit 真彩色\x1b[0m",
                     "\x1b[90m支援：本地 Shell (WSL) / SSH / Telnet / Web Serial (直連)\x1b[0m"
                 ];
@@ -18440,7 +18494,7 @@ Important guidelines:
                 // 匯出包含完整中繼資訊的結構
                 const exportData = {
                     app: "Webcom Dual-Engine Console",
-                    version: "1.0.7",
+                    version: "1.0.8",
                     exportTimestamp: now.toISOString(),
                     engineMode: (typeof appSettings !== 'undefined' && appSettings?.engineMode) ? appSettings.engineMode : 'api',
                     totalMessages: messages.length,
@@ -18997,7 +19051,7 @@ if __name__ == "__main__":
 </head>
 <body>
   <h2>📦 JSON 格式化與驗證工具</h2>
-  <textarea id="box">{\n  "project": "Webcom",\n  "version": "1.0.7",\n  "features": ["Artifact", "AppLibrary", "Agent"]\n}</textarea>
+  <textarea id="box">{\n  "project": "Webcom",\n  "version": "1.0.8",\n  "features": ["Artifact", "AppLibrary", "Agent"]\n}</textarea>
   <div class="btn-row">
     <button onclick="formatJson()">格式化 (2 空格)</button>
     <button onclick="minifyJson()">壓縮 (Minify)</button>

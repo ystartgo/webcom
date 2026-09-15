@@ -2,7 +2,7 @@
 
 > **繁體中文** ・ [English](#english)
 >
-> 🎯 **當前版本：`v1.0.7-Dual-Engine-WebGPU-RAG-Supervise`** ・ 釋出日期：`2026-09-14`
+> 🎯 **當前版本：`v1.0.8-Dual-Engine-WebGPU-RAG-Supervise`** ・ 釋出日期：`2026-09-16`
 > 📝 變更紀錄：見下方 [## 🕓 變更日誌 (Changelog)](#-變更日誌-changelog) / [English Changelog](#-changelog)
 
 **Webcom** 是一套單檔 `index.html` 就能啟動的 **雙引擎 AI 主控台**，整合 **多協定終端機（WSL / SSH / Telnet / Web Serial / 後端 Serial）**、**LM Studio / API** 與 **WebGPU 瀏覽器本地 LLM** 兩種推理引擎、**RAG 知識庫管理**、**MCP 協定工具面板**、**純斷網模擬**、**WinPE 開機自動執行** 等常見的現場維運／離線操作需求。
@@ -404,6 +404,25 @@ Q1~Q3 請見內建手冊第 5 頁「常見問題」。以下為本次 v1.0.0 新
 
 ## 🕓 變更日誌 (Changelog)
 
+#### `v1.0.8-Dual-Engine-WebGPU-RAG-Supervise` — 2026-09-16 **序列埠雙引擎完善、8001 後端自動探測、Chrome 擴充功能深層適配與純斷網/外網模擬修復 (Serial Dual-Engine, Daemon Auto-Prober, Chrome Extension & Network Mock Fix)**
+> 🚀 重大更新：序列埠連線雙引擎完善（Web Serial 瀏覽器直連 ＋ 8001 後端常駐 Serial 自動探測與免跳窗直連）＋ Chrome 擴充功能 (MV3) 2/3 視窗展開與拖曳調整 Resizer 支援 ＋ 徹底修復「外網／純斷網模擬開關」多語系切換與狀態指示 ＋ 補齊 Web Serial 完整會話日誌等多語系辭典 ＋ TokenTable 預設推薦更新為 `qwen3.8-flash` ＋ 系統 55 項自我檢測 100% 通過。
+
+- **⚡ 序列埠連線雙引擎 (Dual-Engine Serial Infrastructure)**：
+  1. **8001 後端 Serial 自動探測 (`/tools/list_serial_ports`)**：整合 Python `pyserial` 原生探針，切換至「後端 Serial (8001 常駐服務 / COM 埠)」自動探測本機所有實體與虛擬 COM 埠（如 COM1），支援一鍵重新偵測。
+  2. **完全免瀏覽器跳窗**：解決使用者反映 Chrome 側邊欄或無授權環境下跳窗取消造成 `未選取序列埠設備` 的困擾，透過 8001 常駐服務直接讀寫硬體 COM 埠，支援於終端機直接鍵入 AT 指令或序列埠控制命令。
+  3. **Web Serial 瀏覽器直連防禦優化**：修復擴充功能誤判側邊欄導致無法彈出硬體選單問題；若使用者取消瀏覽器選單，自動於終端機印出友善提示，引導一鍵切換至 8001 後端 Serial 直連。
+- **🧩 Chrome 擴充功能 (Manifest V3) 深度適配與升級**：
+  1. **原生 2/3 展開視窗 (`openTwoThirdsWindow`)**：點擊擴充功能圖示自動以 2/3 比例獨立視窗開啟，預留左側 1/3 給瀏覽器，並支援隨時點擊 `◫` 一鍵吸附。
+  2. **拖曳調整分割條 (`#panel-resizer`)**：左右工作區支援自由拖曳調整寬度，雙擊自動切換 2/3 : 1/3 與 1/2 : 1/2。
+  3. **應用庫 (App Library) CSP 合規與修復**：修復擴充功能沙箱環境下 `document.write` 與內聯事件遭到封鎖問題，所有應用與彈窗 100% 正常響應。
+- **🌐 完整多語系校驗與「外網」開關修復 (Full i18n & Network Mock Fix)**：
+  1. **徹底修復「外網／純斷網模擬」開關 (`btn-toggle-offline-mock`)**：加入 `updateOfflineMockUI()` 全域響應機制與 `data-i18n` 屬性，切換語系即時更新為「外網：連通 ↔ Internet: Connected」與「純斷網模擬：已啟動 ↔ Offline Mock: Active」，工具提示與狀態全面雙語同步。
+  2. **全面補齊遺漏之多語系辭典**：補齊「Web Serial 完整會話日誌視窗（搜尋框、複製全部、下載 Log、清空、自動捲動）」、「下載單機版 HTML」、「2/3 展開視窗」與「按鍵設置」等 15+ 處雙語詞條。
+- **🎯 TokenTable 推薦模型預設更新**：
+  - 首頁與模型選擇器預設推薦模型更新為最新高性價比旗艦 **`qwen3.8-flash`**。
+- **🩺 全系統 55 項自我檢測 100% 通過**：
+  - `diagnose_system.py` 與 `self_test.bat` 執行 55 項全自動檢驗（語法、雜湊一致性、WSL、Port 8001、MarkItDown 等），全數綠燈通過。
+
 #### `v1.0.7-Dual-Engine-WebGPU-RAG-Supervise` — 2026-09-14 **雙向收合佈局、Artifact 工坊介面重構與完整雙語 i18n 釋出 (Layout Optimization, Artifact Drawer & Full i18n Release)**
 > 🚀 重大更新：1366×768 (Asus VS229 等緊湊螢幕) 雙向極致收合佈局 ＋ Artifact 工坊頂部導航抽屜化與常駐離開按鈕 ＋ Xorg 工具列整合為直覺式選單 ＋ 補齊全站 54+ 項 UI 按鈕與選單雙語 (zh-TW / en) i18n 支援 ＋ 系統全功能 55 項自我檢測通過。
 
@@ -539,7 +558,7 @@ Q1~Q3 請見內建手冊第 5 頁「常見問題」。以下為本次 v1.0.0 新
 <a id="english"></a>
 # Webcom — Dual-Engine AI Console (English)
 
-> 🎯 **Current Release:** `v1.0.7-Dual-Engine-WebGPU-RAG-Supervise` ・ **Released:** `2026-09-14`
+> 🎯 **Current Release:** `v1.0.8-Dual-Engine-WebGPU-RAG-Supervise` ・ **Released:** `2026-09-16`
 > 📝 **Changelog:** [Jump to Changelog ↓](#-changelog)
 
 **Webcom** is a single-file (`index.html`) **Dual-Engine AI Console** that combines a **multi-protocol terminal (WSL / SSH / Telnet / Web Serial / Backend Serial)**, **LM Studio / API** and **WebGPU browser-local LLM** inference engines, **RAG Knowledge Base**, **MCP tool panel**, **pure-offline simulation switch**, and **WinPE autorun** for real-world on-site / offline ops.
@@ -919,6 +938,25 @@ Q1~Q3 live inside the built-in User Guide Tab 5 *FAQ*. The Q4~Q6 below cover v1.
 
 <a id="changelog"></a>
 ## 🕓 Changelog
+
+### `v1.0.8-Dual-Engine-WebGPU-RAG-Supervise` — 2026-09-16 **Serial Dual-Engine, Daemon Auto-Prober, Chrome Extension & Network Mock Fix**
+> 🚀 Major update: Comprehensive Dual-Engine Serial architecture (Browser-native Web Serial + Port 8001 Backend Daemon Serial with COM port auto-prober and dialog-free terminal routing) + Chrome Extension (MV3) 2/3 window & panel resizer support + Complete fix for Network/Offline Mock button language synchronization + Missing i18n translations added + Default recommendation updated to `qwen3.8-flash` + 55/55 automated system diagnostics passing.
+
+- **⚡ Dual-Engine Serial Infrastructure**:
+  1. **Port 8001 Daemon Auto-Prober (`/tools/list_serial_ports`)**: Powered by Python `pyserial`. Switching protocol to "Backend Serial (8001 Daemon / COM Port)" automatically detects all local hardware & virtual COM ports (e.g., COM1) with one-click refresh.
+  2. **Zero Browser Chooser Dialogs Needed**: Solves the browser chooser cancellation error (`No serial port selected / User cancelled`) by allowing direct, seamless read/write access to COM ports via the daemon, with native terminal command typing.
+  3. **Web Serial Diagnostics & Smart Fallback**: Fixed extension side-panel chooser restrictions; user cancellations now prompt a friendly hint with one-click switching to Port 8001 Backend Serial.
+- **🧩 Chrome Extension (Manifest V3) Enhancements**:
+  1. **Native 2/3 Window Snapping (`openTwoThirdsWindow`)**: Clicking extension icon launches a 2/3 ratio standalone window leaving 1/3 for web browsing, with one-click `◫` repositioning.
+  2. **Draggable Panel Resizer (`#panel-resizer`)**: Seamlessly drag to resize left/right panels, or double-click to toggle between 2/3 : 1/3 and 1/2 : 1/2.
+  3. **App Library CSP Compatibility**: Resolved sandbox `document.write` and inline event blocking; all built-in web, python, and agent apps open reliably.
+- **🌐 Comprehensive i18n & Network Mock Button Fix**:
+  1. **Offline/Network Mock Button Fixed (`btn-toggle-offline-mock`)**: Implemented `updateOfflineMockUI()` and proper `data-i18n` binding. Toggling languages immediately translates between "外網：連通 ↔ Internet: Connected" and "純斷網模擬：已啟動 ↔ Offline Mock: Active".
+  2. **15+ Missing i18n Keys Added**: Fully translated Web Serial Log Modal (search filter, copy all, download log, clear log, auto-scroll), Standalone HTML download, 2/3 snap tooltip, and keyboard shortcut settings.
+- **🎯 Default Model Recommendation**:
+  - Updated primary default model recommendation in TokenTable and selectors to **`qwen3.8-flash`**.
+- **🩺 Automated Diagnostic Suite 55/55 PASS**:
+  - `diagnose_system.py` and `self_test.bat` verified 55/55 tests passing with 100% SHA256 file parity across the project repository.
 
 ### `v1.0.7-Dual-Engine-WebGPU-RAG-Supervise` — 2026-09-14 **Collapsible Dual Panels, Streamlined Artifact Drawer & Full Bilingual i18n Release**
 > 🚀 Major update: Bidirectional panel collapsing tailored for 1366×768 (Asus VS229) compact displays + Overhauled Artifact Workbench drawer with pinned exit button + Streamlined Xorg app/control dropdowns + Complete bilingual (zh-TW / en) i18n translation coverage for 54+ newly added UI controls + 55/55 automated system diagnostics passing.

@@ -284,6 +284,19 @@ if (!window.WTerm && window.WTermBundle) {
                 daemonDownloadAssets: "下載資源包",
                 daemonRegisterProtocol: "註冊協定",
                 offlineMockOnline: "外網：連通",
+                btnDownloadStandalone: "📥 下載單機版 HTML",
+                tooltipDownloadStandalone: "下載原生單檔 index.html (可離線使用、雙擊開啟或隨身攜帶)",
+                tooltipSnapTwoThirds: "自動將視窗佈局調整為 2/3 展開 (搭配左側 1/3 瀏覽器)",
+                keySettingsTooltip: "開啟自訂快捷鍵與按鍵對應設定",
+                tooltipPanelResizer: "拖曳調整左右寬度 (雙擊切換 2/3 : 1/3 或 1/2 : 1/2)",
+                serialLogModalTitle: "Web Serial 完整會話日誌",
+                serialLogModalDesc: "完整保存本連線所有字元，不受終端機顯示行數上限限制",
+                serialLogSearchPlaceholder: "即時搜尋或過濾日誌關鍵字 (如 error, boot, wifi)...",
+                serialLogBtnCopy: "複製全部",
+                serialLogBtnDownload: "下載 Log (.txt)",
+                serialLogBtnClear: "清空日誌",
+                serialLogScrollOn: "自動捲動: 開",
+                serialLogScrollOff: "自動捲動: 關",
                 offlineMockOffline: "純斷網模擬：已啟動",
                 offlineMockTooltip: "點擊切換純斷網模擬：嚴格封鎖所有非 127.0.0.1 外網連線，免拔網路線驗證",
                 // ── 工具列與按鈕提示詞 (Tooltips) ──
@@ -1018,7 +1031,22 @@ if (!window.WTerm && window.WTermBundle) {
                 daemonDownloadModel: "Download Model",
                 daemonDownloadAssets: "Download Assets",
                 daemonRegisterProtocol: "Register Protocol",
-                offlineMockOnline: "Online",
+                offlineMockOnline: "Internet: Connected",
+                offlineMockOffline: "Offline Mock: Active",
+                offlineMockTooltip: "Click to toggle Simulated Offline Mode: blocks ALL non-127.0.0.1 external traffic to verify pure-offline/WinPE behavior.",
+                btnDownloadStandalone: "📥 Download Standalone HTML",
+                tooltipDownloadStandalone: "Download standalone index.html (runs offline, portable, open anywhere)",
+                tooltipSnapTwoThirds: "Snap window layout to 2/3 screen (pairs with 1/3 browser on the left)",
+                keySettingsTooltip: "Open custom shortcuts and key binding settings",
+                tooltipPanelResizer: "Drag to resize left/right panels (Double click to toggle 2/3 : 1/3 or 1/2 : 1/2)",
+                serialLogModalTitle: "Web Serial Complete Session Log",
+                serialLogModalDesc: "Captures and preserves all stream characters without terminal line limits",
+                serialLogSearchPlaceholder: "Search or filter log keywords (e.g. error, boot, wifi)...",
+                serialLogBtnCopy: "Copy All",
+                serialLogBtnDownload: "Download Log (.txt)",
+                serialLogBtnClear: "Clear Log",
+                serialLogScrollOn: "Auto-scroll: ON",
+                serialLogScrollOff: "Auto-scroll: OFF",
                 offlineMockOffline: "Offline (Mocked)",
                 offlineMockTooltip: "Click to toggle Simulated Offline Mode: blocks ALL non-127.0.0.1 external traffic. Lets you test pure-offline/WinPE scenarios without unplugging cables.",
                 // ── Tooltips ──
@@ -1860,23 +1888,52 @@ if (!window.WTerm && window.WTermBundle) {
         const iconOfflineMock = document.getElementById('icon-offline-mock');
         const labelOfflineMock = document.getElementById('label-offline-mock');
 
-        btnOfflineMock?.addEventListener('click', () => {
-            isSimulateOffline = !isSimulateOffline;
+        function updateOfflineMockUI() {
+            const btn = document.getElementById('btn-toggle-offline-mock');
+            const icon = document.getElementById('icon-offline-mock');
+            const lbl = document.getElementById('label-offline-mock');
+            if (!btn || !lbl) return;
+
+            btn.title = t('offlineMockTooltip');
+            btn.setAttribute('data-i18n-title', 'offlineMockTooltip');
+
             if (isSimulateOffline) {
-                btnOfflineMock.className = "text-xs px-2.5 py-1.5 rounded-lg border transition flex items-center gap-1.5 font-medium bg-rose-950/80 border-rose-600 text-rose-300 shadow-md shadow-rose-900/30";
-                iconOfflineMock.setAttribute('data-lucide', 'wifi-off');
-                iconOfflineMock.className = "w-3.5 h-3.5 text-rose-400";
-                labelOfflineMock.textContent = currentLang === 'en' ? "Offline (Mocked)" : "純斷網模擬：已啟動";
-                printToTerminal(currentLang === 'en' ? "[System] Simulated Offline Mode ENABLED (All non-127.0.0.1 external traffic blocked)." : "[系統] 純斷網模擬模式已啟用（已嚴格封鎖所有非 127.0.0.1 外部網路，免拔網路線驗證）。", 'error');
+                btn.className = "text-xs px-2.5 py-1.5 rounded-lg border transition flex items-center gap-1.5 font-medium bg-rose-950/80 border-rose-600 text-rose-300 shadow-md shadow-rose-900/30 whitespace-nowrap shrink-0 cursor-pointer";
+                if (icon) {
+                    icon.setAttribute('data-lucide', 'wifi-off');
+                    icon.className = "w-3.5 h-3.5 text-rose-400 shrink-0";
+                }
+                lbl.setAttribute('data-i18n', 'offlineMockOffline');
+                lbl.textContent = t('offlineMockOffline');
             } else {
-                btnOfflineMock.className = "text-xs px-2.5 py-1.5 rounded-lg border transition flex items-center gap-1.5 font-medium bg-gray-900 border-gray-700 text-gray-300 hover:border-gray-500";
-                iconOfflineMock.setAttribute('data-lucide', 'wifi');
-                iconOfflineMock.className = "w-3.5 h-3.5 text-emerald-400";
-                labelOfflineMock.textContent = currentLang === 'en' ? "Online" : "外網：連通";
-                printToTerminal(currentLang === 'en' ? "[System] Simulated Offline Mode DISABLED (External traffic allowed)." : "[系統] 純斷網模擬模式已關閉（外網連線已恢復正常）。", 'success');
+                btn.className = "text-xs px-2.5 py-1.5 rounded-lg border transition flex items-center gap-1.5 font-medium bg-gray-900 border-gray-700 text-gray-300 hover:border-gray-500 whitespace-nowrap shrink-0 cursor-pointer";
+                if (icon) {
+                    icon.setAttribute('data-lucide', 'wifi');
+                    icon.className = "w-3.5 h-3.5 text-emerald-400 shrink-0";
+                }
+                lbl.setAttribute('data-i18n', 'offlineMockOnline');
+                lbl.textContent = t('offlineMockOnline');
             }
-            lucide.createIcons();
-        });
+            if (window.lucide) lucide.createIcons();
+        }
+        window.updateOfflineMockUI = updateOfflineMockUI;
+
+        function toggleOfflineMock() {
+            isSimulateOffline = !isSimulateOffline;
+            updateOfflineMockUI();
+            if (isSimulateOffline) {
+                printToTerminal(currentLang === 'en' 
+                    ? "[System] Simulated Offline Mode ENABLED (All non-127.0.0.1 external traffic blocked)." 
+                    : "[系統] 純斷網模擬模式已啟用（已嚴格封鎖所有非 127.0.0.1 外部網路，免拔網路線驗證）。", 'error');
+            } else {
+                printToTerminal(currentLang === 'en' 
+                    ? "[System] Simulated Offline Mode DISABLED (External traffic allowed)." 
+                    : "[系統] 純斷網模擬模式已關閉（外網連線已恢復正常）。", 'success');
+            }
+        }
+        window.toggleOfflineMock = toggleOfflineMock;
+
+        btnOfflineMock?.addEventListener('click', toggleOfflineMock);
 
         function buildApiUrl(baseEndpoint, path) {
             if (!baseEndpoint) return path || '';
@@ -2835,7 +2892,7 @@ if (!window.WTerm && window.WTermBundle) {
                                 </div>
                                 <div class="flex items-center gap-2">
                                     <i data-lucide="tag" class="w-3.5 h-3.5 text-indigo-400 shrink-0"></i>
-                                    <span><strong class="text-gray-200">Version:</strong> <code class="text-indigo-300">v1.0.7-Dual-Engine-WebGPU-RAG-Supervise</code></span>
+                                    <span><strong class="text-gray-200">Version:</strong> <code class="text-indigo-300">v1.0.8-Dual-Engine-WebGPU-RAG-Supervise</code></span>
                                 </div>
                             </div>
                             <div class="space-y-2 text-[11px] text-gray-400">
@@ -2992,7 +3049,7 @@ if (!window.WTerm && window.WTermBundle) {
                                 </div>
                                 <div class="flex items-center gap-2">
                                     <i data-lucide="tag" class="w-3.5 h-3.5 text-indigo-400 shrink-0"></i>
-                                    <span><strong class="text-gray-200">版本：</strong> <code class="text-indigo-300">v1.0.7-Dual-Engine-WebGPU-RAG-Supervise</code></span>
+                                    <span><strong class="text-gray-200">版本：</strong> <code class="text-indigo-300">v1.0.8-Dual-Engine-WebGPU-RAG-Supervise</code></span>
                                 </div>
                             </div>
                             <div class="space-y-2 text-[11px] text-gray-400">
@@ -3340,11 +3397,8 @@ if (!window.WTerm && window.WTermBundle) {
             }
 
             // ── 外網狀態按鈕 (Offline Mock) 翻譯 & 狀態更新 ──
-            const btnOfflineMock = document.getElementById('btn-toggle-offline-mock');
-            const lblOfflineMock = document.getElementById('label-offline-mock');
-            if (btnOfflineMock) btnOfflineMock.title = t('offlineMockTooltip');
-            if (lblOfflineMock) {
-                lblOfflineMock.textContent = isSimulateOffline ? t('offlineMockOffline') : t('offlineMockOnline');
+            if (typeof updateOfflineMockUI === 'function') {
+                updateOfflineMockUI();
             }
 
             // ── 連線協定選項 (connProtocol) 明確更新確保翻譯生效 ──
@@ -6785,11 +6839,11 @@ ${tools.join('\n')}${contextStr}
 
                 const termIsEn = currentLang === 'en';
                 const bannerRaw = termIsEn ? [
-                    "\x1b[1;36mWebcom Multi-Protocol Terminal v1.0.7\x1b[0m  \x1b[33m(Powered by Vercel Labs wterm)\x1b[0m",
+                    "\x1b[1;36mWebcom Multi-Protocol Terminal v1.0.8\x1b[0m  \x1b[33m(Powered by Vercel Labs wterm)\x1b[0m",
                     "\x1b[32m● WASM Core (~12KB)\x1b[0m   \x1b[32m● DOM Native Rendering\x1b[0m   \x1b[32m● 24-bit True Color\x1b[0m",
                     "\x1b[90mSupports: Local Shell (WSL) / SSH / Telnet / Web Serial (Direct)\x1b[0m"
                 ] : [
-                    "\x1b[1;36mWebcom 多協定終端機 v1.0.7\x1b[0m  \x1b[33m(Powered by Vercel Labs wterm)\x1b[0m",
+                    "\x1b[1;36mWebcom 多協定終端機 v1.0.8\x1b[0m  \x1b[33m(Powered by Vercel Labs wterm)\x1b[0m",
                     "\x1b[32m● WASM 核心 (~12KB)\x1b[0m   \x1b[32m● DOM 原生渲染\x1b[0m   \x1b[32m● 24-bit 真彩色\x1b[0m",
                     "\x1b[90m支援：本地 Shell (WSL) / SSH / Telnet / Web Serial (直連)\x1b[0m"
                 ];
@@ -14817,7 +14871,7 @@ Important guidelines:
                 // 匯出包含完整中繼資訊的結構
                 const exportData = {
                     app: "Webcom Dual-Engine Console",
-                    version: "1.0.7",
+                    version: "1.0.8",
                     exportTimestamp: now.toISOString(),
                     engineMode: (typeof appSettings !== 'undefined' && appSettings?.engineMode) ? appSettings.engineMode : 'api',
                     totalMessages: messages.length,
@@ -15372,7 +15426,7 @@ if __name__ == "__main__":
 </head>
 <body>
   <h2>📦 JSON 格式化與驗證工具</h2>
-  <textarea id="box">{\n  "project": "Webcom",\n  "version": "1.0.7",\n  "features": ["Artifact", "AppLibrary", "Agent"]\n}</textarea>
+  <textarea id="box">{\n  "project": "Webcom",\n  "version": "1.0.8",\n  "features": ["Artifact", "AppLibrary", "Agent"]\n}</textarea>
   <div class="btn-row">
     <button onclick="formatJson()">格式化 (2 空格)</button>
     <button onclick="minifyJson()">壓縮 (Minify)</button>
