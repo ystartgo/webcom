@@ -1209,6 +1209,75 @@ def web_search_endpoint(req: SearchRequest):
     if not query:
         return {"status": "error", "error": "搜尋關鍵字不得為空"}
     
+    # 優先處理直接網址抓取與結構化 Markdown 轉換 (Direct URL Fetch & MarkItDown Conversion)
+    import re, ssl, tempfile
+    url_match = re.search(r'https?://[^\s<>"]+', query)
+    if url_match:
+        target_url = url_match.group(0)
+        try:
+            headers = {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+                'Accept-Language': 'zh-TW,zh;q=0.9,en-US;q=0.8,en;q=0.7'
+            }
+            req_url = urllib.request.Request(target_url, headers=headers)
+            ctx = ssl.create_default_context()
+            ctx.check_hostname = False
+            ctx.verify_mode = ssl.CERT_NONE
+            with urllib.request.urlopen(req_url, timeout=12, context=ctx) as resp:
+                raw_bytes = resp.read()
+                content_type = resp.headers.get('Content-Type', '')
+                charset = 'utf-8'
+                if 'charset=' in content_type.lower():
+                    try:
+                        charset = content_type.lower().split('charset=')[-1].split(';')[0].strip()
+                    except Exception:
+                        charset = 'utf-8'
+                html_text = raw_bytes.decode(charset, errors='replace')
+
+            md_text = ""
+            # 優先使用 Microsoft MarkItDown 進行精準網頁結構化轉換
+            try:
+                from markitdown import MarkItDown
+                md = MarkItDown()
+                with tempfile.NamedTemporaryFile('w', suffix='.html', delete=False, encoding='utf-8') as f:
+                    f.write(html_text)
+                    tmp_path = f.name
+                try:
+                    res = md.convert(tmp_path)
+                    md_text = res.text_content.strip()
+                finally:
+                    if os.path.exists(tmp_path):
+                        os.unlink(tmp_path)
+            except Exception as md_err:
+                logging.warning(f"MarkItDown conversion error: {md_err}")
+
+            # 若未安裝或轉換失敗，回退至 BeautifulSoup
+            if not md_text:
+                try:
+                    from bs4 import BeautifulSoup
+                    soup = BeautifulSoup(html_text, 'html.parser')
+                    for tag in soup(['script', 'style', 'nav', 'footer', 'header', 'svg', 'noscript']):
+                        tag.extract()
+                    md_text = soup.get_text(separator='\n', strip=True)
+                except Exception:
+                    md_text = re.sub(r'<[^>]+>', ' ', html_text)
+                    md_text = re.sub(r'\s+', ' ', md_text).strip()
+
+            md_text = re.sub(r'\n{3,}', '\n\n', md_text).strip()
+            if len(md_text) > 8000:
+                md_text = md_text[:8000] + f"\n\n...[目標網頁全文共 {len(md_text)} 字元，已截取前 8000 字元核心內容]..."
+
+            if md_text:
+                info = (
+                    f"【目標網頁即時抓取內容 ({target_url})】\n"
+                    f"{md_text}\n\n"
+                    f"【網頁內容分析與導讀指示】：以上為目標網頁之即時讀取內容。請依據上述內容詳細分析、導讀、歸納或回答使用者的問題。"
+                )
+                return {"status": "success", "query": query, "url": target_url, "is_direct_url": True, "result": info}
+        except Exception as e:
+            logging.warning(f"Direct URL fetch failed for {target_url}: {e}")
+
     # 優先處理 IP / GEO 地理位置查詢
     if any(k in query.lower() for k in ["ip", "geo", "地理位置", "經緯度", "所在城市", "定位", "電信業者", "isp"]):
         try:

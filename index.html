@@ -9664,7 +9664,12 @@ ffmpeg -f pulse -i default -acodec libmp3lame -ab 128k -f mp3 -listen 1 http://0
                     : `\n\n【當前環境感知】\n- 系統時間: ${timeString}\n- 終端機連線: [${activeTermContext.protocol.toUpperCase()}]\n- 常駐程式 (8001): [${isDaemonOnline ? '已連線' : '離線'}]\n- 作業系統: Windows / WinPE\n`;
                 if (lastTerminalLines) ctxLines += isEn ? `- Terminal (last 30 lines):\n\`\`\`\n${lastTerminalLines}\n\`\`\`\n` : `- 左側終端機畫面 (最近 30 行):\n\`\`\`\n${lastTerminalLines}\n\`\`\`\n`;
                 if (ragContext) ctxLines += ragContext;
-                return customPrompt.replace('{CONTEXT}', ctxLines);
+                if (webContext) ctxLines += webContext;
+                if (customPrompt.includes('{CONTEXT}')) {
+                    return customPrompt.replace('{CONTEXT}', ctxLines);
+                } else {
+                    return customPrompt + ctxLines;
+                }
             }
 
             // ── 本機 WebGPU / ONNX 模型（非 API）使用精簡 Prompt，不包含工具格式說明防止小模型誤呼叫工具
@@ -9749,7 +9754,6 @@ ffmpeg -f pulse -i default -acodec libmp3lame -ab 128k -f mp3 -listen 1 http://0
                 }
 
                 if (ragContext) contextStr += ragContext;
-                if (webContext) contextStr += webContext;
                 if (webContext) contextStr += webContext;
 
                 return `You are an AI Agent with full left workspace & terminal control capabilities.
@@ -9836,6 +9840,7 @@ Rules:
                 }
 
                 if (ragContext) contextStr += ragContext;
+                if (webContext) contextStr += webContext;
 
                 return `【輸出規範】請使用標準 UTF-8 編碼輸出。
 你是一個具備全方位「左側工作區」與終端機控制能力的 AI 助理 (Agent)。
@@ -12650,6 +12655,7 @@ Important guidelines:
                 innerDiv.appendChild(actionBar);
             } else {
                 const textSpan = document.createElement('div');
+                textSpan.className = "whitespace-pre-wrap break-words msg-text-body";
                 textSpan.textContent = content;
                 innerDiv.appendChild(textSpan);
                 contentDiv = textSpan;
@@ -13344,23 +13350,33 @@ Important guidelines:
 
             let currentWebSearchContext = "";
             if (webToggle.checked && prompt && !isLocalTerminalCommand(prompt)) {
+                const isUrlPrompt = /https?:\/\/[^\s]+/i.test(prompt);
                 const searchBadge = document.createElement('div');
-                searchBadge.className = "text-xs text-sky-400 mb-2 font-mono flex items-center gap-1.5 p-2 rounded-lg bg-sky-950/40 border border-sky-800/50";
-                searchBadge.innerHTML = `<span class="w-2 h-2 rounded-full bg-sky-400 animate-ping"></span> <span>🌐 ${currentLang === 'en' ? 'Searching web for:' : '正在檢索即時網路資訊：'} <b>${escapeHtml(prompt.slice(0, 35))}</b>...</span>`;
+                searchBadge.className = "web-search-badge text-xs text-sky-400 mb-2 font-mono flex items-center gap-1.5 p-2 rounded-lg bg-sky-950/40 border border-sky-800/50";
+                if (isUrlPrompt) {
+                    searchBadge.innerHTML = `<span class="w-2 h-2 rounded-full bg-sky-400 animate-ping"></span> <span>🌐 ${currentLang === 'en' ? 'Fetching webpage content:' : '正在讀取目標網頁內容：'} <b>${escapeHtml(prompt.slice(0, 45))}</b>...</span>`;
+                } else {
+                    searchBadge.innerHTML = `<span class="w-2 h-2 rounded-full bg-sky-400 animate-ping"></span> <span>🌐 ${currentLang === 'en' ? 'Searching web for:' : '正在檢索即時網路資訊：'} <b>${escapeHtml(prompt.slice(0, 35))}</b>...</span>`;
+                }
                 containerEl.appendChild(searchBadge);
                 try {
                     const searchRes = await fetchWithTimeout(`${appSettings.daemonEndpoint}/tools/web_search`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ query: prompt }),
-                        timeout: 7000
+                        timeout: 12000
                     });
                     if (searchRes.ok) {
                         const data = await searchRes.json();
                         if (data.status === 'success' && data.result) {
-                            currentWebSearchContext = `\n\n【網際網路即時搜尋結果 (Web Search Results)】\n[搜尋詞: ${prompt}]\n${data.result}\n\n【聯網作答指示】：上方為最新即時網路搜尋結果。請優先依據上述搜尋結果精確回答使用者的問題！絕對不要調用 read_frontend_terminal 或觀看左側終端機。`;
-                            searchBadge.className = "text-xs text-emerald-400 mb-2 font-mono flex items-center gap-1.5 p-1.5 rounded-lg bg-emerald-950/30 border border-emerald-800/40";
-                            searchBadge.innerHTML = `<span>✅ ${currentLang === 'en' ? 'Live web data retrieved' : '已成功檢索即時網路資訊'}</span>`;
+                            const isDirectUrl = !!(data.is_direct_url || isUrlPrompt);
+                            if (isDirectUrl) {
+                                currentWebSearchContext = `\n\n【目標網頁即時讀取內容 (Target Webpage Content)】\n${data.result}\n\n【網頁內容導讀與回答指示】：上方為目標網頁即時抓取並解析之完整內容。使用者提供了網址，請依據上述內容詳細導讀、摘要總結或回答使用者的問題！絕對不要調用 read_frontend_terminal 或觀看左側終端機。`;
+                            } else {
+                                currentWebSearchContext = `\n\n【網際網路即時搜尋結果 (Web Search Results)】\n[搜尋詞: ${prompt}]\n${data.result}\n\n【聯網作答指示】：上方為最新即時網路搜尋結果。請優先依據上述搜尋結果精確回答使用者的問題！絕對不要調用 read_frontend_terminal 或觀看左側終端機。`;
+                            }
+                            searchBadge.className = "web-search-badge text-xs text-emerald-400 mb-2 font-mono flex items-center gap-1.5 p-1.5 rounded-lg bg-emerald-950/30 border border-emerald-800/40";
+                            searchBadge.innerHTML = `<span>✅ ${isDirectUrl ? (currentLang === 'en' ? 'Webpage content retrieved' : '已成功讀取目標網頁內容') : (currentLang === 'en' ? 'Live web data retrieved' : '已成功檢索即時網路資訊')}</span>`;
                         } else {
                             searchBadge.remove();
                         }
@@ -15186,6 +15202,13 @@ Important guidelines:
 
                     } else {
                         chatHistory.push({ role: "assistant", content: fullAiResponse });
+                        if (typeof sessionChatLog !== 'undefined') {
+                            if (sessionChatLog.length > 0 && sessionChatLog[sessionChatLog.length - 1].role === 'assistant') {
+                                sessionChatLog[sessionChatLog.length - 1].content = fullAiResponse;
+                            } else {
+                                sessionChatLog.push({ role: 'assistant', content: fullAiResponse, timestamp: new Date().toISOString() });
+                            }
+                        }
                         isTaskComplete = true;
                     }
                 } catch (err) {
@@ -17689,7 +17712,8 @@ Important guidelines:
                 // 2. 從 chatBox DOM 中即時萃取畫面訊息 (防止因切換語系/重整/非同步導致記憶體清空)
                 if (chatBox) {
                     const domMsgs = [];
-                    const msgEls = chatBox.querySelectorAll('.msg-wrapper, .flex.justify-end, .flex.justify-start, .flex.gap-3, .flex.gap-4');
+                    // 精準選取頂層訊息容器，嚴禁 match 內部子 flex 導致重複提取或誤抓 Action Bar
+                    const msgEls = chatBox.querySelectorAll(':scope > .msg-wrapper, :scope > div.flex.justify-end, :scope > div.flex.justify-start');
                     msgEls.forEach(el => {
                         if (el.classList.contains('py-12') || el.id === 'chat-welcome') return;
 
@@ -17701,16 +17725,24 @@ Important guidelines:
 
                         let text = '';
                         if (isUser) {
-                            const textEl = el.querySelector('.whitespace-pre-wrap') || el.querySelector('.prose') || el;
-                            text = (textEl.innerText || textEl.textContent || '').trim();
-                        } else {
-                            const proseEl = el.querySelector('.prose');
-                            if (proseEl) {
-                                text = (proseEl.innerText || proseEl.textContent || '').trim();
+                            const textEl = el.querySelector('.msg-text-body') || el.querySelector('.whitespace-pre-wrap') || el.querySelector('.prose');
+                            if (textEl) {
+                                text = (textEl.innerText || textEl.textContent || '').trim();
                             } else {
                                 const clone = el.cloneNode(true);
                                 clone.querySelectorAll('.msg-action-bar, button, [data-lucide]').forEach(b => b.remove());
                                 text = (clone.innerText || clone.textContent || '').trim();
+                            }
+                            // 去除意外殘留的按鈕文字
+                            text = text.replace(/(?:\r?\n)?(?:複製\s*重試|複製|重試)$/g, '').trim();
+                        } else {
+                            const clone = el.cloneNode(true);
+                            // 徹底移除按鈕、統計列與中途檢索徽章，防止徽章文字被誤當成 AI 回應
+                            clone.querySelectorAll('.msg-action-bar, button, [data-lucide], .web-search-badge, .msg-stats, .sv-card, .sv-stage-card, .sv-status-pill, .text-xs, .text-\\[10px\\]').forEach(b => b.remove());
+                            text = (clone.innerText || clone.textContent || '').trim();
+                            // 排除純佔位符或檢索成功徽章字樣
+                            if (text === '...' || text.includes('已成功檢索即時網路資訊') || text.includes('Live web data retrieved') || text.includes('已成功讀取目標網頁內容')) {
+                                text = '';
                             }
                         }
 
@@ -17722,8 +17754,9 @@ Important guidelines:
                             }
                         });
 
-                        // 排除系統歡迎詞或空字元
-                        if ((text || imgs.length > 0) && !text.includes('系統已就緒') && !text.includes('System Ready')) {
+                        // 排除純按鈕字眼、系統歡迎詞或空字元
+                        const isGarbageButton = text === '複製' || text === '重試' || text === '複製\n重試' || text === '複製 重試';
+                        if ((text || imgs.length > 0) && !isGarbageButton && !text.includes('系統已就緒') && !text.includes('System Ready')) {
                             domMsgs.push({
                                 role: role,
                                 content: text,
@@ -17733,13 +17766,15 @@ Important guidelines:
                         }
                     });
 
-                    // 若 DOM 提取之訊息數量 >= 記憶體訊息，以 DOM 提取為準，確保「畫面上看到的一定能匯出」
-                    if (domMsgs.length >= messages.length && domMsgs.length > 0) {
+                    // 若記憶體中無有效訊息，但 DOM 有訊息時，以 DOM 為準；若記憶體已有完整記錄，則以記憶體為準防止誤導
+                    if (messages.length === 0 && domMsgs.length > 0) {
                         messages = domMsgs;
                         if (typeof sessionChatLog !== 'undefined') sessionChatLog = [...domMsgs];
                         if (chatHistory.length === 0) {
                             domMsgs.forEach(m => chatHistory.push({ role: m.role, content: m.content }));
                         }
+                    } else if (domMsgs.length > messages.length) {
+                        messages = domMsgs;
                     }
                 }
 
