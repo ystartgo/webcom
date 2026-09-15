@@ -39,12 +39,10 @@ function openTwoThirdsWindow() {
     });
 }
 
-// 1. 點擊瀏覽器工具列圖標時，預設開啟 Chrome Side Panel (側邊欄)
-if (chrome.sidePanel && typeof chrome.sidePanel.setPanelBehavior === 'function') {
-    chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true }).catch((err) => {
-        console.warn('[Webcom Extension] SidePanel behavior setup:', err);
-    });
-}
+// 1. 點擊瀏覽器工具列圖標時，預設直接以 2/3 獨立視窗展開 (確保 Web Serial 硬體彈窗無障礙支援)
+chrome.action.onClicked.addListener((tab) => {
+    openTwoThirdsWindow();
+});
 
 // 2. 右鍵選單：提供「以 2/3 視窗展開開啟」、「獨立全螢幕分頁」與「側邊欄」
 chrome.runtime.onInstalled.addListener(() => {
@@ -81,6 +79,17 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     if (request && request.action === 'open_twothirds_window') {
         openTwoThirdsWindow();
+        sendResponse({ success: true });
+        return true;
+    }
+    if (request && request.action === 'open_select_port_popup') {
+        chrome.windows.create({
+            url: chrome.runtime.getURL('select_port.html'),
+            type: 'popup',
+            width: 480,
+            height: 380,
+            focused: true
+        });
         sendResponse({ success: true });
         return true;
     }

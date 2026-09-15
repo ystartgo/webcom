@@ -7002,37 +7002,53 @@ ${tools.join('\n')}${contextStr}
                     : "您的瀏覽器不支援 Web Serial API，請使用 Google Chrome 或 Microsoft Edge 瀏覽器。");
             }
 
-            // 2. 清理先前未釋放之 Port 狀態
-            if (webSerialPort) {
-                try {
-                    keepReading = false;
-                    if (webSerialReader) await webSerialReader.cancel();
-                    await webSerialPort.close();
-                } catch (e) {}
-                webSerialPort = null;
-            }
-
-            // 3. 請求序列埠設備選取
+            // 2. 優先檢查是否已有授權之序列埠設備 (getPorts)
+            let existingPorts = [];
             try {
-                webSerialPort = await navigator.serial.requestPort();
-            } catch (e) {
-                const errMsg = String(e.message || '');
-                // 針對 Chrome Side Panel 側邊欄彈窗限制之自動防禦
-                if (errMsg.includes('side panel') || errMsg.includes('dialog') || errMsg.includes('chooser')) {
+                existingPorts = await navigator.serial.getPorts();
+            } catch (e) {}
+
+            if (existingPorts && existingPorts.length > 0 && !webSerialPort) {
+                webSerialPort = existingPorts[existingPorts.length - 1];
+            } else {
+                // 3. 請求序列埠設備選取
+                const isExtension = window.location.protocol === 'chrome-extension:';
+                const isSidePanel = isExtension && (window.innerWidth < 680 || Boolean(window.chrome?.sidePanel));
+
+                // 若在 Chrome 側邊欄環境，主動彈出小視窗以利 Chrome 顯示原生選取對話盒
+                if (isSidePanel) {
                     printToTerminal(currentLang === 'en'
-                        ? '[Web Serial] Chrome restricts device choosers inside Side Panel. Launching standalone 2/3 window...'
-                        : '[Web Serial] Chrome 規範側邊欄無法彈出硬體選單，正在為您以 2/3 獨立視窗展開...', 'info');
+                        ? '[Web Serial] Chrome requires a window context for port chooser. Opening selector popup...'
+                        : '[Web Serial] Chrome 規範側邊欄無法彈出硬體選單，正在開啟選取小視窗...', 'info');
                     if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.sendMessage) {
-                        chrome.runtime.sendMessage({ action: 'open_twothirds_window' });
+                        chrome.runtime.sendMessage({ action: 'open_select_port_popup' });
                     } else {
-                        window.open(window.location.href, '_blank', 'width=1280,height=850');
+                        window.open(chrome.runtime.getURL('select_port.html'), '_blank', 'width=480,height=380');
                     }
                     return;
                 }
-                if (e.name === 'NotFoundError' || errMsg.includes('No port selected') || errMsg.includes('User cancelled')) {
-                    throw new Error(currentLang === 'en' ? "No serial port selected (User cancelled)." : "未選取序列埠設備（使用者已取消選取）。");
+
+                try {
+                    webSerialPort = await navigator.serial.requestPort();
+                } catch (e) {
+                    const errMsg = String(e.message || '');
+                    // 針對 Chrome Side Panel 側邊欄彈窗限制之自動防禦
+                    if (errMsg.includes('side panel') || errMsg.includes('dialog') || errMsg.includes('chooser') || e.name === 'SecurityError') {
+                        printToTerminal(currentLang === 'en'
+                            ? '[Web Serial] Launching port selector popup...'
+                            : '[Web Serial] 正在為您開啟序列埠選擇視窗...', 'info');
+                        if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.sendMessage) {
+                            chrome.runtime.sendMessage({ action: 'open_select_port_popup' });
+                        } else {
+                            window.open(chrome.runtime.getURL('select_port.html'), '_blank', 'width=480,height=380');
+                        }
+                        return;
+                    }
+                    if (e.name === 'NotFoundError' || errMsg.includes('No port selected') || errMsg.includes('User cancelled')) {
+                        throw new Error(currentLang === 'en' ? "No serial port selected (User cancelled)." : "未選取序列埠設備（使用者已取消選取）。");
+                    }
+                    throw new Error(e.message);
                 }
-                throw new Error(e.message);
             }
 
             // 4. 開啟序列埠串流
@@ -7059,6 +7075,16 @@ ${tools.join('\n')}${contextStr}
             }
         }
         window.connectWebSerial = connectWebSerial;
+
+        // 監聽來自 select_port 授權小視窗的通知
+        if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.onMessage) {
+            chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+                if (request && request.action === 'serial_port_authorized') {
+                    const baud = parseInt(document.getElementById('cfg-baud')?.value || '115200') || 115200;
+                    connectWebSerial(baud);
+                }
+            });
+        }
 
         // ── 偵測本機可用 COM 埠 (Backend Serial Prober) ──
         async function probeBackendSerialPorts() {
