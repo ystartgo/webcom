@@ -1543,7 +1543,7 @@ if (!window.WTerm && window.WTermBundle) {
             activeProfile: "local",
             activeAltProfile: "local", // For API↔API pairing: the 2nd side profile key
             profiles: {
-                "tokentable": { name: "TokenTable (推薦)", endpoint: "https://tokentable.asia/v1", key: "", model: "qwen3.8-max" },
+                "tokentable": { name: "TokenTable (推薦)", endpoint: "https://tokentable.asia/v1", key: "", model: "qwen3.8-flash" },
                 "local": { name: "Local LM Studio", endpoint: "http://127.0.0.1:1234/v1", key: "sk-lm-7FMYE40J:38643aAIDPN7LFS9Ky81", model: "auto" },
                 "ollama": { name: "Ollama (Qwen3.5 0.8B Vision)", endpoint: "http://127.0.0.1:11434/v1", key: "ollama", model: "qwen3.5:0.8b" },
                 "openrouter": { name: "OpenRouter", endpoint: "https://openrouter.ai/api/v1", key: "", model: "anthropic/claude-3.5-sonnet" },
@@ -1760,17 +1760,17 @@ if (!window.WTerm && window.WTermBundle) {
                 appSettings.profiles[pKey] = defaultSettings.profiles[pKey];
             }
         });
-        // Ensure TokenTable profile is always present and up-to-date with proper Base URL and qwen3.8-max model
+        // Ensure TokenTable profile is always present and up-to-date with proper Base URL and qwen3.8-flash model
         if (!appSettings.profiles["tokentable"] || !appSettings.profiles["tokentable"].endpoint) {
             appSettings.profiles["tokentable"] = {
                 name: "TokenTable (推薦)",
                 endpoint: "https://tokentable.asia/v1",
                 key: (appSettings.profiles["tokentable"] && appSettings.profiles["tokentable"].key) || "",
-                model: (appSettings.profiles["tokentable"] && appSettings.profiles["tokentable"].model) || "qwen3.8-max"
+                model: (appSettings.profiles["tokentable"] && appSettings.profiles["tokentable"].model) || "qwen3.8-flash"
             };
         } else if (!appSettings.profiles["tokentable"].model || appSettings.profiles["tokentable"].model === "gpt-4o") {
-            // Automatically upgrade legacy default gpt-4o to qwen3.8-max
-            appSettings.profiles["tokentable"].model = "qwen3.8-max";
+            // Automatically upgrade legacy default gpt-4o to qwen3.8-flash
+            appSettings.profiles["tokentable"].model = "qwen3.8-flash";
         }
         if (!appSettings.activeProfile || !appSettings.profiles[appSettings.activeProfile]) {
             appSettings.activeProfile = Object.keys(appSettings.profiles)[0] || "local";
@@ -4672,10 +4672,10 @@ if (!window.WTerm && window.WTermBundle) {
                         name: "TokenTable (推薦)",
                         endpoint: "https://tokentable.asia/v1",
                         key: "",
-                        model: "qwen3.8-max"
+                        model: "qwen3.8-flash"
                     };
                 } else {
-                    appSettings.profiles["tokentable"].model = "qwen3.8-max";
+                    appSettings.profiles["tokentable"].model = "qwen3.8-flash";
                 }
                 saveModalProfileToState();
                 editingProfileId = "tokentable";
@@ -4699,10 +4699,10 @@ if (!window.WTerm && window.WTermBundle) {
                             name: "TokenTable (推薦)",
                             endpoint: "https://tokentable.asia/v1",
                             key: "",
-                            model: "qwen3.8-max"
+                            model: "qwen3.8-flash"
                         };
                     } else if (!appSettings.profiles["tokentable"].model || appSettings.profiles["tokentable"].model === 'gpt-4o') {
-                        appSettings.profiles["tokentable"].model = "qwen3.8-max";
+                        appSettings.profiles["tokentable"].model = "qwen3.8-flash";
                     }
                     saveModalProfileToState();
                     editingProfileId = "tokentable";
@@ -13507,6 +13507,104 @@ Important guidelines:
             }, 250);
         }
         window.toggleRightPanelCollapse = toggleRightPanelCollapse;
+
+        // ── ◫ 一鍵視窗 2/3 展開佈局 (Snap 2/3 Window) ──
+        function snapWindowTwoThirds() {
+            if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.sendMessage) {
+                chrome.runtime.sendMessage({ action: 'snap_twothirds_window' });
+            }
+            try {
+                if (window.screen && window.screen.availWidth) {
+                    const availW = window.screen.availWidth;
+                    const availH = window.screen.availHeight;
+                    const targetW = Math.round(availW * (2 / 3));
+                    const targetX = Math.round(availW * (1 / 3));
+                    window.moveTo(targetX, 0);
+                    window.resizeTo(targetW, availH);
+                }
+            } catch (e) {
+                console.warn('Window move/resize restricted by browser:', e);
+            }
+
+            const leftPanel = document.getElementById('left-panel');
+            const rightPanel = document.getElementById('right-panel');
+            if (leftPanel && rightPanel) {
+                leftPanel.classList.remove('panel-collapsed-left');
+                rightPanel.classList.remove('panel-collapsed-right');
+                leftPanel.style.width = '50%';
+                leftPanel.style.flex = 'none';
+                localStorage.setItem('webcom_left_panel_pct', 50);
+                if (typeof fitTerminal === 'function') fitTerminal();
+            }
+            if (typeof showToastNotification === 'function') {
+                showToastNotification("已套用 2/3 視窗展開佈局", "success");
+            }
+        }
+        window.snapWindowTwoThirds = snapWindowTwoThirds;
+
+        // ── 左右面板拖曳調整 (Split Panel Resizer) ──
+        (function initPanelResizer() {
+            const resizer = document.getElementById('panel-resizer');
+            const leftPanel = document.getElementById('left-panel');
+            const rightPanel = document.getElementById('right-panel');
+            if (!resizer || !leftPanel || !rightPanel) return;
+
+            let isDragging = false;
+
+            const savedPct = localStorage.getItem('webcom_left_panel_pct');
+            if (savedPct && !isNaN(savedPct) && savedPct >= 20 && savedPct <= 80) {
+                leftPanel.style.width = savedPct + '%';
+                leftPanel.style.flex = 'none';
+            }
+
+            resizer.addEventListener('mousedown', (e) => {
+                isDragging = true;
+                document.body.classList.add('select-none');
+                document.body.style.cursor = 'col-resize';
+            });
+
+            document.addEventListener('mousemove', (e) => {
+                if (!isDragging) return;
+                const totalW = window.innerWidth;
+                if (totalW <= 0) return;
+                let pct = (e.clientX / totalW) * 100;
+                pct = Math.max(20, Math.min(80, pct));
+                leftPanel.style.width = pct.toFixed(1) + '%';
+                leftPanel.style.flex = 'none';
+                leftPanel.classList.remove('panel-collapsed-left');
+                rightPanel.classList.remove('panel-collapsed-right');
+                if (typeof fitTerminal === 'function') fitTerminal();
+            });
+
+            document.addEventListener('mouseup', () => {
+                if (isDragging) {
+                    isDragging = false;
+                    document.body.classList.remove('select-none');
+                    document.body.style.cursor = '';
+                    if (leftPanel.style.width) {
+                        const num = parseFloat(leftPanel.style.width);
+                        if (!isNaN(num)) {
+                            localStorage.setItem('webcom_left_panel_pct', num);
+                        }
+                    }
+                    if (typeof fitTerminal === 'function') fitTerminal();
+                }
+            });
+
+            resizer.addEventListener('dblclick', () => {
+                const currentPct = parseFloat(leftPanel.style.width) || 50;
+                const newPct = (Math.abs(currentPct - 50) < 5) ? 66.6 : 50;
+                leftPanel.style.width = newPct + '%';
+                leftPanel.style.flex = 'none';
+                leftPanel.classList.remove('panel-collapsed-left');
+                rightPanel.classList.remove('panel-collapsed-right');
+                localStorage.setItem('webcom_left_panel_pct', newPct);
+                if (typeof fitTerminal === 'function') fitTerminal();
+                if (typeof showToastNotification === 'function') {
+                    showToastNotification(`左右寬度已切換為 ${newPct === 50 ? '1:1 對等' : '2:3 展開'}`, 'info');
+                }
+            });
+        })();
 
         // ── 頂部手機式「三」工具選單 (Top Tools Dropdown) ──────────────────────────
         function toggleTopToolsDropdown(e) {

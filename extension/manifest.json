@@ -26,7 +26,8 @@
     "storage",
     "tabs",
     "sidePanel",
-    "contextMenus"
+    "contextMenus",
+    "system.display"
   ],
   "optional_permissions": [
     "serial"
