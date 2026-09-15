@@ -7011,36 +7011,20 @@ ${tools.join('\n')}${contextStr}
             if (existingPorts && existingPorts.length > 0 && !webSerialPort) {
                 webSerialPort = existingPorts[existingPorts.length - 1];
             } else {
-                // 3. 請求序列埠設備選取
-                const isExtension = window.location.protocol === 'chrome-extension:';
-                const isSidePanel = isExtension && (window.innerWidth < 680 || Boolean(window.chrome?.sidePanel));
-
-                // 若在 Chrome 側邊欄環境，主動彈出小視窗以利 Chrome 顯示原生選取對話盒
-                if (isSidePanel) {
-                    printToTerminal(currentLang === 'en'
-                        ? '[Web Serial] Chrome requires a window context for port chooser. Opening selector popup...'
-                        : '[Web Serial] Chrome 規範側邊欄無法彈出硬體選單，正在開啟選取小視窗...', 'info');
-                    if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.sendMessage) {
-                        chrome.runtime.sendMessage({ action: 'open_select_port_popup' });
-                    } else {
-                        window.open(chrome.runtime.getURL('select_port.html'), '_blank', 'width=480,height=380');
-                    }
-                    return;
-                }
-
+                // 3. 請求序列埠設備選取 (直接由使用者點擊手勢觸發原生硬體選單)
                 try {
                     webSerialPort = await navigator.serial.requestPort();
                 } catch (e) {
                     const errMsg = String(e.message || '');
-                    // 針對 Chrome Side Panel 側邊欄彈窗限制之自動防禦
-                    if (errMsg.includes('side panel') || errMsg.includes('dialog') || errMsg.includes('chooser') || e.name === 'SecurityError') {
+                    // 針對 Chrome Side Panel 側邊欄無法彈出硬體對話盒之自動展開 2/3 視窗防禦
+                    if (errMsg.toLowerCase().includes('side panel') || errMsg.toLowerCase().includes('dialog') || errMsg.toLowerCase().includes('chooser') || e.name === 'SecurityError') {
                         printToTerminal(currentLang === 'en'
-                            ? '[Web Serial] Launching port selector popup...'
-                            : '[Web Serial] 正在為您開啟序列埠選擇視窗...', 'info');
+                            ? '[Web Serial] Chrome restricts hardware device choosers inside Side Panel. Launching 2/3 standalone window...'
+                            : '[Web Serial] Chrome 規範側邊欄無法彈出硬體選單，正在為您以 2/3 獨立視窗展開...', 'info');
                         if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.sendMessage) {
-                            chrome.runtime.sendMessage({ action: 'open_select_port_popup' });
+                            chrome.runtime.sendMessage({ action: 'open_twothirds_window' });
                         } else {
-                            window.open(chrome.runtime.getURL('select_port.html'), '_blank', 'width=480,height=380');
+                            window.open(window.location.href, '_blank', 'width=1280,height=850');
                         }
                         return;
                     }
