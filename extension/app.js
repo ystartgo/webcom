@@ -1937,16 +1937,24 @@ if (!window.WTerm && window.WTermBundle) {
         const labelOfflineMock = document.getElementById('label-offline-mock');
 
         function updateOfflineMockUI() {
-            const btn = document.getElementById('btn-toggle-offline-mock');
+            const container = document.getElementById('btn-toggle-offline-mock');
+            const chk = document.getElementById('offline-mock-toggle');
+            const track = document.getElementById('offline-mock-track');
+            const knob = document.getElementById('offline-mock-knob');
             const iconWrap = document.getElementById('icon-offline-mock-wrap');
             const lbl = document.getElementById('label-offline-mock');
-            if (!btn || !lbl) return;
+            if (!container || !lbl) return;
 
-            btn.title = t('offlineMockTooltip');
-            btn.setAttribute('data-i18n-title', 'offlineMockTooltip');
+            container.title = t('offlineMockTooltip');
+            container.setAttribute('data-i18n-title', 'offlineMockTooltip');
+
+            if (chk) chk.checked = !isSimulateOffline;
 
             if (isSimulateOffline) {
-                btn.className = "text-xs px-2.5 py-1.5 rounded-lg border transition-all flex items-center gap-1.5 font-medium bg-rose-950/80 hover:bg-rose-900/90 border-rose-600 text-rose-300 shadow-md shadow-rose-900/40 whitespace-nowrap shrink-0 cursor-pointer";
+                // 離線 / 斷網模擬狀態 (紅色 + 刪節線 + 旋鈕滑向左側關閉)
+                container.className = "relative inline-flex items-center cursor-pointer select-none group bg-rose-950/50 border border-rose-600/80 hover:border-rose-500 px-2 py-1 rounded-lg transition-all shadow-md shadow-rose-950/40 whitespace-nowrap shrink-0";
+                if (track) track.className = "w-9 h-5 bg-rose-950 border border-rose-600/90 rounded-full transition-all duration-200 relative shrink-0";
+                if (knob) knob.className = "absolute top-[2px] left-[3px] bg-gray-300 rounded-full h-3.5 w-3.5 transition-all duration-200 shadow-md";
                 if (iconWrap) {
                     iconWrap.innerHTML = `
                         <span class="relative flex h-2 w-2 shrink-0">
@@ -1955,11 +1963,14 @@ if (!window.WTerm && window.WTermBundle) {
                         <i data-lucide="wifi-off" class="w-3.5 h-3.5 text-rose-400 shrink-0"></i>
                     `;
                 }
-                lbl.className = "whitespace-nowrap font-semibold line-through text-rose-300 decoration-rose-400 decoration-2";
+                lbl.className = "ml-1 text-xs font-bold line-through text-rose-300 decoration-rose-400 decoration-2 whitespace-nowrap transition-colors";
                 lbl.setAttribute('data-i18n', 'offlineMockOffline');
                 lbl.textContent = t('offlineMockOffline');
             } else {
-                btn.className = "text-xs px-2.5 py-1.5 rounded-lg border transition-all flex items-center gap-1.5 font-medium bg-emerald-950/40 hover:bg-emerald-900/50 border-emerald-700/60 text-emerald-300 whitespace-nowrap shrink-0 cursor-pointer shadow-sm";
+                // 連通狀態 (綠色 + 活體雷達脈衝動畫 + 旋鈕滑向右側開啟)
+                container.className = "relative inline-flex items-center cursor-pointer select-none group bg-emerald-950/40 border border-emerald-700/70 hover:border-emerald-500 px-2 py-1 rounded-lg transition-all shadow-sm whitespace-nowrap shrink-0";
+                if (track) track.className = "w-9 h-5 bg-emerald-600 border border-emerald-400/80 rounded-full transition-all duration-200 relative shrink-0";
+                if (knob) knob.className = "absolute top-[2px] left-[19px] bg-white rounded-full h-3.5 w-3.5 transition-all duration-200 shadow-md";
                 if (iconWrap) {
                     iconWrap.innerHTML = `
                         <span class="relative flex h-2 w-2 shrink-0">
@@ -1969,18 +1980,24 @@ if (!window.WTerm && window.WTermBundle) {
                         <i data-lucide="wifi" class="w-3.5 h-3.5 text-emerald-400 shrink-0 animate-pulse"></i>
                     `;
                 }
-                lbl.className = "whitespace-nowrap font-medium text-emerald-300";
+                lbl.className = "ml-1 text-xs font-bold text-emerald-300 whitespace-nowrap transition-colors";
                 lbl.setAttribute('data-i18n', 'offlineMockOnline');
                 lbl.textContent = t('offlineMockOnline');
             }
+
             if (window.lucide && typeof lucide.createIcons === 'function') {
                 try { lucide.createIcons(); } catch (e) {}
             }
         }
         window.updateOfflineMockUI = updateOfflineMockUI;
 
-        function toggleOfflineMock() {
-            isSimulateOffline = !isSimulateOffline;
+        function toggleOfflineMock(e) {
+            const chk = document.getElementById('offline-mock-toggle');
+            if (chk) {
+                isSimulateOffline = !chk.checked;
+            } else {
+                isSimulateOffline = !isSimulateOffline;
+            }
             updateOfflineMockUI();
             if (isSimulateOffline) {
                 printToTerminal(currentLang === 'en' 
@@ -1994,7 +2011,7 @@ if (!window.WTerm && window.WTermBundle) {
         }
         window.toggleOfflineMock = toggleOfflineMock;
 
-        btnOfflineMock?.addEventListener('click', toggleOfflineMock);
+        document.getElementById('offline-mock-toggle')?.addEventListener('change', toggleOfflineMock);
 
         function buildApiUrl(baseEndpoint, path) {
             if (!baseEndpoint) return path || '';
