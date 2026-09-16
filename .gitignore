@@ -1,5 +1,6 @@
 # ---- Large binary bundles / releases ----
 *.zip
+!**/pyodide/dist/*.zip
 Webcom*.zip
 *.tar.gz
 

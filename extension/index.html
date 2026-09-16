@@ -450,6 +450,7 @@
             class="bg-gray-800 px-3 py-2 flex flex-wrap items-center gap-2.5 border-b border-gray-700 text-xs shrink-0">
             <select id="conn-protocol"
                 class="bg-gray-900 text-white border border-gray-700 rounded-md px-2 py-1 text-xs focus:outline-none focus:border-purple-500 font-medium">
+                <option value="pyodide" class="text-yellow-300 font-bold" data-i18n="protoPyodide">🐍 Python 3 (Pyodide WASM 免安裝)</option>
                 <option value="shell" data-i18n="protoShell">本地 Shell (PowerShell/CMD)</option>
                 <option value="wsl" class="text-teal-400 font-semibold" data-i18n="protoWsl">本地 Shell (WSL Linux)</option>
                 <option value="ssh" data-i18n="protoSSH">TCP/IP: SSH 遠端</option>
@@ -2176,6 +2177,15 @@
                 </button>
             </div>
             <div class="p-5 space-y-4 text-xs">
+                <!-- Pyodide Extension Notice -->
+                <div class="p-3 bg-indigo-950/40 border border-indigo-700/50 rounded-xl flex items-center gap-2.5 text-xs text-indigo-200">
+                    <i data-lucide="sparkles" class="w-4 h-4 text-indigo-400 shrink-0"></i>
+                    <div>
+                        <span class="font-bold text-white">擴充功能已原生內建 Pyodide (WASM Python)！</span>
+                        <span class="text-indigo-300">所有 Python 運算、數學分析與 AI 腳本均在瀏覽器內獨立運行，<strong>無需安裝本機 Python 亦無需啟動 8001</strong>。僅在需要 WSL、主機檔案寫入或原生 Shell 時才需啟用常駐服務。</span>
+                    </div>
+                </div>
+
                 <!-- Status Banner -->
                 <div class="p-3.5 bg-gray-950 rounded-xl border border-gray-800 flex items-center justify-between">
                     <div>

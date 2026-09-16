@@ -69,20 +69,34 @@ if defined PY goto :python_found
 goto :python_missing
 
 :python_missing
-echo [%date% %time%] [ERROR] Python not found in %~dp0python or system PATH. >> "%~dp0daemon.log"
-if "%1"=="__bg__" exit /b 1
+echo [%date% %time%] [INFO] Python not found in %~dp0python or system PATH. Checking auto-install... >> "%~dp0daemon.log"
+if "%1"=="__bg__" (
+    powershell -NoProfile -Command "& { [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; Invoke-WebRequest -Uri 'https://www.python.org/ftp/python/3.11.9/python-3.11.9-embed-amd64.zip' -OutFile '%~dp0python.zip'; Expand-Archive -Path '%~dp0python.zip' -DestinationPath '%~dp0python' -Force; Remove-Item '%~dp0python.zip' -Force }" >nul 2>&1
+    if exist "%~dp0python\python.exe" (
+        set "PY=%~dp0python\python.exe"
+        goto :python_found
+    )
+    exit /b 1
+)
 
 echo ============================================================
-echo  [ERROR] Python 3 is not installed or not in PATH!
+echo  [提示] 系統未在 PATH 或本地找到 Python 3
 echo ============================================================
-echo  Webcom requires Python 3.10+ to run the background service.
+echo  Webcom 擴充功能預設可透過瀏覽器內建 Pyodide 執行 Python (免安裝)。
+echo  若您欲啟用 Port 8001 主機常駐服務 (WSL/硬體/本機檔案存取)，
+echo  系統正在透過 PowerShell 自動下載官方可攜版 Python 3 (~15MB)...
+echo ============================================================
 echo.
-echo  Options to resolve:
-echo   1. Portable package: Ensure the 'python' folder exists:
-echo      %~dp0python\
-echo   2. Standard installation: Install Python from https://www.python.org
-echo      (Make sure to check 'Add python.exe to PATH')
+powershell -NoProfile -Command "& { [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; Write-Host '正在下載官方 Python 3.11 輕量嵌入版...'; Invoke-WebRequest -Uri 'https://www.python.org/ftp/python/3.11.9/python-3.11.9-embed-amd64.zip' -OutFile '%~dp0python.zip'; Write-Host '正在解壓縮至 %~dp0python ...'; Expand-Archive -Path '%~dp0python.zip' -DestinationPath '%~dp0python' -Force; Remove-Item '%~dp0python.zip' -Force; Write-Host 'Python 可攜環境配置完成！' }"
+if exist "%~dp0python\python.exe" (
+    echo.
+    echo  [OK] Python 3 可攜版已自動就緒！
+    set "PY=%~dp0python\python.exe"
+    goto :python_found
+)
+
 echo.
+echo  自動下載失敗，請手動確認網路連線或至 https://www.python.org 下載安裝 Python。
 pause
 exit /b 1
 

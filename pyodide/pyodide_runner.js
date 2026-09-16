@@ -38,6 +38,9 @@
                 return chrome.runtime.getURL('pyodide/dist/');
             } catch (e) { }
         }
+        if (typeof window !== 'undefined' && window.location) {
+            return './pyodide/dist/';
+        }
         return DEFAULT_CDN_URL;
     }
 

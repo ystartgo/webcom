@@ -2,6 +2,10 @@ import os
 import sys
 import urllib.request
 
+if hasattr(sys.stdout, 'reconfigure'):
+    try: sys.stdout.reconfigure(encoding='utf-8', errors='replace')
+    except Exception: pass
+
 VERSION = "v0.26.4"
 BASE_URL = f"https://cdn.jsdelivr.net/pyodide/{VERSION}/full/"
 TARGET_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "dist")

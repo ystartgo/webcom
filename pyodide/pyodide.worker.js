@@ -17,8 +17,9 @@ async function initPyodide(indexURL) {
 
     isInitializing = true;
     try {
-        const pyodideBase = indexURL || 'https://cdn.jsdelivr.net/pyodide/v0.26.4/full/';
-        importScripts(pyodideBase + 'pyodide.js');
+        const pyodideBase = indexURL || './dist/';
+        const jsUrl = (pyodideBase.endsWith('/') ? pyodideBase : pyodideBase + '/') + 'pyodide.js';
+        importScripts(jsUrl);
         pyodide = await loadPyodide({
             indexURL: pyodideBase
         });
