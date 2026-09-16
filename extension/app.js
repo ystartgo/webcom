@@ -210,6 +210,9 @@ if (!window.WTerm && window.WTermBundle) {
                 slashCmd16_title: "/GEO地理位置與IP偵測",
                 slashCmd16_desc: "偵測本機外網 IP 位址、所在城市、經緯度與 ISP 電信業者",
                 slashCmd16_payload: "請調用 web_search 工具查詢「本機外網 IP 與 GEO 定位」，回報外網 IP、所在國家與城市、經緯度座標與 ISP 電信供應商。",
+                slashCmd17_title: "/查詢python版本",
+                slashCmd17_desc: "查詢本機 Python (8001) 與瀏覽器端 Pyodide (WASM) 版本與執行環境",
+                slashCmd17_payload: "請查詢並檢測當前環境的所有 Python 執行引擎版本（包括本機 8001 Daemon Python 與瀏覽器端 Pyodide WASM Python 3.12 版本狀態），並列出可用的運算環境與套件庫支援。",
                 engineModeOnnx: "📦 ONNX 瀏覽器本機 (ONNX Runtime)",
                 engineModeCoThink: "🧠 雙引擎聯合思考 (1+1>2)",
                 engineModeSupervise: "🛡️ 監督排查模式（雙 LLM 互查）",
@@ -982,6 +985,9 @@ if (!window.WTerm && window.WTermBundle) {
                 slashCmd16_title: "/GEO IP Geolocation Detection",
                 slashCmd16_desc: "Detect public IP, location city, country, coordinates, and ISP",
                 slashCmd16_payload: "Please use web_search tool to query public IP geolocation, reporting IP address, city, country, coordinates, and ISP provider.",
+                slashCmd17_title: "/Query Python Version",
+                slashCmd17_desc: "Check local Python (8001) and browser Pyodide (WASM) runtime versions",
+                slashCmd17_payload: "Please query and check all available Python runtime engine versions in the current environment (including local 8001 Daemon Python and browser-side Pyodide WASM Python 3.12), and report their operational status and supported packages.",
                 engineModeOnnx: "📦 ONNX Browser Local (ONNX Runtime)",
                 engineModeCoThink: "🧠 Dual-LLM Co-Thinking (1+1>2)",
                 engineModeSupervise: "🛡️ Supervised-Mutual-Debug (Dual-LLM)",
@@ -6222,6 +6228,7 @@ if (!window.WTerm && window.WTermBundle) {
                 { cmd: t('slashCmd14_title'), desc: t('slashCmd14_desc'), payload: t('slashCmd14_payload') },
                 { cmd: t('slashCmd15_title'), desc: t('slashCmd15_desc'), payload: t('slashCmd15_payload') },
                 { cmd: t('slashCmd16_title'), desc: t('slashCmd16_desc'), payload: t('slashCmd16_payload') },
+                { cmd: t('slashCmd17_title'), desc: t('slashCmd17_desc'), payload: t('slashCmd17_payload') },
                 { cmd: t('slashCmd4_title'), desc: t('slashCmd4_desc'), payload: t('slashCmd4_payload') },
                 { cmd: t('slashCmd5_title'), desc: t('slashCmd5_desc'), payload: t('slashCmd5_payload') },
                 { cmd: t('slashCmd6_title'), desc: t('slashCmd6_desc'), payload: t('slashCmd6_payload') },
@@ -6242,7 +6249,7 @@ if (!window.WTerm && window.WTermBundle) {
         function isLocalTerminalCommand(text) {
             if (!text || typeof text !== 'string') return false;
             const t = text.trim().toLowerCase();
-            const prefixes = ['dir', 'ls', 'cd', 'cat', 'ipconfig', 'ifconfig', 'ping', 'wsl', 'novnc', 'xorg', 'sudo', 'apt', 'git'];
+            const prefixes = ['dir', 'ls', 'cd', 'cat', 'ipconfig', 'ifconfig', 'ping', 'wsl', 'novnc', 'xorg', 'sudo', 'apt', 'git', 'python', 'py'];
             for (const p of prefixes) {
                 if (t === p || t.startsWith(p + ' ') || t.startsWith(p + '/') || t.startsWith(p + '\\')) {
                     return true;
@@ -6713,64 +6720,7 @@ ${tools.join('\n')}${contextStr}
             }
         }
 
-        async function triggerCtrlC() {
-            const selection = window.getSelection().toString();
-            if (selection && selection.length > 0) {
-                // Text is highlighted, let native copy proceed
-                return;
-            }
-            if (activeTermContext.protocol === 'pyodide') {
-                printToTerminal(`${cmd}`, isAi ? 'ai_command' : 'command');
-                if (isAi && typeof setAiActivityState === 'function') setAiActivityState(true, 'Pyodide 運算中...');
-                try {
-                    if (typeof WebcomPyodide === 'undefined' || !WebcomPyodide.runPython) {
-                        throw new Error("Pyodide 模組尚未載入");
-                    }
-                    const pRes = await WebcomPyodide.runPython(cmd);
-                    if (pRes.stdout) printToTerminal(pRes.stdout, 'stream');
-                    if (pRes.result !== null && pRes.result !== undefined && pRes.result !== '') {
-                        printToTerminal(pRes.result, 'success');
-                    }
-                    if (pRes.stderr) printToTerminal(pRes.stderr, 'error');
-                    if (pRes.status === 'error') {
-                        printToTerminal(`Python Error: ${pRes.error || pRes.stderr}`, 'error');
-                    }
-                    if (wtermInstance) {
-                        wtermInstance.write(`\r\n\x1b[1;33m>>> \x1b[0m`);
-                    }
-                    scrollToTerminalBottom();
-                    termInput.focus();
-                    if (isAi && typeof setAiActivityState === 'function') setAiActivityState(false, '完成');
-                    return pRes;
-                } catch (pyErr) {
-                    printToTerminal(`Pyodide 執行錯誤: ${pyErr.message || pyErr}`, 'error');
-                    if (wtermInstance) {
-                        wtermInstance.write(`\r\n\x1b[1;33m>>> \x1b[0m`);
-                    }
-                    scrollToTerminalBottom();
-                    termInput.focus();
-                    if (isAi && typeof setAiActivityState === 'function') setAiActivityState(false, '錯誤');
-                    return { status: 'error', error: String(pyErr) };
-                }
-            }
 
-            if (activeTermContext.protocol === 'webserial') {
-                if (webSerialPort && webSerialPort.writable) {
-                    const writer = webSerialPort.writable.getWriter();
-                    await writer.write(new Uint8Array([3])); // ASCII 3 = Ctrl+C
-                    writer.releaseLock();
-                }
-            }
-            printToTerminal('^C', 'error');
-            if (wtermInstance) {
-                wtermInstance.write(`\r\n\x1b[1;32m${termPrompt.textContent}\x1b[0m `);
-            }
-            termInput.value = '';
-            termHistoryIndex = -1;
-            termTempInput = '';
-            wtermInputBuffer = '';
-            scrollToTerminalBottom();
-        }
 
         function triggerCtrlA() {
             termInput.focus();
@@ -6806,6 +6756,19 @@ ${tools.join('\n')}${contextStr}
                 try {
                     await navigator.clipboard.writeText(selection);
                 } catch (err) { }
+                return;
+            }
+            if (activeTermContext.protocol === 'pyodide') {
+                printToTerminal('^C\r\nKeyboardInterrupt', 'error');
+                if (wtermInstance) {
+                    wtermInstance.write(`\r\n\x1b[1;33m>>> \x1b[0m`);
+                }
+                termInput.value = '';
+                termHistoryIndex = -1;
+                termTempInput = '';
+                wtermInputBuffer = '';
+                scrollToTerminalBottom();
+                termInput.focus();
                 return;
             }
             if (activeTermContext.protocol === 'webserial') {
@@ -7610,6 +7573,86 @@ ${tools.join('\n')}${contextStr}
         window.disconnectWebSerial = disconnectWebSerial;
         btnApplyConn.addEventListener('click', applyCurrentConnection);
 
+        function getPyodideVersionInfo() {
+            const isEn = (currentLang === 'en');
+            const lines = [
+                `Python 3.12.7 (Pyodide v0.26.4 WASM, CPython 3.12.7, Oct 11 2024)`,
+                `[Clang 18.1.8 (https://github.com/llvm/llvm-project) / Emscripten 3.1.58] on Emscripten`,
+                isEn
+                    ? `Type "help", "copyright", "credits" or "license" for more information.\r\n⚡ [Pyodide Engine] Browser Native WebAssembly Python 3.12 (Host independent / Zero installation)`
+                    : `輸入 "help"、"copyright"、"credits" 或 "license" 可取得更多資訊。\r\n⚡ [Pyodide 引擎] 瀏覽器端原生 WebAssembly Python 3.12（獨立運算 / 免裝本機環境 / 免開 8001 Daemon）`
+            ];
+            return lines.join('\r\n');
+        }
+
+        function getPythonCliHelp() {
+            const isEn = (currentLang === 'en');
+            if (isEn) {
+                return [
+                    `usage: python [option] ... [-c cmd | -m mod | file] [arg] ...`,
+                    ``,
+                    `Options and arguments:`,
+                    `-c cmd            : run the Python code passed in as string`,
+                    `-v, -V, --version : print Python / Pyodide runtime version and exit`,
+                    `-h, --help        : print this help message and exit`,
+                    ``,
+                    `[Tip] In Webcom Pyodide terminal mode, you can evaluate Python expressions or statements directly.`
+                ].join('\r\n');
+            }
+            return [
+                `用法: python [選項] ... [-c 指令 | -m 模組 | 檔案] [引數] ...`,
+                ``,
+                `常用選項與引數:`,
+                `-c cmd            : 執行以字串形式傳入的 Python 程式碼`,
+                `-v, -V, --version : 顯示 Python / Pyodide 執行環境版本並結束`,
+                `-h, --help        : 顯示此說明訊息並結束`,
+                ``,
+                `[提示] 在 Webcom Pyodide 終端機中，您亦可直接輸入 Python 表達式或程式碼陳述式執行。`
+            ].join('\r\n');
+        }
+
+        function handlePythonCommand(cmd) {
+            if (!cmd || typeof cmd !== 'string') return { type: 'code', code: '' };
+            const trimmed = cmd.trim();
+
+            // 1. Version query flags & interactive version commands:
+            if (/^(?:(?:python3?|py)(?:\.exe)?\s+)?(?:-v|-V|--version|-version)$/i.test(trimmed) ||
+                /^(?:version|pyversion|\/python|\/pyversion|\/查詢python版本|sys\.version)$/i.test(trimmed)) {
+                return { type: 'version', output: getPyodideVersionInfo() };
+            }
+
+            // 2. Help query flags & commands:
+            if (/^(?:(?:python3?|py)(?:\.exe)?\s+)?(?:-h|--help|-help|\/\?)$/i.test(trimmed) ||
+                /^(?:help|help\(\))$/i.test(trimmed)) {
+                return { type: 'help', output: getPythonCliHelp() };
+            }
+
+            // 3. Bare python / py command:
+            if (/^(?:python3?|py)(?:\.exe)?$/i.test(trimmed)) {
+                return { type: 'bare_python', output: getPyodideVersionInfo() };
+            }
+
+            // 4. python -c "..." or py -c '...'
+            const matchC = trimmed.match(/^(?:python3?|py)(?:\.exe)?\s+-c\s+["']([\s\S]*?)["']\s*$/i);
+            if (matchC) {
+                return { type: 'code', code: matchC[1] };
+            }
+
+            // 5. python <code...>
+            if (/^(?:python3?|py)(?:\.exe)?\s+/i.test(trimmed)) {
+                const rem = trimmed.replace(/^(?:python3?|py)(?:\.exe)?\s+/i, '').trim();
+                if (/^(?:-v|-V|--version|-version)$/i.test(rem)) {
+                    return { type: 'version', output: getPyodideVersionInfo() };
+                }
+                if (/^(?:-h|--help|-help|\/\?)$/i.test(rem)) {
+                    return { type: 'help', output: getPythonCliHelp() };
+                }
+                return { type: 'code', code: rem };
+            }
+
+            return { type: 'code', code: trimmed };
+        }
+
         async function sendCommandToTerminal(cmd, isAi = false) {
             if (cmd && cmd.trim()) {
                 const trimmed = cmd.trim();
@@ -7651,6 +7694,64 @@ ${tools.join('\n')}${contextStr}
                     }
                 } catch (e) { }
             }
+
+            // Pyodide 瀏覽器原生 WASM Python 獨立沙箱直直執行
+            if (activeTermContext.protocol === 'pyodide') {
+                printToTerminal(`${cmd}`, isAi ? 'ai_command' : 'command');
+                if (!cmd || !cmd.trim()) {
+                    if (wtermInstance) wtermInstance.write(`\r\n\x1b[1;33m>>> \x1b[0m`);
+                    scrollToTerminalBottom();
+                    termInput.focus();
+                    return { status: 'success', stdout: '' };
+                }
+                const parsed = handlePythonCommand(cmd);
+                if (parsed.type === 'version' || parsed.type === 'help' || parsed.type === 'bare_python') {
+                    printToTerminal(parsed.output, 'stream');
+                    if (wtermInstance) wtermInstance.write(`\r\n\x1b[1;33m>>> \x1b[0m`);
+                    scrollToTerminalBottom();
+                    termInput.focus();
+                    if (isAi && typeof setAiActivityState === 'function') setAiActivityState(false, '完成');
+                    return { status: 'success', stdout: parsed.output, engine: 'pyodide_wasm' };
+                }
+                if (/^(?:exit|quit)(?:\(\))?$/i.test(cmd.trim())) {
+                    const exitMsg = currentLang === 'en'
+                        ? 'Pyodide is running in browser WASM sandbox. Use the protocol selector above to switch connection modes.'
+                        : 'Pyodide 正於瀏覽器 WebAssembly 沙箱中運行。若要切換連線環境，請使用上方協定選單。';
+                    printToTerminal(exitMsg, 'info');
+                    if (wtermInstance) wtermInstance.write(`\r\n\x1b[1;33m>>> \x1b[0m`);
+                    scrollToTerminalBottom();
+                    termInput.focus();
+                    return { status: 'success', stdout: exitMsg };
+                }
+                if (isAi && typeof setAiActivityState === 'function') setAiActivityState(true, 'Pyodide 運算中...');
+                try {
+                    if (typeof WebcomPyodide === 'undefined' || !WebcomPyodide.runPython) {
+                        throw new Error(currentLang === 'en' ? 'Pyodide module not loaded' : 'Pyodide 模組尚未載入');
+                    }
+                    const pRes = await WebcomPyodide.runPython(parsed.code);
+                    if (pRes.stdout) printToTerminal(pRes.stdout, 'stream');
+                    if (pRes.result !== null && pRes.result !== undefined && pRes.result !== '') {
+                        printToTerminal(pRes.result, 'success');
+                    }
+                    if (pRes.stderr) printToTerminal(pRes.stderr, 'error');
+                    if (pRes.status === 'error') {
+                        printToTerminal(`Python Error: ${pRes.error || pRes.stderr || 'Execution failed'}`, 'error');
+                    }
+                    if (wtermInstance) wtermInstance.write(`\r\n\x1b[1;33m>>> \x1b[0m`);
+                    scrollToTerminalBottom();
+                    termInput.focus();
+                    if (isAi && typeof setAiActivityState === 'function') setAiActivityState(false, '完成');
+                    return { status: pRes.status || 'success', stdout: pRes.stdout || pRes.result || '', stderr: pRes.stderr || '', engine: 'pyodide_wasm' };
+                } catch (pyErr) {
+                    printToTerminal(`Pyodide 錯誤: ${pyErr.message || pyErr}`, 'error');
+                    if (wtermInstance) wtermInstance.write(`\r\n\x1b[1;33m>>> \x1b[0m`);
+                    scrollToTerminalBottom();
+                    termInput.focus();
+                    if (isAi && typeof setAiActivityState === 'function') setAiActivityState(false, '錯誤');
+                    return { status: 'error', error: String(pyErr), engine: 'pyodide_wasm' };
+                }
+            }
+
 
             // 若由 AI 觸發且目前非終端機視圖，自動切換至終端機確保人類能即時觀看交互除錯
             if (isAi && typeof switchLeftMode === 'function' && typeof currentLeftMode !== 'undefined' && currentLeftMode !== 'term') {
@@ -7741,15 +7842,17 @@ ${tools.join('\n')}${contextStr}
                     const isPythonCmd = /^\s*(python3?|py)\b/i.test(cmd) || /^\s*(print|import|def|class|for|if)\b/.test(cmd);
                     if (isPythonCmd && typeof WebcomPyodide !== 'undefined' && WebcomPyodide.runPython) {
                         printToTerminal(`⚡ [Pyodide 智慧接管] 本機 8001 離線，已自動轉由瀏覽器端 Pyodide (WASM Python) 執行：`, 'info');
-                        let pyCode = cmd;
-                        const matchC = cmd.match(/^\s*(?:python3?|py)\s+-c\s+["']([\s\S]*?)["']\s*$/i);
-                        if (matchC) {
-                            pyCode = matchC[1];
-                        } else if (/^\s*(?:python3?|py)\b/i.test(cmd)) {
-                            pyCode = cmd.replace(/^\s*(?:python3?|py)\s*/i, '');
+                        const parsed = handlePythonCommand(cmd);
+                        if (parsed.type === 'version' || parsed.type === 'help' || parsed.type === 'bare_python') {
+                            printToTerminal(parsed.output, 'stream');
+                            if (wtermInstance) wtermInstance.write(`\r\n\x1b[1;32m${termPrompt.textContent}\x1b[0m `);
+                            scrollToTerminalBottom();
+                            termInput.focus();
+                            if (isAi && typeof setAiActivityState === 'function') setAiActivityState(false, '完成');
+                            return { status: 'success', stdout: parsed.output, engine: 'pyodide_wasm' };
                         }
                         try {
-                            const pRes = await WebcomPyodide.runPython(pyCode);
+                            const pRes = await WebcomPyodide.runPython(parsed.code);
                             if (pRes.stdout) printToTerminal(pRes.stdout, 'stream');
                             if (pRes.result !== null && pRes.result !== undefined && pRes.result !== '') printToTerminal(pRes.result, 'success');
                             if (pRes.stderr) printToTerminal(pRes.stderr, 'error');
@@ -7757,7 +7860,7 @@ ${tools.join('\n')}${contextStr}
                             scrollToTerminalBottom();
                             termInput.focus();
                             if (isAi && typeof setAiActivityState === 'function') setAiActivityState(false, '完成');
-                            return { status: 'success', stdout: pRes.stdout || pRes.result || '', stderr: pRes.stderr || '', engine: 'pyodide' };
+                            return { status: 'success', stdout: pRes.stdout || pRes.result || '', stderr: pRes.stderr || '', engine: 'pyodide_wasm' };
                         } catch(pe) {
                             printToTerminal(`Pyodide 錯誤: ${pe.message}`, 'error');
                         }
@@ -10034,10 +10137,25 @@ Important guidelines:
             scrollToBottom();
 
             if (toolName === 'execute_python' || toolName === 'run_python' || toolName === 'pyodide' || toolName === 'python') {
-                const code = args.code || args.command || args.script || (typeof args === 'string' ? args : "");
+                const rawCode = args.code || args.command || args.script || (typeof args === 'string' ? args : "");
                 if (typeof switchLeftMode === 'function' && typeof currentLeftMode !== 'undefined' && currentLeftMode !== 'term') {
                     switchLeftMode('term');
                 }
+                const parsed = handlePythonCommand(rawCode);
+                if (parsed.type === 'version' || parsed.type === 'help' || parsed.type === 'bare_python') {
+                    printToTerminal(`🐍 [Pyodide Python 3] 版本與環境查詢:`, 'ai_command');
+                    printToTerminal(parsed.output, 'stream');
+                    if (wtermInstance) wtermInstance.write(`\r\n\x1b[1;32m${termPrompt.textContent}\x1b[0m `);
+                    scrollToTerminalBottom();
+                    if (typeof setAiActivityState === 'function') setAiActivityState(false, '完成');
+                    return JSON.stringify({
+                        status: "success",
+                        engine: "pyodide_wasm",
+                        stdout: parsed.output,
+                        result: parsed.output
+                    });
+                }
+                const code = parsed.code;
                 printToTerminal(`🐍 [Pyodide Python 3] 執行程式碼:`, 'ai_command');
                 printToTerminal(code, 'info');
                 if (typeof setAiActivityState === 'function') setAiActivityState(true, 'Pyodide 運算中...');
@@ -10516,15 +10634,16 @@ Important guidelines:
                     const isPythonCmd = /^\s*(python3?|py)\b/i.test(shellCmd) || /^\s*(print|import|def|class|for|if)\b/.test(shellCmd);
                     if (isPythonCmd && typeof WebcomPyodide !== 'undefined' && WebcomPyodide.runPython) {
                         printToTerminal(`⚡ [Pyodide 智慧接管] 8001 Daemon 離線，已自動轉由瀏覽器端 Pyodide (WASM Python) 執行：`, 'info');
-                        let pyCode = shellCmd;
-                        const matchC = shellCmd.match(/^\s*(?:python3?|py)\s+-c\s+["']([\s\S]*?)["']\s*$/i);
-                        if (matchC) {
-                            pyCode = matchC[1];
-                        } else if (/^\s*(?:python3?|py)\b/i.test(shellCmd)) {
-                            pyCode = shellCmd.replace(/^\s*(?:python3?|py)\s*/i, '');
+                        const parsed = handlePythonCommand(shellCmd);
+                        if (parsed.type === 'version' || parsed.type === 'help' || parsed.type === 'bare_python') {
+                            printToTerminal(parsed.output, 'stream');
+                            if (wtermInstance) wtermInstance.write(`\r\n\x1b[1;32m${termPrompt.textContent}\x1b[0m `);
+                            scrollToTerminalBottom();
+                            if (typeof setAiActivityState === 'function') setAiActivityState(false, '完成');
+                            return JSON.stringify({ status: 'success', engine: 'pyodide_wasm', stdout: parsed.output, result: parsed.output });
                         }
                         try {
-                            const pRes = await WebcomPyodide.runPython(pyCode);
+                            const pRes = await WebcomPyodide.runPython(parsed.code);
                             if (pRes.stdout) printToTerminal(pRes.stdout, 'stream');
                             if (pRes.result !== null && pRes.result !== undefined && pRes.result !== '') printToTerminal(pRes.result, 'success');
                             if (pRes.stderr) printToTerminal(pRes.stderr, 'error');
@@ -12899,11 +13018,16 @@ Important guidelines:
             if (welcome) welcome.remove();
 
             let effectivePrompt = promptText;
-            const matchedCmd = slashCommands.find(c => c.cmd.toLowerCase() === promptText.trim().toLowerCase());
+            const lowerP = promptText.trim().toLowerCase();
+            if (lowerP === '/python' || lowerP === '/pyversion' || lowerP === '/py' || lowerP === '/version' || lowerP === '/查詢python版本') {
+                effectivePrompt = t('slashCmd17_payload');
+            } else {
+                const matchedCmd = slashCommands.find(c => c.cmd.toLowerCase() === promptText.trim().toLowerCase());
             if (matchedCmd && matchedCmd.payload) {
                 effectivePrompt = matchedCmd.payload;
             } else if (promptText.startsWith('/')) {
                 effectivePrompt = promptText.replace(/^\//, '請');
+            }
             }
 
             appendMessage('user', promptText, false, false, '', imagesToSend);
