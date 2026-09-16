@@ -334,6 +334,19 @@ if (!window.WTerm && window.WTermBundle) {
                 tooltipDownloadOfflineAssets: "一鍵下載離線靜態資源 (Tailwind / Lucide / Marked)",
 
                 // ── 虛擬鍵盤提示詞 (Keypad Tooltips) ──
+                // ── 虛擬按鍵文字 (Virtual Keys) ──
+                vkeyUp: "↑ 上",
+                vkeyDown: "↓ 下",
+                vkeyLeft: "← 左",
+                vkeyRight: "→ 右",
+                vkeyTab: "Tab ⇥",
+                vkeyDel: "Del ⌫",
+                vkeyEnter: "Enter ↵",
+                vkeyCtrlA: "Ctrl+A (全選)",
+                vkeyCtrlC: "Ctrl+C (複製/中斷)",
+                vkeyCtrlV: "Ctrl+V (貼上)",
+                vkeyCtrlX: "Ctrl+X (剪下/清空)",
+                vkeyEsc: "Esc ⎋",
                 tooltipVkeyUp: "歷史上一條指令 (Up Arrow)",
                 tooltipVkeyDown: "歷史下一條指令 (Down Arrow)",
                 tooltipVkeyLeft: "游標左移 (Left Arrow)",
@@ -1095,6 +1108,19 @@ if (!window.WTerm && window.WTermBundle) {
                 tooltipDownloadOfflineAssets: "Download offline static assets (Tailwind / Lucide / Marked)",
 
                 // ── Virtual Keypad Tooltips ──
+                // ── Virtual Key Labels ──
+                vkeyUp: "↑ Up",
+                vkeyDown: "↓ Down",
+                vkeyLeft: "← Left",
+                vkeyRight: "→ Right",
+                vkeyTab: "Tab ⇥",
+                vkeyDel: "Del ⌫",
+                vkeyEnter: "Enter ↵",
+                vkeyCtrlA: "Ctrl+A (Select All)",
+                vkeyCtrlC: "Ctrl+C (Copy/Interrupt)",
+                vkeyCtrlV: "Ctrl+V (Paste)",
+                vkeyCtrlX: "Ctrl+X (Cut/Clear)",
+                vkeyEsc: "Esc ⎋",
                 tooltipVkeyUp: "Previous Command (Up Arrow)",
                 tooltipVkeyDown: "Next Command (Down Arrow)",
                 tooltipVkeyLeft: "Move Cursor Left (Left Arrow)",
@@ -1912,7 +1938,7 @@ if (!window.WTerm && window.WTermBundle) {
 
         function updateOfflineMockUI() {
             const btn = document.getElementById('btn-toggle-offline-mock');
-            const icon = document.getElementById('icon-offline-mock');
+            const iconWrap = document.getElementById('icon-offline-mock-wrap');
             const lbl = document.getElementById('label-offline-mock');
             if (!btn || !lbl) return;
 
@@ -1920,23 +1946,36 @@ if (!window.WTerm && window.WTermBundle) {
             btn.setAttribute('data-i18n-title', 'offlineMockTooltip');
 
             if (isSimulateOffline) {
-                btn.className = "text-xs px-2.5 py-1.5 rounded-lg border transition flex items-center gap-1.5 font-medium bg-rose-950/80 border-rose-600 text-rose-300 shadow-md shadow-rose-900/30 whitespace-nowrap shrink-0 cursor-pointer";
-                if (icon) {
-                    icon.setAttribute('data-lucide', 'wifi-off');
-                    icon.className = "w-3.5 h-3.5 text-rose-400 shrink-0";
+                btn.className = "text-xs px-2.5 py-1.5 rounded-lg border transition-all flex items-center gap-1.5 font-medium bg-rose-950/80 hover:bg-rose-900/90 border-rose-600 text-rose-300 shadow-md shadow-rose-900/40 whitespace-nowrap shrink-0 cursor-pointer";
+                if (iconWrap) {
+                    iconWrap.innerHTML = `
+                        <span class="relative flex h-2 w-2 shrink-0">
+                            <span class="relative inline-flex rounded-full h-2 w-2 bg-rose-500"></span>
+                        </span>
+                        <i data-lucide="wifi-off" class="w-3.5 h-3.5 text-rose-400 shrink-0"></i>
+                    `;
                 }
+                lbl.className = "whitespace-nowrap font-semibold line-through text-rose-300 decoration-rose-400 decoration-2";
                 lbl.setAttribute('data-i18n', 'offlineMockOffline');
                 lbl.textContent = t('offlineMockOffline');
             } else {
-                btn.className = "text-xs px-2.5 py-1.5 rounded-lg border transition flex items-center gap-1.5 font-medium bg-gray-900 border-gray-700 text-gray-300 hover:border-gray-500 whitespace-nowrap shrink-0 cursor-pointer";
-                if (icon) {
-                    icon.setAttribute('data-lucide', 'wifi');
-                    icon.className = "w-3.5 h-3.5 text-emerald-400 shrink-0";
+                btn.className = "text-xs px-2.5 py-1.5 rounded-lg border transition-all flex items-center gap-1.5 font-medium bg-emerald-950/40 hover:bg-emerald-900/50 border-emerald-700/60 text-emerald-300 whitespace-nowrap shrink-0 cursor-pointer shadow-sm";
+                if (iconWrap) {
+                    iconWrap.innerHTML = `
+                        <span class="relative flex h-2 w-2 shrink-0">
+                            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                            <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                        </span>
+                        <i data-lucide="wifi" class="w-3.5 h-3.5 text-emerald-400 shrink-0 animate-pulse"></i>
+                    `;
                 }
+                lbl.className = "whitespace-nowrap font-medium text-emerald-300";
                 lbl.setAttribute('data-i18n', 'offlineMockOnline');
                 lbl.textContent = t('offlineMockOnline');
             }
-            if (window.lucide) lucide.createIcons();
+            if (window.lucide && typeof lucide.createIcons === 'function') {
+                try { lucide.createIcons(); } catch (e) {}
+            }
         }
         window.updateOfflineMockUI = updateOfflineMockUI;
 
