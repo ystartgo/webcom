@@ -37,17 +37,17 @@ RESOURCES = [
     },
     {
         "filename": "transformers.min.js",
-        "url": "https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.3.3/dist/transformers.min.js",
+        "url": "https://cdn.jsdelivr.net/npm/@huggingface/transformers@4.2.0/dist/transformers.min.js",
         "optional_if_exists": True
     },
     {
         "filename": "ort-wasm-simd-threaded.jsep.wasm",
-        "url": "https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.3.3/dist/ort-wasm-simd-threaded.jsep.wasm",
+        "url": "https://cdn.jsdelivr.net/npm/onnxruntime-web@1.26.0-dev.20260416-b7804b056c/dist/ort-wasm-simd-threaded.jsep.wasm",
         "optional_if_exists": True
     },
     {
         "filename": "ort-wasm-simd-threaded.jsep.mjs",
-        "url": "https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.3.3/dist/ort-wasm-simd-threaded.jsep.mjs",
+        "url": "https://cdn.jsdelivr.net/npm/onnxruntime-web@1.26.0-dev.20260416-b7804b056c/dist/ort-wasm-simd-threaded.jsep.mjs",
         "optional_if_exists": True
     }
 ]

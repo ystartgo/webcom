@@ -4314,7 +4314,28 @@ if (!window.WTerm && window.WTermBundle) {
                         progress_callback: progressCallback
                     });
                 } catch (loadErr) {
-                    if (modelDtype === 'q4f16') {
+                    const errMsg = String(loadErr.message || '');
+                    if (errMsg.includes('Unsupported model type') || errMsg.includes('unsupported model') || errMsg.includes('qwen3')) {
+                        console.warn('[ONNX] Unsupported model architecture detected, attempting fallback class:', loadErr);
+                        const FallbackClass = onnxTransformersModule.AutoModelForVision2Seq || onnxTransformersModule.AutoModelForCausalLM || onnxTransformersModule.AutoModel;
+                        if (FallbackClass && FallbackClass !== ModelClass) {
+                            try {
+                                model = await FallbackClass.from_pretrained(modelName, {
+                                    dtype: modelDtype,
+                                    device: useGpu ? 'webgpu' : 'wasm',
+                                    progress_callback: progressCallback
+                                });
+                            } catch (e2) {
+                                throw new Error(currentLang === 'en'
+                                    ? `Model [${modelName}] architecture is not supported by ONNX Runtime. Recommended: switch to "Qwen2.5-0.5B ONNX" or "⚡ WebGPU (WebLLM)" mode.`
+                                    : `ONNX 引擎不支援此模型架構 [${modelName}]。推薦選擇「Qwen2.5-0.5B ONNX」或切換至「⚡ WebGPU 瀏覽器純本機 (WebLLM)」模式。`);
+                            }
+                        } else {
+                            throw new Error(currentLang === 'en'
+                                ? `Model [${modelName}] architecture is not supported by ONNX Runtime. Recommended: switch to "Qwen2.5-0.5B ONNX" or "⚡ WebGPU (WebLLM)" mode.`
+                                : `ONNX 引擎不支援此模型架構 [${modelName}]。推薦選擇「Qwen2.5-0.5B ONNX」或切換至「⚡ WebGPU 瀏覽器純本機 (WebLLM)」模式。`);
+                        }
+                    } else if (modelDtype === 'q4f16') {
                         console.warn('[ONNX] q4f16 load failed, falling back to q4:', loadErr);
                         model = await ModelClass.from_pretrained(modelName, {
                             dtype: 'q4',

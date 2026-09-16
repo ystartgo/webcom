@@ -101,8 +101,12 @@ def build_extension():
         "novnc.bundle.mjs",
         "webllm.bundle.js",
         "transformers.min.js",
+        "ort-wasm-simd-threaded.asyncify.mjs",
+        "ort-wasm-simd-threaded.asyncify.wasm",
+        "ort-wasm-simd-threaded.jsep.mjs",
         "ort-wasm-simd-threaded.jsep.wasm",
-        "ort-wasm-simd-threaded.jsep.mjs"
+        "ort-wasm-simd-threaded.mjs",
+        "ort-wasm-simd-threaded.wasm"
     ]
     for asset in essential_assets:
         s_path = os.path.join(src_assets, asset)
