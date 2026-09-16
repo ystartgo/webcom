@@ -289,6 +289,15 @@ if (!window.WTerm && window.WTermBundle) {
                 tooltipSnapTwoThirds: "自動將視窗佈局調整為 2/3 展開 (搭配左側 1/3 瀏覽器)",
                 keySettingsTooltip: "開啟自訂快捷鍵與按鍵對應設定",
                 tooltipPanelResizer: "拖曳調整左右寬度 (雙擊切換 2/3 : 1/3 或 1/2 : 1/2)",
+                                daemonLogModalTitle: "常駐程式系統日誌 (daemon.log)",
+                daemonLogModalDesc: "檢視與排查 Port 8001 背景常駐程式之執行狀態、錯誤訊息與 Traceback",
+                daemonLogSearchPlaceholder: "即時搜尋或過濾日誌關鍵字 (如 ERROR, Traceback, 8001)...",
+                daemonLogBtnRefresh: "重新整理",
+                daemonLogBtnLoadFile: "載入本機日誌",
+                daemonLogBtnCopy: "複製全部",
+                daemonLogBtnDownload: "下載 Log",
+                daemonLogBtnClear: "清空日誌",
+                daemonLogCopyPath: "複製路徑",
                 serialLogModalTitle: "Web Serial 完整會話日誌",
                 serialLogModalDesc: "完整保存本連線所有字元，不受終端機顯示行數上限限制",
                 serialLogSearchPlaceholder: "即時搜尋或過濾日誌關鍵字 (如 error, boot, wifi)...",
@@ -1039,6 +1048,15 @@ if (!window.WTerm && window.WTermBundle) {
                 tooltipSnapTwoThirds: "Snap window layout to 2/3 screen (pairs with 1/3 browser on the left)",
                 keySettingsTooltip: "Open custom shortcuts and key binding settings",
                 tooltipPanelResizer: "Drag to resize left/right panels (Double click to toggle 2/3 : 1/3 or 1/2 : 1/2)",
+                                daemonLogModalTitle: "Daemon System Log (daemon.log)",
+                daemonLogModalDesc: "Inspect execution status, errors, and tracebacks for Port 8001 daemon",
+                daemonLogSearchPlaceholder: "Search or filter log keywords (e.g. ERROR, Traceback, 8001)...",
+                daemonLogBtnRefresh: "Refresh",
+                daemonLogBtnLoadFile: "Load Local File",
+                daemonLogBtnCopy: "Copy All",
+                daemonLogBtnDownload: "Download Log",
+                daemonLogBtnClear: "Clear Log",
+                daemonLogCopyPath: "Copy Path",
                 serialLogModalTitle: "Web Serial Complete Session Log",
                 serialLogModalDesc: "Captures and preserves all stream characters without terminal line limits",
                 serialLogSearchPlaceholder: "Search or filter log keywords (e.g. error, boot, wifi)...",
@@ -12717,34 +12735,52 @@ Important guidelines:
         const daemonBadge = document.getElementById('daemon-status-badge');
 
         function triggerWebcomProtocol() {
+            // 1. Chrome Extension 背景喚醒 (保持足夠等待時間，避免 Chrome 協定確認視窗被提早關閉)
             if (typeof chrome !== 'undefined' && chrome.tabs && chrome.tabs.create) {
                 try {
                     chrome.tabs.create({ url: 'webcom://start-daemon', active: false }, (newTab) => {
                         if (newTab && newTab.id) {
                             setTimeout(() => {
                                 try { chrome.tabs.remove(newTab.id); } catch (e) {}
-                            }, 1200);
+                            }, 15000);
                         }
                     });
-                    return;
                 } catch (e) {
                     console.warn('[Extension] chrome.tabs.create failed, falling back:', e);
                 }
             }
             if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.sendMessage) {
-                chrome.runtime.sendMessage({ action: 'launch_daemon' }, (res) => {
-                    if (chrome.runtime.lastError) console.warn(chrome.runtime.lastError);
-                });
+                try {
+                    chrome.runtime.sendMessage({ action: 'launch_daemon' }, (res) => {
+                        if (chrome.runtime.lastError) console.warn(chrome.runtime.lastError);
+                    });
+                } catch(e) {}
             }
+
+            // 2. 隱藏 iframe 靜默喚醒 (原生標準做法，不跳新分頁即可喚起 Windows 協定)
+            try {
+                let iframe = document.getElementById('webcom-protocol-iframe');
+                if (!iframe) {
+                    iframe = document.createElement('iframe');
+                    iframe.id = 'webcom-protocol-iframe';
+                    iframe.style.display = 'none';
+                    document.body.appendChild(iframe);
+                }
+                iframe.src = 'webcom://start-daemon';
+            } catch (e) {
+                console.warn('[Protocol] iframe trigger fallback:', e);
+            }
+
+            // 3. 備援 <a> 標籤點擊
             try {
                 const a = document.createElement('a');
                 a.href = 'webcom://start-daemon';
                 a.style.display = 'none';
                 document.body.appendChild(a);
                 a.click();
-                setTimeout(() => { a.remove(); }, 2000);
+                setTimeout(() => { try { a.remove(); } catch (e) {} }, 3000);
             } catch (e) {
-                window.location.href = 'webcom://start-daemon';
+                try { window.location.href = 'webcom://start-daemon'; } catch(err){}
             }
         }
 
@@ -14722,13 +14758,13 @@ Important guidelines:
 
             // Step 1: Disconnect old daemon via HTTP if still reachable
             try {
-                await fetchWithTimeout(`${appSettings.daemonEndpoint}/shutdown`, { method: 'POST', timeout: 1000 });
+                await fetchWithTimeout(`${appSettings.daemonEndpoint}/shutdown`, { method: 'POST', timeout: 800 });
             } catch (e) { }
 
             // Step 2: Trigger custom URL protocol
             triggerWebcomProtocol();
 
-            // Step 3: Fast poll daemon health and auto-hide modal upon success
+            // Step 3: Fast poll daemon health and update UI
             let count = 0;
             const timer = setInterval(async () => {
                 const isOnline = await checkDaemonHealth();
@@ -14740,9 +14776,31 @@ Important guidelines:
                     }
                     setTimeout(() => {
                         daemonModal.classList.add('hidden');
-                    }, 1000);
-                } else if (count > 20) {
+                    }, 1200);
+                } else if (count >= 10) {
                     clearInterval(timer);
+                    if (modalStatusText) {
+                        modalStatusText.innerHTML = `
+                            <div class="mt-1 space-y-1.5 text-left">
+                                <div class="text-amber-400 font-semibold flex items-center gap-1.5">
+                                    <i data-lucide="alert-circle" class="w-4 h-4"></i>
+                                    <span>常駐程式尚未就緒 (未連線至 8001)</span>
+                                </div>
+                                <div class="text-[11px] text-gray-300 leading-normal">
+                                    若 Windows 尚未註冊協定或瀏覽器阻擋啟動：
+                                </div>
+                                <div class="flex gap-2 flex-wrap pt-0.5">
+                                    <button type="button" onclick="openDaemonLogModal()" class="px-2 py-1 bg-amber-950/60 hover:bg-amber-900/80 border border-amber-800 text-amber-300 rounded font-medium text-[11px] flex items-center gap-1">
+                                        <i data-lucide="file-text" class="w-3 h-3"></i> 查看 daemon.log
+                                    </button>
+                                    <button type="button" onclick="navigator.clipboard.writeText('cmd.exe /c \"c:\\Apps\\Webcom\\start_daemon.bat\"'); showToast('已複製啟動指令');" class="px-2 py-1 bg-purple-950/60 hover:bg-purple-900/80 border border-purple-800 text-purple-300 rounded font-medium text-[11px] flex items-center gap-1">
+                                        <i data-lucide="copy" class="w-3 h-3"></i> 複製啟動指令
+                                    </button>
+                                </div>
+                            </div>
+                        `;
+                        if (window.lucide) lucide.createIcons();
+                    }
                 }
             }, 800);
         });
@@ -15163,10 +15221,195 @@ Important guidelines:
             }
         });
 
-        document.getElementById('btn-view-daemon-log').addEventListener('click', async () => {
-            daemonModal.classList.add('hidden');
-            userInput.value = t('slashCmd13_payload');
-            handleSendMessage();
+        // ── 常駐程式日誌檢視器邏輯 (Daemon Log Viewer Controller) ──
+        let rawDaemonLogText = '';
+        async function openDaemonLogModal() {
+            const m = document.getElementById('daemon-log-modal');
+            if (m) m.classList.remove('hidden');
+            if (window.lucide) lucide.createIcons();
+            await refreshDaemonLog();
+        }
+        function closeDaemonLogModal() {
+            const m = document.getElementById('daemon-log-modal');
+            if (m) m.classList.add('hidden');
+        }
+        window.openDaemonLogModal = openDaemonLogModal;
+        window.closeDaemonLogModal = closeDaemonLogModal;
+
+        async function refreshDaemonLog() {
+            const textarea = document.getElementById('daemon-log-textarea');
+            const stats = document.getElementById('daemon-log-stats');
+            const badge = document.getElementById('daemon-log-badge');
+            const notice = document.getElementById('daemon-log-offline-notice');
+            const noticeText = document.getElementById('daemon-log-notice-text');
+            const endpoint = (typeof appSettings !== 'undefined' && appSettings?.daemonEndpoint) ? appSettings.daemonEndpoint : 'http://127.0.0.1:8001';
+
+            if (textarea) textarea.value = '正在從常駐程式 (Port 8001) 讀取最新日誌中...';
+            
+            try {
+                const res = await fetchWithTimeout(`${endpoint}/api/daemon/log?lines=1500`, { timeout: 2500 });
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data.status === 'ok') {
+                        rawDaemonLogText = data.log || '(日誌內容為空)';
+                        if (textarea) {
+                            textarea.value = rawDaemonLogText;
+                            textarea.scrollTop = textarea.scrollHeight;
+                        }
+                        if (stats) {
+                            const lines = rawDaemonLogText.split('\n').length;
+                            const kb = (new Blob([rawDaemonLogText]).size / 1024).toFixed(1);
+                            stats.textContent = `${lines} 行 • ${kb} KB`;
+                        }
+                        if (badge) badge.className = 'w-2 h-2 rounded-full bg-green-500 animate-pulse';
+                        if (notice) notice.classList.add('hidden');
+                        try { localStorage.setItem('webcom_last_daemon_log', rawDaemonLogText); } catch(e){}
+                        return;
+                    }
+                }
+                throw new Error("HTTP " + res.status);
+            } catch (err) {
+                if (badge) badge.className = 'w-2 h-2 rounded-full bg-red-500';
+                if (notice) notice.classList.remove('hidden');
+
+                const cached = localStorage.getItem('webcom_last_daemon_log');
+                if (cached) {
+                    rawDaemonLogText = cached;
+                    if (noticeText) noticeText.innerHTML = `⚠️ 8001 目前離線中，當前為<strong>上次連線快取之日誌</strong>。若已產生最新日誌，請點擊「📂 載入本機日誌」選取檔案！`;
+                    if (textarea) {
+                        textarea.value = `[離線檢視 - 上次連線快取日誌]\n==================================================\n` + rawDaemonLogText;
+                        textarea.scrollTop = textarea.scrollHeight;
+                    }
+                    if (stats) {
+                        const lines = cached.split('\n').length;
+                        const kb = (new Blob([cached]).size / 1024).toFixed(1);
+                        stats.textContent = `快取 ${lines} 行 • ${kb} KB`;
+                    }
+                } else {
+                    rawDaemonLogText = '';
+                    if (noticeText) noticeText.innerHTML = `⚠️ 8001 目前未連線。請點擊「📂 載入本機日誌」選擇 <span class="font-mono">c:\\Apps\\Webcom\\daemon.log</span>，或於本機執行 <span class="font-mono">start_daemon.bat</span>。`;
+                    if (textarea) {
+                        textarea.value = `【常駐程式系統日誌檢視器】\n\n` +
+                            `[狀態] 8001 常駐程式目前未連線。\n` +
+                            `[路徑] 預設日誌檔位於本機：c:\\Apps\\Webcom\\daemon.log\n\n` +
+                            `【排障與檢視步驟】\n` +
+                            `1. 若您想直接在此視窗檢視檔案：\n` +
+                            `   請點擊上方工具列「📂 載入本機日誌」按鈕，直接選取 c:\\Apps\\Webcom\\daemon.log 即可即時渲染！\n\n` +
+                            `2. 若您尚未啟動 8001 常駐程式：\n` +
+                            `   請在本機目錄執行一次 start_daemon.bat（或執行 register_protocol.bat 註冊 webcom:// 協定）。\n\n` +
+                            `3. 手動指令啟動：\n` +
+                            `   cmd.exe /c "c:\\Apps\\Webcom\\start_daemon.bat"\n`;
+                    }
+                    if (stats) stats.textContent = '離線 • 0 行';
+                }
+            }
+        }
+        window.refreshDaemonLog = refreshDaemonLog;
+
+        function filterDaemonLogDisplay() {
+            const input = document.getElementById('daemon-log-search-input');
+            const textarea = document.getElementById('daemon-log-textarea');
+            if (!textarea) return;
+            const q = (input?.value || '').trim();
+            if (!q) {
+                textarea.value = rawDaemonLogText;
+                textarea.scrollTop = textarea.scrollHeight;
+                return;
+            }
+            const lines = rawDaemonLogText.split('\n');
+            const matched = lines.filter(l => l.toLowerCase().includes(q.toLowerCase()));
+            textarea.value = matched.length > 0 ? matched.join('\n') : `(未找到包含 "${q}" 的日誌項目)`;
+        }
+        function clearDaemonLogSearch() {
+            const input = document.getElementById('daemon-log-search-input');
+            if (input) input.value = '';
+            filterDaemonLogDisplay();
+        }
+        window.filterDaemonLogDisplay = filterDaemonLogDisplay;
+        window.clearDaemonLogSearch = clearDaemonLogSearch;
+
+        function handleDaemonLogFileSelect(e) {
+            const file = e.target.files && e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(evt) {
+                rawDaemonLogText = evt.target.result || '';
+                const textarea = document.getElementById('daemon-log-textarea');
+                const stats = document.getElementById('daemon-log-stats');
+                const notice = document.getElementById('daemon-log-offline-notice');
+                const noticeText = document.getElementById('daemon-log-notice-text');
+                if (textarea) {
+                    textarea.value = rawDaemonLogText;
+                    textarea.scrollTop = textarea.scrollHeight;
+                }
+                if (stats) {
+                    const lines = rawDaemonLogText.split('\n').length;
+                    const kb = (file.size / 1024).toFixed(1);
+                    stats.textContent = `本地載入 ${lines} 行 • ${kb} KB`;
+                }
+                if (notice) notice.classList.remove('hidden');
+                if (noticeText) noticeText.innerHTML = `✅ 已成功載入本機檔案：<strong>${file.name}</strong> (${(file.size / 1024).toFixed(1)} KB)`;
+                try { localStorage.setItem('webcom_last_daemon_log', rawDaemonLogText); } catch(err){}
+            };
+            reader.readAsText(file, 'utf-8');
+            e.target.value = '';
+        }
+        window.handleDaemonLogFileSelect = handleDaemonLogFileSelect;
+
+        function copyDaemonLogPath() {
+            navigator.clipboard.writeText('c:\\Apps\\Webcom\\daemon.log').then(() => {
+                if (typeof showToast === 'function') showToast('已複製本機日誌檔案路徑: c:\\Apps\\Webcom\\daemon.log');
+            });
+        }
+        window.copyDaemonLogPath = copyDaemonLogPath;
+
+        function copyAllDaemonLog() {
+            const textarea = document.getElementById('daemon-log-textarea');
+            if (!textarea || !textarea.value) {
+                if (typeof showToast === 'function') showToast('目前無日誌內容可複製');
+                return;
+            }
+            navigator.clipboard.writeText(textarea.value).then(() => {
+                if (typeof showToast === 'function') showToast('已複製日誌內容至剪貼簿！');
+            });
+        }
+        window.copyAllDaemonLog = copyAllDaemonLog;
+
+        function exportDaemonLog() {
+            const textarea = document.getElementById('daemon-log-textarea');
+            const content = textarea?.value || rawDaemonLogText;
+            if (!content) {
+                if (typeof showToast === 'function') showToast('目前無日誌內容可匯出');
+                return;
+            }
+            const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `daemon_${new Date().toISOString().replace(/[:.]/g, '-')}.log`;
+            a.click();
+            setTimeout(() => URL.revokeObjectURL(url), 5000);
+            if (typeof showToast === 'function') showToast('已下載日誌檔案');
+        }
+        window.exportDaemonLog = exportDaemonLog;
+
+        async function clearDaemonLogHistory() {
+            rawDaemonLogText = '';
+            const textarea = document.getElementById('daemon-log-textarea');
+            if (textarea) textarea.value = '';
+            const stats = document.getElementById('daemon-log-stats');
+            if (stats) stats.textContent = '0 行 • 0 KB';
+            try { localStorage.removeItem('webcom_last_daemon_log'); } catch(e){}
+            const endpoint = (typeof appSettings !== 'undefined' && appSettings?.daemonEndpoint) ? appSettings.daemonEndpoint : 'http://127.0.0.1:8001';
+            try {
+                await fetchWithTimeout(`${endpoint}/api/daemon/log`, { method: 'DELETE', timeout: 1500 });
+            } catch(e){}
+            if (typeof showToast === 'function') showToast('已清空日誌內容');
+        }
+        window.clearDaemonLogHistory = clearDaemonLogHistory;
+
+        document.getElementById('btn-view-daemon-log').addEventListener('click', () => {
+            openDaemonLogModal();
         });
 
         try { lucide.createIcons(); } catch(e) { console.warn(e); }

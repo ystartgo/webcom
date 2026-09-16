@@ -132,9 +132,13 @@ start "" wscript.exe "%~dp0silent_daemon.vbs"
 exit /b 0
 
 :run_bg
+echo [%date% %time%] [INFO] Launching Webcom Daemon on http://127.0.0.1:8001 ... >> "%~dp0daemon.log"
 if defined PY_CMD (
-    %PY_CMD% "%~dp0daemon.py"
+    %PY_CMD% "%~dp0daemon.py" >> "%~dp0daemon.log" 2>&1
 ) else (
-    "%PY%" "%~dp0daemon.py"
+    "%PY%" "%~dp0daemon.py" >> "%~dp0daemon.log" 2>&1
+)
+if errorlevel 1 (
+    echo [%date% %time%] [ERROR] Webcom Daemon process exited with code %ERRORLEVEL%. >> "%~dp0daemon.log"
 )
 exit /b %ERRORLEVEL%

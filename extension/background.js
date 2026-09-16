@@ -83,7 +83,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                 if (newTab && newTab.id) {
                     setTimeout(() => {
                         try { chrome.tabs.remove(newTab.id); } catch (e) {}
-                    }, 1200);
+                    }, 15000);
                 }
                 sendResponse({ success: true });
             });

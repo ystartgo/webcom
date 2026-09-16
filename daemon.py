@@ -911,6 +911,35 @@ class SerialRequest(BaseModel):
 def health_check():
     return {"status": "online", "service": "Webcom Daemon", "port": 8001}
 
+@app.get("/api/daemon/log")
+def get_daemon_log(lines: int = 1000):
+    log_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "daemon.log")
+    if not os.path.exists(log_path):
+        return {"status": "ok", "exists": False, "total_lines": 0, "returned_lines": 0, "log": "daemon.log 檔案尚未產生"}
+    try:
+        with open(log_path, "r", encoding="utf-8", errors="replace") as f:
+            all_lines = f.readlines()
+            recent = all_lines[-lines:] if len(all_lines) > lines else all_lines
+            return {
+                "status": "ok",
+                "exists": True,
+                "total_lines": len(all_lines),
+                "returned_lines": len(recent),
+                "log": "".join(recent)
+            }
+    except Exception as e:
+        return {"status": "error", "error": str(e)}
+
+@app.delete("/api/daemon/log")
+def clear_daemon_log():
+    log_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "daemon.log")
+    try:
+        with open(log_path, "w", encoding="utf-8") as f:
+            f.write("")
+        return {"status": "ok", "message": "Log cleared"}
+    except Exception as e:
+        return {"status": "error", "error": str(e)}
+
 @app.post("/shutdown")
 def shutdown_daemon():
     import threading, time
