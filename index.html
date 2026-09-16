@@ -1028,8 +1028,10 @@
 </div>
 
     <!-- 左右分割拖曳把手 (Draggable Split Resizer Bar) -->
-    <div id="panel-resizer" class="w-1.5 hover:w-2 bg-gray-800 hover:bg-purple-600 transition-all cursor-col-resize flex flex-col items-center justify-center shrink-0 select-none z-20 group" title="拖曳調整左右寬度 (雙擊切換 2/3 : 1/3 或 1/2 : 1/2)" data-i18n-title="tooltipPanelResizer">
-        <div class="h-8 w-0.5 bg-gray-600 group-hover:bg-white rounded-full pointer-events-none"></div>
+    <div id="panel-resizer" class="relative w-2 hover:w-2.5 bg-gray-800 hover:bg-purple-600 active:bg-purple-500 transition-colors cursor-col-resize flex flex-col items-center justify-center shrink-0 select-none z-30 group touch-none" title="拖曳調整左右寬度 (雙擊切換 2/3 : 1/3 或 1/2 : 1/2)" data-i18n-title="tooltipPanelResizer">
+        <!-- 擴展可點擊拖曳區域 (隱形熱區 22px) 解決 6px 太窄難以點中拖曳的問題 -->
+        <div class="absolute inset-y-0 -left-2.5 -right-2.5 cursor-col-resize z-10"></div>
+        <div class="h-8 w-1 bg-gray-500 group-hover:bg-white group-active:bg-white rounded-full pointer-events-none relative z-20 shadow-sm"></div>
     </div>
 
     <!-- 右側：AI 對話與設定區塊 (Collapsible Right Panel) -->
@@ -17674,55 +17676,113 @@ Important guidelines:
 
             let isDragging = false;
 
-            const savedPct = localStorage.getItem('webcom_left_panel_pct');
-            if (savedPct && !isNaN(savedPct) && savedPct >= 20 && savedPct <= 80) {
-                leftPanel.style.width = savedPct + '%';
-                leftPanel.style.flex = 'none';
+            // 恢復上次記住的自訂寬度比例 (15% ~ 85%)
+            const savedPct = parseFloat(localStorage.getItem('webcom_left_panel_pct'));
+            if (!isNaN(savedPct) && savedPct >= 15 && savedPct <= 85) {
+                const pctStr = savedPct.toFixed(2) + '%';
+                leftPanel.style.width = pctStr;
+                leftPanel.style.flex = '0 0 ' + pctStr;
+                rightPanel.style.flex = '1 1 0%';
             }
 
-            resizer.addEventListener('mousedown', (e) => {
+            function startDrag(clientX, pointerId) {
                 isDragging = true;
-                document.body.classList.add('select-none');
+                // 拖曳進行時暫停 CSS transition 動畫，實現零延遲 60fps 游標跟隨
+                leftPanel.style.transition = 'none';
+                rightPanel.style.transition = 'none';
+                document.body.style.userSelect = 'none';
                 document.body.style.cursor = 'col-resize';
-            });
+                document.body.classList.add('select-none');
+                leftPanel.classList.remove('panel-collapsed-left');
+                rightPanel.classList.remove('panel-collapsed-right');
+            }
 
-            document.addEventListener('mousemove', (e) => {
+            function updateDrag(clientX) {
                 if (!isDragging) return;
                 const totalW = window.innerWidth;
                 if (totalW <= 0) return;
-                let pct = (e.clientX / totalW) * 100;
-                pct = Math.max(20, Math.min(80, pct));
-                leftPanel.style.width = pct.toFixed(1) + '%';
-                leftPanel.style.flex = 'none';
-                leftPanel.classList.remove('panel-collapsed-left');
-                rightPanel.classList.remove('panel-collapsed-right');
+                let pct = (clientX / totalW) * 100;
+                pct = Math.max(15, Math.min(85, pct));
+                const pctStr = pct.toFixed(2) + '%';
+                leftPanel.style.width = pctStr;
+                leftPanel.style.flex = '0 0 ' + pctStr;
+                rightPanel.style.flex = '1 1 0%';
                 if (typeof fitTerminal === 'function') fitTerminal();
+            }
+
+            function stopDrag() {
+                if (!isDragging) return;
+                isDragging = false;
+                leftPanel.style.transition = '';
+                rightPanel.style.transition = '';
+                document.body.style.userSelect = '';
+                document.body.style.cursor = '';
+                document.body.classList.remove('select-none');
+
+                const currentPct = parseFloat(leftPanel.style.width);
+                if (!isNaN(currentPct)) {
+                    localStorage.setItem('webcom_left_panel_pct', currentPct.toFixed(2));
+                }
+                if (typeof fitTerminal === 'function') fitTerminal();
+                window.dispatchEvent(new Event('resize'));
+            }
+
+            // 現代 Pointer Events (支援滑鼠、觸控筆、觸控螢幕，搭配 setPointerCapture 徹底防止掉速與 iframe 穿透)
+            resizer.addEventListener('pointerdown', (e) => {
+                e.preventDefault();
+                try {
+                    resizer.setPointerCapture(e.pointerId);
+                } catch (err) {}
+                startDrag(e.clientX, e.pointerId);
             });
 
-            document.addEventListener('mouseup', () => {
+            resizer.addEventListener('pointermove', (e) => {
                 if (isDragging) {
-                    isDragging = false;
-                    document.body.classList.remove('select-none');
-                    document.body.style.cursor = '';
-                    if (leftPanel.style.width) {
-                        const num = parseFloat(leftPanel.style.width);
-                        if (!isNaN(num)) {
-                            localStorage.setItem('webcom_left_panel_pct', num);
-                        }
-                    }
-                    if (typeof fitTerminal === 'function') fitTerminal();
+                    e.preventDefault();
+                    updateDrag(e.clientX);
                 }
             });
 
-            resizer.addEventListener('dblclick', () => {
+            const onPointerEnd = (e) => {
+                if (isDragging) {
+                    try {
+                        resizer.releasePointerCapture(e.pointerId);
+                    } catch (err) {}
+                    stopDrag();
+                }
+            };
+
+            resizer.addEventListener('pointerup', onPointerEnd);
+            resizer.addEventListener('pointercancel', onPointerEnd);
+
+            // 全域 document 備援防禦監聽
+            document.addEventListener('pointermove', (e) => {
+                if (isDragging) updateDrag(e.clientX);
+            });
+            document.addEventListener('pointerup', () => {
+                if (isDragging) stopDrag();
+            });
+
+            // 相容傳統滑鼠事件
+            resizer.addEventListener('mousedown', (e) => {
+                e.preventDefault();
+                startDrag(e.clientX);
+            });
+
+            // 雙擊快捷切換 (1:1 對等 50% 或 2:3 展開 66.6%)
+            resizer.addEventListener('dblclick', (e) => {
+                e.preventDefault();
                 const currentPct = parseFloat(leftPanel.style.width) || 50;
                 const newPct = (Math.abs(currentPct - 50) < 5) ? 66.6 : 50;
-                leftPanel.style.width = newPct + '%';
-                leftPanel.style.flex = 'none';
+                const pctStr = newPct.toFixed(2) + '%';
+                leftPanel.style.width = pctStr;
+                leftPanel.style.flex = '0 0 ' + pctStr;
+                rightPanel.style.flex = '1 1 0%';
                 leftPanel.classList.remove('panel-collapsed-left');
                 rightPanel.classList.remove('panel-collapsed-right');
-                localStorage.setItem('webcom_left_panel_pct', newPct);
+                localStorage.setItem('webcom_left_panel_pct', newPct.toFixed(2));
                 if (typeof fitTerminal === 'function') fitTerminal();
+                window.dispatchEvent(new Event('resize'));
                 if (typeof showToastNotification === 'function') {
                     showToastNotification(`左右寬度已切換為 ${newPct === 50 ? '1:1 對等' : '2:3 展開'}`, 'info');
                 }
