@@ -6423,9 +6423,12 @@ if (!window.WTerm && window.WTermBundle) {
 
                 return `You are an AI Agent with full left workspace & terminal control capabilities.
 Your left workspace contains Terminal (term), Remote Desktop (novnc), and Window Connection (xorg).
-[Interaction Principle]: When the user asks to operate the left panel, execute commands, inspect terminal output, or switch view modes, you MUST immediately output a <tool_call> to automatically interact with the left panel!
-Output tool calls in XML format:
+[Tool Calling Principle]: When executing any tool action (such as web_search, terminal commands, screen perception, file operations, or MCP tools), you MUST strictly output the tool call enclosed in a <tool_call> XML tag:
 <tool_call>{"name": "tool_name", "arguments": {"arg_name": "arg_value"}}</tool_call>
+Examples:
+<tool_call>{"name": "web_search", "arguments": {"query": "weather in Taipei"}}</tool_call>
+<tool_call>{"name": "write_frontend_terminal", "arguments": {"command": "curl -s wttr.in"}}</tool_call>
+Do not add any conversational noise, prefixes, or quotes outside the <tool_call> tag.
 
 Available Tools:
 ${tools.join('\n')}${contextStr}
@@ -6515,10 +6518,12 @@ Rules:
                 return `【輸出規範】請使用標準 UTF-8 編碼輸出。
 你是一個具備全方位「左側工作區」與終端機控制能力的 AI 助理 (Agent)。
 你的左側為多功能工作區，包含三大模式：終端機 (Terminal)、遠端桌面 (noVNC)、視窗連線 (Xorg)。你可即時感知左側畫面並下達指令互動。
-【調用左側核心原則】當使用者要求調用左側、操作終端機、下指令、查詢終端機畫面或切換模式時，你必須立即輸出 <tool_call> 主動調用工具！
-工具呼叫請嚴格輸出 XML 格式：
+【工具調用核心原則】當執行任何工具任務（包含 web_search 聯網搜尋、終端機指令、畫面感知識別、檔案讀寫、模式切換或 MCP 工具）時，你必須且只能輸出以 <tool_call> XML 標籤包裹的標準格式：
 <tool_call>{"name": "工具名稱", "arguments": {"參數名": "參數值"}}</tool_call>
-（亦相容 "args" 欄位）
+調用範例：
+<tool_call>{"name": "web_search", "arguments": {"query": "本機IP所在地天氣"}}</tool_call>
+<tool_call>{"name": "write_frontend_terminal", "arguments": {"command": "curl -s wttr.in"}}</tool_call>
+請務必嚴格使用 <tool_call> 標籤包裹，切勿在標籤外輸出多餘的前綴雜訊字元。
 
 可用工具：
 ${tools.join('\n')}${contextStr}
@@ -10478,11 +10483,12 @@ Important guidelines:
                     if (d.function && typeof d.function === 'object') {
                         d = { name: d.function.name, arguments: d.function.arguments };
                     }
-                    let name = d.name;
+                    let name = d.name || d.tool || d.action || d.tool_name || d.function_name;
                     if (!name || typeof name !== 'string') return null;
-                    const canonName = toolAliases[name.toLowerCase()] || name;
+                    const cleanName = name.trim().replace(/^['"]|['"]$/g, '');
+                    const canonName = toolAliases[cleanName.toLowerCase()] || toolAliases[cleanName.toLowerCase().replace(/\s+/g, '_')] || cleanName;
                     if (registeredToolNames.includes(canonName) || canonName.startsWith('mcp_') || canonName.startsWith('MCP_')) {
-                        let rawArgs = (d.args !== undefined) ? d.args : ((d.arguments !== undefined) ? d.arguments : (d.params || {}));
+                        let rawArgs = (d.args !== undefined) ? d.args : ((d.arguments !== undefined) ? d.arguments : (d.parameters || d.params || d.input || {}));
                         if (typeof rawArgs === 'string') {
                             try { rawArgs = JSON.parse(rawArgs); } catch (e) { rawArgs = { command: rawArgs }; }
                         }
