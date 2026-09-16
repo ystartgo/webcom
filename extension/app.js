@@ -213,6 +213,20 @@ if (!window.WTerm && window.WTermBundle) {
                 slashCmd17_title: "/查詢python版本",
                 slashCmd17_desc: "查詢本機 Python (8001) 與瀏覽器端 Pyodide (WASM) 版本與執行環境",
                 slashCmd17_payload: "請查詢並檢測當前環境的所有 Python 執行引擎版本（包括本機 8001 Daemon Python 與瀏覽器端 Pyodide WASM Python 3.12 版本狀態），並列出可用的運算環境與套件庫支援。",
+                btnNewChat: "新對話",
+                tooltipNewChat: "開啟新對話或清空畫面",
+                chatInputPlaceholder: "輸入訊息，或貼上圖片、文字... (輸入 / 顯示快捷指令)",
+                btnSpeechVoice: "語音輸入 (語音轉文字)",
+                btnSpeakMsg: "朗讀回答",
+                btnEditMsg: "編輯提問",
+                btnSaveSubmit: "儲存並發送",
+                btnCancel: "取消",
+                btnFeedbackGood: "滿意回答",
+                btnFeedbackBad: "不滿意回答",
+                btnExportMarkdown: "儲存為 Markdown (.md)",
+                btnRunPyodide: "🐍 WASM 執行",
+                btnRunTerminal: "▶ 終端執行",
+                scrollToBottom: "回到底部",
                 engineModeOnnx: "📦 ONNX 瀏覽器本機 (ONNX Runtime)",
                 engineModeCoThink: "🧠 雙引擎聯合思考 (1+1>2)",
                 engineModeSupervise: "🛡️ 監督排查模式（雙 LLM 互查）",
@@ -988,6 +1002,20 @@ if (!window.WTerm && window.WTermBundle) {
                 slashCmd17_title: "/Query Python Version",
                 slashCmd17_desc: "Check local Python (8001) and browser Pyodide (WASM) runtime versions",
                 slashCmd17_payload: "Please query and check all available Python runtime engine versions in the current environment (including local 8001 Daemon Python and browser-side Pyodide WASM Python 3.12), and report their operational status and supported packages.",
+                btnNewChat: "New Chat",
+                tooltipNewChat: "Start a new chat or clear conversation",
+                chatInputPlaceholder: "Type a message, paste image or text... (Type / for commands)",
+                btnSpeechVoice: "Voice Input (Speech to text)",
+                btnSpeakMsg: "Read Aloud",
+                btnEditMsg: "Edit Prompt",
+                btnSaveSubmit: "Save & Submit",
+                btnCancel: "Cancel",
+                btnFeedbackGood: "Good response",
+                btnFeedbackBad: "Bad response",
+                btnExportMarkdown: "Save as Markdown (.md)",
+                btnRunPyodide: "🐍 Run in WASM",
+                btnRunTerminal: "▶ Run in Terminal",
+                scrollToBottom: "Scroll to bottom",
                 engineModeOnnx: "📦 ONNX Browser Local (ONNX Runtime)",
                 engineModeCoThink: "🧠 Dual-LLM Co-Thinking (1+1>2)",
                 engineModeSupervise: "🛡️ Supervised-Mutual-Debug (Dual-LLM)",
@@ -9545,6 +9573,334 @@ Important guidelines:
             if (codePane) codePane.classList.remove('hidden');
         };
 
+        // ── ChatGPT & Gemini 整合優勢輔助函式庫 ──
+        function renderWelcomeScreen() {
+            if (!chatBox) return;
+            const isEn = (currentLang === 'en');
+            chatBox.innerHTML = `
+                <div id="chat-welcome-container" class="max-w-2xl mx-auto py-8 px-2 flex flex-col items-center select-none animate-fade-in">
+                    <!-- Gemini / ChatGPT Sparkle Gradient Logo -->
+                    <div class="relative mb-3.5 flex items-center justify-center">
+                        <div class="w-14 h-14 rounded-2xl bg-gradient-to-tr from-purple-600 via-indigo-500 to-cyan-400 p-[2px] shadow-lg shadow-purple-500/20">
+                            <div class="w-full h-full bg-gray-950 rounded-2xl flex items-center justify-center">
+                                <i data-lucide="sparkles" class="w-7 h-7 text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-cyan-300"></i>
+                            </div>
+                        </div>
+                    </div>
+                    <h2 class="text-lg sm:text-xl font-bold text-white mb-1 text-center tracking-tight">
+                        ${isEn ? 'How can Webcom AI assist you today?' : '今天想探索、排查或運算什麼？'}
+                    </h2>
+                    <p class="text-xs text-gray-400 text-center mb-6 max-w-md leading-relaxed">
+                        ${isEn ? 'Integrated AI workstation combining local LLM, Pyodide WASM, Web Serial, and smart agent automation.' : '整合本地 LLM、Pyodide WASM、Web Serial 與終端自動化之新世代智慧工坊。'}
+                    </p>
+
+                    <!-- ChatGPT / Gemini Interactive Suggestion Cards Grid -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5 w-full">
+                        <!-- Card 1: 終端畫面分析 -->
+                        <button type="button" class="welcome-card group p-3 rounded-xl bg-gray-900/80 hover:bg-gray-800/90 border border-gray-800 hover:border-purple-500/50 transition-all duration-200 text-left flex items-start gap-3 shadow-sm cursor-pointer" data-prompt="請讀取並分析左側終端機畫面中顯示的所有內容與最新狀態。">
+                            <div class="p-2 rounded-lg bg-purple-500/10 text-purple-400 group-hover:scale-110 group-hover:bg-purple-500/20 transition shrink-0">
+                                <i data-lucide="terminal" class="w-4 h-4"></i>
+                            </div>
+                            <div class="min-w-0">
+                                <div class="text-xs font-semibold text-gray-200 group-hover:text-purple-300 transition">
+                                    ${isEn ? 'Inspect Terminal Screen' : '分析左側終端畫面'}
+                                </div>
+                                <div class="text-[11px] text-gray-400 truncate mt-0.5">
+                                    ${isEn ? 'Read output and diagnose command errors' : '即時分析終端輸出並診斷排查'}
+                                </div>
+                            </div>
+                        </button>
+
+                        <!-- Card 2: Pyodide WASM Python -->
+                        <button type="button" class="welcome-card group p-3 rounded-xl bg-gray-900/80 hover:bg-gray-800/90 border border-gray-800 hover:border-amber-500/50 transition-all duration-200 text-left flex items-start gap-3 shadow-sm cursor-pointer" data-prompt="請在瀏覽器端使用 Python 3 (Pyodide WASM) 進行一段數據運算測試並繪製文字圖表。">
+                            <div class="p-2 rounded-lg bg-amber-500/10 text-amber-400 group-hover:scale-110 group-hover:bg-amber-500/20 transition shrink-0">
+                                <i data-lucide="code-2" class="w-4 h-4"></i>
+                            </div>
+                            <div class="min-w-0">
+                                <div class="text-xs font-semibold text-gray-200 group-hover:text-amber-300 transition">
+                                    ${isEn ? 'Browser Python 3 (Pyodide)' : '瀏覽器 Python 3 運算'}
+                                </div>
+                                <div class="text-[11px] text-gray-400 truncate mt-0.5">
+                                    ${isEn ? 'Direct WebAssembly Python calculation' : '免裝本機環境，WASM 沙箱直行'}
+                                </div>
+                            </div>
+                        </button>
+
+                        <!-- Card 3: MarkItDown 轉檔 -->
+                        <button type="button" class="welcome-card group p-3 rounded-xl bg-gray-900/80 hover:bg-gray-800/90 border border-gray-800 hover:border-orange-500/50 transition-all duration-200 text-left flex items-start gap-3 shadow-sm cursor-pointer" data-prompt="請使用 Microsoft MarkItDown 幫我解析上傳文件的結構與重點摘要：">
+                            <div class="p-2 rounded-lg bg-orange-500/10 text-orange-400 group-hover:scale-110 group-hover:bg-orange-500/20 transition shrink-0">
+                                <i data-lucide="file-text" class="w-4 h-4"></i>
+                            </div>
+                            <div class="min-w-0">
+                                <div class="text-xs font-semibold text-gray-200 group-hover:text-orange-300 transition">
+                                    ${isEn ? 'Microsoft MarkItDown' : 'MarkItDown 結構轉檔'}
+                                </div>
+                                <div class="text-[11px] text-gray-400 truncate mt-0.5">
+                                    ${isEn ? 'Convert PDF/Word/Excel to Markdown' : 'PDF、Word、Excel 轉結構化文本'}
+                                </div>
+                            </div>
+                        </button>
+
+                        <!-- Card 4: 聯網即時天氣與搜尋 -->
+                        <button type="button" class="welcome-card group p-3 rounded-xl bg-gray-900/80 hover:bg-gray-800/90 border border-gray-800 hover:border-cyan-500/50 transition-all duration-200 text-left flex items-start gap-3 shadow-sm cursor-pointer" data-prompt="請調用 web_search 工具查詢「本機IP所在地天氣」，並整理回報今日氣溫、體感溫度、降雨機率與出門穿著建議。">
+                            <div class="p-2 rounded-lg bg-cyan-500/10 text-cyan-400 group-hover:scale-110 group-hover:bg-cyan-500/20 transition shrink-0">
+                                <i data-lucide="cloud-sun" class="w-4 h-4"></i>
+                            </div>
+                            <div class="min-w-0">
+                                <div class="text-xs font-semibold text-gray-200 group-hover:text-cyan-300 transition">
+                                    ${isEn ? 'Real-time Weather & Web Search' : '即時天氣與聯網檢索'}
+                                </div>
+                                <div class="text-[11px] text-gray-400 truncate mt-0.5">
+                                    ${isEn ? 'Search web data and current forecast' : '地理位置定位與全球資訊速查'}
+                                </div>
+                            </div>
+                        </button>
+                    </div>
+                </div>
+            `;
+            if (window.lucide) lucide.createIcons();
+            chatBox.querySelectorAll('.welcome-card').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const p = btn.getAttribute('data-prompt');
+                    if (p) {
+                        userInput.value = p;
+                        handleSend();
+                    }
+                });
+            });
+        }
+
+        // 浮動回到底部按鈕邏輯
+        function updateScrollBottomButton() {
+            const btn = document.getElementById('btn-scroll-bottom');
+            if (!btn || !chatBox) return;
+            const isScrolledUp = chatBox.scrollHeight - chatBox.scrollTop - chatBox.clientHeight > 120;
+            if (isScrolledUp) {
+                btn.classList.remove('opacity-0', 'pointer-events-none', 'scale-90');
+                btn.classList.add('opacity-100', 'scale-100');
+            } else {
+                btn.classList.add('opacity-0', 'pointer-events-none', 'scale-90');
+                btn.classList.remove('opacity-100', 'scale-100');
+            }
+        }
+        if (typeof chatBox !== 'undefined' && chatBox) {
+            chatBox.addEventListener('scroll', updateScrollBottomButton);
+        }
+
+        function scrollChatToBottomSmooth() {
+            if (chatBox) {
+                chatBox.scrollTo({ top: chatBox.scrollHeight, behavior: 'smooth' });
+            }
+        }
+        window.scrollChatToBottomSmooth = scrollChatToBottomSmooth;
+
+        // 快捷指令按鈕開關
+        window.toggleSlashMenuDirect = function() {
+            if (!slashMenu) return;
+            if (slashMenu.classList.contains('active')) {
+                slashMenu.classList.remove('active');
+            } else {
+                if (!slashCommands || slashCommands.length === 0) updateSlashCommands();
+                filteredCommands = [...slashCommands];
+                selectedSlashIndex = 0;
+                renderSlashMenu();
+                slashMenu.classList.add('active');
+                if (userInput) userInput.focus();
+            }
+        };
+
+        // 語音輸入 (Speech to Text - Gemini / ChatGPT 標準特色)
+        let speechRecognizer = null;
+        let isRecordingSpeech = false;
+        function toggleSpeechInput() {
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if (!SpeechRecognition) {
+                alert(currentLang === 'en' ? 'Speech recognition is not supported in this browser.' : '此瀏覽器不支援語音辨識功能 (建議使用 Chrome 或 Edge)。');
+                return;
+            }
+            const btnMic = document.getElementById('btn-speech-input');
+            if (isRecordingSpeech && speechRecognizer) {
+                speechRecognizer.stop();
+                return;
+            }
+            try {
+                speechRecognizer = new SpeechRecognition();
+                speechRecognizer.lang = currentLang === 'en' ? 'en-US' : 'zh-TW';
+                speechRecognizer.continuous = false;
+                speechRecognizer.interimResults = true;
+
+                speechRecognizer.onstart = () => {
+                    isRecordingSpeech = true;
+                    if (btnMic) {
+                        btnMic.classList.add('text-rose-400', 'animate-pulse', 'bg-rose-500/20');
+                        btnMic.title = currentLang === 'en' ? 'Listening... click to stop' : '正在聆聽語音... 點擊結束';
+                    }
+                };
+                speechRecognizer.onresult = (event) => {
+                    let transcript = '';
+                    for (let i = event.resultIndex; i < event.results.length; ++i) {
+                        transcript += event.results[i][0].transcript;
+                    }
+                    if (transcript && userInput) {
+                        userInput.value = transcript;
+                        userInput.style.height = 'auto';
+                        userInput.style.height = (userInput.scrollHeight) + 'px';
+                    }
+                };
+                speechRecognizer.onerror = (e) => {
+                    console.warn('[SpeechRecognition Error]', e.error);
+                    stopSpeechInput();
+                };
+                speechRecognizer.onend = () => {
+                    stopSpeechInput();
+                };
+                speechRecognizer.start();
+            } catch(err) {
+                console.warn('Speech start error:', err);
+                stopSpeechInput();
+            }
+        }
+        function stopSpeechInput() {
+            isRecordingSpeech = false;
+            const btnMic = document.getElementById('btn-speech-input');
+            if (btnMic) {
+                btnMic.classList.remove('text-rose-400', 'animate-pulse', 'bg-rose-500/20');
+                btnMic.title = currentLang === 'en' ? 'Voice input (Speech to text)' : '語音輸入 (語音轉文字)';
+            }
+        }
+        window.toggleSpeechInput = toggleSpeechInput;
+
+        // 語音朗讀 (Text to Speech - Gemini / ChatGPT 標準特色)
+        let currentSpeakingBtn = null;
+        function toggleSpeakMessage(text, btnElement) {
+            if (!('speechSynthesis' in window)) {
+                alert(currentLang === 'en' ? 'Speech synthesis is not supported.' : '此瀏覽器不支援語音朗讀。');
+                return;
+            }
+            if (window.speechSynthesis.speaking) {
+                window.speechSynthesis.cancel();
+                if (currentSpeakingBtn) {
+                    currentSpeakingBtn.classList.remove('text-purple-400', 'animate-pulse');
+                    const span = currentSpeakingBtn.querySelector('span');
+                    if (span) span.textContent = (currentLang === 'en' ? 'Read' : '朗讀');
+                }
+                if (currentSpeakingBtn === btnElement) {
+                    currentSpeakingBtn = null;
+                    return;
+                }
+            }
+            const cleanText = (text || '')
+                .replace(/```[\s\S]*?```/g, currentLang === 'en' ? ' [Code block omitted] ' : ' [已略過代碼區塊] ')
+                .replace(/`([^`]+)`/g, '$1')
+                .replace(/#+\s/g, '')
+                .replace(/[*_~>]/g, '')
+                .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
+                .trim();
+            if (!cleanText) return;
+
+            const utter = new SpeechSynthesisUtterance(cleanText);
+            utter.lang = currentLang === 'en' ? 'en-US' : 'zh-TW';
+            utter.rate = 1.0;
+            utter.pitch = 1.0;
+
+            utter.onstart = () => {
+                currentSpeakingBtn = btnElement;
+                if (btnElement) {
+                    btnElement.classList.add('text-purple-400', 'animate-pulse');
+                    const span = btnElement.querySelector('span');
+                    if (span) span.textContent = (currentLang === 'en' ? 'Stop' : '停止');
+                }
+            };
+            utter.onend = utter.onerror = () => {
+                if (btnElement) {
+                    btnElement.classList.remove('text-purple-400', 'animate-pulse');
+                    const span = btnElement.querySelector('span');
+                    if (span) span.textContent = (currentLang === 'en' ? 'Read' : '朗讀');
+                }
+                currentSpeakingBtn = null;
+            };
+            window.speechSynthesis.speak(utter);
+        }
+        window.toggleSpeakMessage = toggleSpeakMessage;
+
+        // 代碼卡片互動工具 (複製代碼、Pyodide WASM 執行、終端機直發)
+        window.copyCodeSnippet = function(btn) {
+            const card = btn.closest('.code-block-card');
+            const codeEl = card ? card.querySelector('code') : null;
+            if (!codeEl) return;
+            const txt = codeEl.innerText || codeEl.textContent || '';
+            navigator.clipboard.writeText(txt).then(() => {
+                const span = btn.querySelector('span');
+                const orig = span ? span.textContent : '';
+                if (span) span.textContent = currentLang === 'en' ? 'Copied!' : '已複製';
+                setTimeout(() => { if (span) span.textContent = orig; }, 1500);
+            });
+        };
+
+        window.runCodeSnippet = async function(btn, mode) {
+            const card = btn.closest('.code-block-card');
+            const codeEl = card ? card.querySelector('code') : null;
+            if (!codeEl) return;
+            const code = (codeEl.innerText || codeEl.textContent || '').trim();
+            if (!code) return;
+            if (mode === 'pyodide') {
+                if (typeof WebcomPyodide !== 'undefined' && WebcomPyodide.runPython) {
+                    printToTerminal(`🐍 [Pyodide WASM] 執行代碼區塊:`, 'info');
+                    try {
+                        const res = await WebcomPyodide.runPython(code);
+                        if (res.stdout) printToTerminal(res.stdout, 'stream');
+                        if (res.result !== null && res.result !== undefined && res.result !== '') printToTerminal(res.result, 'success');
+                        if (res.stderr) printToTerminal(res.stderr, 'error');
+                        if (wtermInstance) wtermInstance.write(`\r\n\x1b[1;32m${termPrompt.textContent}\x1b[0m `);
+                        scrollToTerminalBottom();
+                    } catch(e) {
+                        printToTerminal(`錯誤: ${e.message}`, 'error');
+                    }
+                }
+            } else if (mode === 'terminal') {
+                await sendCommandToTerminal(code);
+            }
+        };
+
+        // 使用者提問就地編輯重發 (ChatGPT / Gemini 標準特色)
+        function makeUserMessageEditable(wrapperDiv, textSpan, originalContent) {
+            const isEn = (currentLang === 'en');
+            const editContainer = document.createElement('div');
+            editContainer.className = "flex flex-col gap-2 w-full mt-2";
+            editContainer.innerHTML = `
+                <textarea class="w-full bg-gray-950/90 border border-purple-500/70 rounded-xl p-2.5 text-sm text-white focus:outline-none focus:ring-1 focus:ring-purple-400 resize-none leading-relaxed shadow-inner">${originalContent}</textarea>
+                <div class="flex items-center justify-end gap-2 text-xs">
+                    <button type="button" class="btn-cancel-edit px-2.5 py-1 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-300 transition cursor-pointer">${isEn ? 'Cancel' : '取消'}</button>
+                    <button type="button" class="btn-save-submit px-3 py-1 rounded-lg bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-medium shadow-sm transition cursor-pointer">${isEn ? 'Save & Submit' : '儲存並重新發送'}</button>
+                </div>
+            `;
+            textSpan.style.display = 'none';
+            const actionBar = wrapperDiv.querySelector('.msg-action-bar');
+            if (actionBar) actionBar.style.display = 'none';
+            textSpan.parentNode.insertBefore(editContainer, textSpan.nextSibling);
+
+            const textarea = editContainer.querySelector('textarea');
+            textarea.focus();
+            textarea.setSelectionRange(textarea.value.length, textarea.value.length);
+
+            editContainer.querySelector('.btn-cancel-edit').addEventListener('click', () => {
+                editContainer.remove();
+                textSpan.style.display = '';
+                if (actionBar) actionBar.style.display = '';
+            });
+
+            editContainer.querySelector('.btn-save-submit').addEventListener('click', () => {
+                const newText = textarea.value.trim();
+                if (!newText) return;
+                editContainer.remove();
+                textSpan.textContent = newText;
+                textSpan.style.display = '';
+                if (actionBar) actionBar.style.display = '';
+                if (userInput) userInput.value = newText;
+                handleSend();
+            });
+        }
+
         function renderMarkdown(rawText) {
             if (!rawText) return "";
             // 移除內部 tool_call XML 標籤
@@ -9694,10 +10050,76 @@ Important guidelines:
                 text += '\n```';
             }
 
+            // ── 支援 Gemini 2.0 Flash Thinking / ChatGPT o1 深度思考摺疊展開盒 ──
+            const thinkBlocks = [];
+            text = text.replace(/<think>([\s\S]*?)<\/think>/gi, (match, thought) => {
+                const token = `WEBCOMTHINKTOKEN${thinkBlocks.length}END`;
+                thinkBlocks.push(thought.trim());
+                return `\n\n${token}\n\n`;
+            });
+            if (/<think\b[^>]*>(?![\s\S]*<\/think>)/i.test(text)) {
+                text = text.replace(/<think\b[^>]*>([\s\S]*)$/i, (match, thought) => {
+                    const token = `WEBCOMTHINKTOKEN${thinkBlocks.length}END`;
+                    thinkBlocks.push(thought.trim() + ' ⏳');
+                    return `\n\n${token}\n\n`;
+                });
+            }
+
             // 6. 透過 marked 解析 Markdown
             let html = marked.parse(text);
 
-            // 7. 將所有 token 精準替換為單一層級的 SVG 向量圖預覽卡片
+            // 7. 將深度思考標記替換為 Gemini 風格思考手風琴折疊盒
+            thinkBlocks.forEach((thought, idx) => {
+                const token = `WEBCOMTHINKTOKEN${idx}END`;
+                const isStreaming = thought.endsWith('⏳');
+                const cleanThought = isStreaming ? thought.slice(0, -1).trim() : thought;
+                const thinkCard = `<details class="thinking-accordion my-2.5 bg-purple-950/20 border border-purple-800/40 rounded-xl overflow-hidden text-xs" ${isStreaming ? 'open' : ''}>
+                    <summary class="cursor-pointer px-3 py-2 bg-purple-900/30 hover:bg-purple-900/50 flex items-center justify-between font-mono text-purple-300 select-none transition">
+                        <span class="flex items-center gap-1.5 font-bold">
+                            <i data-lucide="sparkles" class="w-3.5 h-3.5 text-purple-400 ${isStreaming ? 'animate-spin' : ''}"></i>
+                            <span>💭 ${currentLang === 'en' ? 'Thinking Process' : '思考過程 (Thinking Process)'}</span>
+                        </span>
+                        <span class="text-[10px] text-gray-500">${currentLang === 'en' ? 'Toggle' : '點擊切換'}</span>
+                    </summary>
+                    <div class="p-3 text-gray-300/85 font-mono text-xs whitespace-pre-wrap leading-relaxed border-t border-purple-800/30 bg-black/40">
+                        ${cleanThought}
+                    </div>
+                </details>`;
+                html = html.split(`<p>${token}</p>`).join(thinkCard);
+                html = html.split(token).join(thinkCard);
+            });
+
+            // 8. 將代碼區塊包裝為 ChatGPT / Gemini 風格的高質感代碼卡片 (含複製、語言標籤、Pyodide/終端執行鈕)
+            html = html.replace(/<pre><code(?:\s+class="language-([a-zA-Z0-9_-]+)")?>([\s\S]*?)<\/code><\/pre>/gi, (match, lang, codeContent) => {
+                const rawLang = (lang || 'code').toLowerCase();
+                const displayLang = rawLang.toUpperCase();
+                const isPython = (rawLang === 'python' || rawLang === 'py');
+                const isShell = (rawLang === 'bash' || rawLang === 'sh' || rawLang === 'shell' || rawLang === 'powershell' || rawLang === 'cmd' || rawLang === 'zsh');
+
+                let execBtn = '';
+                if (isPython) {
+                    execBtn = `<button type="button" class="btn-run-code text-[11px] px-2 py-0.5 rounded bg-amber-950/60 hover:bg-amber-900/80 border border-amber-800/50 text-amber-300 flex items-center gap-1 transition cursor-pointer" onclick="runCodeSnippet(this, 'pyodide')" title="在瀏覽器 Pyodide WASM 中直接執行"><i data-lucide="play" class="w-3 h-3"></i> <span>🐍 WASM 執行</span></button>`;
+                } else if (isShell) {
+                    execBtn = `<button type="button" class="btn-run-code text-[11px] px-2 py-0.5 rounded bg-cyan-950/60 hover:bg-cyan-900/80 border border-cyan-800/50 text-cyan-300 flex items-center gap-1 transition cursor-pointer" onclick="runCodeSnippet(this, 'terminal')" title="傳送至左側終端機執行"><i data-lucide="play" class="w-3 h-3"></i> <span>▶ 終端執行</span></button>`;
+                }
+
+                return `<div class="code-block-card my-3 rounded-xl overflow-hidden border border-gray-800 bg-gray-950/90 shadow-lg text-xs">
+                    <div class="code-block-header flex items-center justify-between px-3 py-1.5 bg-gray-900/90 border-b border-gray-800 text-gray-400 font-mono text-[11px] select-none">
+                        <span class="font-bold text-gray-300 flex items-center gap-1.5">
+                            <i data-lucide="code" class="w-3 h-3 text-purple-400"></i> ${displayLang}
+                        </span>
+                        <div class="flex items-center gap-1.5">
+                            ${execBtn}
+                            <button type="button" class="btn-copy-code text-[11px] px-2 py-0.5 rounded bg-gray-800 hover:bg-gray-700 text-gray-300 hover:text-white border border-gray-700/60 flex items-center gap-1 transition cursor-pointer" onclick="copyCodeSnippet(this)" title="複製代碼">
+                                <i data-lucide="copy" class="w-3 h-3"></i> <span>${currentLang === 'en' ? 'Copy' : '複製'}</span>
+                            </button>
+                        </div>
+                    </div>
+                    <pre class="p-3 overflow-x-auto text-xs leading-relaxed text-gray-200 font-mono bg-black/40 m-0"><code class="language-${rawLang}">${codeContent}</code></pre>
+                </div>`;
+            });
+
+            // 9. 將所有 token 精準替換為單一層級的 SVG 向量圖預覽卡片
             svgBlocks.forEach((svgCode, idx) => {
                 const token = `WEBCOMSVGTOKEN${idx}END`;
                 const cardHtml = `<div class="svg-preview-card my-3 p-3 bg-gray-950/90 border border-cyan-500/40 rounded-xl shadow-lg flex flex-col items-center">
@@ -9736,10 +10158,13 @@ Important guidelines:
 
         function appendMessage(role, content, isHtml = false, skipHistory = false, originalPrompt = '', images = []) {
             const div = document.createElement('div');
-            div.className = `flex ${role === 'user' ? 'justify-end' : 'justify-start'} msg-wrapper`;
+            div.className = `flex ${role === 'user' ? 'justify-end' : 'justify-start'} msg-wrapper my-1.5`;
             const innerDiv = document.createElement('div');
-            innerDiv.className = `max-w-[85%] p-3.5 rounded-2xl text-sm leading-relaxed ${role === 'user' ? 'bg-blue-600/20 border border-blue-500/30 text-blue-50' : 'bg-gray-900 border border-gray-800 text-gray-200'
-                }`;
+            innerDiv.className = `max-w-[88%] sm:max-w-[84%] p-3.5 rounded-2xl text-sm leading-relaxed shadow-sm ${
+                role === 'user'
+                    ? 'bg-gradient-to-r from-blue-600/25 to-purple-600/20 border border-blue-500/35 text-blue-50 rounded-tr-sm'
+                    : 'bg-gray-900/90 border border-gray-800/90 text-gray-200 rounded-tl-sm shadow-md'
+            }`;
             let contentDiv = null;
             let statsEl = null;
 
@@ -9763,33 +10188,58 @@ Important guidelines:
             }
 
             if (role === 'assistant') {
-                innerDiv.innerHTML = `<div class="text-xs text-purple-400 font-bold mb-1.5 flex items-center justify-between"><div class="flex items-center gap-1.5"><i data-lucide="bot" class="w-3.5 h-3.5"></i> Agent</div><span class="text-[10px] text-gray-500 font-mono">${new Date().toLocaleTimeString()}</span></div>`;
+                const activeEngineName = (typeof appSettings !== 'undefined' && appSettings.engineMode)
+                    ? appSettings.engineMode.toUpperCase()
+                    : 'AI AGENT';
+                innerDiv.innerHTML = `
+                    <div class="text-xs text-purple-400 font-bold mb-2 flex items-center justify-between select-none">
+                        <div class="flex items-center gap-1.5">
+                            <div class="w-5 h-5 rounded-lg bg-gradient-to-tr from-purple-600 to-cyan-500 flex items-center justify-center text-white shadow-sm shrink-0">
+                                <i data-lucide="sparkles" class="w-3 h-3"></i>
+                            </div>
+                            <span class="font-semibold text-gray-200">Webcom AI</span>
+                            <span class="text-[10px] px-1.5 py-0.2 rounded bg-purple-950/50 text-purple-300 border border-purple-800/40 font-mono">${activeEngineName}</span>
+                        </div>
+                        <span class="text-[10px] text-gray-500 font-mono">${new Date().toLocaleTimeString()}</span>
+                    </div>`;
+
                 contentDiv = document.createElement('div');
                 contentDiv.className = "prose prose-invert prose-sm max-w-none text-sm";
                 if (isHtml) contentDiv.innerHTML = content;
                 else contentDiv.innerHTML = renderMarkdown(content);
                 innerDiv.appendChild(contentDiv);
 
-
-                // Action Bar (Retry & Copy & Stats)
+                // ChatGPT & Gemini 多功能回應操作列 (Action Toolbar)
                 const actionBar = document.createElement('div');
-                actionBar.className = "msg-action-bar flex items-center justify-between gap-2 mt-2.5 pt-1.5 border-t border-gray-800/70 text-xs";
+                actionBar.className = "msg-action-bar flex items-center justify-between gap-2 mt-3 pt-2 border-t border-gray-800/70 text-xs select-none";
                 actionBar.innerHTML = `
-                    <div class="flex items-center gap-1.5">
-                        <button class="btn-retry-msg text-gray-400 hover:text-purple-300 flex items-center gap-1 py-0.5 px-2 rounded-md hover:bg-gray-800 transition" title="${t('retryTooltip')}">
-                            <i data-lucide="rotate-ccw" class="w-3 h-3"></i> <span>${t('btnRetry')}</span>
+                    <div class="flex items-center gap-1 flex-wrap">
+                        <button type="button" class="btn-copy-msg text-gray-400 hover:text-gray-200 flex items-center gap-1 py-0.5 px-2 rounded-md hover:bg-gray-800 transition cursor-pointer" title="複製完整內容">
+                            <i data-lucide="copy" class="w-3 h-3"></i> <span>${t('btnCopy') || '複製'}</span>
                         </button>
-                        <button class="btn-copy-msg text-gray-400 hover:text-gray-200 flex items-center gap-1 py-0.5 px-2 rounded-md hover:bg-gray-800 transition" title="複製內容">
-                            <i data-lucide="copy" class="w-3 h-3"></i> <span>${t('btnCopy')}</span>
+                        <button type="button" class="btn-retry-msg text-gray-400 hover:text-purple-300 flex items-center gap-1 py-0.5 px-2 rounded-md hover:bg-gray-800 transition cursor-pointer" title="${t('retryTooltip') || '重新生成'}">
+                            <i data-lucide="rotate-ccw" class="w-3 h-3"></i> <span>${t('btnRetry') || '重試'}</span>
+                        </button>
+                        <button type="button" class="btn-speak-msg text-gray-400 hover:text-cyan-300 flex items-center gap-1 py-0.5 px-2 rounded-md hover:bg-gray-800 transition cursor-pointer" title="${t('btnSpeakMsg') || '語音朗讀'}">
+                            <i data-lucide="volume-2" class="w-3 h-3"></i> <span>${currentLang === 'en' ? 'Read' : '朗讀'}</span>
+                        </button>
+                        <button type="button" class="btn-feedback-like text-gray-400 hover:text-emerald-400 p-1 rounded-md hover:bg-gray-800 transition cursor-pointer" title="${t('btnFeedbackGood') || '滿意回答'}">
+                            <i data-lucide="thumbs-up" class="w-3 h-3"></i>
+                        </button>
+                        <button type="button" class="btn-feedback-dislike text-gray-400 hover:text-rose-400 p-1 rounded-md hover:bg-gray-800 transition cursor-pointer" title="${t('btnFeedbackBad') || '不滿意回答'}">
+                            <i data-lucide="thumbs-down" class="w-3 h-3"></i>
+                        </button>
+                        <button type="button" class="btn-export-msg text-gray-400 hover:text-blue-300 p-1 rounded-md hover:bg-gray-800 transition cursor-pointer" title="${t('btnExportMarkdown') || '儲存為 Markdown'}">
+                            <i data-lucide="download" class="w-3 h-3"></i>
                         </button>
                     </div>
                     <div class="msg-stats text-[11px] text-cyan-400 font-mono flex items-center gap-1.5 opacity-90"></div>
                 `;
 
                 statsEl = actionBar.querySelector('.msg-stats');
-
                 const targetPrompt = originalPrompt || lastUserPrompt;
 
+                // 重新生成
                 actionBar.querySelector('.btn-retry-msg').addEventListener('click', async () => {
                     if (isGenerating && currentAbortController) {
                         try { currentAbortController.abort(); } catch (e) {}
@@ -9809,14 +10259,48 @@ Important guidelines:
                     }
                 });
 
+                // 複製全文
                 actionBar.querySelector('.btn-copy-msg').addEventListener('click', (e) => {
-                    const txt = contentDiv.innerText;
+                    const txt = contentDiv.innerText || contentDiv.textContent || '';
                     navigator.clipboard.writeText(txt).then(() => {
                         const span = e.currentTarget.querySelector('span');
-                        const orig = span.textContent;
-                        span.textContent = t('btnCopied');
-                        setTimeout(() => { span.textContent = orig; }, 1500);
+                        const orig = span ? span.textContent : '';
+                        if (span) span.textContent = t('btnCopied') || '已複製';
+                        setTimeout(() => { if (span) span.textContent = orig; }, 1500);
                     });
+                });
+
+                // 語音朗讀
+                const speakBtn = actionBar.querySelector('.btn-speak-msg');
+                speakBtn.addEventListener('click', () => {
+                    const txt = contentDiv.innerText || contentDiv.textContent || '';
+                    toggleSpeakMessage(txt, speakBtn);
+                });
+
+                // 讚 / 倒讚 反饋
+                const likeBtn = actionBar.querySelector('.btn-feedback-like');
+                const dislikeBtn = actionBar.querySelector('.btn-feedback-dislike');
+                likeBtn.addEventListener('click', () => {
+                    likeBtn.classList.toggle('text-emerald-400');
+                    likeBtn.classList.toggle('bg-emerald-500/20');
+                    dislikeBtn.classList.remove('text-rose-400', 'bg-rose-500/20');
+                });
+                dislikeBtn.addEventListener('click', () => {
+                    dislikeBtn.classList.toggle('text-rose-400');
+                    dislikeBtn.classList.toggle('bg-rose-500/20');
+                    likeBtn.classList.remove('text-emerald-400', 'bg-emerald-500/20');
+                });
+
+                // 匯出為 Markdown 檔案
+                actionBar.querySelector('.btn-export-msg').addEventListener('click', () => {
+                    const txt = contentDiv.innerText || contentDiv.textContent || '';
+                    const blob = new Blob([txt], { type: 'text/markdown;charset=utf-8' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `Webcom_AI_Response_${Date.now()}.md`;
+                    a.click();
+                    URL.revokeObjectURL(url);
                 });
 
                 innerDiv.appendChild(actionBar);
@@ -9829,26 +10313,37 @@ Important guidelines:
 
                 if (role === 'user') {
                     const userBar = document.createElement('div');
-                    userBar.className = "msg-action-bar flex items-center justify-end gap-1.5 mt-2 pt-1 border-t border-blue-400/20 text-[11px]";
+                    userBar.className = "msg-action-bar flex items-center justify-end gap-1 mt-2 pt-1 border-t border-blue-400/20 text-[11px] select-none";
                     userBar.innerHTML = `
-                        <button class="btn-copy-user-msg text-blue-200/70 hover:text-blue-100 flex items-center gap-1 py-0.5 px-2 rounded-md hover:bg-blue-600/30 transition" title="複製內容">
-                            <i data-lucide="copy" class="w-3 h-3"></i> <span>${t('btnCopy')}</span>
+                        <button type="button" class="btn-copy-user-msg text-blue-200/70 hover:text-blue-100 flex items-center gap-1 py-0.5 px-2 rounded-md hover:bg-blue-600/30 transition cursor-pointer" title="複製內容">
+                            <i data-lucide="copy" class="w-3 h-3"></i> <span>${t('btnCopy') || '複製'}</span>
                         </button>
-                        <button class="btn-retry-user-msg text-blue-200/70 hover:text-purple-200 flex items-center gap-1 py-0.5 px-2 rounded-md hover:bg-blue-600/30 transition" title="${t('retryTooltip')}">
-                            <i data-lucide="rotate-ccw" class="w-3 h-3"></i> <span>${t('btnRetry')}</span>
+                        <button type="button" class="btn-edit-user-msg text-blue-200/70 hover:text-white flex items-center gap-1 py-0.5 px-2 rounded-md hover:bg-blue-600/30 transition cursor-pointer" title="${t('btnEditMsg') || '編輯並重新發送'}">
+                            <i data-lucide="pencil" class="w-3 h-3"></i> <span>${t('btnEditMsg') || '編輯'}</span>
+                        </button>
+                        <button type="button" class="btn-retry-user-msg text-blue-200/70 hover:text-purple-200 flex items-center gap-1 py-0.5 px-2 rounded-md hover:bg-blue-600/30 transition cursor-pointer" title="${t('retryTooltip') || '重新發送'}">
+                            <i data-lucide="rotate-ccw" class="w-3 h-3"></i> <span>${t('btnRetry') || '重試'}</span>
                         </button>
                     `;
                     innerDiv.appendChild(userBar);
+
+                    // 複製提問
                     userBar.querySelector('.btn-copy-user-msg').addEventListener('click', (e) => {
                         const txt = contentDiv.innerText || contentDiv.textContent || content || '';
-                        if (!navigator.clipboard || !window.Promise) return;
                         navigator.clipboard.writeText(txt).then(() => {
                             const span = e.currentTarget.querySelector('span');
                             const orig = span ? span.textContent : '';
                             if (span) span.textContent = (t('btnCopied') || '已複製');
                             setTimeout(() => { if (span) span.textContent = orig; }, 1400);
-                        }).catch(() => {});
+                        });
                     });
+
+                    // 編輯提問 (ChatGPT & Gemini 就地編輯)
+                    userBar.querySelector('.btn-edit-user-msg').addEventListener('click', () => {
+                        makeUserMessageEditable(innerDiv, textSpan, content);
+                    });
+
+                    // 重新發送
                     userBar.querySelector('.btn-retry-user-msg').addEventListener('click', async () => {
                         const targetPrompt = content || originalPrompt || '';
                         if (!targetPrompt) return;
@@ -13014,7 +13509,7 @@ Important guidelines:
             userInput.style.height = 'auto';
             slashMenu.classList.remove('active');
 
-            const welcome = chatBox.querySelector('.text-center.py-12');
+            const welcome = chatBox.querySelector('.text-center.py-12') || document.getElementById('chat-welcome-container');
             if (welcome) welcome.remove();
 
             let effectivePrompt = promptText;
@@ -13073,7 +13568,9 @@ Important guidelines:
         document.getElementById('btn-clear')?.addEventListener('click', () => {
             chatHistory = [];
             if (typeof sessionChatLog !== 'undefined') sessionChatLog = [];
-            chatBox.innerHTML = '';
+            if (typeof stopSpeechInput === 'function') stopSpeechInput();
+            if (window.speechSynthesis && window.speechSynthesis.speaking) window.speechSynthesis.cancel();
+            renderWelcomeScreen();
             updateContextBadge();
         });
 
@@ -15827,6 +16324,7 @@ Important guidelines:
 
         try { lucide.createIcons(); } catch(e) { console.warn(e); }
         try { renderConnFields(); } catch(e) { console.warn(e); }
+            try { renderWelcomeScreen(); } catch(e) { console.warn(e); }
         try { applyLanguage(currentLang); } catch(e) { console.warn(e); }
         try { initWTerm(); } catch(e) { console.error('initWTerm error:', e); }
         setInterval(checkDaemonHealth, 5000);

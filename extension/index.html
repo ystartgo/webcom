@@ -1327,8 +1327,9 @@
                         <span id="context-tokens-badge" class="font-mono text-[11px] whitespace-nowrap">~0 tok</span>
                     </button>
                     <button id="btn-clear"
-                        class="text-xs text-red-400 hover:text-red-300 flex items-center gap-1 font-medium transition ml-0.5 whitespace-nowrap shrink-0 cursor-pointer">
-                        <i data-lucide="trash-2" class="w-3.5 h-3.5 shrink-0"></i> <span class="whitespace-nowrap" data-i18n="clearChat">清空</span>
+                        class="text-xs text-rose-300 hover:text-white bg-rose-950/40 hover:bg-rose-900/70 border border-rose-800/50 px-2.5 py-1 rounded-md flex items-center gap-1 font-medium transition shadow-sm ml-0.5 whitespace-nowrap shrink-0 cursor-pointer"
+                        title="開啟新對話或清空畫面" data-i18n-title="tooltipNewChat">
+                        <i data-lucide="plus" class="w-3.5 h-3.5 shrink-0 text-rose-400"></i> <span class="whitespace-nowrap" data-i18n="btnNewChat">新對話</span>
                     </button>
                 </div>
             </div>
@@ -1359,13 +1360,12 @@
                 </div>
             </div>
 
-            <div id="chat-box" class="flex-1 overflow-y-auto space-y-4 mb-10 pb-12 pr-2">
+            <div id="chat-box" class="flex-1 overflow-y-auto space-y-4 p-2 pb-4 pr-2 relative">
+                <!-- 預設由 renderWelcomeScreen() 動態生成 ChatGPT & Gemini 風格的提示卡片與視覺引導 -->
                 <div class="text-center py-12">
                     <i data-lucide="cpu" class="w-12 h-12 text-gray-700 mx-auto mb-3"></i>
                     <p class="text-gray-300 text-sm font-medium" data-i18n="welcomeReady">系統已就緒。</p>
-                    <p class="text-gray-500 text-xs mt-1" data-i18n="welcomeHint">輸入 <kbd
-                            class="bg-gray-800 px-1.5 py-0.5 rounded text-gray-300">/</kbd> 呼叫快捷指令選單。支援雙 LLM 模式 (LM
-                        Studio / WebGPU)、RAG 與 MCP。</p>
+                    <p class="text-gray-500 text-xs mt-1" data-i18n="welcomeHint">輸入 <kbd class="bg-gray-800 px-1.5 py-0.5 rounded text-gray-300">/</kbd> 呼叫快捷指令選單。支援雙 LLM 模式、RAG、MarkItDown 與 Pyodide WASM。</p>
                 </div>
             </div>
 
@@ -1379,41 +1379,84 @@
                 class="hidden mb-2 p-2 bg-gray-900/95 border border-cyan-800/50 rounded-xl flex items-center gap-2 overflow-x-auto shrink-0 shadow-lg">
             </div>
 
-            <div
-                class="input-container relative bg-gray-900 border border-gray-800 rounded-xl p-2.5 flex items-end gap-2 shrink-0">
+            <!-- ChatGPT & Gemini 風格懸浮回到底部按鈕 (Floating Scroll-to-bottom Button) -->
+            <div class="relative w-full flex justify-end px-2 pointer-events-none">
+                <button id="btn-scroll-bottom" type="button" data-on-click="scrollChatToBottomSmooth()"
+                    class="pointer-events-auto absolute -top-12 right-2 z-20 w-8 h-8 rounded-full bg-gray-900/95 border border-purple-500/40 text-purple-300 hover:text-white hover:bg-purple-600 shadow-xl flex items-center justify-center transition-all duration-200 opacity-0 pointer-events-none scale-90 cursor-pointer"
+                    title="回到底部 (Scroll to bottom)">
+                    <i data-lucide="arrow-down" class="w-4 h-4"></i>
+                </button>
+            </div>
+
+            <!-- ChatGPT & Gemini 現代懸浮雙層膠囊輸入盒 (Unified Modern Floating Capsule Input) -->
+            <div class="input-container relative bg-gray-900/95 backdrop-blur-md border border-gray-700/80 hover:border-gray-600 focus-within:border-purple-500/80 focus-within:ring-2 focus-within:ring-purple-500/20 rounded-2xl p-2.5 flex flex-col gap-1.5 shrink-0 shadow-2xl transition-all duration-200">
                 <div id="slash-menu" class="slash-menu"></div>
 
-                <!-- 上傳按鈕 1：圖片 (Vision / 截圖 - 原生 Label 保證點擊即開啟檔案選擇器) -->
-                <label for="file-upload-image" id="btn-upload-image" data-i18n-title="tooltipUploadImage"
-                    class="text-gray-400 hover:text-cyan-400 hover:bg-gray-800/80 p-2 rounded-lg transition shrink-0 flex items-center justify-center cursor-pointer select-none"
-                    title="上傳圖片 / 截圖 (或直接 Ctrl+V 貼上)">
-                    <i data-lucide="image" class="w-4 h-4 pointer-events-none"></i>
-                </label>
-                <!-- 上傳按鈕 2：文件 (Microsoft MarkItDown 轉檔 - 原生 Label 保證點擊即開啟檔案選擇器) -->
-                <label for="file-upload-doc" id="btn-upload-doc" data-i18n-title="tooltipUploadDoc"
-                    class="text-gray-400 hover:text-orange-400 hover:bg-gray-800/80 p-2 rounded-lg transition shrink-0 flex items-center justify-center cursor-pointer select-none"
-                    title="上傳文件：Microsoft MarkItDown 轉檔 (PDF / Word / Excel / PPT / HTML / EPUB / CSV / 代碼)">
-                    <i data-lucide="file-text" class="w-4 h-4 pointer-events-none"></i>
-                </label>
+                <!-- Textarea Row with Expandable Area & Dynamic Action Button -->
+                <div class="flex items-end gap-2 w-full">
+                    <textarea id="user-input" rows="1"
+                        class="flex-1 bg-transparent focus:outline-none text-sm text-white resize-none max-h-40 p-1.5 leading-relaxed placeholder:text-gray-500"
+                        placeholder="輸入自然語言指令或貼上圖片... (輸入 / 顯示快捷指令)"></textarea>
+
+                    <!-- ChatGPT / Gemini 動態發送與停止按鈕 -->
+                    <div class="flex items-center gap-1.5 shrink-0 pb-0.5">
+                        <button id="btn-stop"
+                            class="bg-rose-600 hover:bg-rose-500 text-white w-8 h-8 rounded-xl transition-all shadow-md shadow-rose-900/40 hidden flex items-center justify-center cursor-pointer animate-pulse"
+                            title="停止生成" data-i18n-title="tooltipStopGen">
+                            <i data-lucide="square" class="w-3.5 h-3.5 fill-current"></i>
+                        </button>
+                        <button id="btn-send"
+                            class="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white w-8 h-8 rounded-xl transition-all shadow-md shadow-purple-900/40 flex items-center justify-center shrink-0 cursor-pointer group hover:scale-105 active:scale-95"
+                            title="發送指令" data-i18n-title="tooltipSendMessage">
+                            <i data-lucide="arrow-up" class="w-4 h-4 transition-transform group-hover:-translate-y-0.5"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Bottom Capsule Action Bar (Gemini / ChatGPT Style Toolbar) -->
+                <div class="flex items-center justify-between pt-1 border-t border-gray-800/80 text-xs text-gray-400 select-none">
+                    <div class="flex items-center gap-1">
+                        <!-- 上傳按鈕 1：圖片 (Vision / 截圖 - 原生 Label 保證點擊即開啟檔案選擇器) -->
+                        <label for="file-upload-image" id="btn-upload-image" data-i18n-title="tooltipUploadImage"
+                            class="text-gray-400 hover:text-cyan-400 hover:bg-gray-800/80 px-2 py-1 rounded-lg transition shrink-0 flex items-center gap-1 cursor-pointer"
+                            title="上傳圖片 / 截圖 (或直接 Ctrl+V 貼上)">
+                            <i data-lucide="image" class="w-3.5 h-3.5 pointer-events-none"></i>
+                            <span class="text-[11px] hidden sm:inline">圖片</span>
+                        </label>
+                        <!-- 上傳按鈕 2：文件 (Microsoft MarkItDown 轉檔 - 原生 Label 保證點擊即開啟檔案選擇器) -->
+                        <label for="file-upload-doc" id="btn-upload-doc" data-i18n-title="tooltipUploadDoc"
+                            class="text-gray-400 hover:text-orange-400 hover:bg-gray-800/80 px-2 py-1 rounded-lg transition shrink-0 flex items-center gap-1 cursor-pointer"
+                            title="上傳文件：Microsoft MarkItDown 轉檔 (PDF / Word / Excel / PPT / HTML / EPUB / CSV / 代碼)">
+                            <i data-lucide="file-text" class="w-3.5 h-3.5 pointer-events-none"></i>
+                            <span class="text-[11px] hidden sm:inline">文件</span>
+                        </label>
+                        <!-- 快捷指令按鈕 (Slash Menu Toggle) -->
+                        <button type="button" id="btn-toggle-slash" data-on-click="toggleSlashMenuDirect()"
+                            class="text-gray-400 hover:text-purple-300 hover:bg-gray-800/80 px-2 py-1 rounded-lg transition shrink-0 flex items-center gap-1 cursor-pointer"
+                            title="開啟快捷指令選單 (輸入 /)">
+                            <i data-lucide="terminal" class="w-3.5 h-3.5"></i>
+                            <span class="text-[11px] font-mono">/指令</span>
+                        </button>
+                        <!-- 語音輸入按鈕 (Speech Recognition) -->
+                        <button type="button" id="btn-speech-input" data-on-click="toggleSpeechInput()"
+                            class="text-gray-400 hover:text-rose-300 hover:bg-gray-800/80 p-1.5 rounded-lg transition shrink-0 flex items-center justify-center cursor-pointer"
+                            title="語音輸入 (語音轉文字)">
+                            <i data-lucide="mic" class="w-3.5 h-3.5"></i>
+                        </button>
+                    </div>
+
+                    <!-- Right Side Mode & Tip Indicator -->
+                    <div class="flex items-center gap-1.5 text-[11px] text-gray-500 font-mono">
+                        <span id="chat-active-engine-badge" class="px-1.5 py-0.5 rounded bg-purple-950/40 text-purple-300 border border-purple-800/40 text-[10px]">AI Ready</span>
+                        <span class="hidden sm:inline text-gray-600">|</span>
+                        <span class="text-gray-500 text-[10px] hidden sm:inline">Shift+Enter 換行</span>
+                    </div>
+                </div>
+
                 <input type="file" id="file-upload-image" accept="image/*,.pdf,.docx,.doc,.xlsx,.xls,.pptx,.ppt,.txt,.md,.json,.csv" multiple class="hidden">
                 <input type="file" id="file-upload-doc"
                     accept=".pdf,.docx,.doc,.xlsx,.xls,.pptx,.ppt,.epub,.html,.htm,.xhtml,.csv,.tsv,.txt,.md,.markdown,.json,.jsonl,.py,.bat,.cmd,.ps1,.sh,.yaml,.yml,.xml,.js,.jsx,.ts,.tsx,.css,.scss,.less,.sql,.log,.ini,.env,.toml,.conf,.c,.cpp,.h,.hpp,.cs,.go,.rs,.java,.kt,.php,.vue,.svelte,text/*,*/*"
                     multiple class="hidden">
-
-
-                <textarea id="user-input" rows="1"
-                    class="flex-1 bg-transparent focus:outline-none text-sm text-white resize-none max-h-36 p-1.5 leading-relaxed"
-                    placeholder="輸入自然語言指令或貼上圖片... (輸入 / 顯示快捷指令)"></textarea>
-                <button id="btn-stop"
-                    class="bg-red-600 hover:bg-red-500 text-white px-3 py-2 rounded-lg transition shadow-md hidden flex items-center gap-1 text-xs font-bold"
-                    title="停止生成" data-i18n-title="tooltipStopGen">
-                    <i data-lucide="square" class="w-3.5 h-3.5 fill-current"></i> <span data-i18n="btnStop">停止</span>
-                </button>
-                <button id="btn-send"
-                    class="bg-purple-600 hover:bg-purple-500 text-white p-2 rounded-lg transition shadow-md shrink-0"
-                    title="發送指令" data-i18n-title="tooltipSendMessage">
-                    <i data-lucide="send" class="w-4 h-4"></i>
-                </button>
             </div>
         </div>
     </div>
