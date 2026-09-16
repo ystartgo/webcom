@@ -1445,24 +1445,26 @@
                             class="text-gray-400 hover:text-cyan-400 hover:bg-gray-800/80 px-2 py-1 rounded-lg transition shrink-0 flex items-center gap-1 cursor-pointer"
                             title="上傳圖片 / 截圖 (或直接 Ctrl+V 貼上)">
                             <i data-lucide="image" class="w-3.5 h-3.5 pointer-events-none"></i>
-                            <span class="text-[11px] hidden sm:inline">圖片</span>
+                            <span class="text-[11px] hidden sm:inline" data-i18n="chatBtnImage">圖片</span>
                         </label>
                         <!-- 上傳按鈕 2：文件 (Microsoft MarkItDown 轉檔 - 原生 Label 保證點擊即開啟檔案選擇器) -->
                         <label for="file-upload-doc" id="btn-upload-doc" data-i18n-title="tooltipUploadDoc"
                             class="text-gray-400 hover:text-orange-400 hover:bg-gray-800/80 px-2 py-1 rounded-lg transition shrink-0 flex items-center gap-1 cursor-pointer"
                             title="上傳文件：Microsoft MarkItDown 轉檔 (PDF / Word / Excel / PPT / HTML / EPUB / CSV / 代碼)">
                             <i data-lucide="file-text" class="w-3.5 h-3.5 pointer-events-none"></i>
-                            <span class="text-[11px] hidden sm:inline">文件</span>
+                            <span class="text-[11px] hidden sm:inline" data-i18n="chatBtnDocument">文件</span>
                         </label>
                         <!-- 快捷指令按鈕 (Slash Menu Toggle) -->
                         <button type="button" id="btn-toggle-slash" onclick="toggleSlashMenuDirect()"
+                            data-i18n-title="tooltipSlashMenu"
                             class="text-gray-400 hover:text-purple-300 hover:bg-gray-800/80 px-2 py-1 rounded-lg transition shrink-0 flex items-center gap-1 cursor-pointer"
                             title="開啟快捷指令選單 (輸入 /)">
                             <i data-lucide="terminal" class="w-3.5 h-3.5"></i>
-                            <span class="text-[11px] font-mono">/指令</span>
+                            <span class="text-[11px] font-mono" data-i18n="chatBtnSlash">/指令</span>
                         </button>
                         <!-- 語音輸入按鈕 (Speech Recognition) -->
                         <button type="button" id="btn-speech-input" onclick="toggleSpeechInput()"
+                            data-i18n-title="tooltipSpeechInput"
                             class="text-gray-400 hover:text-rose-300 hover:bg-gray-800/80 p-1.5 rounded-lg transition shrink-0 flex items-center justify-center cursor-pointer"
                             title="語音輸入 (語音轉文字)">
                             <i data-lucide="mic" class="w-3.5 h-3.5"></i>
@@ -1473,7 +1475,7 @@
                     <div class="flex items-center gap-1.5 text-[11px] text-gray-500 font-mono">
                         <span id="chat-active-engine-badge" class="px-1.5 py-0.5 rounded bg-purple-950/40 text-purple-300 border border-purple-800/40 text-[10px]">AI Ready</span>
                         <span class="hidden sm:inline text-gray-600">|</span>
-                        <span class="text-gray-500 text-[10px] hidden sm:inline">Shift+Enter 換行</span>
+                        <span class="text-gray-500 text-[10px] hidden sm:inline" data-i18n="chatTipShiftEnter">Shift+Enter 換行</span>
                     </div>
                 </div>
 
@@ -4103,6 +4105,12 @@ ffmpeg -f pulse -i default -acodec libmp3lame -ab 128k -f mp3 -listen 1 http://0
                 tooltipOpenMcp: "開啟 MCP 伺服器與工具設定",
                 tooltipUploadImage: "上傳圖片 / 截圖 (或直接 Ctrl+V 貼上)",
                 tooltipUploadDoc: "上傳文件：Microsoft MarkItDown 轉檔 (PDF / Word / Excel / PPT / HTML / EPUB / CSV / 代碼)",
+                chatBtnImage: "圖片",
+                chatBtnDocument: "文件",
+                chatBtnSlash: "/指令",
+                chatTipShiftEnter: "Shift+Enter 換行",
+                tooltipSlashMenu: "開啟快捷指令選單 (輸入 /)",
+                tooltipSpeechInput: "語音輸入 (語音轉文字)",
             tooltipOpenMarkItDown: "開啟 MarkItDown 轉檔中心 (支援多檔批次轉換、即時預覽與 ZIP 下載)",
             btnMarkItDownCenter: "MarkItDown",
                 tooltipStopGen: "停止生成",
@@ -4894,6 +4902,12 @@ ffmpeg -f pulse -i default -acodec libmp3lame -ab 128k -f mp3 -listen 1 http://0
                 tooltipOpenMcp: "Open MCP Server & Tool Settings",
                 tooltipUploadImage: "Upload Image / Screenshot (or Ctrl+V to paste)",
                 tooltipUploadDoc: "Upload Document: Microsoft MarkItDown (PDF / Word / Excel / PPT / HTML / EPUB / CSV / Code)",
+                chatBtnImage: "Image",
+                chatBtnDocument: "File",
+                chatBtnSlash: "/Commands",
+                chatTipShiftEnter: "Shift+Enter new line",
+                tooltipSlashMenu: "Open Slash Command Menu (Type /)",
+                tooltipSpeechInput: "Speech-to-Text Input",
             tooltipOpenMarkItDown: "Open MarkItDown Conversion Center (Batch convert / Live preview / ZIP export)",
             btnMarkItDownCenter: "MarkItDown",
                 tooltipStopGen: "Stop Generation",
