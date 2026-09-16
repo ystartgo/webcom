@@ -77,6 +77,21 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
 
 // 3. 監聽頁面傳來的訊息 (如點擊 2/3 視窗展開按鈕時調整當前視窗尺寸或開啟獨立視窗)
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+    if (request && request.action === 'launch_daemon') {
+        try {
+            chrome.tabs.create({ url: 'webcom://start-daemon', active: false }, (newTab) => {
+                if (newTab && newTab.id) {
+                    setTimeout(() => {
+                        try { chrome.tabs.remove(newTab.id); } catch (e) {}
+                    }, 1200);
+                }
+                sendResponse({ success: true });
+            });
+        } catch (e) {
+            sendResponse({ success: false, error: e.message });
+        }
+        return true;
+    }
     if (request && request.action === 'open_twothirds_window') {
         openTwoThirdsWindow();
         sendResponse({ success: true });

@@ -7767,19 +7767,35 @@ ffmpeg -f pulse -i default -acodec libmp3lame -ab 128k -f mp3 -listen 1 http://0
                 onnxProgressBar.style.width = `0%`;
             }
 
-            // ── Transformers.js 現代化 ESM 模組載入 (v4.0.1) ──
+            // ── Transformers.js 現代化 ESM 模組載入 (支援 Chrome Extension MV3 與離線包) ──
             if (!onnxTransformersModule) {
-                try {
-                    onnxTransformersModule = await import("https://cdn.jsdelivr.net/npm/@huggingface/transformers@4.0.1/+esm");
-                } catch (e1) {
+                const isExtension = typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.getURL;
+                if (isExtension) {
                     try {
-                        onnxTransformersModule = await import("https://esm.sh/@huggingface/transformers@4.0.1");
-                    } catch (e2) {
+                        const localUrl = chrome.runtime.getURL("assets/transformers.min.js");
+                        onnxTransformersModule = await import(localUrl);
+                    } catch (eExt) {
+                        console.warn('[Webcom Extension] Failed to load local transformers bundle:', eExt);
                         try {
                             onnxTransformersModule = (window.transformers) || (await import("./assets/transformers.min.js"));
                         } catch (eFallback) {
                             if (onnxProgressContainer) onnxProgressContainer.classList.add('hidden');
-                            throw new Error(currentLang === 'en' ? `Failed to load Transformers module: ${eFallback.message}` : `Transformers 模組載入失敗: ${eFallback.message}`);
+                            throw new Error(currentLang === 'en' ? `Failed to load Transformers module in Extension: ${eFallback.message}` : `擴充功能載入 Transformers 模組失敗: ${eFallback.message}`);
+                        }
+                    }
+                } else {
+                    try {
+                        onnxTransformersModule = (window.transformers) || (await import("./assets/transformers.min.js"));
+                    } catch (eLocal) {
+                        try {
+                            onnxTransformersModule = await import("https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.3.3/+esm");
+                        } catch (e1) {
+                            try {
+                                onnxTransformersModule = await import("https://esm.sh/@huggingface/transformers@3.3.3");
+                            } catch (e2) {
+                                if (onnxProgressContainer) onnxProgressContainer.classList.add('hidden');
+                                throw new Error(currentLang === 'en' ? `Failed to load Transformers module: ${e2.message}` : `Transformers 模組載入失敗: ${e2.message}`);
+                            }
                         }
                     }
                 }
@@ -7805,6 +7821,9 @@ ffmpeg -f pulse -i default -acodec libmp3lame -ab 128k -f mp3 -listen 1 http://0
                     if (onnxTransformersModule.env.backends.onnx.wasm) {
                         try {
                             onnxTransformersModule.env.backends.onnx.wasm.proxy = false;
+                            const isExt = typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.getURL;
+                            const basePath = isExt ? chrome.runtime.getURL("assets/") : "./assets/";
+                            onnxTransformersModule.env.backends.onnx.wasm.wasmPaths = basePath;
                         } catch (e) {}
                     }
                 }
@@ -16300,6 +16319,25 @@ Important guidelines:
         const daemonBadge = document.getElementById('daemon-status-badge');
 
         function triggerWebcomProtocol() {
+            if (typeof chrome !== 'undefined' && chrome.tabs && chrome.tabs.create) {
+                try {
+                    chrome.tabs.create({ url: 'webcom://start-daemon', active: false }, (newTab) => {
+                        if (newTab && newTab.id) {
+                            setTimeout(() => {
+                                try { chrome.tabs.remove(newTab.id); } catch (e) {}
+                            }, 1200);
+                        }
+                    });
+                    return;
+                } catch (e) {
+                    console.warn('[Extension] chrome.tabs.create failed, falling back:', e);
+                }
+            }
+            if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.sendMessage) {
+                chrome.runtime.sendMessage({ action: 'launch_daemon' }, (res) => {
+                    if (chrome.runtime.lastError) console.warn(chrome.runtime.lastError);
+                });
+            }
             try {
                 const a = document.createElement('a');
                 a.href = 'webcom://start-daemon';

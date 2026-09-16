@@ -22,6 +22,27 @@
   "side_panel": {
     "default_path": "index.html"
   },
+  "host_permissions": [
+    "http://127.0.0.1/*",
+    "http://localhost/*",
+    "https://huggingface.co/*",
+    "https://*.huggingface.co/*",
+    "https://*.hf.co/*",
+    "https://cdn.jsdelivr.net/*",
+    "https://esm.sh/*",
+    "https://unpkg.com/*"
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "assets/*",
+        "pyodide/*"
+      ],
+      "matches": [
+        "<all_urls>"
+      ]
+    }
+  ],
   "permissions": [
     "storage",
     "tabs",
