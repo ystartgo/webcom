@@ -1438,8 +1438,102 @@ def web_search_endpoint(req: SearchRequest):
         except Exception as e:
             logging.warning(f"Direct URL fetch failed for {target_url}: {e}")
 
-    # 優先處理 IP / GEO 地理位置查詢
-    if any(k in query.lower() for k in ["ip", "geo", "地理位置", "經緯度", "所在城市", "定位", "電信業者", "isp"]):
+    # 優先處理天氣與 IP / GEO 地理位置查詢
+    is_weather = any(k in query.lower() for k in ["天氣", "weather", "溫度", "氣溫", "降雨", "氣象"])
+    is_geo_ip = any(k in query.lower() for k in ["ip", "geo", "地理位置", "經緯度", "所在城市", "定位", "電信業者", "isp"])
+
+    if is_weather:
+        geo_info_line = ""
+        city_for_weather = "Hsinchu"
+        lat, lon = 24.8065, 120.9706
+        ip_addr = ""
+        try:
+            req_geo = urllib.request.Request("http://ip-api.com/json/?fields=status,message,country,countryCode,region,regionName,city,zip,lat,lon,timezone,isp,org,as,query", headers={'User-Agent': 'curl/7.68.0'})
+            with urllib.request.urlopen(req_geo, timeout=5) as resp:
+                geo_data = json.loads(resp.read().decode('utf-8', errors='replace'))
+                if geo_data.get("status") == "success":
+                    city_for_weather = geo_data.get('city', 'Hsinchu')
+                    lat = geo_data.get('lat', 24.8065)
+                    lon = geo_data.get('lon', 120.9706)
+                    ip_addr = geo_data.get('query', '')
+                    geo_info_line = (
+                        f"【本機外網 IP 與所在地資訊】\n"
+                        f"- 外網 IP: {ip_addr}\n"
+                        f"- 所在城市/區域: {geo_data.get('city')}, {geo_data.get('regionName')} ({geo_data.get('country')})\n"
+                        f"- 經緯度座標: Lat {lat}, Lon {lon}\n"
+                        f"- 網際網路供應商 (ISP): {geo_data.get('isp')}\n\n"
+                    )
+        except Exception:
+            pass
+
+        cities_map = ['台北', '新北', '基隆', '桃園', '新竹', '苗栗', '台中', '彰化', '南投', '雲林', '嘉義', '台南', '高雄', '屏東', '宜蘭', '花蓮', '台東', '澎湖', '金門', '連江', 'Taipei', 'Hsinchu', 'Taichung', 'Tainan', 'Kaohsiung', 'Tokyo', 'London', 'Paris', 'New York']
+        target_city = None
+        for c in cities_map:
+            if c in query:
+                target_city = c
+                break
+        if not target_city:
+            target_city = city_for_weather or "Taipei"
+
+        weather_text = ""
+        try:
+            om_url = f"https://api.open-meteo.com/v1/forecast?latitude={lat}&longitude={lon}&current=temperature_2m,relative_humidity_2m,apparent_temperature,precipitation,wind_speed_10m&timezone=auto"
+            req_om = urllib.request.Request(om_url, headers={'User-Agent': 'curl/7.68.0'})
+            with urllib.request.urlopen(req_om, timeout=6) as resp:
+                om_data = json.loads(resp.read().decode('utf-8', errors='replace'))
+                cur = om_data.get('current', {})
+                temp_c = cur.get('temperature_2m', 'N/A')
+                feels_c = cur.get('apparent_temperature', 'N/A')
+                humidity = cur.get('relative_humidity_2m', 'N/A')
+                precip = cur.get('precipitation', 0.0)
+                wind = cur.get('wind_speed_10m', 'N/A')
+
+                dressing = ""
+                try:
+                    t_val = float(temp_c)
+                    p_val = float(precip)
+                    if t_val < 15: dressing = "天氣偏冷，建議穿著保暖大衣、厚毛衣或防風外套。"
+                    elif t_val < 22: dressing = "氣候微涼舒適，建議穿著長袖上衣搭配薄外套。"
+                    elif t_val < 28: dressing = "氣候溫暖宜人，穿著休閒長短袖或舒適襯衫即可。"
+                    else: dressing = "天氣炎熱，請穿著吸汗透氣短袖，注意防曬並多補充水分。"
+                    if p_val > 0.3: dressing += " 當前有降雨，出門請務必攜帶雨具！"
+                except Exception:
+                    dressing = "建議根據體感溫度穿著適當衣物。"
+
+                weather_text = (
+                    f"【即時天氣與氣象資訊 ({target_city})】\n"
+                    f"- 當前氣溫: {temp_c}°C\n"
+                    f"- 體感溫度: {feels_c}°C\n"
+                    f"- 相對濕度: {humidity}%\n"
+                    f"- 降雨量: {precip} mm\n"
+                    f"- 風速: {wind} km/h\n"
+                    f"- 出門穿著建議: {dressing}"
+                )
+        except Exception:
+            pass
+
+        if not weather_text:
+            try:
+                req_w_json = urllib.request.Request(f"https://wttr.in/{urllib.parse.quote(target_city)}?format=j1", headers={'User-Agent': 'curl/7.68.0'})
+                with urllib.request.urlopen(req_w_json, timeout=6) as resp:
+                    wjson = json.loads(resp.read().decode('utf-8', errors='replace'))
+                    cur = wjson['current_condition'][0]
+                    weather_text = (
+                        f"【即時天氣與氣象資訊 ({target_city})】\n"
+                        f"- 當前氣溫: {cur.get('temp_C')}°C\n"
+                        f"- 體感溫度: {cur.get('FeelsLikeC')}°C\n"
+                        f"- 相對濕度: {cur.get('humidity')}%\n"
+                        f"- 降雨量: {cur.get('precipMM')} mm\n"
+                        f"- 風速: {cur.get('windspeedKmph')} km/h"
+                    )
+            except Exception:
+                pass
+
+        if weather_text:
+            return {"status": "success", "query": query, "result": f"{geo_info_line}{weather_text}"}
+
+    # 優先處理純 IP / GEO 地理位置查詢 (若未問天氣)
+    if is_geo_ip:
         try:
             req_geo = urllib.request.Request("http://ip-api.com/json/?fields=status,message,country,countryCode,region,regionName,city,zip,lat,lon,timezone,isp,org,as,query", headers={'User-Agent': 'curl/7.68.0'})
             with urllib.request.urlopen(req_geo, timeout=6) as resp:
@@ -1474,18 +1568,6 @@ def web_search_endpoint(req: SearchRequest):
                     return {"status": "success", "query": query, "result": f"【行政院人事行政總處與天然災害停班停課最新通報】\n" + "\n---\n".join(clean_snippets)}
         except Exception as e:
             logging.warning(f"DGPA search error: {e}")
-
-    # 優先處理天氣查詢 (透過 wttr.in)
-    if any(k in query.lower() for k in ["天氣", "weather", "溫度", "氣溫", "降雨", "氣象"]):
-        try:
-            clean_q = query.replace("天氣", "").replace("即時", "").replace("查詢", "").strip() or "Taipei"
-            req_weather = urllib.request.Request(f"https://wttr.in/{urllib.parse.quote(clean_q)}?format=%l:+%c+%t,+濕度:%h,+風速:%w,+%p&lang=zh-tw", headers={'User-Agent': 'curl/7.68.0'})
-            with urllib.request.urlopen(req_weather, timeout=6) as resp:
-                weather_data = resp.read().decode('utf-8', errors='replace').strip()
-                if weather_data and "404" not in weather_data and "Unknown" not in weather_data:
-                    return {"status": "success", "query": query, "result": f"【即時氣象資訊 (wttr.in)】\n{weather_data}"}
-        except Exception:
-            pass
 
     # DuckDuckGo HTML 網頁搜尋 (後端執行無 CORS 限制)
     try:

@@ -10140,6 +10140,8 @@ ffmpeg -f pulse -i default -acodec libmp3lame -ab 128k -f mp3 -listen 1 http://0
                 let tools = [];
                 if (webToggle.checked) {
                     tools.push(`1. web_search: Search the internet for live/external information, weather, news, facts, docs. Priority 1 for web queries. Args: {"query": "search query"}`);
+                } else {
+                    tools.push(`1. web_search: Internet search tool (Right-side Web toggle is OFF. For live weather, external IP, news or web data, you CAN AND SHOULD also actively use write_frontend_terminal or execute_shell with curl/Invoke-RestMethod to query the internet via the left terminal). Args: {"query": "search query"}`);
                 }
                 const enToolOffset = tools.length;
                 tools.push(
@@ -10202,7 +10204,9 @@ If output is interrupted by token limit or user asks to continue, use the SAME i
 The system will automatically merge all parts into a single completed file without duplication.
 
 Rules:
-1. [Web Search Priority]: When Web Search toggle is active and user asks general/live/weather/news/factual questions, PRIORITIZE calling web_search or using retrieved web results! NEVER call read_frontend_terminal for web queries!
+1. [Web Search & Left Terminal Internet Query Principle]:
+- When Web Search toggle is ON: For live/weather/news/factual queries, PRIORITIZE calling web_search or using retrieved web results.
+- When Web Search toggle is OFF: If the user asks for live weather, external IP, geolocation, latest news, or web data, you CAN AND SHOULD actively use the left terminal tools (write_frontend_terminal or execute_shell) to run network commands (such as curl -s "wttr.in/?format=j1", curl -s "https://ipwho.is/", or PowerShell Invoke-RestMethod) to query live data from the network, then call read_frontend_terminal to inspect output and answer the user! You can also call web_search as an automatic fallback.
 2. [Engineering Evaluation Principle]: When asked for design evaluations, sizing, or hardware layout estimations (e.g. PCB area for WiFi RF, PoE, PSE), actively break down component footprints and provide concrete numerical estimates. Never refuse to evaluate due to lack of a ready-made number in the text.
 3. When asked to execute commands or interact with the left workspace, call the appropriate tool via <tool_call>.
 4. The frontend will automatically execute your tool call and return the result in <tool_response>. Summarize the result for the user once received.
@@ -10227,6 +10231,8 @@ Rules:
                 let tools = [];
                 if (webToggle.checked) {
                     tools.push(`1. web_search: 搜尋網際網路資訊 (當需要查詢即時網路資訊、時事、新聞、天氣、外部知識、名詞解釋時【最高優先調用】)。參數: {"query": "搜尋關鍵字"}`);
+                } else {
+                    tools.push(`1. web_search: 網際網路搜尋工具 (右側聯網開關未開啟時處於備援模式。若需上網查詢，你【可以且應主動調用左側終端機】write_frontend_terminal 或 execute_shell 透過終端機執行 curl / PowerShell 進行連網查詢)。參數: {"query": "搜尋關鍵字"}`);
                 }
                 const zhToolOffset = tools.length;
                 tools.push(
@@ -10291,7 +10297,9 @@ ${tools.join('\n')}${contextStr}
 控制台將自動把多段接續內容無縫縫合為單一完整文件，避開字數上限打斷問題！
 
 重要行為準則：
-1. 【聯網搜尋最高優先準則】：當「聯網」開關開啟時，若使用者提問涉及時事、新聞、天氣、查詢資料、名詞概念、外部知識或非終端機指令問題，你【必須優先調用 web_search 工具】或直接依據檢索結果作答！【嚴禁答非所問】：絕不可在此類提問時去呼叫 read_frontend_terminal 或觀看左側終端機！
+1. 【聯網搜尋與左側終端機聯網原則】：
+- 當右側「聯網」開關開啟時：若提問涉及時事、新聞、天氣、外部知識等，優先調用 web_search 工具或依據檢索結果作答。
+- 當右側「聯網」開關未開啟時：若使用者提問涉及「即時天氣、外網 IP、地理位置、最新時事、外部網頁或網路資料」，或要求上網查詢，你【可以且應主動調用左側終端機工具】（write_frontend_terminal 或 execute_shell），透過終端機執行網路指令（如 curl -s "wttr.in/?format=j1"、curl -s "https://ipwho.is/"、或 PowerShell Invoke-RestMethod）向外部網路查詢即時資料，再以 read_frontend_terminal 讀取終端機輸出並彙整回報給使用者！你亦可直接調用 web_search 工具進行端點備援查詢。
 2. 【工程評估與規格延伸原則】：當使用者要求進行評估、估算、硬體佈局（例如 PCB 尺寸、WiFi 射頻、PoE、PSE 面積）或技術方案時，即使檢索資料未記載現成數值，也請以資深工程專家角度積極拆解各子模組進行推估與面積加總，給出具體明確的數據與建議尺寸，切勿拒絕評估！
 3. 當使用者明確要求操作左側終端、執行命令（如 dir, ls, shell）或查詢本機狀態時，輸出 <tool_call> 調用對應終端機工具。
 4. 前端系統會自動攔截工具呼叫、執行動作並回傳 <tool_response>，收到回傳後請根據結果為使用者整理並直接給出完整回答。
@@ -14643,8 +14651,64 @@ Important guidelines:
                     console.warn("Daemon web search error, falling back to browser APIs:", e);
                 }
 
-                // 2. 瀏覽器端備援：IP / GEO 定位查詢 (支援 CORS)
-                if (qLower.includes("ip") || qLower.includes("geo") || qLower.includes("定位") || qLower.includes("地理") || qLower.includes("經緯度") || qLower.includes("isp") || qLower.includes("電信")) {
+                const isWeatherReq = qLower.includes("天氣") || qLower.includes("weather") || qLower.includes("溫度") || qLower.includes("氣溫") || qLower.includes("降雨") || qLower.includes("氣象");
+                const isIpReq = qLower.includes("ip") || qLower.includes("geo") || qLower.includes("定位") || qLower.includes("地理") || qLower.includes("經緯度") || qLower.includes("isp") || qLower.includes("電信");
+
+                // 2. 瀏覽器端備援：即時天氣查詢 (若包含天氣或本機 IP 天氣)
+                if (isWeatherReq) {
+                    try {
+                        let lat = 24.8065, lon = 120.9706, cityName = "新竹 / 台北", ipStr = "";
+                        try {
+                            const locRes = await fetchWithTimeout("https://ipwho.is/", { timeout: 3000 });
+                            if (locRes.ok) {
+                                const locData = await locRes.json();
+                                if (locData.latitude && locData.longitude) {
+                                    lat = locData.latitude;
+                                    lon = locData.longitude;
+                                    cityName = `${locData.city}, ${locData.country}`;
+                                    ipStr = locData.ip || "";
+                                }
+                            }
+                        } catch (err) { }
+
+                        const weatherUrl = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,apparent_temperature,precipitation,wind_speed_10m&timezone=auto`;
+                        const wRes = await fetchWithTimeout(weatherUrl, { timeout: 4000 });
+                        if (wRes.ok) {
+                            const wData = await wRes.json();
+                            const cur = wData.current;
+                            let dressingTip = "";
+                            const temp = cur.temperature_2m;
+                            const rain = cur.precipitation;
+                            if (temp < 15) dressingTip = "天氣偏冷，建議穿著保暖大衣、毛衣或防風外套。";
+                            else if (temp < 22) dressingTip = "氣溫舒適微涼，建議穿著薄外套或長袖上衣。";
+                            else if (temp < 28) dressingTip = "氣候溫暖，穿著休閒短袖或舒適襯衫即可。";
+                            else dressingTip = "天氣炎熱，請穿著透氣涼爽短袖，注意防曬並補充水分。";
+                            if (rain > 0.3) dressingTip += " 當前有降雨，出門請務必攜帶雨具！";
+
+                            let weatherText = `【本機 IP 所在地即時氣象資訊】\n`;
+                            if (ipStr) weatherText += `- 外網 IP: ${ipStr}\n`;
+                            weatherText += `- 所在區域: ${cityName} (Lat ${lat}, Lon ${lon})\n` +
+                                `- 當前氣溫: ${cur.temperature_2m}°C\n` +
+                                `- 體感溫度: ${cur.apparent_temperature}°C\n` +
+                                `- 相對濕度: ${cur.relative_humidity_2m}%\n` +
+                                `- 降雨量: ${cur.precipitation} mm\n` +
+                                `- 風速: ${cur.wind_speed_10m} km/h\n` +
+                                `- 出門穿著建議: ${dressingTip}`;
+
+                            const resultEl = document.createElement('div');
+                            resultEl.className = 'mt-1 p-1.5 rounded bg-sky-900/30 border border-sky-800/40 text-sky-400 text-xs font-mono';
+                            resultEl.textContent = `✅ 即時氣象查詢完成：${cityName} (${cur.temperature_2m}°C)`;
+                            logEl.appendChild(resultEl);
+                            scrollToBottom();
+                            printToTerminal(`✔ 即時氣象查詢完成：${cityName} (${cur.temperature_2m}°C)`, 'ai_success');
+                            if (typeof setAiActivityState === 'function') setAiActivityState(false, '完成');
+                            return JSON.stringify({ status: "success", query: query, result: weatherText });
+                        }
+                    } catch (e) { }
+                }
+
+                // 3. 瀏覽器端備援：純 IP / GEO 定位查詢 (支援 CORS)
+                if (isIpReq) {
                     try {
                         const ipRes = await fetchWithTimeout("https://ipwho.is/", { timeout: 4000 });
                         if (ipRes.ok) {
@@ -14660,40 +14724,6 @@ Important guidelines:
                                 if (typeof setAiActivityState === 'function') setAiActivityState(false, '完成');
                                 return JSON.stringify({ status: "success", query: query, result: geoInfo });
                             }
-                        }
-                    } catch (e) { }
-                }
-
-                // 3. 瀏覽器端備援：天氣即時查詢
-                if (qLower.includes("天氣") || qLower.includes("weather") || qLower.includes("溫度") || qLower.includes("氣溫") || qLower.includes("降雨") || qLower.includes("氣象")) {
-                    try {
-                        let lat = 24.835, lon = 121.005, cityName = "新竹 / 台北";
-                        try {
-                            const locRes = await fetchWithTimeout("https://ipwho.is/", { timeout: 2500 });
-                            if (locRes.ok) {
-                                const locData = await locRes.json();
-                                if (locData.latitude && locData.longitude) {
-                                    lat = locData.latitude;
-                                    lon = locData.longitude;
-                                    cityName = `${locData.city}, ${locData.country}`;
-                                }
-                            }
-                        } catch (err) { }
-
-                        const weatherUrl = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,apparent_temperature,precipitation,wind_speed_10m&timezone=auto`;
-                        const wRes = await fetchWithTimeout(weatherUrl, { timeout: 4000 });
-                        if (wRes.ok) {
-                            const wData = await wRes.json();
-                            const cur = wData.current;
-                            const weatherText = `【即時天氣資訊】\n- 所在區域: ${cityName} (Lat ${lat}, Lon ${lon})\n- 當前氣溫: ${cur.temperature_2m}°C (體感: ${cur.apparent_temperature}°C)\n- 相對濕度: ${cur.relative_humidity_2m}%\n- 降雨量: ${cur.precipitation} mm\n- 風速: ${cur.wind_speed_10m} km/h`;
-                            const resultEl = document.createElement('div');
-                            resultEl.className = 'mt-1 p-1.5 rounded bg-sky-900/30 border border-sky-800/40 text-sky-400 text-xs font-mono';
-                            resultEl.textContent = `✅ 即時氣象查詢完成：${cityName} (${cur.temperature_2m}°C)`;
-                            logEl.appendChild(resultEl);
-                            scrollToBottom();
-                            printToTerminal(`✔ 即時氣象查詢完成：${cityName} (${cur.temperature_2m}°C)`, 'ai_success');
-                            if (typeof setAiActivityState === 'function') setAiActivityState(false, '完成');
-                            return JSON.stringify({ status: "success", query: query, result: weatherText });
                         }
                     } catch (e) { }
                 }
@@ -14719,12 +14749,15 @@ Important guidelines:
 
                 const failEl = document.createElement('div');
                 failEl.className = 'mt-1 p-1.5 rounded bg-amber-900/30 border border-amber-800/40 text-amber-300 text-xs font-mono';
-                failEl.textContent = `⚠️ 搜尋端點無回應，已回傳提示給 Agent`;
+                failEl.textContent = `⚠️ 外部搜尋端點無回應，轉交 Agent 透過左側終端機執行 curl 進行連網查詢`;
                 logEl.appendChild(failEl);
                 scrollToBottom();
-                printToTerminal(`⚠️ 網路搜尋無回應`, 'ai_error');
-                if (typeof setAiActivityState === 'function') setAiActivityState(false, '搜尋超時');
-                return JSON.stringify({ status: "error", error: "外部網路搜尋端點無回應，請確認網路連線或啟動 Daemon (Port 8001)。" });
+                printToTerminal(`⚠️ 網路搜尋無回應，轉由終端機連網備援`, 'ai_error');
+                if (typeof setAiActivityState === 'function') setAiActivityState(false, '搜尋備援');
+                return JSON.stringify({ 
+                    status: "fallback_to_terminal", 
+                    error: "外部搜尋端點無回應。請立即調用 write_frontend_terminal 工具，在左側終端機執行 `curl -s 'wttr.in/?format=j1'` 或 `curl -s https://ipwho.is/` 進行連網查詢，並調用 read_frontend_terminal 讀取結果！" 
+                });
             }
 
             if (toolName === 'query_knowledge_base') {
@@ -16786,6 +16819,13 @@ Important guidelines:
 
                     if (!isAgentEnabled) {
                         chatHistory.push({ role: "assistant", content: fullAiResponse });
+                        if (typeof sessionChatLog !== 'undefined') {
+                            if (sessionChatLog.length > 0 && sessionChatLog[sessionChatLog.length - 1].role === 'assistant') {
+                                sessionChatLog[sessionChatLog.length - 1].content = fullAiResponse;
+                            } else {
+                                sessionChatLog.push({ role: 'assistant', content: fullAiResponse, timestamp: new Date().toISOString() });
+                            }
+                        }
                         isTaskComplete = true;
                         break;
                     }
@@ -16857,6 +16897,9 @@ Important guidelines:
                 } catch (err) {
                     if (err.name === 'AbortError') {
                         containerEl.innerHTML += `<div class="text-amber-400 mt-2 text-xs flex items-center gap-1 font-mono">⏹️ ${t('stoppedByUser')}</div>`;
+                        if (typeof sessionChatLog !== 'undefined' && sessionChatLog.length > 0 && sessionChatLog[sessionChatLog.length - 1].role === 'assistant') {
+                            sessionChatLog[sessionChatLog.length - 1].content = fullAiResponse ? (fullAiResponse + `\n\n[${t('stoppedByUser')}]`) : `[${t('stoppedByUser')}]`;
+                        }
                         break;
                     }
                     let friendlyMsg = err.message;
@@ -16876,6 +16919,9 @@ Important guidelines:
                         </div>`;
                     }
                     containerEl.innerHTML += `<div class="text-red-400 mt-2 text-xs">⚠️ ${friendlyMsg}${extraTip}</div>`;
+                    if (typeof sessionChatLog !== 'undefined' && sessionChatLog.length > 0 && sessionChatLog[sessionChatLog.length - 1].role === 'assistant') {
+                        sessionChatLog[sessionChatLog.length - 1].content = fullAiResponse ? (fullAiResponse + `\n\n⚠️ ${friendlyMsg}`) : `⚠️ ${friendlyMsg}`;
+                    }
                     break;
                 }
             }
