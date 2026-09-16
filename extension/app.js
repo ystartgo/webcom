@@ -32,7 +32,7 @@ if (!window.WTerm && window.WTermBundle) {
                 appTitle: "雙引擎 AI 控制台",
                 multiProtocolTerm: "多協定終端機",
                 protoPyodide: "🐍 Python 3 (Pyodide WASM 免安裝)",
-                pyodideStatusBadge: "Pyodide WASM (瀏覽器原生 Python，免裝環境、免開 Daemon)",
+                pyodideStatusBadge: "瀏覽器原生 Python",
                 protoShell: "本地 Shell (PowerShell/CMD)",
                 protoWsl: "本地 Shell (WSL Linux)",
                 wslCheck: "檢查 WSL",
@@ -473,7 +473,7 @@ if (!window.WTerm && window.WTermBundle) {
                 slashCmdArtifact_title: "/產出Artifact應用",
                 slashCmdArtifact_desc: "要求 AI 以 Artifact 格式產出完整的單檔網頁應用、腳本或文件",
                 slashCmdArtifact_payload: "請設計並實作一個完整的單檔應用程式（如 HTML/JS/CSS 互動網頁或實用腳本），並嚴格使用 <artifact identifier=\"app\" type=\"html\" title=\"我的應用程式\">...</artifact> 標籤輸出。若程式碼較長，請在接近上限時中斷並等待我要求接續。",
-                btnAppLibrary: "應用庫 (App Library)",
+                btnAppLibrary: "應用庫",
                 tooltipOpenAppLib: "開啟自建應用程式庫 (Open Custom App Library)",
                 artifactSaveToLib: "存入應用庫 (Save to Library)",
                 tooltipSaveToAppLib: "將此 Artifact 成果收藏至個人自建應用庫 (Save to App Library)",
@@ -803,7 +803,7 @@ if (!window.WTerm && window.WTermBundle) {
                 appTitle: "Dual-Engine AI Console",
                 multiProtocolTerm: "Multi-Protocol Terminal",
                 protoPyodide: "🐍 Python 3 (Pyodide WASM In-Browser)",
-                pyodideStatusBadge: "Pyodide WASM (Browser-native Python, zero install & zero daemon)",
+                pyodideStatusBadge: "Browser-Native Python",
                 protoShell: "Local Shell (PowerShell/CMD)",
                 protoWsl: "Local Shell (WSL Linux)",
                 wslCheck: "Check WSL",
@@ -6945,12 +6945,10 @@ ${tools.join('\n')}${contextStr}
 
                 const bannerRaw = termIsEn ? [
                     "\x1b[1;36mWebcom Multi-Protocol Terminal v1.0.8\x1b[0m  \x1b[33m(Powered by Vercel Labs wterm)\x1b[0m",
-                    "\x1b[32m● WASM Core (~12KB)\x1b[0m   \x1b[32m● DOM Native Rendering\x1b[0m   \x1b[32m● 24-bit True Color\x1b[0m",
-                    "\x1b[90mSupports: Python 3 (Pyodide WASM In-Browser) / Shell / SSH / Telnet / Web Serial\x1b[0m"
+                    "\x1b[32m● WASM Core (~12KB)\x1b[0m   \x1b[32m● DOM Native Rendering\x1b[0m   \x1b[32m● 24-bit True Color\x1b[0m"
                 ] : [
                     "\x1b[1;36mWebcom 多協定終端機 v1.0.8\x1b[0m  \x1b[33m(Powered by Vercel Labs wterm)\x1b[0m",
-                    "\x1b[32m● WASM 核心 (~12KB)\x1b[0m   \x1b[32m● DOM 原生渲染\x1b[0m   \x1b[32m● 24-bit 真彩色\x1b[0m",
-                    "\x1b[90m支援：Python 3 (Pyodide WASM 免安裝) / 本地 Shell / SSH / Telnet / Web Serial\x1b[0m"
+                    "\x1b[32m● WASM 核心 (~12KB)\x1b[0m   \x1b[32m● DOM 原生渲染\x1b[0m   \x1b[32m● 24-bit 真彩色\x1b[0m"
                 ];
                 wtermInstance.write(bannerBox(bannerRaw) + '\r\n\r\n');
                 printToTerminal(t('termReady') || 'Terminal ready.', 'success');
@@ -7056,22 +7054,26 @@ ${tools.join('\n')}${contextStr}
             }
         }
 
-        document.getElementById('btn-clear-term').addEventListener('click', () => {
+        window.handleClearTerminal = function() {
             if (wtermInstance) {
                 wtermInstance.write('\x1b[2J\x1b[3J\x1b[H');
-                wtermInstance.write(`\x1b[1;32m${termPrompt.textContent}\x1b[0m `);
+                const termPrompt = document.getElementById('term-prompt');
+                const promptText = termPrompt ? termPrompt.textContent : '$';
+                wtermInstance.write(`\x1b[1;32m${promptText}\x1b[0m `);
             }
             const termOutput = document.getElementById('term-output');
             if (termOutput) termOutput.innerText = '';
             scrollToTerminalBottom();
-            termInput.focus();
-        });
+            const termInput = document.getElementById('term-input');
+            if (termInput) termInput.focus();
+        };
+        document.getElementById('btn-clear-term')?.addEventListener('click', window.handleClearTerminal);
 
         function renderConnFields() {
             const proto = connProtocol.value;
             let html = '';
             if (proto === 'pyodide') {
-                html = `<span class="text-yellow-300 font-medium flex items-center gap-1.5"><i data-lucide="cpu" class="w-3.5 h-3.5 text-yellow-400"></i> <span data-i18n="pyodideStatusBadge">Pyodide WASM (瀏覽器原生 Python，免裝環境、免開 Daemon)</span></span>`;
+                html = `<span class="text-yellow-300 font-medium flex items-center gap-1.5"><i data-lucide="cpu" class="w-3.5 h-3.5 text-yellow-400"></i> <span data-i18n="pyodideStatusBadge">瀏覽器原生 Python</span></span>`;
             } else if (proto === 'ssh') {
                 html = `<input type="text" id="cfg-host" placeholder="Host (IP)" class="bg-gray-900 border border-gray-700 rounded px-2 py-1 w-28 text-xs font-mono">
                         <input type="number" id="cfg-port" value="22" class="bg-gray-900 border border-gray-700 rounded px-2 py-1 w-16 text-xs font-mono">
@@ -14080,7 +14082,7 @@ Important guidelines:
                         <i data-lucide="download" class="w-3.5 h-3.5 text-blue-400"></i>
                         <span class="font-medium">${escapeHtml(t('termActionExportLog'))}</span>
                     </button>
-                    <button type="button" onclick="document.getElementById('btn-clear-term')?.click(); closeLeftActionsDropdown();" class="w-full flex items-center gap-2.5 px-3 py-2 text-rose-300 hover:bg-gray-800 transition text-left cursor-pointer">
+                    <button type="button" onclick="handleClearTerminal(); closeLeftActionsDropdown();" class="w-full flex items-center gap-2.5 px-3 py-2 text-rose-300 hover:bg-gray-800 transition text-left cursor-pointer">
                         <i data-lucide="trash-2" class="w-3.5 h-3.5 text-rose-400"></i>
                         <span class="font-medium">${escapeHtml(t('termActionClear'))}</span>
                     </button>

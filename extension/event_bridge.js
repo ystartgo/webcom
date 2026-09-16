@@ -10,16 +10,37 @@
         // 分割多個陳述式 (以分號分割)
         const statements = expr.split(';').map(s => s.trim()).filter(Boolean);
         for (const stmt of statements) {
-            // 匹配函式呼叫格式：fnName(arg1, arg2...) 或單純 fnName
-            const match = stmt.match(/^([a-zA-Z0-9_$]+)(?:\((.*)\))?$/);
+            // 1. 支援 document.getElementById('...')?.click() 模式
+            const docClickMatch = stmt.match(/^document\.getElementById\(['"]([^'"]+)['"]\)(?:\?)?\.click\(\)$/);
+            if (docClickMatch) {
+                const el = document.getElementById(docClickMatch[1]);
+                if (el) {
+                    try { el.click(); } catch(err) { console.error('[EventBridge] Element click error:', err); }
+                }
+                continue;
+            }
+
+            // 2. 匹配函式呼叫格式：fnName(arg1, arg2...) 或 window.fnName(...)
+            const match = stmt.match(/^([a-zA-Z0-9_$.]+)(?:\((.*)\))?$/);
             if (!match) continue;
 
-            const fnName = match[1];
+            const fnPath = match[1];
             const rawArgsStr = match[2];
 
-            const targetFn = window[fnName];
+            // 解析函式對象 (支援 window.xxx 或頂層函式)
+            let targetFn = window;
+            const parts = fnPath.replace(/^window\./, '').split('.');
+            for (const p of parts) {
+                if (targetFn && targetFn[p] !== undefined) {
+                    targetFn = targetFn[p];
+                } else {
+                    targetFn = null;
+                    break;
+                }
+            }
+
             if (typeof targetFn !== 'function') {
-                console.warn('[EventBridge] Function not found on window:', fnName);
+                console.warn('[EventBridge] Function not found on window:', fnPath);
                 continue;
             }
 
@@ -44,7 +65,7 @@
             try {
                 targetFn.apply(element, args);
             } catch (err) {
-                console.error(`[EventBridge] Error executing ${fnName}:`, err);
+                console.error(`[EventBridge] Error executing ${fnPath}:`, err);
             }
         }
     }

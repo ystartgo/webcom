@@ -550,43 +550,43 @@
 
             <!-- Row 2: 剪貼與控制快捷鍵 (Clipboard & Control Keys) -->
             <div class="flex items-center justify-between gap-1 overflow-x-auto">
-                <div class="flex items-center gap-1">
+                <div class="flex items-center gap-1 shrink-0">
                     <button id="vkey-ctrl-a" data-i18n-title="tooltipVkeyCtrlA" type="button"
-                        class="px-2.5 py-1 bg-indigo-950/60 hover:bg-indigo-900/80 active:bg-indigo-700 text-indigo-300 border border-indigo-700/60 rounded-md font-mono text-xs font-bold transition flex items-center gap-1 shadow-sm"
+                        class="px-2 py-1 bg-indigo-950/60 hover:bg-indigo-900/80 active:bg-indigo-700 text-indigo-300 border border-indigo-700/60 rounded-md font-mono text-xs font-bold transition flex items-center gap-1 shadow-sm whitespace-nowrap shrink-0"
                         title="全選輸入內容 (Ctrl+A)">
-                        <span class="text-[10px] bg-indigo-500/20 px-1 py-0.2 rounded font-semibold">^A</span>
-                        <span>Ctrl+A (全選)</span>
+                        <span class="text-[10px] bg-indigo-500/20 px-1 py-0.2 rounded font-semibold shrink-0">^A</span>
+                        <span class="whitespace-nowrap">Ctrl+A (全選)</span>
                     </button>
                     <button id="vkey-ctrl-c" data-i18n-title="tooltipVkeyCtrlC" type="button"
-                        class="px-2.5 py-1 bg-amber-950/60 hover:bg-amber-900/80 active:bg-amber-700 text-amber-300 border border-amber-700/60 rounded-md font-mono text-xs font-bold transition flex items-center gap-1 shadow-sm"
+                        class="px-2 py-1 bg-amber-950/60 hover:bg-amber-900/80 active:bg-amber-700 text-amber-300 border border-amber-700/60 rounded-md font-mono text-xs font-bold transition flex items-center gap-1 shadow-sm whitespace-nowrap shrink-0"
                         title="中斷 / 發送 SIGINT (Ctrl+C)">
-                        <span class="text-[10px] bg-amber-500/20 px-1 py-0.2 rounded font-semibold">^C</span>
-                        <span>Ctrl+C (複製/中斷)</span>
+                        <span class="text-[10px] bg-amber-500/20 px-1 py-0.2 rounded font-semibold shrink-0">^C</span>
+                        <span class="whitespace-nowrap">Ctrl+C (複製/中斷)</span>
                     </button>
                     <button id="vkey-ctrl-v" data-i18n-title="tooltipVkeyCtrlV" type="button"
-                        class="px-2.5 py-1 bg-emerald-950/60 hover:bg-emerald-900/80 active:bg-emerald-700 text-emerald-300 border border-emerald-700/60 rounded-md font-mono text-xs font-bold transition flex items-center gap-1 shadow-sm"
+                        class="px-2 py-1 bg-emerald-950/60 hover:bg-emerald-900/80 active:bg-emerald-700 text-emerald-300 border border-emerald-700/60 rounded-md font-mono text-xs font-bold transition flex items-center gap-1 shadow-sm whitespace-nowrap shrink-0"
                         title="貼上剪貼簿內容 (Ctrl+V)">
-                        <span class="text-[10px] bg-emerald-500/20 px-1 py-0.2 rounded font-semibold">^V</span>
-                        <span>Ctrl+V (貼上)</span>
+                        <span class="text-[10px] bg-emerald-500/20 px-1 py-0.2 rounded font-semibold shrink-0">^V</span>
+                        <span class="whitespace-nowrap">Ctrl+V (貼上)</span>
                     </button>
                     <button id="vkey-ctrl-x" data-i18n-title="tooltipVkeyCtrlX" type="button"
-                        class="px-2.5 py-1 bg-rose-950/60 hover:bg-rose-900/80 active:bg-rose-700 text-rose-300 border border-rose-700/60 rounded-md font-mono text-xs font-bold transition flex items-center gap-1 shadow-sm"
+                        class="px-2 py-1 bg-rose-950/60 hover:bg-rose-900/80 active:bg-rose-700 text-rose-300 border border-rose-700/60 rounded-md font-mono text-xs font-bold transition flex items-center gap-1 shadow-sm whitespace-nowrap shrink-0"
                         title="發送 Ctrl+X / 離開或清空">
-                        <span class="text-[10px] bg-rose-500/20 px-1 py-0.2 rounded font-semibold">^X</span>
-                        <span>Ctrl+X (剪下/清空)</span>
+                        <span class="text-[10px] bg-rose-500/20 px-1 py-0.2 rounded font-semibold shrink-0">^X</span>
+                        <span class="whitespace-nowrap">Ctrl+X (剪下/清空)</span>
                     </button>
                     <button id="vkey-esc" type="button" onclick="handleSpecialKey('esc')"
-                        class="px-2.5 py-1 bg-gray-900 hover:bg-gray-800 text-amber-300 border border-gray-700 rounded-md font-mono text-xs font-bold transition flex items-center gap-1 shadow-sm cursor-pointer"
+                        class="px-2 py-1 bg-gray-900 hover:bg-gray-800 text-amber-300 border border-gray-700 rounded-md font-mono text-xs font-bold transition flex items-center gap-1 shadow-sm cursor-pointer whitespace-nowrap shrink-0"
                         title="發送 Escape (Esc) 鍵" data-i18n-title="tooltipVkeyEsc">
-                        <span>Esc ⎋</span>
+                        <span class="whitespace-nowrap">Esc ⎋</span>
                     </button>
                 </div>
-                <div class="flex items-center gap-1">
+                <div class="flex items-center gap-1 shrink-0">
                     <div id="vkey-custom-container" class="flex items-center gap-1"></div>
                     <button id="btn-config-vkeys" type="button" onclick="openKeySettingsModal('term')"
-                        class="px-2 py-1 bg-purple-950/60 hover:bg-purple-900 active:bg-purple-800 text-purple-300 border border-purple-700/60 rounded-md font-mono text-xs font-bold transition flex items-center gap-1 shadow-sm cursor-pointer"
+                        class="px-2 py-1 bg-purple-950/60 hover:bg-purple-900 active:bg-purple-800 text-purple-300 border border-purple-700/60 rounded-md font-mono text-xs font-bold transition flex items-center gap-1 shadow-sm cursor-pointer whitespace-nowrap shrink-0"
                         title="終端機與桌面按鍵設置 (自訂虛擬按鍵/巨集/快捷鍵)" data-i18n-title="tooltipKeySettings">
-                        <i data-lucide="settings" class="w-3.5 h-3.5"></i> <span data-i18n="keySettingsBtn">按鍵設置</span>
+                        <i data-lucide="settings" class="w-3.5 h-3.5 shrink-0"></i> <span class="whitespace-nowrap" data-i18n="keySettingsBtn">按鍵設置</span>
                     </button>
                 </div>
             </div>
@@ -1305,46 +1305,46 @@
                     </label>
                 </div>
 
-                <div class="flex items-center gap-2">
+                <div class="flex items-center gap-1.5 flex-wrap">
                     <button id="btn-open-artifact"
-                        class="text-xs bg-cyan-950/60 hover:bg-cyan-900/80 text-cyan-300 px-2 py-1 rounded-md border border-cyan-700/50 flex items-center gap-1 font-medium transition shadow-sm"
+                        class="text-xs bg-cyan-950/60 hover:bg-cyan-900/80 text-cyan-300 px-2 py-1 rounded-md border border-cyan-700/50 flex items-center gap-1 font-medium transition shadow-sm whitespace-nowrap shrink-0"
                         title="開啟 Artifact 成果工坊與獨立沙箱" data-i18n-title="tooltipOpenArtifact">
-                        <i data-lucide="layout" class="w-3.5 h-3.5"></i> <span data-i18n="btnArtifactWorkbench">Artifact 工坊</span>
+                        <i data-lucide="layout" class="w-3.5 h-3.5 shrink-0"></i> <span class="whitespace-nowrap" data-i18n="btnArtifactWorkbench">Artifact 工坊</span>
                     </button>
 
                     <button id="btn-open-app-lib" type="button" onclick="openAppLibraryModal()"
-                        class="text-xs bg-violet-950/60 hover:bg-violet-900/80 text-violet-300 px-2 py-1 rounded-md border border-violet-700/50 flex items-center gap-1 font-medium transition shadow-sm cursor-pointer"
+                        class="text-xs bg-violet-950/60 hover:bg-violet-900/80 text-violet-300 px-2 py-1 rounded-md border border-violet-700/50 flex items-center gap-1 font-medium transition shadow-sm cursor-pointer whitespace-nowrap shrink-0"
                         title="開啟自建應用程式庫 (新建/編輯/管理/LLM調用)" data-i18n-title="tooltipOpenAppLib">
-                        <i data-lucide="boxes" class="w-3.5 h-3.5"></i> <span data-i18n="btnAppLibrary">應用庫</span>
+                        <i data-lucide="boxes" class="w-3.5 h-3.5 shrink-0"></i> <span class="whitespace-nowrap" data-i18n="btnAppLibrary">應用庫</span>
                     </button>
 
                     <button id="btn-open-guide"
-                        class="text-xs bg-indigo-950/60 hover:bg-indigo-900/80 text-indigo-300 px-2 py-1 rounded-md border border-indigo-700/50 flex items-center gap-1 font-medium transition"
+                        class="text-xs bg-indigo-950/60 hover:bg-indigo-900/80 text-indigo-300 px-2 py-1 rounded-md border border-indigo-700/50 flex items-center gap-1 font-medium transition whitespace-nowrap shrink-0"
                         title="開啟系統操作與排障說明手冊" data-i18n-title="tooltipOpenGuide">
-                        <i data-lucide="help-circle" class="w-3.5 h-3.5"></i> <span data-i18n="btnUserGuide">操作說明</span>
+                        <i data-lucide="help-circle" class="w-3.5 h-3.5 shrink-0"></i> <span class="whitespace-nowrap" data-i18n="btnUserGuide">操作說明</span>
                     </button>
 
                     <button id="btn-open-rag"
-                        class="text-xs bg-emerald-950/60 hover:bg-emerald-900/80 text-emerald-300 px-2 py-1 rounded-md border border-emerald-700/50 flex items-center gap-1 font-medium transition"
+                        class="text-xs bg-emerald-950/60 hover:bg-emerald-900/80 text-emerald-300 px-2 py-1 rounded-md border border-emerald-700/50 flex items-center gap-1 font-medium transition whitespace-nowrap shrink-0"
                         title="開啟 RAG 知識庫管理" data-i18n-title="tooltipOpenRag">
-                        <i data-lucide="book-open" class="w-3.5 h-3.5"></i> <span data-i18n="btnRagManager">知識庫管理</span>
+                        <i data-lucide="book-open" class="w-3.5 h-3.5 shrink-0"></i> <span class="whitespace-nowrap" data-i18n="btnRagManager">知識庫管理</span>
                     </button>
 
                     <button id="btn-open-mcp"
-                        class="text-xs bg-amber-950/60 hover:bg-amber-900/80 text-amber-300 px-2 py-1 rounded-md border border-amber-700/50 flex items-center gap-1 font-medium transition"
+                        class="text-xs bg-amber-950/60 hover:bg-amber-900/80 text-amber-300 px-2 py-1 rounded-md border border-amber-700/50 flex items-center gap-1 font-medium transition whitespace-nowrap shrink-0"
                         title="開啟 MCP 伺服器與工具設定" data-i18n-title="tooltipOpenMcp">
-                        <i data-lucide="cpu" class="w-3.5 h-3.5"></i> <span data-i18n="btnMcpManager">MCP 工具</span>
+                        <i data-lucide="cpu" class="w-3.5 h-3.5 shrink-0"></i> <span class="whitespace-nowrap" data-i18n="btnMcpManager">MCP 工具</span>
                     </button>
 
                     <button id="btn-compress-context" type="button"
-                        class="text-xs text-purple-300 hover:text-purple-200 bg-purple-950/40 hover:bg-purple-900/60 border border-purple-800/50 px-2 py-1 rounded-md flex items-center gap-1 transition shadow-sm ml-1 cursor-pointer"
+                        class="text-xs text-purple-300 hover:text-purple-200 bg-purple-950/40 hover:bg-purple-900/60 border border-purple-800/50 px-2 py-1 rounded-md flex items-center gap-1 transition shadow-sm ml-0.5 cursor-pointer whitespace-nowrap shrink-0"
                         title="壓縮對話上下文 (減少 Token 負載，防止長對話當機)" data-i18n-title="tooltipCompressContext">
-                        <i data-lucide="shrink" class="w-3.5 h-3.5 text-purple-400"></i>
-                        <span id="context-tokens-badge" class="font-mono text-[11px]">~0 tok</span>
+                        <i data-lucide="shrink" class="w-3.5 h-3.5 text-purple-400 shrink-0"></i>
+                        <span id="context-tokens-badge" class="font-mono text-[11px] whitespace-nowrap">~0 tok</span>
                     </button>
                     <button id="btn-clear"
-                        class="text-xs text-red-400 hover:text-red-300 flex items-center gap-1 font-medium transition ml-1">
-                        <i data-lucide="trash-2" class="w-3.5 h-3.5"></i> <span data-i18n="clearChat">清空</span>
+                        class="text-xs text-red-400 hover:text-red-300 flex items-center gap-1 font-medium transition ml-0.5 whitespace-nowrap shrink-0 cursor-pointer">
+                        <i data-lucide="trash-2" class="w-3.5 h-3.5 shrink-0"></i> <span class="whitespace-nowrap" data-i18n="clearChat">清空</span>
                     </button>
                 </div>
             </div>
@@ -1503,66 +1503,70 @@
                         </button>
                     </div>
 
-                    <!-- Secondary Actions Dropdown (三 / 更多操作) -->
+                </div>
+
+                <!-- Right Pinned Action Toolbar (Never clipped by overflow-x-auto, high z-index) -->
+                <div class="flex items-center gap-1.5 shrink-0 z-30">
+                    <!-- Secondary Actions Dropdown (三 / 功能選單) -->
                     <div class="relative inline-block text-left shrink-0" id="drawer-more-dropdown-container">
                         <button id="drawer-btn-more-menu" type="button" onclick="toggleDrawerMoreDropdown(event)"
-                            class="text-xs px-2.5 py-1.5 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-200 hover:text-white border border-gray-700 transition flex items-center gap-1.5 font-medium shadow-sm cursor-pointer"
+                            class="text-xs px-2.5 py-1.5 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-200 hover:text-white border border-gray-700 transition flex items-center gap-1.5 font-medium shadow-sm cursor-pointer whitespace-nowrap"
                             title="更多操作選單" data-i18n-title="artifactMoreActions">
                             <i data-lucide="menu" class="w-3.5 h-3.5"></i>
-                            <span class="hidden sm:inline text-xs font-semibold" data-i18n="artifactDrawerActions">功能</span>
+                            <span class="text-xs font-semibold" data-i18n="artifactDrawerActions">功能</span>
                             <i data-lucide="chevron-down" class="w-3 h-3 text-gray-400"></i>
                         </button>
-                        <!-- Dropdown Menu -->
+                        <!-- Dropdown Menu (Positioned top-full, right-0, z-[150], backdrop blur) -->
                         <div id="dropdown-drawer-more"
-                            class="hidden absolute right-0 mt-1.5 w-44 origin-top-right rounded-xl bg-gray-900 border border-gray-700 shadow-2xl p-1.5 z-50 flex flex-col gap-1 backdrop-blur-lg">
+                            class="hidden absolute right-0 top-full mt-1.5 w-48 origin-top-right rounded-xl bg-gray-900/95 border border-gray-700 shadow-2xl p-1.5 z-[150] flex flex-col gap-1 backdrop-blur-xl">
                             <button id="drawer-btn-refresh" type="button" onclick="closeDrawerMoreDropdown()"
-                                class="w-full text-left text-xs px-2.5 py-1.5 rounded-lg hover:bg-gray-800 text-gray-200 hover:text-white transition flex items-center gap-2 cursor-pointer"
+                                class="w-full text-left text-xs px-2.5 py-1.5 rounded-lg hover:bg-gray-800 text-gray-200 hover:text-white transition flex items-center gap-2 cursor-pointer whitespace-nowrap"
                                 title="重新載入沙箱" data-i18n-title="artifactReloadSandbox">
                                 <i data-lucide="rotate-cw" class="w-3.5 h-3.5 text-indigo-400 shrink-0"></i>
                                 <span data-i18n="artifactReloadSandbox">重新載入</span>
                             </button>
                             <button id="drawer-btn-open-tab" type="button" onclick="closeDrawerMoreDropdown()"
-                                class="w-full text-left text-xs px-2.5 py-1.5 rounded-lg hover:bg-gray-800 text-cyan-300 hover:text-cyan-200 transition flex items-center gap-2 cursor-pointer"
+                                class="w-full text-left text-xs px-2.5 py-1.5 rounded-lg hover:bg-gray-800 text-cyan-300 hover:text-cyan-200 transition flex items-center gap-2 cursor-pointer whitespace-nowrap"
                                 title="在新視窗獨立開啟" data-i18n-title="artifactOpenNewTab">
                                 <i data-lucide="external-link" class="w-3.5 h-3.5 text-cyan-400 shrink-0"></i>
                                 <span data-i18n="artifactOpenNewTab">新分頁開啟</span>
                             </button>
                             <div class="h-px bg-gray-800 my-0.5"></div>
                             <button id="drawer-btn-copy" type="button" onclick="closeDrawerMoreDropdown()"
-                                class="w-full text-left text-xs px-2.5 py-1.5 rounded-lg hover:bg-gray-800 text-gray-200 hover:text-white transition flex items-center gap-2 cursor-pointer"
+                                class="w-full text-left text-xs px-2.5 py-1.5 rounded-lg hover:bg-gray-800 text-gray-200 hover:text-white transition flex items-center gap-2 cursor-pointer whitespace-nowrap"
                                 title="複製全檔代碼" data-i18n-title="artifactCopyAllCode">
                                 <i data-lucide="copy" class="w-3.5 h-3.5 text-amber-400 shrink-0"></i>
                                 <span data-i18n="artifactCopy">複製代碼</span>
                             </button>
                             <button id="drawer-btn-download" type="button" onclick="closeDrawerMoreDropdown()"
-                                class="w-full text-left text-xs px-2.5 py-1.5 rounded-lg hover:bg-emerald-950/60 text-emerald-300 hover:text-white transition flex items-center gap-2 cursor-pointer"
+                                class="w-full text-left text-xs px-2.5 py-1.5 rounded-lg hover:bg-emerald-950/60 text-emerald-300 hover:text-white transition flex items-center gap-2 cursor-pointer whitespace-nowrap"
                                 title="下載完整檔案" data-i18n-title="artifactDownloadFullFile">
                                 <i data-lucide="download" class="w-3.5 h-3.5 text-emerald-400 shrink-0"></i>
                                 <span data-i18n="artifactDownload">下載檔案</span>
                             </button>
                             <button id="drawer-btn-continue" type="button" onclick="closeDrawerMoreDropdown()"
-                                class="w-full text-left text-xs px-2.5 py-1.5 rounded-lg hover:bg-purple-950/60 text-purple-300 hover:text-white transition flex items-center gap-2 cursor-pointer"
+                                class="w-full text-left text-xs px-2.5 py-1.5 rounded-lg hover:bg-purple-950/60 text-purple-300 hover:text-white transition flex items-center gap-2 cursor-pointer whitespace-nowrap"
                                 title="請求 LLM 接續此檔案" data-i18n-title="artifactRequestContinue">
                                 <i data-lucide="play" class="w-3.5 h-3.5 text-purple-400 shrink-0"></i>
                                 <span data-i18n="artifactContinue">接續撰寫</span>
                             </button>
                             <button id="drawer-btn-save-to-lib" type="button" onclick="closeDrawerMoreDropdown()"
-                                class="w-full text-left text-xs px-2.5 py-1.5 rounded-lg hover:bg-violet-950/60 text-violet-300 hover:text-white transition flex items-center gap-2 cursor-pointer"
+                                class="w-full text-left text-xs px-2.5 py-1.5 rounded-lg hover:bg-violet-950/60 text-violet-300 hover:text-white transition flex items-center gap-2 cursor-pointer whitespace-nowrap"
                                 title="收藏至自建應用庫" data-i18n-title="tooltipSaveToAppLib">
                                 <i data-lucide="bookmark-plus" class="w-3.5 h-3.5 text-violet-400 shrink-0"></i>
                                 <span data-i18n="artifactSaveToLib">存入應用庫</span>
                             </button>
                         </div>
                     </div>
-                </div>
 
-                <!-- Far Right Pinned Exit Button: 100% ALWAYS visible, prominent rose/red badge with "離開" -->
-                <button id="btn-close-artifact-drawer" type="button"
-                    class="shrink-0 flex items-center gap-1.5 px-3 py-1.5 bg-rose-950/80 hover:bg-rose-900 text-rose-300 hover:text-white border border-rose-700/60 rounded-lg text-xs font-bold transition shadow-sm cursor-pointer ml-1 z-10"
-                    title="離開 / 關閉 (Esc)" data-i18n-title="artifactCloseDrawer">
-                    <i data-lucide="x" class="w-4 h-4 text-rose-400"></i>
-                    <span class="whitespace-nowrap font-bold" data-i18n="artifactExit">離開</span>
-                </button>
+                    <!-- Far Right Pinned Exit Button: 100% ALWAYS visible, prominent rose/red badge with "離開" -->
+                    <button id="btn-close-artifact-drawer" type="button"
+                        class="shrink-0 flex items-center gap-1.5 px-3 py-1.5 bg-rose-950/80 hover:bg-rose-900 text-rose-300 hover:text-white border border-rose-700/60 rounded-lg text-xs font-bold transition shadow-sm cursor-pointer ml-1 z-10 whitespace-nowrap"
+                        title="離開 / 關閉 (Esc)" data-i18n-title="artifactCloseDrawer">
+                        <i data-lucide="x" class="w-4 h-4 text-rose-400"></i>
+                        <span class="whitespace-nowrap font-bold" data-i18n="artifactExit">離開</span>
+                    </button>
+                </div>
             </div>
 
             <!-- Content Area -->
@@ -3739,7 +3743,7 @@ ffmpeg -f pulse -i default -acodec libmp3lame -ab 128k -f mp3 -listen 1 http://0
                 appTitle: "雙引擎 AI 控制台",
                 multiProtocolTerm: "多協定終端機",
                 protoPyodide: "🐍 Python 3 (Pyodide WASM 免安裝)",
-                pyodideStatusBadge: "Pyodide WASM (瀏覽器原生 Python，免裝環境、免開 Daemon)",
+                pyodideStatusBadge: "瀏覽器原生 Python",
                 protoShell: "本地 Shell (PowerShell/CMD)",
                 protoWsl: "本地 Shell (WSL Linux)",
                 wslCheck: "檢查 WSL",
@@ -4180,7 +4184,7 @@ ffmpeg -f pulse -i default -acodec libmp3lame -ab 128k -f mp3 -listen 1 http://0
                 slashCmdArtifact_title: "/產出Artifact應用",
                 slashCmdArtifact_desc: "要求 AI 以 Artifact 格式產出完整的單檔網頁應用、腳本或文件",
                 slashCmdArtifact_payload: "請設計並實作一個完整的單檔應用程式（如 HTML/JS/CSS 互動網頁或實用腳本），並嚴格使用 <artifact identifier=\"app\" type=\"html\" title=\"我的應用程式\">...</artifact> 標籤輸出。若程式碼較長，請在接近上限時中斷並等待我要求接續。",
-                btnAppLibrary: "應用庫 (App Library)",
+                btnAppLibrary: "應用庫",
                 tooltipOpenAppLib: "開啟自建應用程式庫 (Open Custom App Library)",
                 artifactSaveToLib: "存入應用庫 (Save to Library)",
                 tooltipSaveToAppLib: "將此 Artifact 成果收藏至個人自建應用庫 (Save to App Library)",
@@ -4510,7 +4514,7 @@ ffmpeg -f pulse -i default -acodec libmp3lame -ab 128k -f mp3 -listen 1 http://0
                 appTitle: "Dual-Engine AI Console",
                 multiProtocolTerm: "Multi-Protocol Terminal",
                 protoPyodide: "🐍 Python 3 (Pyodide WASM In-Browser)",
-                pyodideStatusBadge: "Pyodide WASM (Browser-native Python, zero install & zero daemon)",
+                pyodideStatusBadge: "Browser-Native Python",
                 protoShell: "Local Shell (PowerShell/CMD)",
                 protoWsl: "Local Shell (WSL Linux)",
                 wslCheck: "Check WSL",
@@ -10652,12 +10656,10 @@ ${tools.join('\n')}${contextStr}
 
                 const bannerRaw = termIsEn ? [
                     "\x1b[1;36mWebcom Multi-Protocol Terminal v1.0.8\x1b[0m  \x1b[33m(Powered by Vercel Labs wterm)\x1b[0m",
-                    "\x1b[32m● WASM Core (~12KB)\x1b[0m   \x1b[32m● DOM Native Rendering\x1b[0m   \x1b[32m● 24-bit True Color\x1b[0m",
-                    "\x1b[90mSupports: Python 3 (Pyodide WASM In-Browser) / Shell / SSH / Telnet / Web Serial\x1b[0m"
+                    "\x1b[32m● WASM Core (~12KB)\x1b[0m   \x1b[32m● DOM Native Rendering\x1b[0m   \x1b[32m● 24-bit True Color\x1b[0m"
                 ] : [
                     "\x1b[1;36mWebcom 多協定終端機 v1.0.8\x1b[0m  \x1b[33m(Powered by Vercel Labs wterm)\x1b[0m",
-                    "\x1b[32m● WASM 核心 (~12KB)\x1b[0m   \x1b[32m● DOM 原生渲染\x1b[0m   \x1b[32m● 24-bit 真彩色\x1b[0m",
-                    "\x1b[90m支援：Python 3 (Pyodide WASM 免安裝) / 本地 Shell / SSH / Telnet / Web Serial\x1b[0m"
+                    "\x1b[32m● WASM 核心 (~12KB)\x1b[0m   \x1b[32m● DOM 原生渲染\x1b[0m   \x1b[32m● 24-bit 真彩色\x1b[0m"
                 ];
                 wtermInstance.write(bannerBox(bannerRaw) + '\r\n\r\n');
                 printToTerminal(t('termReady') || 'Terminal ready.', 'success');
@@ -10763,22 +10765,26 @@ ${tools.join('\n')}${contextStr}
             }
         }
 
-        document.getElementById('btn-clear-term').addEventListener('click', () => {
+        window.handleClearTerminal = function() {
             if (wtermInstance) {
                 wtermInstance.write('\x1b[2J\x1b[3J\x1b[H');
-                wtermInstance.write(`\x1b[1;32m${termPrompt.textContent}\x1b[0m `);
+                const termPrompt = document.getElementById('term-prompt');
+                const promptText = termPrompt ? termPrompt.textContent : '$';
+                wtermInstance.write(`\x1b[1;32m${promptText}\x1b[0m `);
             }
             const termOutput = document.getElementById('term-output');
             if (termOutput) termOutput.innerText = '';
             scrollToTerminalBottom();
-            termInput.focus();
-        });
+            const termInput = document.getElementById('term-input');
+            if (termInput) termInput.focus();
+        };
+        document.getElementById('btn-clear-term')?.addEventListener('click', window.handleClearTerminal);
 
         function renderConnFields() {
             const proto = connProtocol.value;
             let html = '';
             if (proto === 'pyodide') {
-                html = `<span class="text-yellow-300 font-medium flex items-center gap-1.5"><i data-lucide="cpu" class="w-3.5 h-3.5 text-yellow-400"></i> <span data-i18n="pyodideStatusBadge">Pyodide WASM (瀏覽器原生 Python，免裝環境、免開 Daemon)</span></span>`;
+                html = `<span class="text-yellow-300 font-medium flex items-center gap-1.5"><i data-lucide="cpu" class="w-3.5 h-3.5 text-yellow-400"></i> <span data-i18n="pyodideStatusBadge">瀏覽器原生 Python</span></span>`;
             } else if (proto === 'ssh') {
                 html = `<input type="text" id="cfg-host" placeholder="Host (IP)" class="bg-gray-900 border border-gray-700 rounded px-2 py-1 w-28 text-xs font-mono">
                         <input type="number" id="cfg-port" value="22" class="bg-gray-900 border border-gray-700 rounded px-2 py-1 w-16 text-xs font-mono">
@@ -17787,7 +17793,7 @@ Important guidelines:
                         <i data-lucide="download" class="w-3.5 h-3.5 text-blue-400"></i>
                         <span class="font-medium">${escapeHtml(t('termActionExportLog'))}</span>
                     </button>
-                    <button type="button" onclick="document.getElementById('btn-clear-term')?.click(); closeLeftActionsDropdown();" class="w-full flex items-center gap-2.5 px-3 py-2 text-rose-300 hover:bg-gray-800 transition text-left cursor-pointer">
+                    <button type="button" onclick="handleClearTerminal(); closeLeftActionsDropdown();" class="w-full flex items-center gap-2.5 px-3 py-2 text-rose-300 hover:bg-gray-800 transition text-left cursor-pointer">
                         <i data-lucide="trash-2" class="w-3.5 h-3.5 text-rose-400"></i>
                         <span class="font-medium">${escapeHtml(t('termActionClear'))}</span>
                     </button>
