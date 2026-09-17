@@ -13818,6 +13818,213 @@ Important guidelines:
             }
         };
 
+        // ── 核心對話倒帶與精確重試機制 (Context-Preserving Rewind & Retry Pipeline) ──
+        async function rewindAndRetryUserTurn(userWrapperDiv, newPromptText = null) {
+            if (!userWrapperDiv) return;
+            if (isGenerating) {
+                if (currentAbortController) {
+                    try { currentAbortController.abort(); } catch (e) {}
+                }
+                await safeInterruptWebLLM();
+                await new Promise(r => setTimeout(r, 80));
+            }
+
+            // 1. 尋找此 userWrapper 在 chatBox 所有使用者訊息中的順序索引 (k)
+            const allUserDivs = Array.from(chatBox.querySelectorAll('.msg-wrapper')).filter(el => 
+                el.dataset.role === 'user' || el.querySelector('.btn-retry-user-msg')
+            );
+            const userIndex = allUserDivs.indexOf(userWrapperDiv);
+
+            // 2. 清理 DOM：保留此 userWrapperDiv，移除其後所有子元素 (舊的助理回覆、工具卡片、後續各輪對話)
+            let nextEl = userWrapperDiv.nextElementSibling;
+            while (nextEl) {
+                const toRemove = nextEl;
+                nextEl = nextEl.nextElementSibling;
+                toRemove.remove();
+            }
+
+            // 3. 處理使用者編輯文字 (若有)
+            if (newPromptText !== null) {
+                const textBody = userWrapperDiv.querySelector('.msg-text-body');
+                if (textBody) textBody.textContent = newPromptText;
+                userWrapperDiv._userPrompt = newPromptText;
+            }
+
+            // 4. 精確對齊並倒帶截斷 chatHistory
+            let promptToRun = newPromptText;
+            let historyTargetIdx = -1;
+
+            if (userIndex >= 0) {
+                let userTurnCount = 0;
+                for (let i = 0; i < chatHistory.length; i++) {
+                    const item = chatHistory[i];
+                    if (item && item.role === 'user') {
+                        const isToolResponse = typeof item.content === 'string' && item.content.includes('<tool_response>');
+                        if (!isToolResponse) {
+                            if (userTurnCount === userIndex) {
+                                historyTargetIdx = i;
+                                break;
+                            }
+                            userTurnCount++;
+                        }
+                    }
+                }
+            }
+
+            // Fallback 比對：若因任何緣故未依序號找到，從後向前比對提問文字
+            if (historyTargetIdx === -1) {
+                const fallbackText = newPromptText || userWrapperDiv._userPrompt || userWrapperDiv.querySelector('.msg-text-body')?.textContent?.trim() || '';
+                for (let i = chatHistory.length - 1; i >= 0; i--) {
+                    const item = chatHistory[i];
+                    if (item && item.role === 'user') {
+                        const isTool = typeof item.content === 'string' && item.content.includes('<tool_response>');
+                        if (!isTool) {
+                            if (typeof item.content === 'string' && item.content.trim() === fallbackText) {
+                                historyTargetIdx = i;
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+
+            if (historyTargetIdx === -1) {
+                // 最後備援：選取 chatHistory 內最後一個非 tool_response 的 user 訊息
+                for (let i = chatHistory.length - 1; i >= 0; i--) {
+                    const item = chatHistory[i];
+                    if (item && item.role === 'user') {
+                        const isTool = typeof item.content === 'string' && item.content.includes('<tool_response>');
+                        if (!isTool) {
+                            historyTargetIdx = i;
+                            break;
+                        }
+                    }
+                }
+            }
+
+            if (historyTargetIdx !== -1) {
+                // 截斷至該 user 訊息，清除其後所有舊 Assistant 回答、工具輸出與後續對話輪次
+                chatHistory = chatHistory.slice(0, historyTargetIdx + 1);
+
+                if (newPromptText !== null) {
+                    if (Array.isArray(chatHistory[historyTargetIdx].content)) {
+                        const txtItem = chatHistory[historyTargetIdx].content.find(p => p.type === 'text');
+                        if (txtItem) txtItem.text = newPromptText;
+                        else chatHistory[historyTargetIdx].content.unshift({ type: 'text', text: newPromptText });
+                    } else {
+                        chatHistory[historyTargetIdx].content = newPromptText;
+                    }
+                } else {
+                    const c = chatHistory[historyTargetIdx].content;
+                    if (typeof c === 'string') {
+                        promptToRun = c;
+                    } else if (Array.isArray(c)) {
+                        const txtItem = c.find(p => p.type === 'text');
+                        if (txtItem) promptToRun = txtItem.text;
+                    }
+                }
+            } else {
+                // 若 chatHistory 完全空或無 user，補齊上下文
+                const fallbackText = newPromptText || userWrapperDiv._userPrompt || userWrapperDiv.querySelector('.msg-text-body')?.textContent?.trim() || '';
+                promptToRun = fallbackText;
+                if (chatHistory.length === 0 || chatHistory[0].role !== 'system') {
+                    const isAgentEnabled = (typeof agentToggle !== 'undefined' && agentToggle.checked);
+                    chatHistory.unshift({ role: "system", content: buildSystemPrompt(isAgentEnabled, fallbackText) });
+                }
+                chatHistory.push({ role: "user", content: fallbackText });
+            }
+
+            // 5. 精確對齊並倒帶截斷 sessionChatLog
+            if (typeof sessionChatLog !== 'undefined' && Array.isArray(sessionChatLog)) {
+                let sessionUserCount = 0;
+                let sessionTargetIdx = -1;
+                if (userIndex >= 0) {
+                    for (let i = 0; i < sessionChatLog.length; i++) {
+                        if (sessionChatLog[i] && sessionChatLog[i].role === 'user') {
+                            if (sessionUserCount === userIndex) {
+                                sessionTargetIdx = i;
+                                break;
+                            }
+                            sessionUserCount++;
+                        }
+                    }
+                }
+                if (sessionTargetIdx === -1) {
+                    for (let i = sessionChatLog.length - 1; i >= 0; i--) {
+                        if (sessionChatLog[i] && sessionChatLog[i].role === 'user') {
+                            sessionTargetIdx = i;
+                            break;
+                        }
+                    }
+                }
+                if (sessionTargetIdx !== -1) {
+                    sessionChatLog = sessionChatLog.slice(0, sessionTargetIdx + 1);
+                    if (newPromptText !== null && sessionChatLog[sessionTargetIdx]) {
+                        sessionChatLog[sessionTargetIdx].content = newPromptText;
+                    }
+                }
+            }
+
+            if (!promptToRun) {
+                promptToRun = userWrapperDiv._userPrompt || userWrapperDiv.querySelector('.msg-text-body')?.textContent?.trim() || '';
+            }
+
+            if (typeof updateContextBadge === 'function') updateContextBadge();
+            scrollToBottom();
+
+            // 6. 啟動串流重新生成
+            if (promptToRun) {
+                setGeneratingState(true);
+                try {
+                    await streamAgentLoop(promptToRun);
+                } catch (err) {
+                    console.error('[Retry Error]', err);
+                    appendMessage('assistant', `⚠️ 重試生成時發生錯誤: ${err.message || err}`, false);
+                } finally {
+                    setGeneratingState(false);
+                }
+            }
+        }
+
+        async function rewindAndRetryAssistantTurn(assistantWrapperDiv) {
+            if (!assistantWrapperDiv) return;
+
+            // 尋找此 assistant 回應對應的 user 提問容器 (往前搜尋最近的 user msg-wrapper)
+            let userWrapperDiv = null;
+            let prev = assistantWrapperDiv.previousElementSibling;
+            while (prev) {
+                if (prev.classList.contains('msg-wrapper') && (prev.dataset.role === 'user' || prev.querySelector('.btn-retry-user-msg'))) {
+                    userWrapperDiv = prev;
+                    break;
+                }
+                prev = prev.previousElementSibling;
+            }
+
+            if (userWrapperDiv) {
+                await rewindAndRetryUserTurn(userWrapperDiv, null);
+            } else {
+                if (isGenerating && currentAbortController) {
+                    try { currentAbortController.abort(); } catch (e) {}
+                }
+                await safeInterruptWebLLM();
+                assistantWrapperDiv.remove();
+                if (chatHistory.length > 0 && chatHistory[chatHistory.length - 1].role === 'assistant') {
+                    chatHistory.pop();
+                }
+                const targetPrompt = assistantWrapperDiv._assistantPrompt || lastUserPrompt || '';
+                if (targetPrompt) {
+                    setGeneratingState(true);
+                    try {
+                        await streamAgentLoop(targetPrompt);
+                    } finally {
+                        setGeneratingState(false);
+                    }
+                }
+            }
+        }
+        window.rewindAndRetryUserTurn = rewindAndRetryUserTurn;
+        window.rewindAndRetryAssistantTurn = rewindAndRetryAssistantTurn;
+
         // 使用者提問就地編輯重發 (ChatGPT / Gemini 標準特色)
         function makeUserMessageEditable(wrapperDiv, textSpan, originalContent) {
             const isEn = (currentLang === 'en');
@@ -13845,15 +14052,14 @@ Important guidelines:
                 if (actionBar) actionBar.style.display = '';
             });
 
-            editContainer.querySelector('.btn-save-submit').addEventListener('click', () => {
+            editContainer.querySelector('.btn-save-submit').addEventListener('click', async () => {
                 const newText = textarea.value.trim();
                 if (!newText) return;
                 editContainer.remove();
-                textSpan.textContent = newText;
                 textSpan.style.display = '';
                 if (actionBar) actionBar.style.display = '';
-                if (userInput) userInput.value = newText;
-                handleSend();
+                const userWrapper = wrapperDiv.classList.contains('msg-wrapper') ? wrapperDiv : (wrapperDiv.closest('.msg-wrapper') || wrapperDiv);
+                await rewindAndRetryUserTurn(userWrapper, newText);
             });
         }
 
@@ -14115,6 +14321,13 @@ Important guidelines:
         function appendMessage(role, content, isHtml = false, skipHistory = false, originalPrompt = '', images = []) {
             const div = document.createElement('div');
             div.className = `flex ${role === 'user' ? 'justify-end' : 'justify-start'} msg-wrapper my-1.5`;
+            div.dataset.role = role;
+            if (role === 'user') {
+                div._userPrompt = content;
+                div._userImages = images;
+            } else if (role === 'assistant') {
+                div._assistantPrompt = originalPrompt;
+            }
             const innerDiv = document.createElement('div');
             innerDiv.className = `max-w-[88%] sm:max-w-[84%] p-3.5 rounded-2xl text-sm leading-relaxed shadow-sm ${
                 role === 'user'
@@ -14197,22 +14410,7 @@ Important guidelines:
 
                 // 重新生成
                 actionBar.querySelector('.btn-retry-msg').addEventListener('click', async () => {
-                    if (isGenerating && currentAbortController) {
-                        try { currentAbortController.abort(); } catch (e) {}
-                    }
-                    await safeInterruptWebLLM();
-                    div.remove();
-                    if (chatHistory.length > 0 && chatHistory[chatHistory.length - 1].role === 'assistant') {
-                        chatHistory.pop();
-                    }
-                    if (targetPrompt) {
-                        setGeneratingState(true);
-                        try {
-                            await streamAgentLoop(targetPrompt);
-                        } finally {
-                            setGeneratingState(false);
-                        }
-                    }
+                    await rewindAndRetryAssistantTurn(div);
                 });
 
                 // 複製全文
@@ -14296,18 +14494,12 @@ Important guidelines:
 
                     // 編輯提問 (ChatGPT & Gemini 就地編輯)
                     userBar.querySelector('.btn-edit-user-msg').addEventListener('click', () => {
-                        makeUserMessageEditable(innerDiv, textSpan, content);
+                        makeUserMessageEditable(div, textSpan, content);
                     });
 
                     // 重新發送
                     userBar.querySelector('.btn-retry-user-msg').addEventListener('click', async () => {
-                        const targetPrompt = content || originalPrompt || '';
-                        if (!targetPrompt) return;
-                        if (isGenerating && currentAbortController) { try { currentAbortController.abort(); } catch (e) { } }
-                        await safeInterruptWebLLM();
-                        setGeneratingState(true);
-                        try { await streamAgentLoop(targetPrompt); }
-                        finally { setGeneratingState(false); }
+                        await rewindAndRetryUserTurn(div, null);
                     });
                 }
             }

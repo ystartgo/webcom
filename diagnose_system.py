@@ -150,6 +150,8 @@ def test_core_functions():
         ("startWslDesktopAndConnect WSL 桌面啟動函式", "function startWslDesktopAndConnect" in content and "window.startWslDesktopAndConnect = startWslDesktopAndConnect" in content),
         ("stopWslDesktopService WSL 桌面停止函式", "function stopWslDesktopService" in content and "window.stopWslDesktopService = stopWslDesktopService" in content),
         ("launchWslApp WSL GUI 應用程式啟動函式", "function launchWslApp" in content and "window.launchWslApp = launchWslApp" in content),
+        ("rewindAndRetryUserTurn 對話倒帶重試函式", "function rewindAndRetryUserTurn" in content and "window.rewindAndRetryUserTurn = rewindAndRetryUserTurn" in content),
+        ("rewindAndRetryAssistantTurn 助理重試倒帶函式", "function rewindAndRetryAssistantTurn" in content and "window.rewindAndRetryAssistantTurn = rewindAndRetryAssistantTurn" in content),
     ]
 
     for name, ok in core_checks:
@@ -338,6 +340,11 @@ def test_multimodal_vision():
     has_text_warning = "onnx-community/gemma-4-E2B-it-ONNX" in html_code and ("不支援圖片視覺識別" in html_code or "does not support image" in html_code)
     record("Vision", "純文字模型防呆與切換 Gemma-4 提示", has_text_warning,
            "選用純文字模型上傳圖片時提供切換 Gemma-4 友善指引" if has_text_warning else "缺少純文字附圖引導")
+
+    # 5. 對話重試歷史倒帶截斷防禦
+    has_retry_rewind = "rewindAndRetryUserTurn" in html_code and "rewindAndRetryAssistantTurn" in html_code
+    record("Vision", "對話重試歷史倒帶截斷防禦 (Rewind on Retry)", has_retry_rewind,
+           "重試時自動截斷並保留正確歷史上下文" if has_retry_rewind else "缺少重試倒帶防禦")
 
 def test_sync():
     print(f"\n{CYAN}{BOLD}【8. 雙目錄檔案一致性同步比對】{RESET}")
