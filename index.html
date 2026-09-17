@@ -419,15 +419,15 @@
 
                     <!-- 終端機模式快捷 -->
                     <div id="actions-left-term" class="flex items-center gap-1.5">
-                        <button id="btn-term-xinit" type="button" onclick="runXinitInTerm()"
-                            class="text-xs px-2 py-0.5 rounded bg-emerald-950/80 hover:bg-emerald-900 text-emerald-300 border border-emerald-600/50 flex items-center gap-1 font-mono transition cursor-pointer"
-                            title="在終端機執行 xinit 並自動切換至 Xorg 視窗" data-i18n-title="tooltipTermXinit">
-                            <i data-lucide="play" class="w-3 h-3 text-emerald-400"></i>
-                            <span data-i18n="btnTermXinit">xinit 桌面</span>
+                        <button id="btn-clear-term" type="button" onclick="handleClearTerminal()"
+                            class="text-xs px-2 py-0.5 rounded bg-gray-800 hover:bg-rose-950/80 text-rose-300 hover:text-rose-200 border border-rose-600/40 flex items-center gap-1 font-mono transition cursor-pointer"
+                            title="清除畫面" data-i18n-title="clearTerm">
+                            <i data-lucide="trash-2" class="w-3 h-3 text-rose-400"></i>
+                            <span data-i18n="clearTerm">清除畫面</span>
                         </button>
-                        <!-- 保留供相容性呼叫 -->
+                        <!-- 保留供相容性呼叫 (xinit 桌面已收納於「三」更多動作選單中) -->
+                        <button id="btn-term-xinit" type="button" onclick="runXinitInTerm()" class="hidden" title="在終端機執行 xinit 並自動切換至 Xorg 視窗" data-i18n-title="tooltipTermXinit"></button>
                         <button id="btn-export-log" type="button" class="hidden" title="匯出終端機日誌" data-i18n-title="exportLog"></button>
-                        <button id="btn-clear-term" type="button" class="hidden" title="清除畫面" data-i18n-title="clearTerm"></button>
                     </div>
 
                     <!-- noVNC 模式快捷 -->
