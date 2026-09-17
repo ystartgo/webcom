@@ -7900,6 +7900,11 @@ ffmpeg -f pulse -i default -acodec libmp3lame -ab 128k -f mp3 -listen 1 http://0
             const xcmdIn = document.getElementById('xorg-cmd-input');
             if (xcmdIn) xcmdIn.placeholder = t('xorgCmdPlaceholder');
 
+            // ── 同步廣播語系切換至內嵌 iframe (如 Jev 沙盒) ──
+            document.querySelectorAll('iframe').forEach(ifr => {
+                try { ifr.contentWindow?.postMessage({ type: 'SET_LANGUAGE', lang: currentLang }, '*'); } catch (e) {}
+            });
+
             lucide.createIcons();
         }
 
@@ -13109,6 +13114,9 @@ Important guidelines:
 
             if (!htmlContent) {
                 htmlContent = '<iframe src="./assets/jev_sandbox.html" class="w-full h-full border-0"></iframe>';
+            } else {
+                const langToInject = (typeof currentLang !== 'undefined' ? currentLang : 'zh-TW');
+                htmlContent = htmlContent.replace('<head>', `<head><script>window.__INITIAL_LANG__ = "${langToInject}";<\/script>`);
             }
 
             const art = {
