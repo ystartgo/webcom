@@ -3404,7 +3404,7 @@ if (!window.WTerm && window.WTermBundle) {
             // ── Engine Mode Select Options 翻譯 ──
             const engineSel = document.getElementById('engine-mode-select');
             if (engineSel && engineSel.options.length >= 5) {
-                engineSel.options[0].textContent = isEn ? "🖥️ LM Studio / API Mode" : "🖥️ LM Studio / API";
+                engineSel.options[0].textContent = isEn ? "🌐 API Mode (Cloud / Local)" : "🌐 API 模式 (雲端 / 本機)";
                 engineSel.options[1].textContent = isEn ? "⚡ WebGPU Browser Local" : "⚡ WebGPU 瀏覽器純本機";
                 engineSel.options[2].textContent = isEn ? "📦 ONNX Browser Local (ONNX Runtime)" : "📦 ONNX 瀏覽器本機 (ONNX Runtime)";
                 engineSel.options[3].textContent = t('engineModeCoThink');
@@ -6108,12 +6108,30 @@ if (!window.WTerm && window.WTermBundle) {
             return Math.ceil(totalChars / 2.5);
         }
 
+        function getModelContextBudget() {
+            if (typeof appSettings === 'undefined') return 2048;
+            const mode = appSettings.engineMode;
+            if (mode === 'onnx' || mode === 'webgpu') return 2048;
+            if (mode === 'lmstudio') {
+                const prof = appSettings.profiles?.[appSettings.activeProfile];
+                const ep = String(prof?.endpoint || '').toLowerCase();
+                const name = String(prof?.name || '').toLowerCase();
+                // 若為本機 LM Studio 或 Ollama，安全上限預設為 2048 防溢出；雲端 API 為 4096
+                if (ep.includes('127.0.0.1') || ep.includes('localhost') || name.includes('local') || name.includes('ollama')) {
+                    return 2048;
+                }
+                return 4096;
+            }
+            return 2048;
+        }
+        window.getModelContextBudget = getModelContextBudget;
+
         function updateContextBadge() {
             const badge = document.getElementById('context-tokens-badge');
             if (!badge) return;
             const isRagActive = (typeof ragToggle !== 'undefined' && ragToggle && ragToggle.checked);
             const est = estimateTokens(chatHistory);
-            let budget = (appSettings.engineMode === 'onnx' || appSettings.engineMode === 'webgpu') ? 2048 : 4096;
+            let budget = getModelContextBudget();
             const prefix = isRagActive ? '📚 RAG: ' : '';
             badge.textContent = `${prefix}~${est} / ${budget} tok`;
             if (est > budget * 0.85) {
@@ -6132,10 +6150,11 @@ if (!window.WTerm && window.WTermBundle) {
 
             const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en');
             const isRagActive = (typeof ragToggle !== 'undefined' && ragToggle && ragToggle.checked);
-            let maxBudget = (appSettings.engineMode === 'onnx' || appSettings.engineMode === 'webgpu') ? 2200 : 3600;
+            const budget = getModelContextBudget();
+            let maxBudget = Math.floor(budget * (aggressive ? 0.6 : 0.82));
             if (aggressive || isRagActive) {
-                // 當啟用 RAG 時，上下文核心應留給檢索到的文件知識與當前問題，歷史對話預算精簡收斂
-                maxBudget = isRagActive ? 1800 : Math.min(1800, maxBudget);
+                // 當啟用 RAG 或激進壓縮時，上下文精簡收斂，確保預留足夠空間供模型生成
+                maxBudget = isRagActive ? Math.min(1400, maxBudget) : Math.min(1800, maxBudget);
             }
 
             // 1. Check if system prompt exists at history[0]
@@ -6180,8 +6199,8 @@ if (!window.WTerm && window.WTermBundle) {
                     if (textParts) msg.content = textParts;
                 }
 
-                // B. Large Tool Responses: Truncate inner tool responses (>300 chars)
                 if (typeof msg.content === 'string') {
+                    // B.1 Large Tool Responses: Truncate inner tool responses (>300 chars)
                     if (msg.content.includes('<tool_response>')) {
                         msg.content = msg.content.replace(/<tool_response>([\s\S]*?)<\/tool_response>/g, (m, inner) => {
                             const trimmed = inner.trim();
@@ -6195,9 +6214,39 @@ if (!window.WTerm && window.WTermBundle) {
                         });
                     }
 
+                    // B.2 Large Artifact Blocks: 歷史代碼塊專用緊湊壓縮（防止接續時暴增超出記憶體）
+                    if (msg.content.includes('<artifact') || msg.content.includes('<antArtifact')) {
+                        // 針對完整閉合之 artifact 標籤
+                        msg.content = msg.content.replace(/<(artifact|antArtifact)\b([^>]*)>([\s\S]*?)<\/\1>/gi, (m, tagName, rawAttrs, rawContent) => {
+                            const cleanContent = rawContent.trim();
+                            if (cleanContent.length > 400) {
+                                const lines = cleanContent.split('\n');
+                                if (lines.length > 18) {
+                                    const tailLines = lines.slice(-12).join('\n');
+                                    const omittedCount = lines.length - 12;
+                                    return `<${tagName}${rawAttrs}>\n/* ... [${isEn ? `Earlier code lines omitted: ${omittedCount} lines` : `前文歷史代碼已收合: 共 ${omittedCount} 行`} ...] */\n${tailLines}\n</${tagName}>`;
+                                }
+                            }
+                            return m;
+                        });
+
+                        // 針對未閉合（因長度截斷）之歷史 artifact 標籤
+                        msg.content = msg.content.replace(/<(artifact|antArtifact)\b([^>]*)>([\s\S]*)$/i, (m, tagName, rawAttrs, rawContent) => {
+                            if (m.includes(`</${tagName}>`)) return m;
+                            const cleanContent = rawContent.trim();
+                            const lines = cleanContent.split('\n');
+                            if (lines.length > 18) {
+                                const tailLines = lines.slice(-12).join('\n');
+                                const omittedCount = lines.length - 12;
+                                return `<${tagName}${rawAttrs}>\n/* ... [${isEn ? `Earlier code lines omitted: ${omittedCount} lines` : `前文歷史代碼已收合: 共 ${omittedCount} 行`} ...] */\n${tailLines}\n</${tagName}>`;
+                            }
+                            return m;
+                        });
+                    }
+
                     // C. Large Historical Assistant/User Text (e.g. converted documents, long essays)
                     const maxMsgLen = aggressive ? 600 : 1200;
-                    if (msg.content.length > maxMsgLen) {
+                    if (msg.content.length > maxMsgLen && !msg.content.includes('<artifact') && !msg.content.includes('<antArtifact')) {
                         const head = msg.content.slice(0, Math.floor(maxMsgLen * 0.6));
                         const tail = msg.content.slice(-Math.floor(maxMsgLen * 0.25));
                         msg.content = `${head}\n\n... [${isEn ? 'Historical dialogue compressed to preserve context window' : '歷史對話內容已自動節錄壓縮以保護上下文視窗'}] ...\n\n${tail}`;
@@ -6208,9 +6257,10 @@ if (!window.WTerm && window.WTermBundle) {
             // 3. Sliding Window: If total estimated tokens still exceed budget, prune oldest turns!
             let curTokens = estimateTokens(history);
             if ((aggressive || isRagActive) && history.length > 3) {
-                // 當已有 RAG 檢索時，模型應專注於 RAG 檢索成果回答，歷史對話僅保留最多最近 1 輪供代名詞指涉
-                while (history.length > 3) {
+                // 當已有 RAG 檢索或激進壓縮時，歷史對話最多保留最近 1~2 輪供代名詞指涉
+                while (curTokens > maxBudget && history.length > 3) {
                     history.splice(1, 1);
+                    curTokens = estimateTokens(history);
                 }
             } else {
                 while (curTokens > maxBudget && history.length > 3) {
@@ -6224,7 +6274,7 @@ if (!window.WTerm && window.WTermBundle) {
                 const markerTag = "[System Note: Earlier conversation turns compressed";
                 const markerTagZh = "【系統防護：歷史對話輪次已自動壓縮";
                 const hasMarker = history.some(m => typeof m.content === 'string' && (m.content.includes(markerTag) || m.content.includes(markerTagZh)));
-                if (!hasMarker && history.length > 2) {
+                if (!hasMarker && history.length > 2 && curTokens > maxBudget * 0.7) {
                     history.splice(1, 0, {
                         role: "system",
                         content: isEn
@@ -8677,17 +8727,32 @@ ${tools.join('\n')}${contextStr}
             const art = globalArtifactStore.get(id);
             if (!art) return;
             const isZh = currentLang === 'zh-TW';
+            const fullCode = art.fullContent || '';
+            const allLines = fullCode.split('\n');
+            const tailSnippet = allLines.slice(-20).join('\n');
+            const totalLines = allLines.length;
+
             const prompt = isZh
                 ? `請接續上述 Artifact「${art.title || id}」(identifier: "${id}") 尚未完成的內容繼續輸出。
+【目前已生成至第 ${totalLines} 行，末尾代碼片段如下（請緊接此處無縫續寫，切勿重複前文）】：
+\`\`\`${art.language || art.type || ''}
+${tailSnippet}
+\`\`\`
 重要規範：
 1. 請使用 <artifact identifier="${id}" mode="continue"> 標籤包裹接續內容。
-2. 請緊接著上次中斷處直接輸出剩餘程式碼，不要重複前文。
+2. 緊接著上述中斷點直接輸出剩餘程式碼，絕對不要重複前文或從頭重寫。
 3. 若全檔已完成，請以 </artifact> 結尾。`
                 : `Please continue outputting the remaining code for Artifact "${art.title || id}" (identifier: "${id}").
+[Currently generated up to line ${totalLines}. Tail snippet where output stopped (continue directly after this, do NOT repeat)]:\n\`\`\`${art.language || art.type || ''}\n${tailSnippet}\n\`\`\`
 Important guidelines:
-1. Wrap the continued code in <artifact identifier="${id}" mode="continue">.
+1. Wrap continued code in <artifact identifier="${id}" mode="continue">.
 2. Continue directly from where it left off without repeating previous lines.
 3. Close with </artifact> when completely finished.`;
+
+            // 在發送前主動深度壓縮歷史對話，收合先前代碼塊，保證接續時絕不超出記憶體！
+            if (typeof compressChatHistory === 'function') {
+                compressChatHistory(chatHistory, true);
+            }
 
             userInput.value = prompt;
             userInput.style.height = 'auto';
@@ -10045,6 +10110,213 @@ Important guidelines:
             }
         };
 
+        // ── 核心對話倒帶與精確重試機制 (Context-Preserving Rewind & Retry Pipeline) ──
+        async function rewindAndRetryUserTurn(userWrapperDiv, newPromptText = null) {
+            if (!userWrapperDiv) return;
+            if (isGenerating) {
+                if (currentAbortController) {
+                    try { currentAbortController.abort(); } catch (e) {}
+                }
+                await safeInterruptWebLLM();
+                await new Promise(r => setTimeout(r, 80));
+            }
+
+            // 1. 尋找此 userWrapper 在 chatBox 所有使用者訊息中的順序索引 (k)
+            const allUserDivs = Array.from(chatBox.querySelectorAll('.msg-wrapper')).filter(el => 
+                el.dataset.role === 'user' || el.querySelector('.btn-retry-user-msg')
+            );
+            const userIndex = allUserDivs.indexOf(userWrapperDiv);
+
+            // 2. 清理 DOM：保留此 userWrapperDiv，移除其後所有子元素 (舊的助理回覆、工具卡片、後續各輪對話)
+            let nextEl = userWrapperDiv.nextElementSibling;
+            while (nextEl) {
+                const toRemove = nextEl;
+                nextEl = nextEl.nextElementSibling;
+                toRemove.remove();
+            }
+
+            // 3. 處理使用者編輯文字 (若有)
+            if (newPromptText !== null) {
+                const textBody = userWrapperDiv.querySelector('.msg-text-body');
+                if (textBody) textBody.textContent = newPromptText;
+                userWrapperDiv._userPrompt = newPromptText;
+            }
+
+            // 4. 精確對齊並倒帶截斷 chatHistory
+            let promptToRun = newPromptText;
+            let historyTargetIdx = -1;
+
+            if (userIndex >= 0) {
+                let userTurnCount = 0;
+                for (let i = 0; i < chatHistory.length; i++) {
+                    const item = chatHistory[i];
+                    if (item && item.role === 'user') {
+                        const isToolResponse = typeof item.content === 'string' && item.content.includes('<tool_response>');
+                        if (!isToolResponse) {
+                            if (userTurnCount === userIndex) {
+                                historyTargetIdx = i;
+                                break;
+                            }
+                            userTurnCount++;
+                        }
+                    }
+                }
+            }
+
+            // Fallback 比對：若因任何緣故未依序號找到，從後向前比對提問文字
+            if (historyTargetIdx === -1) {
+                const fallbackText = newPromptText || userWrapperDiv._userPrompt || userWrapperDiv.querySelector('.msg-text-body')?.textContent?.trim() || '';
+                for (let i = chatHistory.length - 1; i >= 0; i--) {
+                    const item = chatHistory[i];
+                    if (item && item.role === 'user') {
+                        const isTool = typeof item.content === 'string' && item.content.includes('<tool_response>');
+                        if (!isTool) {
+                            if (typeof item.content === 'string' && item.content.trim() === fallbackText) {
+                                historyTargetIdx = i;
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+
+            if (historyTargetIdx === -1) {
+                // 最後備援：選取 chatHistory 內最後一個非 tool_response 的 user 訊息
+                for (let i = chatHistory.length - 1; i >= 0; i--) {
+                    const item = chatHistory[i];
+                    if (item && item.role === 'user') {
+                        const isTool = typeof item.content === 'string' && item.content.includes('<tool_response>');
+                        if (!isTool) {
+                            historyTargetIdx = i;
+                            break;
+                        }
+                    }
+                }
+            }
+
+            if (historyTargetIdx !== -1) {
+                // 截斷至該 user 訊息，清除其後所有舊 Assistant 回答、工具輸出與後續對話輪次
+                chatHistory = chatHistory.slice(0, historyTargetIdx + 1);
+
+                if (newPromptText !== null) {
+                    if (Array.isArray(chatHistory[historyTargetIdx].content)) {
+                        const txtItem = chatHistory[historyTargetIdx].content.find(p => p.type === 'text');
+                        if (txtItem) txtItem.text = newPromptText;
+                        else chatHistory[historyTargetIdx].content.unshift({ type: 'text', text: newPromptText });
+                    } else {
+                        chatHistory[historyTargetIdx].content = newPromptText;
+                    }
+                } else {
+                    const c = chatHistory[historyTargetIdx].content;
+                    if (typeof c === 'string') {
+                        promptToRun = c;
+                    } else if (Array.isArray(c)) {
+                        const txtItem = c.find(p => p.type === 'text');
+                        if (txtItem) promptToRun = txtItem.text;
+                    }
+                }
+            } else {
+                // 若 chatHistory 完全空或無 user，補齊上下文
+                const fallbackText = newPromptText || userWrapperDiv._userPrompt || userWrapperDiv.querySelector('.msg-text-body')?.textContent?.trim() || '';
+                promptToRun = fallbackText;
+                if (chatHistory.length === 0 || chatHistory[0].role !== 'system') {
+                    const isAgentEnabled = (typeof agentToggle !== 'undefined' && agentToggle.checked);
+                    chatHistory.unshift({ role: "system", content: buildSystemPrompt(isAgentEnabled, fallbackText) });
+                }
+                chatHistory.push({ role: "user", content: fallbackText });
+            }
+
+            // 5. 精確對齊並倒帶截斷 sessionChatLog
+            if (typeof sessionChatLog !== 'undefined' && Array.isArray(sessionChatLog)) {
+                let sessionUserCount = 0;
+                let sessionTargetIdx = -1;
+                if (userIndex >= 0) {
+                    for (let i = 0; i < sessionChatLog.length; i++) {
+                        if (sessionChatLog[i] && sessionChatLog[i].role === 'user') {
+                            if (sessionUserCount === userIndex) {
+                                sessionTargetIdx = i;
+                                break;
+                            }
+                            sessionUserCount++;
+                        }
+                    }
+                }
+                if (sessionTargetIdx === -1) {
+                    for (let i = sessionChatLog.length - 1; i >= 0; i--) {
+                        if (sessionChatLog[i] && sessionChatLog[i].role === 'user') {
+                            sessionTargetIdx = i;
+                            break;
+                        }
+                    }
+                }
+                if (sessionTargetIdx !== -1) {
+                    sessionChatLog = sessionChatLog.slice(0, sessionTargetIdx + 1);
+                    if (newPromptText !== null && sessionChatLog[sessionTargetIdx]) {
+                        sessionChatLog[sessionTargetIdx].content = newPromptText;
+                    }
+                }
+            }
+
+            if (!promptToRun) {
+                promptToRun = userWrapperDiv._userPrompt || userWrapperDiv.querySelector('.msg-text-body')?.textContent?.trim() || '';
+            }
+
+            if (typeof updateContextBadge === 'function') updateContextBadge();
+            scrollToBottom();
+
+            // 6. 啟動串流重新生成
+            if (promptToRun) {
+                setGeneratingState(true);
+                try {
+                    await streamAgentLoop(promptToRun);
+                } catch (err) {
+                    console.error('[Retry Error]', err);
+                    appendMessage('assistant', `⚠️ 重試生成時發生錯誤: ${err.message || err}`, false);
+                } finally {
+                    setGeneratingState(false);
+                }
+            }
+        }
+
+        async function rewindAndRetryAssistantTurn(assistantWrapperDiv) {
+            if (!assistantWrapperDiv) return;
+
+            // 尋找此 assistant 回應對應的 user 提問容器 (往前搜尋最近的 user msg-wrapper)
+            let userWrapperDiv = null;
+            let prev = assistantWrapperDiv.previousElementSibling;
+            while (prev) {
+                if (prev.classList.contains('msg-wrapper') && (prev.dataset.role === 'user' || prev.querySelector('.btn-retry-user-msg'))) {
+                    userWrapperDiv = prev;
+                    break;
+                }
+                prev = prev.previousElementSibling;
+            }
+
+            if (userWrapperDiv) {
+                await rewindAndRetryUserTurn(userWrapperDiv, null);
+            } else {
+                if (isGenerating && currentAbortController) {
+                    try { currentAbortController.abort(); } catch (e) {}
+                }
+                await safeInterruptWebLLM();
+                assistantWrapperDiv.remove();
+                if (chatHistory.length > 0 && chatHistory[chatHistory.length - 1].role === 'assistant') {
+                    chatHistory.pop();
+                }
+                const targetPrompt = assistantWrapperDiv._assistantPrompt || lastUserPrompt || '';
+                if (targetPrompt) {
+                    setGeneratingState(true);
+                    try {
+                        await streamAgentLoop(targetPrompt);
+                    } finally {
+                        setGeneratingState(false);
+                    }
+                }
+            }
+        }
+        window.rewindAndRetryUserTurn = rewindAndRetryUserTurn;
+        window.rewindAndRetryAssistantTurn = rewindAndRetryAssistantTurn;
+
         // 使用者提問就地編輯重發 (ChatGPT / Gemini 標準特色)
         function makeUserMessageEditable(wrapperDiv, textSpan, originalContent) {
             const isEn = (currentLang === 'en');
@@ -10072,15 +10344,14 @@ Important guidelines:
                 if (actionBar) actionBar.style.display = '';
             });
 
-            editContainer.querySelector('.btn-save-submit').addEventListener('click', () => {
+            editContainer.querySelector('.btn-save-submit').addEventListener('click', async () => {
                 const newText = textarea.value.trim();
                 if (!newText) return;
                 editContainer.remove();
-                textSpan.textContent = newText;
                 textSpan.style.display = '';
                 if (actionBar) actionBar.style.display = '';
-                if (userInput) userInput.value = newText;
-                handleSend();
+                const userWrapper = wrapperDiv.classList.contains('msg-wrapper') ? wrapperDiv : (wrapperDiv.closest('.msg-wrapper') || wrapperDiv);
+                await rewindAndRetryUserTurn(userWrapper, newText);
             });
         }
 
@@ -10342,6 +10613,13 @@ Important guidelines:
         function appendMessage(role, content, isHtml = false, skipHistory = false, originalPrompt = '', images = []) {
             const div = document.createElement('div');
             div.className = `flex ${role === 'user' ? 'justify-end' : 'justify-start'} msg-wrapper my-1.5`;
+            div.dataset.role = role;
+            if (role === 'user') {
+                div._userPrompt = content;
+                div._userImages = images;
+            } else if (role === 'assistant') {
+                div._assistantPrompt = originalPrompt;
+            }
             const innerDiv = document.createElement('div');
             innerDiv.className = `max-w-[88%] sm:max-w-[84%] p-3.5 rounded-2xl text-sm leading-relaxed shadow-sm ${
                 role === 'user'
@@ -10371,9 +10649,25 @@ Important guidelines:
             }
 
             if (role === 'assistant') {
-                const activeEngineName = (typeof appSettings !== 'undefined' && appSettings.engineMode)
-                    ? appSettings.engineMode.toUpperCase()
-                    : 'AI AGENT';
+                let activeEngineName = 'AI AGENT';
+                if (typeof appSettings !== 'undefined' && appSettings.engineMode) {
+                    const mode = appSettings.engineMode;
+                    if (mode === 'lmstudio') {
+                        const prof = appSettings.profiles?.[appSettings.activeProfile];
+                        const profName = prof?.name || 'API';
+                        activeEngineName = `API • ${profName}`;
+                    } else if (mode === 'webgpu') {
+                        activeEngineName = 'WEBGPU';
+                    } else if (mode === 'onnx') {
+                        activeEngineName = 'ONNX';
+                    } else if (mode === 'cothink') {
+                        activeEngineName = 'CO-THINK';
+                    } else if (mode === 'supervise') {
+                        activeEngineName = 'SUPERVISE';
+                    } else {
+                        activeEngineName = String(mode).toUpperCase();
+                    }
+                }
                 innerDiv.innerHTML = `
                     <div class="text-xs text-purple-400 font-bold mb-2 flex items-center justify-between select-none">
                         <div class="flex items-center gap-1.5">
@@ -10424,22 +10718,7 @@ Important guidelines:
 
                 // 重新生成
                 actionBar.querySelector('.btn-retry-msg').addEventListener('click', async () => {
-                    if (isGenerating && currentAbortController) {
-                        try { currentAbortController.abort(); } catch (e) {}
-                    }
-                    await safeInterruptWebLLM();
-                    div.remove();
-                    if (chatHistory.length > 0 && chatHistory[chatHistory.length - 1].role === 'assistant') {
-                        chatHistory.pop();
-                    }
-                    if (targetPrompt) {
-                        setGeneratingState(true);
-                        try {
-                            await streamAgentLoop(targetPrompt);
-                        } finally {
-                            setGeneratingState(false);
-                        }
-                    }
+                    await rewindAndRetryAssistantTurn(div);
                 });
 
                 // 複製全文
@@ -10523,18 +10802,12 @@ Important guidelines:
 
                     // 編輯提問 (ChatGPT & Gemini 就地編輯)
                     userBar.querySelector('.btn-edit-user-msg').addEventListener('click', () => {
-                        makeUserMessageEditable(innerDiv, textSpan, content);
+                        makeUserMessageEditable(div, textSpan, content);
                     });
 
                     // 重新發送
                     userBar.querySelector('.btn-retry-user-msg').addEventListener('click', async () => {
-                        const targetPrompt = content || originalPrompt || '';
-                        if (!targetPrompt) return;
-                        if (isGenerating && currentAbortController) { try { currentAbortController.abort(); } catch (e) { } }
-                        await safeInterruptWebLLM();
-                        setGeneratingState(true);
-                        try { await streamAgentLoop(targetPrompt); }
-                        finally { setGeneratingState(false); }
+                        await rewindAndRetryUserTurn(div, null);
                     });
                 }
             }
@@ -11559,7 +11832,8 @@ Important guidelines:
                     currentAbortController = new AbortController();
 
                     chatHistory[0].content = buildSystemPrompt(isAgentEnabled, prompt, currentWebSearchContext);
-                    compressChatHistory(chatHistory, false);
+                    const isContinuationQuery = /^(請?接續|繼續|continue|接下去|未完)/i.test(String(prompt || '').trim());
+                    compressChatHistory(chatHistory, isContinuationQuery);
 
                     const textBlock = document.createElement('div');
                     if (loopCount > 1) {
@@ -11789,9 +12063,11 @@ Important guidelines:
                                 // Pre-generation UI yield to prevent browser frame freeze
                                 await new Promise(r => setTimeout(r, 20));
 
+                                const promptTokens = estimateTokens(chatHistory);
+                                const onnxMaxTokens = Math.max(256, Math.min(2048, 2048 - promptTokens));
                                 const vlOut = await model.generate({
                                     ...inputs,
-                                    max_new_tokens: 4096,
+                                    max_new_tokens: onnxMaxTokens,
                                     temperature: 0.6,
                                     top_p: 0.9,
                                     repetition_penalty: 1.15,
@@ -11893,7 +12169,8 @@ Important guidelines:
                                 return m;
                             });
                             let wgpuRetryCount = 0;
-                            let maxGenTokens = 2048;
+                            const promptTokens = estimateTokens(chatHistory);
+                            let maxGenTokens = Math.max(256, Math.min(1536, 2048 - promptTokens));
                             while (true) {
                                 try {
                                     chunks = await engine.chat.completions.create({
@@ -13351,16 +13628,21 @@ Important guidelines:
                                 } catch (fetchErr) {
                                     const errMsg = String(fetchErr.message || fetchErr).toLowerCase();
                                     const isContextError = errMsg.includes("context") || errMsg.includes("token") || errMsg.includes("length") || errMsg.includes("payload") || errMsg.includes("413") || errMsg.includes("400") || errMsg.includes("oom") || errMsg.includes("out of memory");
-                                    if (apiRetryCount === 0 && isContextError && chatHistory.length > 2 && isGenerating) {
-                                        apiRetryCount++;
-                                        console.warn("[API Context Overflow] Auto-compressing history and retrying...", fetchErr);
-                                        const warnNotice = document.createElement('div');
-                                        warnNotice.className = "text-amber-400 text-xs my-1 font-mono p-2 bg-amber-950/60 rounded-lg border border-amber-700/60 flex items-center gap-1.5 shadow-sm";
-                                        warnNotice.innerHTML = `<span>⚠️ ${currentLang === 'en' ? 'Context window exceeded. Auto-compressed conversation history & retrying...' : '偵測到對話上下文負載超額，已自動深度壓縮歷史記錄並重試中...'}</span>`;
-                                        containerEl.appendChild(warnNotice);
-                                        compressChatHistory(chatHistory, true);
-                                        continue;
-                                    }
+                                     if (apiRetryCount < 2 && isContextError && chatHistory.length > 2 && isGenerating) {
+                                         apiRetryCount++;
+                                         console.warn(`[API Context Overflow] Auto-compressing history (attempt ${apiRetryCount}) and retrying...`, fetchErr);
+                                         const warnNotice = document.createElement('div');
+                                         warnNotice.className = "text-amber-400 text-xs my-1 font-mono p-2 bg-amber-950/60 rounded-lg border border-amber-700/60 flex items-center gap-1.5 shadow-sm";
+                                         warnNotice.innerHTML = `<span>⚠️ ${currentLang === 'en' ? 'Context window exceeded. Auto-compressed conversation history & retrying...' : '偵測到對話上下文負載超額，已自動深度壓縮歷史記錄並重試中...'}</span>`;
+                                         containerEl.appendChild(warnNotice);
+                                         compressChatHistory(chatHistory, true);
+                                         if (apiRetryCount > 1 && chatHistory.length > 2) {
+                                             while (chatHistory.length > 2) {
+                                                 chatHistory.splice(1, 1);
+                                             }
+                                         }
+                                         continue;
+                                     }
                                     throw fetchErr;
                                 }
                             }
@@ -13963,6 +14245,11 @@ Important guidelines:
                 } else {
                     lastUserMsg.content = effectivePrompt;
                 }
+            }
+
+            const isContinuationPrompt = /^(請?接續|繼續|continue|接下去|未完)/i.test(promptText.trim());
+            if (isContinuationPrompt) {
+                compressChatHistory(chatHistory, true);
             }
 
             setGeneratingState(true);

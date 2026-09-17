@@ -1075,7 +1075,7 @@
                     <i data-lucide="cpu" class="w-4 h-4 text-cyan-400 shrink-0"></i>
                     <select id="engine-mode-select"
                         class="bg-transparent text-xs text-cyan-300 font-bold focus:outline-none cursor-pointer max-w-[150px] sm:max-w-none">
-                        <option value="lmstudio" class="bg-gray-900 text-white">🖥️ LM Studio / API</option>
+                        <option value="lmstudio" class="bg-gray-900 text-white">🌐 API 模式 (雲端 / 本機)</option>
                         <option value="webgpu" class="bg-gray-900 text-white">⚡ WebGPU 瀏覽器純本機</option>
                         <option value="onnx" class="bg-gray-900 text-white">📦 ONNX 瀏覽器本機 (ONNX Runtime)</option>
                         <option value="cothink" class="bg-gray-900 text-white">🧠 雙引擎聯合思考 (1+1>2)</option>
@@ -7177,7 +7177,7 @@ ffmpeg -f pulse -i default -acodec libmp3lame -ab 128k -f mp3 -listen 1 http://0
             // ── Engine Mode Select Options 翻譯 ──
             const engineSel = document.getElementById('engine-mode-select');
             if (engineSel && engineSel.options.length >= 5) {
-                engineSel.options[0].textContent = isEn ? "🖥️ LM Studio / API Mode" : "🖥️ LM Studio / API";
+                engineSel.options[0].textContent = isEn ? "🌐 API Mode (Cloud / Local)" : "🌐 API 模式 (雲端 / 本機)";
                 engineSel.options[1].textContent = isEn ? "⚡ WebGPU Browser Local" : "⚡ WebGPU 瀏覽器純本機";
                 engineSel.options[2].textContent = isEn ? "📦 ONNX Browser Local (ONNX Runtime)" : "📦 ONNX 瀏覽器本機 (ONNX Runtime)";
                 engineSel.options[3].textContent = t('engineModeCoThink');
@@ -9881,12 +9881,30 @@ ffmpeg -f pulse -i default -acodec libmp3lame -ab 128k -f mp3 -listen 1 http://0
             return Math.ceil(totalChars / 2.5);
         }
 
+        function getModelContextBudget() {
+            if (typeof appSettings === 'undefined') return 2048;
+            const mode = appSettings.engineMode;
+            if (mode === 'onnx' || mode === 'webgpu') return 2048;
+            if (mode === 'lmstudio') {
+                const prof = appSettings.profiles?.[appSettings.activeProfile];
+                const ep = String(prof?.endpoint || '').toLowerCase();
+                const name = String(prof?.name || '').toLowerCase();
+                // 若為本機 LM Studio 或 Ollama，安全上限預設為 2048 防溢出；雲端 API 為 4096
+                if (ep.includes('127.0.0.1') || ep.includes('localhost') || name.includes('local') || name.includes('ollama')) {
+                    return 2048;
+                }
+                return 4096;
+            }
+            return 2048;
+        }
+        window.getModelContextBudget = getModelContextBudget;
+
         function updateContextBadge() {
             const badge = document.getElementById('context-tokens-badge');
             if (!badge) return;
             const isRagActive = (typeof ragToggle !== 'undefined' && ragToggle && ragToggle.checked);
             const est = estimateTokens(chatHistory);
-            let budget = (appSettings.engineMode === 'onnx' || appSettings.engineMode === 'webgpu') ? 2048 : 4096;
+            let budget = getModelContextBudget();
             const prefix = isRagActive ? '📚 RAG: ' : '';
             badge.textContent = `${prefix}~${est} / ${budget} tok`;
             if (est > budget * 0.85) {
@@ -9905,10 +9923,11 @@ ffmpeg -f pulse -i default -acodec libmp3lame -ab 128k -f mp3 -listen 1 http://0
 
             const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en');
             const isRagActive = (typeof ragToggle !== 'undefined' && ragToggle && ragToggle.checked);
-            let maxBudget = (appSettings.engineMode === 'onnx' || appSettings.engineMode === 'webgpu') ? 2200 : 3600;
+            const budget = getModelContextBudget();
+            let maxBudget = Math.floor(budget * (aggressive ? 0.6 : 0.82));
             if (aggressive || isRagActive) {
-                // 當啟用 RAG 時，上下文核心應留給檢索到的文件知識與當前問題，歷史對話預算精簡收斂
-                maxBudget = isRagActive ? 1800 : Math.min(1800, maxBudget);
+                // 當啟用 RAG 或激進壓縮時，上下文精簡收斂，確保預留足夠空間供模型生成
+                maxBudget = isRagActive ? Math.min(1400, maxBudget) : Math.min(1800, maxBudget);
             }
 
             // 1. Check if system prompt exists at history[0]
@@ -9953,8 +9972,8 @@ ffmpeg -f pulse -i default -acodec libmp3lame -ab 128k -f mp3 -listen 1 http://0
                     if (textParts) msg.content = textParts;
                 }
 
-                // B. Large Tool Responses: Truncate inner tool responses (>300 chars)
                 if (typeof msg.content === 'string') {
+                    // B.1 Large Tool Responses: Truncate inner tool responses (>300 chars)
                     if (msg.content.includes('<tool_response>')) {
                         msg.content = msg.content.replace(/<tool_response>([\s\S]*?)<\/tool_response>/g, (m, inner) => {
                             const trimmed = inner.trim();
@@ -9968,9 +9987,39 @@ ffmpeg -f pulse -i default -acodec libmp3lame -ab 128k -f mp3 -listen 1 http://0
                         });
                     }
 
+                    // B.2 Large Artifact Blocks: 歷史代碼塊專用緊湊壓縮（防止接續時暴增超出記憶體）
+                    if (msg.content.includes('<artifact') || msg.content.includes('<antArtifact')) {
+                        // 針對完整閉合之 artifact 標籤
+                        msg.content = msg.content.replace(/<(artifact|antArtifact)\b([^>]*)>([\s\S]*?)<\/\1>/gi, (m, tagName, rawAttrs, rawContent) => {
+                            const cleanContent = rawContent.trim();
+                            if (cleanContent.length > 400) {
+                                const lines = cleanContent.split('\n');
+                                if (lines.length > 18) {
+                                    const tailLines = lines.slice(-12).join('\n');
+                                    const omittedCount = lines.length - 12;
+                                    return `<${tagName}${rawAttrs}>\n/* ... [${isEn ? `Earlier code lines omitted: ${omittedCount} lines` : `前文歷史代碼已收合: 共 ${omittedCount} 行`} ...] */\n${tailLines}\n</${tagName}>`;
+                                }
+                            }
+                            return m;
+                        });
+
+                        // 針對未閉合（因長度截斷）之歷史 artifact 標籤
+                        msg.content = msg.content.replace(/<(artifact|antArtifact)\b([^>]*)>([\s\S]*)$/i, (m, tagName, rawAttrs, rawContent) => {
+                            if (m.includes(`</${tagName}>`)) return m;
+                            const cleanContent = rawContent.trim();
+                            const lines = cleanContent.split('\n');
+                            if (lines.length > 18) {
+                                const tailLines = lines.slice(-12).join('\n');
+                                const omittedCount = lines.length - 12;
+                                return `<${tagName}${rawAttrs}>\n/* ... [${isEn ? `Earlier code lines omitted: ${omittedCount} lines` : `前文歷史代碼已收合: 共 ${omittedCount} 行`} ...] */\n${tailLines}\n</${tagName}>`;
+                            }
+                            return m;
+                        });
+                    }
+
                     // C. Large Historical Assistant/User Text (e.g. converted documents, long essays)
                     const maxMsgLen = aggressive ? 600 : 1200;
-                    if (msg.content.length > maxMsgLen) {
+                    if (msg.content.length > maxMsgLen && !msg.content.includes('<artifact') && !msg.content.includes('<antArtifact')) {
                         const head = msg.content.slice(0, Math.floor(maxMsgLen * 0.6));
                         const tail = msg.content.slice(-Math.floor(maxMsgLen * 0.25));
                         msg.content = `${head}\n\n... [${isEn ? 'Historical dialogue compressed to preserve context window' : '歷史對話內容已自動節錄壓縮以保護上下文視窗'}] ...\n\n${tail}`;
@@ -9981,9 +10030,10 @@ ffmpeg -f pulse -i default -acodec libmp3lame -ab 128k -f mp3 -listen 1 http://0
             // 3. Sliding Window: If total estimated tokens still exceed budget, prune oldest turns!
             let curTokens = estimateTokens(history);
             if ((aggressive || isRagActive) && history.length > 3) {
-                // 當已有 RAG 檢索時，模型應專注於 RAG 檢索成果回答，歷史對話僅保留最多最近 1 輪供代名詞指涉
-                while (history.length > 3) {
+                // 當已有 RAG 檢索或激進壓縮時，歷史對話最多保留最近 1~2 輪供代名詞指涉
+                while (curTokens > maxBudget && history.length > 3) {
                     history.splice(1, 1);
+                    curTokens = estimateTokens(history);
                 }
             } else {
                 while (curTokens > maxBudget && history.length > 3) {
@@ -9997,7 +10047,7 @@ ffmpeg -f pulse -i default -acodec libmp3lame -ab 128k -f mp3 -listen 1 http://0
                 const markerTag = "[System Note: Earlier conversation turns compressed";
                 const markerTagZh = "【系統防護：歷史對話輪次已自動壓縮";
                 const hasMarker = history.some(m => typeof m.content === 'string' && (m.content.includes(markerTag) || m.content.includes(markerTagZh)));
-                if (!hasMarker && history.length > 2) {
+                if (!hasMarker && history.length > 2 && curTokens > maxBudget * 0.7) {
                     history.splice(1, 0, {
                         role: "system",
                         content: isEn
@@ -12450,17 +12500,32 @@ ${tools.join('\n')}${contextStr}
             const art = globalArtifactStore.get(id);
             if (!art) return;
             const isZh = currentLang === 'zh-TW';
+            const fullCode = art.fullContent || '';
+            const allLines = fullCode.split('\n');
+            const tailSnippet = allLines.slice(-20).join('\n');
+            const totalLines = allLines.length;
+
             const prompt = isZh
                 ? `請接續上述 Artifact「${art.title || id}」(identifier: "${id}") 尚未完成的內容繼續輸出。
+【目前已生成至第 ${totalLines} 行，末尾代碼片段如下（請緊接此處無縫續寫，切勿重複前文）】：
+\`\`\`${art.language || art.type || ''}
+${tailSnippet}
+\`\`\`
 重要規範：
 1. 請使用 <artifact identifier="${id}" mode="continue"> 標籤包裹接續內容。
-2. 請緊接著上次中斷處直接輸出剩餘程式碼，不要重複前文。
+2. 緊接著上述中斷點直接輸出剩餘程式碼，絕對不要重複前文或從頭重寫。
 3. 若全檔已完成，請以 </artifact> 結尾。`
                 : `Please continue outputting the remaining code for Artifact "${art.title || id}" (identifier: "${id}").
+[Currently generated up to line ${totalLines}. Tail snippet where output stopped (continue directly after this, do NOT repeat)]:\n\`\`\`${art.language || art.type || ''}\n${tailSnippet}\n\`\`\`
 Important guidelines:
-1. Wrap the continued code in <artifact identifier="${id}" mode="continue">.
+1. Wrap continued code in <artifact identifier="${id}" mode="continue">.
 2. Continue directly from where it left off without repeating previous lines.
 3. Close with </artifact> when completely finished.`;
+
+            // 在發送前主動深度壓縮歷史對話，收合先前代碼塊，保證接續時絕不超出記憶體！
+            if (typeof compressChatHistory === 'function') {
+                compressChatHistory(chatHistory, true);
+            }
 
             userInput.value = prompt;
             userInput.style.height = 'auto';
@@ -14357,9 +14422,25 @@ Important guidelines:
             }
 
             if (role === 'assistant') {
-                const activeEngineName = (typeof appSettings !== 'undefined' && appSettings.engineMode)
-                    ? appSettings.engineMode.toUpperCase()
-                    : 'AI AGENT';
+                let activeEngineName = 'AI AGENT';
+                if (typeof appSettings !== 'undefined' && appSettings.engineMode) {
+                    const mode = appSettings.engineMode;
+                    if (mode === 'lmstudio') {
+                        const prof = appSettings.profiles?.[appSettings.activeProfile];
+                        const profName = prof?.name || 'API';
+                        activeEngineName = `API • ${profName}`;
+                    } else if (mode === 'webgpu') {
+                        activeEngineName = 'WEBGPU';
+                    } else if (mode === 'onnx') {
+                        activeEngineName = 'ONNX';
+                    } else if (mode === 'cothink') {
+                        activeEngineName = 'CO-THINK';
+                    } else if (mode === 'supervise') {
+                        activeEngineName = 'SUPERVISE';
+                    } else {
+                        activeEngineName = String(mode).toUpperCase();
+                    }
+                }
                 innerDiv.innerHTML = `
                     <div class="text-xs text-purple-400 font-bold mb-2 flex items-center justify-between select-none">
                         <div class="flex items-center gap-1.5">
@@ -15524,7 +15605,8 @@ Important guidelines:
                     currentAbortController = new AbortController();
 
                     chatHistory[0].content = buildSystemPrompt(isAgentEnabled, prompt, currentWebSearchContext);
-                    compressChatHistory(chatHistory, false);
+                    const isContinuationQuery = /^(請?接續|繼續|continue|接下去|未完)/i.test(String(prompt || '').trim());
+                    compressChatHistory(chatHistory, isContinuationQuery);
 
                     const textBlock = document.createElement('div');
                     if (loopCount > 1) {
@@ -15754,9 +15836,11 @@ Important guidelines:
                                 // Pre-generation UI yield to prevent browser frame freeze
                                 await new Promise(r => setTimeout(r, 20));
 
+                                const promptTokens = estimateTokens(chatHistory);
+                                const onnxMaxTokens = Math.max(256, Math.min(2048, 2048 - promptTokens));
                                 const vlOut = await model.generate({
                                     ...inputs,
-                                    max_new_tokens: 4096,
+                                    max_new_tokens: onnxMaxTokens,
                                     temperature: 0.6,
                                     top_p: 0.9,
                                     repetition_penalty: 1.15,
@@ -15858,7 +15942,8 @@ Important guidelines:
                                 return m;
                             });
                             let wgpuRetryCount = 0;
-                            let maxGenTokens = 2048;
+                            const promptTokens = estimateTokens(chatHistory);
+                            let maxGenTokens = Math.max(256, Math.min(1536, 2048 - promptTokens));
                             while (true) {
                                 try {
                                     chunks = await engine.chat.completions.create({
@@ -17316,16 +17401,21 @@ Important guidelines:
                                 } catch (fetchErr) {
                                     const errMsg = String(fetchErr.message || fetchErr).toLowerCase();
                                     const isContextError = errMsg.includes("context") || errMsg.includes("token") || errMsg.includes("length") || errMsg.includes("payload") || errMsg.includes("413") || errMsg.includes("400") || errMsg.includes("oom") || errMsg.includes("out of memory");
-                                    if (apiRetryCount === 0 && isContextError && chatHistory.length > 2 && isGenerating) {
-                                        apiRetryCount++;
-                                        console.warn("[API Context Overflow] Auto-compressing history and retrying...", fetchErr);
-                                        const warnNotice = document.createElement('div');
-                                        warnNotice.className = "text-amber-400 text-xs my-1 font-mono p-2 bg-amber-950/60 rounded-lg border border-amber-700/60 flex items-center gap-1.5 shadow-sm";
-                                        warnNotice.innerHTML = `<span>⚠️ ${currentLang === 'en' ? 'Context window exceeded. Auto-compressed conversation history & retrying...' : '偵測到對話上下文負載超額，已自動深度壓縮歷史記錄並重試中...'}</span>`;
-                                        containerEl.appendChild(warnNotice);
-                                        compressChatHistory(chatHistory, true);
-                                        continue;
-                                    }
+                                     if (apiRetryCount < 2 && isContextError && chatHistory.length > 2 && isGenerating) {
+                                         apiRetryCount++;
+                                         console.warn(`[API Context Overflow] Auto-compressing history (attempt ${apiRetryCount}) and retrying...`, fetchErr);
+                                         const warnNotice = document.createElement('div');
+                                         warnNotice.className = "text-amber-400 text-xs my-1 font-mono p-2 bg-amber-950/60 rounded-lg border border-amber-700/60 flex items-center gap-1.5 shadow-sm";
+                                         warnNotice.innerHTML = `<span>⚠️ ${currentLang === 'en' ? 'Context window exceeded. Auto-compressed conversation history & retrying...' : '偵測到對話上下文負載超額，已自動深度壓縮歷史記錄並重試中...'}</span>`;
+                                         containerEl.appendChild(warnNotice);
+                                         compressChatHistory(chatHistory, true);
+                                         if (apiRetryCount > 1 && chatHistory.length > 2) {
+                                             while (chatHistory.length > 2) {
+                                                 chatHistory.splice(1, 1);
+                                             }
+                                         }
+                                         continue;
+                                     }
                                     throw fetchErr;
                                 }
                             }
@@ -17928,6 +18018,11 @@ Important guidelines:
                 } else {
                     lastUserMsg.content = effectivePrompt;
                 }
+            }
+
+            const isContinuationPrompt = /^(請?接續|繼續|continue|接下去|未完)/i.test(promptText.trim());
+            if (isContinuationPrompt) {
+                compressChatHistory(chatHistory, true);
             }
 
             setGeneratingState(true);
