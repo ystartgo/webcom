@@ -15133,13 +15133,13 @@ Important guidelines:
 
             while (!isTaskComplete && loopCount < MAX_LOOPS && isGenerating) {
                 loopCount++;
+                let fullAiResponse = "";
                 try {
                     currentAbortController = new AbortController();
 
                     chatHistory[0].content = buildSystemPrompt(isAgentEnabled, prompt, currentWebSearchContext);
                     compressChatHistory(chatHistory, false);
 
-                    let fullAiResponse = "";
                     const textBlock = document.createElement('div');
                     if (loopCount > 1) {
                         textBlock.className = "mt-2 pt-2 border-t border-gray-800/80 leading-relaxed text-gray-200";
@@ -15463,7 +15463,7 @@ Important guidelines:
                         let chunks = null;
                         let tokStep = 0;
                         try {
-                            const webllmMsgs = chatHistory.map(m => {
+                            const getWebLLMMsgs = () => chatHistory.map(m => {
                                 if (Array.isArray(m.content)) {
                                     const textParts = m.content.filter(c => c.type === 'text').map(c => c.text).join('\n');
                                     return { ...m, content: textParts || (currentLang === 'en' ? "Please analyze this image" : "請分析這張圖片") };
@@ -15471,25 +15471,29 @@ Important guidelines:
                                 return m;
                             });
                             let wgpuRetryCount = 0;
+                            let maxGenTokens = 2048;
                             while (true) {
                                 try {
                                     chunks = await engine.chat.completions.create({
-                                        messages: webllmMsgs,
+                                        messages: getWebLLMMsgs(),
                                         temperature: 0.6,
                                         top_p: 0.85,
                                         presence_penalty: 0.3,
                                         frequency_penalty: 0.3,
-                                        max_tokens: 4096,
+                                        max_tokens: maxGenTokens,
                                         stream: true
                                     });
                                     break;
                                 } catch (wgpuErr) {
                                     const errMsg = String(wgpuErr.message || wgpuErr).toLowerCase();
-                                    const isContextError = errMsg.includes("context") || errMsg.includes("token") || errMsg.includes("oom") || errMsg.includes("memory") || errMsg.includes("length");
-                                    if (wgpuRetryCount === 0 && isContextError && chatHistory.length > 2 && isGenerating) {
+                                    const isContextError = errMsg.includes("context") || errMsg.includes("token") || errMsg.includes("oom") || errMsg.includes("memory") || errMsg.includes("length") || errMsg.includes("exceed");
+                                    if (wgpuRetryCount < 2 && isContextError && isGenerating) {
                                         wgpuRetryCount++;
                                         console.warn("[WebGPU Context Overflow] Auto-compressing history and retrying...", wgpuErr);
-                                        compressChatHistory(chatHistory, true);
+                                        if (chatHistory.length > 2) {
+                                            compressChatHistory(chatHistory, true);
+                                        }
+                                        maxGenTokens = Math.max(512, Math.floor(maxGenTokens / 2));
                                         continue;
                                     }
                                     throw wgpuErr;
@@ -16989,32 +16993,39 @@ Important guidelines:
                         isTaskComplete = true;
                     }
                 } catch (err) {
+                    const safeAiResponse = (typeof fullAiResponse !== 'undefined' && fullAiResponse) ? fullAiResponse : "";
                     if (err.name === 'AbortError') {
-                        containerEl.innerHTML += `<div class="text-amber-400 mt-2 text-xs flex items-center gap-1 font-mono">⏹️ ${t('stoppedByUser')}</div>`;
+                        const abortDiv = document.createElement('div');
+                        abortDiv.className = "text-amber-400 mt-2 text-xs flex items-center gap-1 font-mono";
+                        abortDiv.innerHTML = `⏹️ ${t('stoppedByUser')}`;
+                        containerEl.appendChild(abortDiv);
                         if (typeof sessionChatLog !== 'undefined' && sessionChatLog.length > 0 && sessionChatLog[sessionChatLog.length - 1].role === 'assistant') {
-                            sessionChatLog[sessionChatLog.length - 1].content = fullAiResponse ? (fullAiResponse + `\n\n[${t('stoppedByUser')}]`) : `[${t('stoppedByUser')}]`;
+                            sessionChatLog[sessionChatLog.length - 1].content = safeAiResponse ? (safeAiResponse + `\n\n[${t('stoppedByUser')}]`) : `[${t('stoppedByUser')}]`;
                         }
                         break;
                     }
-                    let friendlyMsg = err.message;
+                    let friendlyMsg = err.message || String(err);
                     let extraTip = "";
-                    if (err.message.includes("Failed to fetch")) {
+                    if (friendlyMsg.includes("Failed to fetch")) {
                         extraTip = `<div class="mt-2 text-xs text-gray-400 bg-gray-950/80 p-2.5 rounded-lg border border-gray-800 leading-relaxed">
                             <strong>${currentLang === 'en' ? 'Troubleshooting Tips:' : '排查建議：'}</strong><br>
                             1. <strong>CORS</strong>: ${currentLang === 'en' ? 'LM Studio requires CORS. Run `lms server start --cors --port 1234` or enable CORS in LM Studio GUI.' : 'LM Studio 需開啟 CORS。請在終端機執行 <code>lms server start --cors --port 1234</code> 或在 LM Studio GUI 啟用 CORS。'}<br>
                             2. <strong>WebGPU Engine</strong>: ${currentLang === 'en' ? 'Or switch Engine to "⚡ WebGPU Browser Local" to run completely offline on your GPU without server!' : '或者在上方切換至「⚡ WebGPU 瀏覽器純本機」模式，直接在您的顯示卡上純離線運行！'}<br>
                             3. <strong>Router</strong>: ${currentLang === 'en' ? 'Click "Router Settings" and use "Test Connection".' : '點擊右上角「Router 設定」可使用「測試此節點連線」即時診斷。'}
                         </div>`;
-                    } else if (err.message.includes("401") || err.message.includes("authorization") || err.message.includes("FST_ERR_VALIDATION")) {
+                    } else if (friendlyMsg.includes("401") || friendlyMsg.includes("authorization") || friendlyMsg.includes("FST_ERR_VALIDATION")) {
                         extraTip = `<div class="mt-2 text-xs text-gray-400 bg-gray-950/80 p-2.5 rounded-lg border border-purple-800/60 leading-relaxed">
                             <strong>${currentLang === 'en' ? 'API Key Required / 401 Unauthorized:' : '排查建議 (API Key 缺失或授權失敗)：'}</strong><br>
                             1. ${currentLang === 'en' ? 'Click "Router Settings", select TokenTable/Profile and enter your API Key.' : '請點擊右上角「Router 設定」，確認已選取正確節點並填入有效 API Key。'}<br>
                             2. <a href="https://top.yia.app/token" target="_blank" class="text-purple-400 hover:underline font-bold">✨ ${currentLang === 'en' ? 'Apply for TokenTable API Key (Base URL: https://tokentable.asia/v1)' : '推薦申請 TokenTable API Key (端點: https://tokentable.asia/v1)'} &rarr;</a>
                         </div>`;
                     }
-                    containerEl.innerHTML += `<div class="text-red-400 mt-2 text-xs">⚠️ ${friendlyMsg}${extraTip}</div>`;
+                    const errDiv = document.createElement('div');
+                    errDiv.className = "text-red-400 mt-2 text-xs";
+                    errDiv.innerHTML = `⚠️ ${friendlyMsg}${extraTip}`;
+                    containerEl.appendChild(errDiv);
                     if (typeof sessionChatLog !== 'undefined' && sessionChatLog.length > 0 && sessionChatLog[sessionChatLog.length - 1].role === 'assistant') {
-                        sessionChatLog[sessionChatLog.length - 1].content = fullAiResponse ? (fullAiResponse + `\n\n⚠️ ${friendlyMsg}`) : `⚠️ ${friendlyMsg}`;
+                        sessionChatLog[sessionChatLog.length - 1].content = safeAiResponse ? (safeAiResponse + `\n\n⚠️ ${friendlyMsg}`) : `⚠️ ${friendlyMsg}`;
                     }
                     break;
                 }
