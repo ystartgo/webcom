@@ -325,6 +325,13 @@
                         <span class="w-2 h-2 rounded-full bg-gray-500"></span> <span data-i18n="daemonChecking">常駐程式: 檢查中...</span>
                     </span>
 
+                    <!-- ⚡ Jev 極速單次傳播決策器 (Cross-Encoder Sandbox) -->
+                    <button id="btn-quick-jev" type="button" data-on-click="openJevPlayground()"
+                        class="p-1.5 rounded-lg bg-gray-800 hover:bg-gray-700 text-amber-300 hover:text-white border border-gray-700 transition cursor-pointer select-none shrink-0"
+                        title="開啟 Jev 極速單次傳播決策沙盒 (Cross-Encoder / ~15ms)" data-i18n-title="tooltipQuickJev">
+                        <i data-lucide="zap" class="w-4 h-4 text-amber-400"></i>
+                    </button>
+
                     <!-- 手機式「三」工具選單按鈕 (縮排為選單) -->
                     <div class="relative">
                         <button id="btn-top-tools-menu" type="button" data-on-click="toggleTopToolsDropdown(event)"
@@ -334,8 +341,14 @@
                         </button>
                         <!-- 下拉選單 -->
                         <div id="dropdown-top-tools" class="hidden absolute right-0 top-full mt-1.5 w-56 bg-gray-900 border border-gray-700 rounded-xl shadow-2xl py-1.5 z-50 text-xs select-none">
+                            <button id="btn-open-jev" type="button" data-on-click="openJevPlayground(); closeTopToolsDropdown();"
+                                class="w-full flex items-center gap-2.5 px-3.5 py-2 hover:bg-gray-800 text-amber-300 transition text-left cursor-pointer"
+                                title="開啟 Jev 單次傳播極速決策沙盒 (~15ms Cross-Encoder)" data-i18n-title="tooltipJevSandbox">
+                                <i data-lucide="zap" class="w-4 h-4 text-amber-400"></i>
+                                <span data-i18n="btnJevSandbox" class="font-medium">⚡ Jev 極速決策沙盒</span>
+                            </button>
                             <a id="btn-open-markitdown" href="http://127.0.0.1:8001/markitdown/" target="_blank"
-                                class="flex items-center gap-2.5 px-3.5 py-2 hover:bg-gray-800 text-amber-300 transition no-underline cursor-pointer"
+                                class="flex items-center gap-2.5 px-3.5 py-2 hover:bg-gray-800 text-amber-300 transition no-underline cursor-pointer border-t border-gray-800/80"
                                 title="開啟 MarkItDown 文件轉換器" data-i18n-title="tooltipMarkItDown">
                                 <i data-lucide="file-text" class="w-4 h-4 text-amber-400"></i>
                                 <span class="font-medium" data-i18n="markitdownConverter">MarkItDown 轉換器</span>
@@ -1305,6 +1318,12 @@
                         <i data-lucide="layout" class="w-3.5 h-3.5 shrink-0"></i> <span class="whitespace-nowrap" data-i18n="btnArtifactWorkbench">Artifact 工坊</span>
                     </button>
 
+                    <button id="btn-open-jev-pill" type="button" data-on-click="openJevPlayground()"
+                        class="text-xs bg-amber-950/60 hover:bg-amber-900/80 text-amber-300 px-2 py-1 rounded-md border border-amber-500/50 flex items-center gap-1 font-medium transition shadow-sm cursor-pointer whitespace-nowrap shrink-0"
+                        title="開啟 Jev 極速單次傳播決策沙盒 (15ms 交叉編碼器)" data-i18n-title="tooltipQuickJev">
+                        <i data-lucide="zap" class="w-3.5 h-3.5 shrink-0 text-amber-400 fill-amber-400"></i> <span class="whitespace-nowrap">⚡ Jev 決策器</span>
+                    </button>
+
                     <button id="btn-open-app-lib" type="button" data-on-click="openAppLibraryModal()"
                         class="text-xs bg-violet-950/60 hover:bg-violet-900/80 text-violet-300 px-2 py-1 rounded-md border border-violet-700/50 flex items-center gap-1 font-medium transition shadow-sm cursor-pointer whitespace-nowrap shrink-0"
                         title="開啟自建應用程式庫 (新建/編輯/管理/LLM調用)" data-i18n-title="tooltipOpenAppLib">
@@ -1598,7 +1617,7 @@
                     </div>
 
                     <!-- Far Right Pinned Exit Button: 100% ALWAYS visible, prominent rose/red badge with "離開" -->
-                    <button id="btn-close-artifact-drawer" type="button"
+                    <button id="btn-close-artifact-drawer" type="button" data-on-click="closeArtifactDrawer()"
                         class="shrink-0 flex items-center gap-1.5 px-3 py-1.5 bg-rose-950/80 hover:bg-rose-900 text-rose-300 hover:text-white border border-rose-700/60 rounded-lg text-xs font-bold transition shadow-sm cursor-pointer ml-1 z-10 whitespace-nowrap"
                         title="離開 / 關閉 (Esc)" data-i18n-title="artifactCloseDrawer">
                         <i data-lucide="x" class="w-4 h-4 text-rose-400"></i>
@@ -2582,6 +2601,9 @@
                     data-tab="guide-tab-artifact" data-i18n="guideTabArtifact">📦 Artifact 成果工坊</button>
                 <button
                     class="guide-tab-btn px-3 py-1.5 rounded-lg text-xs font-bold transition bg-gray-800 text-gray-300 hover:bg-gray-700 whitespace-nowrap"
+                    data-tab="guide-tab-jev" data-i18n="guideTabJev">⚡ Jev 極速決策</button>
+                <button
+                    class="guide-tab-btn px-3 py-1.5 rounded-lg text-xs font-bold transition bg-gray-800 text-gray-300 hover:bg-gray-700 whitespace-nowrap"
                     data-tab="guide-tab-ai" data-i18n="guideTabAi">🤖 AI Agent, RAG & MCP</button>
                 <button
                     class="guide-tab-btn px-3 py-1.5 rounded-lg text-xs font-bold transition bg-gray-800 text-gray-300 hover:bg-gray-700 whitespace-nowrap"
@@ -2731,6 +2753,144 @@
                         <p class="text-[11px] text-gray-400">
                             在輸入框輸入 <code class="text-purple-300 bg-gray-900 px-1.5 py-0.5 rounded font-mono">/產出Artifact應用</code>（英文版為 <code class="text-purple-300 bg-gray-900 px-1.5 py-0.5 rounded font-mono">/create-artifact</code>），即可一鍵讓 AI 產出完整的單檔應用程式！
                         </p>
+                    </div>
+                </div>
+
+                <!-- Tab: Jev 極速決策 -->
+                <div id="guide-tab-jev" class="guide-tab-pane hidden space-y-4">
+                    <div class="p-4 bg-amber-950/20 border border-amber-800/40 rounded-xl space-y-2">
+                        <div class="flex items-center justify-between">
+                            <h3 class="font-bold text-sm text-amber-300 flex items-center gap-1.5">
+                                <i data-lucide="zap" class="w-4 h-4 text-amber-400"></i> 什麼是 Jev？(System 1 非生成式極速決策)
+                            </h3>
+                            <span class="px-2 py-0.5 text-[10px] font-mono rounded bg-amber-500/20 text-amber-300 border border-amber-500/30">Single Forward Pass</span>
+                        </div>
+                        <p class="text-[11px] text-gray-300 leading-relaxed">
+                            <strong>Jev</strong> 是專為「<strong>意圖分類、工具路由、安全護欄、故障分流</strong>」打造的快思 (System 1) 交叉編碼決策器。
+                            傳統大語言模型（如 GPT、Claude、Qwen）採用<strong>逐字自回歸生成 (Autoregressive Token Loop)</strong>，即使僅需輸出一個選項名稱，也必須經歷數百毫秒的逐步解碼並消耗大量記憶體與電力；而 Jev 採用<strong>單次前向傳遞 (Single Forward Pass, SFP)</strong>，以常數時間複雜度直接計算輸入語句與所有候選選項（Candidates）的交互注意力相關性，徹底繞過生成迴圈。
+                        </p>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <div class="p-3.5 bg-gray-950 rounded-xl border border-gray-800 space-y-1.5">
+                            <div class="font-bold text-emerald-400 text-xs flex items-center gap-1.5">
+                                <i data-lucide="gauge" class="w-4 h-4"></i> 1. ~15ms 毫秒級極致延遲 (加速 100~200x)
+                            </div>
+                            <p class="text-[11px] text-gray-400 leading-relaxed">
+                                在一般輕薄筆電 CPU 或內建顯示卡即可達成 15ms~30ms 極速推論，相較生成式大模型加速 100 至 200 倍，使用者毫無等待感知。
+                            </p>
+                        </div>
+                        <div class="p-3.5 bg-gray-950 rounded-xl border border-gray-800 space-y-1.5">
+                            <div class="font-bold text-cyan-400 text-xs flex items-center gap-1.5">
+                                <i data-lucide="shield-check" class="w-4 h-4"></i> 2. 100% 嚴格封閉機率空間 (零幻覺)
+                            </div>
+                            <p class="text-[11px] text-gray-400 leading-relaxed">
+                                所有候選選項輸出經由 Softmax 嚴格歸一化（&Sigma; P<sub>i</sub> = 100%），結果必然落在預設選項內，絕無 JSON 格式錯誤、多餘廢話或幻覺指令。
+                            </p>
+                        </div>
+                        <div class="p-3.5 bg-gray-950 rounded-xl border border-gray-800 space-y-1.5">
+                            <div class="font-bold text-purple-400 text-xs flex items-center gap-1.5">
+                                <i data-lucide="sliders" class="w-4 h-4"></i> 3. 溫度動態校準控制 (T &in; [0.1, 2.0])
+                            </div>
+                            <p class="text-[11px] text-gray-400 leading-relaxed">
+                                支援動態溫度調整：低溫（T=0.2）輸出尖銳確定解，高溫（T=1.5）平滑機率分布以探索邊緣意圖，並提供熵值（Entropy）作為信心指標。
+                            </p>
+                        </div>
+                        <div class="p-3.5 bg-gray-950 rounded-xl border border-gray-800 space-y-1.5">
+                            <div class="font-bold text-blue-400 text-xs flex items-center gap-1.5">
+                                <i data-lucide="cpu" class="w-4 h-4"></i> 4. 超輕量資源佔用 (22MB ~ 140MB)
+                            </div>
+                            <p class="text-[11px] text-gray-400 leading-relaxed">
+                                模型體積僅 22MB~140MB，記憶體佔用小於 200MB，完全無需獨立顯卡，在 WinPE 無網維護環境或邊緣嵌入式設備皆能流暢運作。
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="p-4 bg-gray-950 rounded-xl border border-gray-800 space-y-2.5">
+                        <h3 class="font-bold text-sm text-white flex items-center gap-1.5">
+                            <i data-lucide="git-compare" class="w-4 h-4 text-indigo-400"></i> 何時使用？Jev 與傳統生成式 LLM 決策對照表
+                        </h3>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-[11px] border-collapse border border-gray-800 text-left">
+                                <thead>
+                                    <tr class="bg-gray-900/80 text-gray-300">
+                                        <th class="p-2 border border-gray-800">使用場景 / 任務類型</th>
+                                        <th class="p-2 border border-gray-800 text-amber-400">⚡ Jev 決策器 (System 1)</th>
+                                        <th class="p-2 border border-gray-800 text-purple-400">🤖 傳統生成式 LLM (System 2)</th>
+                                        <th class="p-2 border border-gray-800">架構建議</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-gray-800/60 text-gray-400">
+                                    <tr>
+                                        <td class="p-2 border border-gray-800 font-medium text-gray-200">Agent 工具路由 (Tool Routing)</td>
+                                        <td class="p-2 border border-gray-800 text-emerald-400 font-bold">✅ 極度適合 (15ms 瞬間分流)</td>
+                                        <td class="p-2 border border-gray-800 text-rose-400">❌ 延遲過高 (500ms+ 浪費算力)</td>
+                                        <td class="p-2 border border-gray-800 text-cyan-300">Jev 擔任前端分流器</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="p-2 border border-gray-800 font-medium text-gray-200">安全護欄與防注入 (Guardrails)</td>
+                                        <td class="p-2 border border-gray-800 text-emerald-400 font-bold">✅ 極度適合 (前置毫秒級攔截)</td>
+                                        <td class="p-2 border border-gray-800 text-rose-400">⚠️ 易受 Prompt 欺騙與越獄</td>
+                                        <td class="p-2 border border-gray-800 text-cyan-300">Jev 擔任第一道防線門衛</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="p-2 border border-gray-800 font-medium text-gray-200">IT 故障與工單分級 (P0~P3 分流)</td>
+                                        <td class="p-2 border border-gray-800 text-emerald-400 font-bold">✅ 極度適合 (確定性分類與信心度)</td>
+                                        <td class="p-2 border border-gray-800 text-yellow-400">⚠️ 偶發格式變形</td>
+                                        <td class="p-2 border border-gray-800 text-cyan-300">Jev 快速分類分級</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="p-2 border border-gray-800 font-medium text-gray-200">指令 / 編譯器 / 語系識別</td>
+                                        <td class="p-2 border border-gray-800 text-emerald-400 font-bold">✅ 極度適合 (PowerShell/Bash/Python)</td>
+                                        <td class="p-2 border border-gray-800 text-yellow-400">⚠️ 殺雞用牛刀</td>
+                                        <td class="p-2 border border-gray-800 text-cyan-300">Jev 快速環境分派</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="p-2 border border-gray-800 font-medium text-gray-200">長文寫作、報告總結、文案創作</td>
+                                        <td class="p-2 border border-gray-800 text-rose-400">❌ 不支援 (非生成架構)</td>
+                                        <td class="p-2 border border-gray-800 text-emerald-400 font-bold">✅ 極度適合 (豐富生成能力)</td>
+                                        <td class="p-2 border border-gray-800 text-purple-300">交由大模型生成</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="p-2 border border-gray-800 font-medium text-gray-200">複雜程式碼編寫與系統重構</td>
+                                        <td class="p-2 border border-gray-800 text-rose-400">❌ 不支援 (非生成架構)</td>
+                                        <td class="p-2 border border-gray-800 text-emerald-400 font-bold">✅ 極度適合 (邏輯合成能力)</td>
+                                        <td class="p-2 border border-gray-800 text-purple-300">交由大模型生成</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="p-2 border border-gray-800 font-medium text-gray-200">深度思考鏈 (Chain-of-Thought 推演)</td>
+                                        <td class="p-2 border border-gray-800 text-rose-400">❌ 不支援 (單步注意力打分)</td>
+                                        <td class="p-2 border border-gray-800 text-emerald-400 font-bold">✅ 極度適合 (多步驟探索)</td>
+                                        <td class="p-2 border border-gray-800 text-purple-300">交由大模型推導</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="p-4 bg-indigo-950/20 border border-indigo-800/40 rounded-xl space-y-2">
+                        <h3 class="font-bold text-sm text-indigo-300 flex items-center gap-1.5">
+                            <i data-lucide="layers" class="w-4 h-4"></i> 最佳實踐：1+1 雙引擎協同架構 (快思 + 慢想)
+                        </h3>
+                        <p class="text-[11px] text-gray-300 leading-relaxed">
+                            Webcom 推薦的架構模式為「<strong>Jev 負責 15ms 快思篩選，大模型負責深度慢想</strong>」：
+                        </p>
+                        <ol class="list-decimal list-inside space-y-1 text-[11px] text-gray-300 pl-1">
+                            <li><strong>前端過濾</strong>：使用者輸入任何指令時，先經由 Jev 進行 15ms 的意圖識別與安全檢查。</li>
+                            <li><strong>極速繞道</strong>：若意圖為終端執行（如 <code class="text-emerald-400 bg-gray-900 px-1 py-0.5 rounded">dir</code>, <code class="text-emerald-400 bg-gray-900 px-1 py-0.5 rounded">ls</code>）或串口控制，直接分流執行，完全無須喚醒肥大模型。</li>
+                            <li><strong>深度委派</strong>：僅當 Jev 識別為「需要寫作或深度邏輯解答」時，才喚醒後端生成式 LLM。既省算力又使整體系統反應速度提升數倍！</li>
+                        </ol>
+                    </div>
+
+                    <div class="p-4 bg-amber-950/20 border border-amber-800/40 rounded-xl flex items-center justify-between gap-3">
+                        <div class="space-y-1">
+                            <div class="font-bold text-xs text-amber-300 flex items-center gap-1.5">
+                                <i data-lucide="play" class="w-4 h-4"></i> 如何立即體驗 Jev 決策沙盒？
+                            </div>
+                            <p class="text-[11px] text-gray-400">
+                                點擊頂部工具列上的 <strong class="text-amber-300 bg-gray-900 px-2 py-0.5 rounded border border-amber-500/30">⚡ Jev 決策器</strong> 膠囊按鈕，即可隨時開啟互動測試沙盒，即時體驗 15ms 的極速決策！
+                            </p>
+                        </div>
                     </div>
                 </div>
 

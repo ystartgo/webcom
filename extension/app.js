@@ -215,6 +215,12 @@ if (!window.WTerm && window.WTermBundle) {
                 slashCmd17_title: "/查詢python版本",
                 slashCmd17_desc: "查詢本機 Python (8001) 與瀏覽器端 Pyodide (WASM) 版本與執行環境",
                 slashCmd17_payload: "請查詢並檢測當前環境的所有 Python 執行引擎版本（包括本機 8001 Daemon Python 與瀏覽器端 Pyodide WASM Python 3.12 版本狀態），並列出可用的運算環境與套件庫支援。",
+                slashCmd18_title: "/jev決策沙盒",
+                slashCmd18_desc: "開啟 Jev 單次傳播極速決策沙盒 (15ms 交叉編碼器)",
+                slashCmd18_payload: "/jev",
+                btnJevSandbox: "⚡ Jev 極速決策沙盒",
+                tooltipJevSandbox: "開啟 Jev 單次傳播極速決策沙盒 (~15ms Cross-Encoder)",
+                tooltipQuickJev: "開啟 Jev 極速單次傳播決策沙盒 (~15ms)",
                 btnNewChat: "新對話",
                 tooltipNewChat: "開啟新對話或清空畫面",
                 chatInputPlaceholder: "輸入訊息，或貼上圖片、文字... (輸入 / 顯示快捷指令)",
@@ -403,6 +409,7 @@ if (!window.WTerm && window.WTermBundle) {
                 // ── 操作手冊頁籤 (Guide Tab Buttons) ──
                 guideTabQuick: "🚀 快速上手",
                 guideTabArtifact: "📦 Artifact 成果工坊",
+                guideTabJev: "⚡ Jev 極速決策",
                 guideTabTerm: "📟 終端機多協定",
                 guideTabAi: "🤖 AI Agent, RAG & MCP",
                 guideTabOffline: "🔒 斷網 & WinPE",
@@ -1015,6 +1022,12 @@ if (!window.WTerm && window.WTermBundle) {
                 slashCmd17_title: "/Query Python Version",
                 slashCmd17_desc: "Check local Python (8001) and browser Pyodide (WASM) runtime versions",
                 slashCmd17_payload: "Please query and check all available Python runtime engine versions in the current environment (including local 8001 Daemon Python and browser-side Pyodide WASM Python 3.12), and report their operational status and supported packages.",
+                slashCmd18_title: "/jev Decision Sandbox",
+                slashCmd18_desc: "Open Jev Single Forward-Pass Decision Sandbox (15ms Cross-Encoder)",
+                slashCmd18_payload: "/jev",
+                btnJevSandbox: "⚡ Jev Decision Sandbox",
+                tooltipJevSandbox: "Open Jev Single Forward-Pass Decision Sandbox (~15ms Cross-Encoder)",
+                tooltipQuickJev: "Open Jev Single Forward-Pass Decision Sandbox (~15ms)",
                 btnNewChat: "New Chat",
                 tooltipNewChat: "Start a new chat or clear conversation",
                 chatInputPlaceholder: "Type a message, paste image or text... (Type / for commands)",
@@ -1208,6 +1221,7 @@ if (!window.WTerm && window.WTermBundle) {
                 // ── Guide Tab Buttons ──
                 guideTabQuick: "🚀 Quick Start",
                 guideTabArtifact: "📦 Artifact Workbench",
+                guideTabJev: "⚡ Jev Fast Decision",
                 guideTabTerm: "📟 Terminal Protocols",
                 guideTabAi: "🤖 AI Agent, RAG & MCP",
                 guideTabOffline: "🔒 Offline & WinPE",
@@ -2336,6 +2350,7 @@ if (!window.WTerm && window.WTermBundle) {
             // Tab Buttons
             const btnQuick = document.querySelector('.guide-tab-btn[data-tab="guide-tab-quick"]');
             const btnArtifact = document.querySelector('.guide-tab-btn[data-tab="guide-tab-artifact"]');
+            const btnJev = document.querySelector('.guide-tab-btn[data-tab="guide-tab-jev"]');
             const btnAi = document.querySelector('.guide-tab-btn[data-tab="guide-tab-ai"]');
             const btnTerm = document.querySelector('.guide-tab-btn[data-tab="guide-tab-term"]');
             const btnOffline = document.querySelector('.guide-tab-btn[data-tab="guide-tab-offline"]');
@@ -2345,6 +2360,7 @@ if (!window.WTerm && window.WTermBundle) {
 
             if (btnQuick) btnQuick.textContent = isEn ? "🚀 Quick Start" : "🚀 快速上手";
             if (btnArtifact) btnArtifact.textContent = isEn ? "📦 Artifact Workbench" : "📦 Artifact 成果工坊";
+            if (btnJev) btnJev.textContent = isEn ? "⚡ Jev Fast Decision" : "⚡ Jev 極速決策";
             if (btnAi) btnAi.textContent = isEn ? "🤖 AI Agent, RAG & MCP" : "🤖 AI Agent, RAG & MCP";
             if (btnTerm) btnTerm.textContent = isEn ? "📟 Terminal Protocols" : "📟 終端機多協定";
             if (btnOffline) btnOffline.textContent = isEn ? "🔒 Offline & WinPE" : "🔒 斷網 & WinPE";
@@ -2658,6 +2674,282 @@ if (!window.WTerm && window.WTermBundle) {
                         <p class="text-[11px] text-gray-400">
                             在輸入框輸入 <code class="text-purple-300 bg-gray-900 px-1.5 py-0.5 rounded font-mono">/產出Artifact應用</code>（英文版為 <code class="text-purple-300 bg-gray-900 px-1.5 py-0.5 rounded font-mono">/create-artifact</code>），即可一鍵讓 AI 產出完整的單檔應用程式！
                         </p>
+                    </div>
+                `;
+            }
+
+            // Tab: Jev Fast Decision
+            const tabJev = document.getElementById('guide-tab-jev');
+            if (tabJev) {
+                tabJev.innerHTML = isEn ? `
+                    <div class="p-4 bg-amber-950/20 border border-amber-800/40 rounded-xl space-y-2">
+                        <div class="flex items-center justify-between">
+                            <h3 class="font-bold text-sm text-amber-300 flex items-center gap-1.5">
+                                <i data-lucide="zap" class="w-4 h-4 text-amber-400"></i> What is Jev? (System 1 Non-Generative Fast Decision)
+                            </h3>
+                            <span class="px-2 py-0.5 text-[10px] font-mono rounded bg-amber-500/20 text-amber-300 border border-amber-500/30">Single Forward Pass</span>
+                        </div>
+                        <p class="text-[11px] text-gray-300 leading-relaxed">
+                            <strong>Jev</strong> is a System 1 cross-encoder decision engine purpose-built for <strong>intent classification, tool routing, security guardrails, and incident triage</strong>.
+                            Traditional generative LLMs (GPT, Claude, Qwen) rely on an <strong>autoregressive token generation loop</strong>—even when selecting just one discrete option, they incur hundreds of milliseconds of sequential decoding and consume heavy GPU memory and power. In contrast, Jev uses a <strong>Single Forward Pass (SFP)</strong> with constant time complexity to directly compute cross-attention relevance scores between the query and all candidate actions, completely bypassing the generation loop.
+                        </p>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <div class="p-3.5 bg-gray-950 rounded-xl border border-gray-800 space-y-1.5">
+                            <div class="font-bold text-emerald-400 text-xs flex items-center gap-1.5">
+                                <i data-lucide="gauge" class="w-4 h-4"></i> 1. Ultra-Low ~15ms Latency (100~200x Faster)
+                            </div>
+                            <p class="text-[11px] text-gray-400 leading-relaxed">
+                                Achieves 15ms~30ms instantaneous inference on standard laptop CPUs or integrated GPUs—over 100x to 200x faster than generative LLMs with zero perceptible lag.
+                            </p>
+                        </div>
+                        <div class="p-3.5 bg-gray-950 rounded-xl border border-gray-800 space-y-1.5">
+                            <div class="font-bold text-cyan-400 text-xs flex items-center gap-1.5">
+                                <i data-lucide="shield-check" class="w-4 h-4"></i> 2. 100% Strictly Closed Probability Space (Zero Hallucination)
+                            </div>
+                            <p class="text-[11px] text-gray-400 leading-relaxed">
+                                Outputs are normalized across candidate options via Softmax (&Sigma; P<sub>i</sub> = 100%). Decisions are guaranteed to land strictly on designated options with zero broken JSON, zero chit-chat, and zero hallucinations.
+                            </p>
+                        </div>
+                        <div class="p-3.5 bg-gray-950 rounded-xl border border-gray-800 space-y-1.5">
+                            <div class="font-bold text-purple-400 text-xs flex items-center gap-1.5">
+                                <i data-lucide="sliders" class="w-4 h-4"></i> 3. Dynamic Temperature Calibration (T &in; [0.1, 2.0])
+                            </div>
+                            <p class="text-[11px] text-gray-400 leading-relaxed">
+                                Dynamically tunes decision sharpness: low temperature (T=0.2) delivers razor-sharp certainty, while higher temperature (T=1.5) smooths distribution to explore boundary intents. Provides Shannon entropy as a calibrated confidence metric.
+                            </p>
+                        </div>
+                        <div class="p-3.5 bg-gray-950 rounded-xl border border-gray-800 space-y-1.5">
+                            <div class="font-bold text-blue-400 text-xs flex items-center gap-1.5">
+                                <i data-lucide="cpu" class="w-4 h-4"></i> 4. Ultra-Lightweight Footprint (22MB ~ 140MB)
+                            </div>
+                            <p class="text-[11px] text-gray-400 leading-relaxed">
+                                Compact 22MB~140MB model weights and under 200MB memory footprint. Runs effortlessly without a discrete GPU—ideal for WinPE rescue media, embedded gateways, and background daemons.
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="p-4 bg-gray-950 rounded-xl border border-gray-800 space-y-2.5">
+                        <h3 class="font-bold text-sm text-white flex items-center gap-1.5">
+                            <i data-lucide="git-compare" class="w-4 h-4 text-indigo-400"></i> When to Use? Jev vs Traditional Generative LLMs
+                        </h3>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-[11px] border-collapse border border-gray-800 text-left">
+                                <thead>
+                                    <tr class="bg-gray-900/80 text-gray-300">
+                                        <th class="p-2 border border-gray-800">Task Type / Use Case</th>
+                                        <th class="p-2 border border-gray-800 text-amber-400">⚡ Jev Decision Engine (System 1)</th>
+                                        <th class="p-2 border border-gray-800 text-purple-400">🤖 Generative LLM (System 2)</th>
+                                        <th class="p-2 border border-gray-800">Recommended Architecture</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-gray-800/60 text-gray-400">
+                                    <tr>
+                                        <td class="p-2 border border-gray-800 font-medium text-gray-200">Agent Tool Routing</td>
+                                        <td class="p-2 border border-gray-800 text-emerald-400 font-bold">✅ Optimal (15ms instant dispatch)</td>
+                                        <td class="p-2 border border-gray-800 text-rose-400">❌ High Latency (500ms+ wasted compute)</td>
+                                        <td class="p-2 border border-gray-800 text-cyan-300">Jev as frontline router</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="p-2 border border-gray-800 font-medium text-gray-200">Security Guardrails & Injection Defense</td>
+                                        <td class="p-2 border border-gray-800 text-emerald-400 font-bold">✅ Optimal (Sub-frame pre-check)</td>
+                                        <td class="p-2 border border-gray-800 text-rose-400">⚠️ Susceptible to prompt jailbreaks</td>
+                                        <td class="p-2 border border-gray-800 text-cyan-300">Jev as gatekeeper firewall</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="p-2 border border-gray-800 font-medium text-gray-200">IT Incident Triage (P0~P3 Severity)</td>
+                                        <td class="p-2 border border-gray-800 text-emerald-400 font-bold">✅ Optimal (Deterministic grading)</td>
+                                        <td class="p-2 border border-gray-800 text-yellow-400">⚠️ Risk of output drift</td>
+                                        <td class="p-2 border border-gray-800 text-cyan-300">Jev instant triage</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="p-2 border border-gray-800 font-medium text-gray-200">Command / Compiler / Syntax Detection</td>
+                                        <td class="p-2 border border-gray-800 text-emerald-400 font-bold">✅ Optimal (PowerShell/Bash/Python)</td>
+                                        <td class="p-2 border border-gray-800 text-yellow-400">⚠️ Overkill for simple classification</td>
+                                        <td class="p-2 border border-gray-800 text-cyan-300">Jev runtime dispatcher</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="p-2 border border-gray-800 font-medium text-gray-200">Long-form Writing, Reporting, Storytelling</td>
+                                        <td class="p-2 border border-gray-800 text-rose-400">❌ Unsupported (Non-generative)</td>
+                                        <td class="p-2 border border-gray-800 text-emerald-400 font-bold">✅ Optimal (Rich generative capability)</td>
+                                        <td class="p-2 border border-gray-800 text-purple-300">Delegate to Generative LLM</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="p-2 border border-gray-800 font-medium text-gray-200">Complex Code Synthesis & Refactoring</td>
+                                        <td class="p-2 border border-gray-800 text-rose-400">❌ Unsupported (Non-generative)</td>
+                                        <td class="p-2 border border-gray-800 text-emerald-400 font-bold">✅ Optimal (Deep multi-token synthesis)</td>
+                                        <td class="p-2 border border-gray-800 text-purple-300">Delegate to Generative LLM</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="p-2 border border-gray-800 font-medium text-gray-200">Deep Chain-of-Thought (CoT) Reasoning</td>
+                                        <td class="p-2 border border-gray-800 text-rose-400">❌ Unsupported (Single-step scoring)</td>
+                                        <td class="p-2 border border-gray-800 text-emerald-400 font-bold">✅ Optimal (Multi-step deduction)</td>
+                                        <td class="p-2 border border-gray-800 text-purple-300">Delegate to Generative LLM</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="p-4 bg-indigo-950/20 border border-indigo-800/40 rounded-xl space-y-2">
+                        <h3 class="font-bold text-sm text-indigo-300 flex items-center gap-1.5">
+                            <i data-lucide="layers" class="w-4 h-4"></i> Best Practice: 1+1 Dual-Engine Architecture (Fast-Think + Deep-Think)
+                        </h3>
+                        <p class="text-[11px] text-gray-300 leading-relaxed">
+                            Webcom recommends the <strong>"15ms Fast-Think Frontline + Deep-Think Synthesis"</strong> pipeline:
+                        </p>
+                        <ol class="list-decimal list-inside space-y-1 text-[11px] text-gray-300 pl-1">
+                            <li><strong>Frontline Gatekeeper</strong>: User inputs are first routed through Jev in ~15ms for instant intent and safety classification.</li>
+                            <li><strong>Instant Bypass</strong>: If classified as direct terminal commands (<code class="text-emerald-400 bg-gray-900 px-1 py-0.5 rounded">dir</code>, <code class="text-emerald-400 bg-gray-900 px-1 py-0.5 rounded">ls</code>) or serial dispatch, invoke tools directly without waking the heavy LLM.</li>
+                            <li><strong>Deep Delegation</strong>: Only wake up the heavy generative LLM when Jev classifies the query as creative writing, coding, or complex reasoning—maximizing responsiveness and saving compute.</li>
+                        </ol>
+                    </div>
+
+                    <div class="p-4 bg-amber-950/20 border border-amber-800/40 rounded-xl flex items-center justify-between gap-3">
+                        <div class="space-y-1">
+                            <div class="font-bold text-xs text-amber-300 flex items-center gap-1.5">
+                                <i data-lucide="play" class="w-4 h-4"></i> How to Launch the Jev Decision Sandbox
+                            </div>
+                            <p class="text-[11px] text-gray-400">
+                                Click the <strong class="text-amber-300 bg-gray-900 px-2 py-0.5 rounded border border-amber-500/30">⚡ Jev Fast Decision</strong> pill on the top chat toolbar to launch the interactive sandbox and test live 15ms inference!
+                            </p>
+                        </div>
+                    </div>
+                ` : `
+                    <div class="p-4 bg-amber-950/20 border border-amber-800/40 rounded-xl space-y-2">
+                        <div class="flex items-center justify-between">
+                            <h3 class="font-bold text-sm text-amber-300 flex items-center gap-1.5">
+                                <i data-lucide="zap" class="w-4 h-4 text-amber-400"></i> 什麼是 Jev？(System 1 非生成式極速決策)
+                            </h3>
+                            <span class="px-2 py-0.5 text-[10px] font-mono rounded bg-amber-500/20 text-amber-300 border border-amber-500/30">Single Forward Pass</span>
+                        </div>
+                        <p class="text-[11px] text-gray-300 leading-relaxed">
+                            <strong>Jev</strong> 是專為「<strong>意圖分類、工具路由、安全護欄、故障分流</strong>」打造的快思 (System 1) 交叉編碼決策器。
+                            傳統大語言模型（如 GPT、Claude、Qwen）採用<strong>逐字自回歸生成 (Autoregressive Token Loop)</strong>，即使僅需輸出一個選項名稱，也必須經歷數百毫秒的逐步解碼並消耗大量記憶體與電力；而 Jev 採用<strong>單次前向傳遞 (Single Forward Pass, SFP)</strong>，以常數時間複雜度直接計算輸入語句與所有候選選項（Candidates）的交互注意力相關性，徹底繞過生成迴圈。
+                        </p>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <div class="p-3.5 bg-gray-950 rounded-xl border border-gray-800 space-y-1.5">
+                            <div class="font-bold text-emerald-400 text-xs flex items-center gap-1.5">
+                                <i data-lucide="gauge" class="w-4 h-4"></i> 1. ~15ms 毫秒級極致延遲 (加速 100~200x)
+                            </div>
+                            <p class="text-[11px] text-gray-400 leading-relaxed">
+                                在一般輕薄筆電 CPU 或內建顯示卡即可達成 15ms~30ms 極速推論，相較生成式大模型加速 100 至 200 倍，使用者毫無等待感知。
+                            </p>
+                        </div>
+                        <div class="p-3.5 bg-gray-950 rounded-xl border border-gray-800 space-y-1.5">
+                            <div class="font-bold text-cyan-400 text-xs flex items-center gap-1.5">
+                                <i data-lucide="shield-check" class="w-4 h-4"></i> 2. 100% 嚴格封閉機率空間 (零幻覺)
+                            </div>
+                            <p class="text-[11px] text-gray-400 leading-relaxed">
+                                所有候選選項輸出經由 Softmax 嚴格歸一化（&Sigma; P<sub>i</sub> = 100%），結果必然落在預設選項內，絕無 JSON 格式錯誤、多餘廢話或幻覺指令。
+                            </p>
+                        </div>
+                        <div class="p-3.5 bg-gray-950 rounded-xl border border-gray-800 space-y-1.5">
+                            <div class="font-bold text-purple-400 text-xs flex items-center gap-1.5">
+                                <i data-lucide="sliders" class="w-4 h-4"></i> 3. 溫度動態校準控制 (T &in; [0.1, 2.0])
+                            </div>
+                            <p class="text-[11px] text-gray-400 leading-relaxed">
+                                支援動態溫度調整：低溫（T=0.2）輸出尖銳確定解，高溫（T=1.5）平滑機率分布以探索邊緣意圖，並提供熵值（Entropy）作為信心指標。
+                            </p>
+                        </div>
+                        <div class="p-3.5 bg-gray-950 rounded-xl border border-gray-800 space-y-1.5">
+                            <div class="font-bold text-blue-400 text-xs flex items-center gap-1.5">
+                                <i data-lucide="cpu" class="w-4 h-4"></i> 4. 超輕量資源佔用 (22MB ~ 140MB)
+                            </div>
+                            <p class="text-[11px] text-gray-400 leading-relaxed">
+                                模型體積僅 22MB~140MB，記憶體佔用小於 200MB，完全無需獨立顯卡，在 WinPE 無網維護環境或邊緣嵌入式設備皆能流暢運作。
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="p-4 bg-gray-950 rounded-xl border border-gray-800 space-y-2.5">
+                        <h3 class="font-bold text-sm text-white flex items-center gap-1.5">
+                            <i data-lucide="git-compare" class="w-4 h-4 text-indigo-400"></i> 何時使用？Jev 與傳統生成式 LLM 決策對照表
+                        </h3>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-[11px] border-collapse border border-gray-800 text-left">
+                                <thead>
+                                    <tr class="bg-gray-900/80 text-gray-300">
+                                        <th class="p-2 border border-gray-800">使用場景 / 任務類型</th>
+                                        <th class="p-2 border border-gray-800 text-amber-400">⚡ Jev 決策器 (System 1)</th>
+                                        <th class="p-2 border border-gray-800 text-purple-400">🤖 傳統生成式 LLM (System 2)</th>
+                                        <th class="p-2 border border-gray-800">架構建議</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-gray-800/60 text-gray-400">
+                                    <tr>
+                                        <td class="p-2 border border-gray-800 font-medium text-gray-200">Agent 工具路由 (Tool Routing)</td>
+                                        <td class="p-2 border border-gray-800 text-emerald-400 font-bold">✅ 極度適合 (15ms 瞬間分流)</td>
+                                        <td class="p-2 border border-gray-800 text-rose-400">❌ 延遲過高 (500ms+ 浪費算力)</td>
+                                        <td class="p-2 border border-gray-800 text-cyan-300">Jev 擔任前端分流器</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="p-2 border border-gray-800 font-medium text-gray-200">安全護欄與防注入 (Guardrails)</td>
+                                        <td class="p-2 border border-gray-800 text-emerald-400 font-bold">✅ 極度適合 (前置毫秒級攔截)</td>
+                                        <td class="p-2 border border-gray-800 text-rose-400">⚠️ 易受 Prompt 欺騙與越獄</td>
+                                        <td class="p-2 border border-gray-800 text-cyan-300">Jev 擔任第一道防線門衛</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="p-2 border border-gray-800 font-medium text-gray-200">IT 故障與工單分級 (P0~P3 分流)</td>
+                                        <td class="p-2 border border-gray-800 text-emerald-400 font-bold">✅ 極度適合 (確定性分類與信心度)</td>
+                                        <td class="p-2 border border-gray-800 text-yellow-400">⚠️ 偶發格式變形</td>
+                                        <td class="p-2 border border-gray-800 text-cyan-300">Jev 快速分類分級</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="p-2 border border-gray-800 font-medium text-gray-200">指令 / 編譯器 / 語系識別</td>
+                                        <td class="p-2 border border-gray-800 text-emerald-400 font-bold">✅ 極度適合 (PowerShell/Bash/Python)</td>
+                                        <td class="p-2 border border-gray-800 text-yellow-400">⚠️ 殺雞用牛刀</td>
+                                        <td class="p-2 border border-gray-800 text-cyan-300">Jev 快速環境分派</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="p-2 border border-gray-800 font-medium text-gray-200">長文寫作、報告總結、文案創作</td>
+                                        <td class="p-2 border border-gray-800 text-rose-400">❌ 不支援 (非生成架構)</td>
+                                        <td class="p-2 border border-gray-800 text-emerald-400 font-bold">✅ 極度適合 (豐富生成能力)</td>
+                                        <td class="p-2 border border-gray-800 text-purple-300">交由大模型生成</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="p-2 border border-gray-800 font-medium text-gray-200">複雜程式碼編寫與系統重構</td>
+                                        <td class="p-2 border border-gray-800 text-rose-400">❌ 不支援 (非生成架構)</td>
+                                        <td class="p-2 border border-gray-800 text-emerald-400 font-bold">✅ 極度適合 (邏輯合成能力)</td>
+                                        <td class="p-2 border border-gray-800 text-purple-300">交由大模型生成</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="p-2 border border-gray-800 font-medium text-gray-200">深度思考鏈 (Chain-of-Thought 推演)</td>
+                                        <td class="p-2 border border-gray-800 text-rose-400">❌ 不支援 (單步注意力打分)</td>
+                                        <td class="p-2 border border-gray-800 text-emerald-400 font-bold">✅ 極度適合 (多步驟探索)</td>
+                                        <td class="p-2 border border-gray-800 text-purple-300">交由大模型推導</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="p-4 bg-indigo-950/20 border border-indigo-800/40 rounded-xl space-y-2">
+                        <h3 class="font-bold text-sm text-indigo-300 flex items-center gap-1.5">
+                            <i data-lucide="layers" class="w-4 h-4"></i> 最佳實踐：1+1 雙引擎協同架構 (快思 + 慢想)
+                        </h3>
+                        <p class="text-[11px] text-gray-300 leading-relaxed">
+                            Webcom 推薦的架構模式為「<strong>Jev 負責 15ms 快思篩選，大模型負責深度慢想</strong>」：
+                        </p>
+                        <ol class="list-decimal list-inside space-y-1 text-[11px] text-gray-300 pl-1">
+                            <li><strong>前端過濾</strong>：使用者輸入任何指令時，先經由 Jev 進行 15ms 的意圖識別與安全檢查。</li>
+                            <li><strong>極速繞道</strong>：若意圖為終端執行（如 <code class="text-emerald-400 bg-gray-900 px-1 py-0.5 rounded">dir</code>, <code class="text-emerald-400 bg-gray-900 px-1 py-0.5 rounded">ls</code>）或串口控制，直接分流執行，完全無須喚醒肥大模型。</li>
+                            <li><strong>深度委派</strong>：僅當 Jev 識別為「需要寫作或深度邏輯解答」時，才喚醒後端生成式 LLM。既省算力又使整體系統反應速度提升數倍！</li>
+                        </ol>
+                    </div>
+
+                    <div class="p-4 bg-amber-950/20 border border-amber-800/40 rounded-xl flex items-center justify-between gap-3">
+                        <div class="space-y-1">
+                            <div class="font-bold text-xs text-amber-300 flex items-center gap-1.5">
+                                <i data-lucide="play" class="w-4 h-4"></i> 如何立即體驗 Jev 決策沙盒？
+                            </div>
+                            <p class="text-[11px] text-gray-400">
+                                點擊頂部工具列上的 <strong class="text-amber-300 bg-gray-900 px-2 py-0.5 rounded border border-amber-500/30">⚡ Jev 決策器</strong> 膠囊按鈕，即可隨時開啟互動測試沙盒，即時體驗 15ms 的極速決策！
+                            </p>
+                        </div>
                     </div>
                 `;
             }
@@ -4583,8 +4875,31 @@ if (!window.WTerm && window.WTermBundle) {
 
         // ── Artifact Drawer Event Listeners ──
         const artifactDrawerModal = document.getElementById('artifact-drawer-modal');
-        document.getElementById('btn-close-artifact-drawer')?.addEventListener('click', () => {
-            artifactDrawerModal.classList.add('hidden');
+
+        window.closeArtifactDrawer = function() {
+            const modal = document.getElementById('artifact-drawer-modal');
+            if (modal) {
+                modal.classList.add('hidden');
+                modal.style.display = 'none';
+            }
+        };
+
+        document.getElementById('btn-close-artifact-drawer')?.addEventListener('click', (e) => {
+            e.stopPropagation();
+            closeArtifactDrawer();
+        });
+
+        // Click on backdrop outside the workbench drawer to close
+        artifactDrawerModal?.addEventListener('click', (e) => {
+            if (e.target === artifactDrawerModal) {
+                closeArtifactDrawer();
+            }
+        });
+
+        window.addEventListener('message', (e) => {
+            if (e.data && e.data.type === 'CLOSE_ARTIFACT_DRAWER') {
+                closeArtifactDrawer();
+            }
         });
 
         // ── Drawer User Editor Wiring ──
@@ -4884,7 +5199,7 @@ if (!window.WTerm && window.WTermBundle) {
 
         window.addEventListener('keydown', (e) => {
             if (e.key === 'Escape' && artifactDrawerModal && !artifactDrawerModal.classList.contains('hidden')) {
-                artifactDrawerModal.classList.add('hidden');
+                closeArtifactDrawer();
             }
         });
 
@@ -6074,6 +6389,7 @@ if (!window.WTerm && window.WTermBundle) {
                 const activePane = document.getElementById(targetTab);
                 if (activePane) activePane.classList.remove('hidden');
                 e.currentTarget.className = 'guide-tab-btn px-3 py-1.5 rounded-lg text-xs font-bold transition bg-indigo-600 text-white';
+                if (window.lucide) lucide.createIcons();
             });
         });
 
@@ -6353,6 +6669,8 @@ if (!window.WTerm && window.WTermBundle) {
                 { cmd: t('slashCmd15_title'), desc: t('slashCmd15_desc'), payload: t('slashCmd15_payload') },
                 { cmd: t('slashCmd16_title'), desc: t('slashCmd16_desc'), payload: t('slashCmd16_payload') },
                 { cmd: t('slashCmd17_title'), desc: t('slashCmd17_desc'), payload: t('slashCmd17_payload') },
+                { cmd: t('slashCmd18_title'), desc: t('slashCmd18_desc'), payload: t('slashCmd18_payload') },
+                { cmd: "/jev", desc: t('slashCmd18_desc'), payload: "/jev" },
                 { cmd: t('slashCmd4_title'), desc: t('slashCmd4_desc'), payload: t('slashCmd4_payload') },
                 { cmd: t('slashCmd5_title'), desc: t('slashCmd5_desc'), payload: t('slashCmd5_payload') },
                 { cmd: t('slashCmd6_title'), desc: t('slashCmd6_desc'), payload: t('slashCmd6_payload') },
@@ -8784,6 +9102,76 @@ Important guidelines:
             lucide.createIcons();
         };
 
+        window.openJevPlayground = async function() {
+            const JEV_ID = 'jev_decision_sandbox';
+            let htmlContent = '';
+            try {
+                let url = './assets/jev_sandbox.html';
+                if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.getURL) {
+                    url = chrome.runtime.getURL('assets/jev_sandbox.html');
+                }
+                const res = await fetch(url).catch(() => fetch('http://127.0.0.1:8001/assets/jev_sandbox.html'));
+                if (res && res.ok) {
+                    htmlContent = await res.text();
+                }
+            } catch (e) {
+                console.warn('[Jev] Could not fetch assets/jev_sandbox.html via primary url:', e);
+            }
+
+            if (!htmlContent) {
+                try {
+                    const r2 = await fetch('http://127.0.0.1:8001/assets/jev_sandbox.html');
+                    if (r2 && r2.ok) htmlContent = await r2.text();
+                } catch (e2) {}
+            }
+
+            if (!htmlContent) {
+                htmlContent = '<iframe src="./assets/jev_sandbox.html" class="w-full h-full border-0"></iframe>';
+            }
+
+            const art = {
+                id: JEV_ID,
+                title: '⚡ Jev 極速單次傳播決策沙盒 (Cross-Encoder / System 1)',
+                type: 'html',
+                language: 'html',
+                fullContent: htmlContent,
+                originalContent: htmlContent,
+                userEdited: false,
+                parts: [{ content: htmlContent, timestamp: Date.now(), addedLines: (htmlContent.split('\n') || []).length }],
+                versions: [{
+                    version: 1,
+                    content: htmlContent,
+                    author: 'jev',
+                    actionType: 'init',
+                    summary: 'Jev Single Forward-Pass Sandbox',
+                    timestamp: Date.now(),
+                    lines: (htmlContent.split('\n') || []).length,
+                    chars: htmlContent.length
+                }],
+                activeVersion: 1,
+                isStreaming: false,
+                createdAt: Date.now(),
+                updatedAt: Date.now(),
+                activeTab: 'preview'
+            };
+            globalArtifactStore.set(JEV_ID, art);
+            lastActiveArtifactId = JEV_ID;
+
+            openArtifactDrawer(JEV_ID);
+            if (typeof setDrawerLayoutMode === 'function') {
+                setDrawerLayoutMode('preview');
+            }
+
+            const modal = document.getElementById('artifact-drawer-modal');
+            if (modal) {
+                modal.classList.remove('hidden');
+                modal.style.display = 'flex';
+            }
+            if (window.lucide && typeof lucide.createIcons === 'function') {
+                lucide.createIcons();
+            }
+        };
+
 
         // ── Artifact Version Control & Diff Engine ──
         function computeLineDiff(oldText, newText) {
@@ -9130,8 +9518,9 @@ Important guidelines:
             updateArtifactVersionSelect(art);
             updateArtifactDiffView(art);
             if (statsEl) {
-                const linesCount = art.fullContent.split('\n').length;
-                statsEl.textContent = `${linesCount} ${t('artifactLinesUnit')} · ${art.fullContent.length} ${t('artifactCharsUnit')} · ${art.parts.length} ${t('artifactPartsUnit')}`;
+                const linesCount = (art.fullContent || '').split('\n').length;
+                const partsCount = (art.parts && Array.isArray(art.parts)) ? art.parts.length : 1;
+                statsEl.textContent = `${linesCount} ${t('artifactLinesUnit')} · ${(art.fullContent || '').length} ${t('artifactCharsUnit')} · ${partsCount} ${t('artifactPartsUnit')}`;
             }
             const editStatus = document.getElementById('drawer-edit-status');
             if (editStatus) {
@@ -14251,6 +14640,31 @@ Important guidelines:
             const lowerP = promptText.trim().toLowerCase();
             if (lowerP === '/python' || lowerP === '/pyversion' || lowerP === '/py' || lowerP === '/version' || lowerP === '/查詢python版本') {
                 effectivePrompt = t('slashCmd17_payload');
+            } else if (lowerP === '/jev' || lowerP === '/jev-sandbox' || lowerP === '/jev決策沙盒' || lowerP === '/決策' || lowerP === '/jev架構') {
+                userInput.value = '';
+                appendMessage('user', promptText, false, false, '', imagesToSend);
+                const assistantMsg = `⚡ **Jev 極速單次傳播決策器 (System 1 Architecture)** 已就緒！\n\n` +
+                    `- **單次前向傳播 (Single Forward Pass)**：無自迴歸 Token 循環，~15ms 極速響應\n` +
+                    `- **Hugging Face ONNX 交叉編碼器**：BAAI BGE-Reranker、MiniLM-L-6-v2、DeBERTa-v3-NLI\n` +
+                    `- **確定性機率分佈**：Softmax 機率校準，零 Token 幻覺\n\n` +
+                    `<div class="p-3 bg-gray-900 border border-amber-500/40 rounded-xl my-2 flex items-center justify-between gap-3 shadow-lg">` +
+                    `  <div class="flex items-center gap-2.5">` +
+                    `    <div class="w-8 h-8 rounded-lg bg-amber-500/20 text-amber-400 flex items-center justify-center border border-amber-500/30">` +
+                    `      <i data-lucide="zap" class="w-4 h-4"></i>` +
+                    `    </div>` +
+                    `    <div>` +
+                    `      <div class="text-xs font-bold text-white">Jev 決策沙盒 (Cross-Encoder Decision Sandbox)</div>` +
+                    `      <div class="text-[10px] text-gray-400">點擊右側按鈕立即在側邊工作區開啟獨立互動沙盒</div>` +
+                    `    </div>` +
+                    `  </div>` +
+                    `  <button type="button" onclick="openJevPlayground()" class="px-3 py-1.5 rounded-lg bg-gradient-to-r from-amber-500 to-purple-600 hover:from-amber-400 hover:to-purple-500 text-white text-xs font-bold transition shadow flex items-center gap-1.5 cursor-pointer">` +
+                    `    <i data-lucide="play" class="w-3.5 h-3.5 fill-white"></i> 立即開啟沙盒` +
+                    `  </button>` +
+                    `</div>`;
+                appendMessage('assistant', assistantMsg, false, false);
+                if (window.lucide && typeof lucide.createIcons === 'function') { try { lucide.createIcons(); } catch(e){} }
+                openJevPlayground();
+                return;
             } else {
                 const matchedCmd = slashCommands.find(c => c.cmd.toLowerCase() === promptText.trim().toLowerCase());
             if (matchedCmd && matchedCmd.payload) {
