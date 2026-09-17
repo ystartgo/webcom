@@ -14102,7 +14102,8 @@ Important guidelines:
             const imgNote = (extractedImages.length > 0) ? `\n> 🖼️ 已從文件提取 ${extractedImages.length} 張圖片附加至 Vision 對話！` : '';
             const tableNote = (tablesCount > 0) ? `\n> 📊 已識別並轉為 Markdown 表格 (${tablesCount} 個)` : '';
             const engineBadge = engineUsed === 'markitdown' ? 'Microsoft MarkItDown' : '文字直讀';
-            const promptInjection = `【📄 MarkItDown 轉檔附件: ${file.name} (${sizeKb} KB / 由 ${engineBadge} 轉換為結構化 Markdown)】${imgNote}${tableNote}\n\n${snippet}`;
+            const pathNote = savedDiskPath ? `\n> 📁 本機儲存路徑: ${savedDiskPath}` : '';
+            const promptInjection = `【📄 MarkItDown 轉檔附件: ${file.name} (${sizeKb} KB / 由 ${engineBadge} 轉換為結構化 Markdown)】${pathNote}${imgNote}${tableNote}\n\n${snippet}`;
 
             userInput.value = currentText ? `${currentText}\n\n${promptInjection}` : promptInjection;
             userInput.style.height = 'auto';

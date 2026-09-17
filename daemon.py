@@ -903,6 +903,8 @@ class ShellRequest(BaseModel):
 
 class FileReadRequest(BaseModel):
     filepath: str
+    offset: Optional[int] = 0
+    limit: Optional[int] = None
 
 class FileWriteRequest(BaseModel):
     filepath: str
@@ -1960,11 +1962,66 @@ def list_rag_assets():
 @app.post("/tools/read_file")
 def read_file(req: FileReadRequest):
     try:
-        if not os.path.exists(req.filepath):
+        raw_target = (req.filepath or "").strip().strip('"').strip("'")
+        resolved_path = None
+
+        # 候選路徑：優先直接比對、本機目錄、rag_docs、RAG 歸檔目錄
+        candidates = [
+            raw_target,
+            os.path.join(webcom_dir, raw_target),
+            os.path.join(webcom_dir, "rag_docs", raw_target),
+            os.path.join(webcom_dir, "assets", "RAG", "Converted", raw_target),
+            os.path.join(webcom_dir, "assets", "RAG", raw_target),
+            os.path.join(webcom_dir, "uploads", raw_target),
+        ]
+        for c in candidates:
+            if os.path.isfile(c):
+                resolved_path = os.path.abspath(c)
+                break
+
+        # 智慧模糊匹配：自動相容下底線/空格/大小寫轉換 (例如 mps_roadmap_summary.md <-> MPS Power Management Roadmap Summary.md)
+        if not resolved_path:
+            norm_target = os.path.basename(raw_target).lower().replace("_", "").replace(" ", "").replace("-", "")
+            search_dirs = [
+                os.path.join(webcom_dir, "rag_docs"),
+                os.path.join(webcom_dir, "assets", "RAG", "Converted"),
+                os.path.join(webcom_dir, "assets", "RAG"),
+                os.path.join(webcom_dir, "uploads"),
+                webcom_dir,
+            ]
+            for s_dir in search_dirs:
+                if os.path.isdir(s_dir):
+                    try:
+                        for fname in os.listdir(s_dir):
+                            full = os.path.join(s_dir, fname)
+                            if os.path.isfile(full):
+                                norm_fname = fname.lower().replace("_", "").replace(" ", "").replace("-", "")
+                                if norm_fname == norm_target or (len(norm_target) > 5 and (norm_target in norm_fname or norm_fname in norm_target)):
+                                    resolved_path = os.path.abspath(full)
+                                    break
+                    except Exception:
+                        pass
+                if resolved_path:
+                    break
+
+        if not resolved_path or not os.path.exists(resolved_path):
             return {"status": "error", "error": f"檔案不存在: {req.filepath}"}
-        with open(req.filepath, "r", encoding="utf-8", errors="replace") as f:
-            content = f.read()
-        return {"status": "success", "content": content}
+
+        with open(resolved_path, "r", encoding="utf-8", errors="replace") as f:
+            if req.offset and req.offset > 0:
+                f.seek(req.offset)
+            if req.limit and req.limit > 0:
+                content = f.read(req.limit)
+            else:
+                # 安全上限 250,000 字元，避免極巨大檔案直接灌爆 LLM 上下文
+                content = f.read(250000)
+
+        return {
+            "status": "success",
+            "filepath": resolved_path.replace("\\", "/"),
+            "filename": os.path.basename(resolved_path),
+            "content": content
+        }
     except Exception as e:
         return {"status": "error", "error": str(e)}
 
