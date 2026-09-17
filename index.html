@@ -1641,7 +1641,7 @@
                     </div>
 
                     <!-- Far Right Pinned Exit Button: 100% ALWAYS visible, prominent rose/red badge with "離開" -->
-                    <button id="btn-close-artifact-drawer" type="button"
+                    <button id="btn-close-artifact-drawer" type="button" onclick="closeArtifactDrawer()"
                         class="shrink-0 flex items-center gap-1.5 px-3 py-1.5 bg-rose-950/80 hover:bg-rose-900 text-rose-300 hover:text-white border border-rose-700/60 rounded-lg text-xs font-bold transition shadow-sm cursor-pointer ml-1 z-10 whitespace-nowrap"
                         title="離開 / 關閉 (Esc)" data-i18n-title="artifactCloseDrawer">
                         <i data-lucide="x" class="w-4 h-4 text-rose-400"></i>
@@ -8387,8 +8387,31 @@ ffmpeg -f pulse -i default -acodec libmp3lame -ab 128k -f mp3 -listen 1 http://0
 
         // ── Artifact Drawer Event Listeners ──
         const artifactDrawerModal = document.getElementById('artifact-drawer-modal');
-        document.getElementById('btn-close-artifact-drawer')?.addEventListener('click', () => {
-            artifactDrawerModal.classList.add('hidden');
+
+        window.closeArtifactDrawer = function() {
+            const modal = document.getElementById('artifact-drawer-modal');
+            if (modal) {
+                modal.classList.add('hidden');
+                modal.style.display = 'none';
+            }
+        };
+
+        document.getElementById('btn-close-artifact-drawer')?.addEventListener('click', (e) => {
+            e.stopPropagation();
+            closeArtifactDrawer();
+        });
+
+        // Click on backdrop outside the workbench drawer to close
+        artifactDrawerModal?.addEventListener('click', (e) => {
+            if (e.target === artifactDrawerModal) {
+                closeArtifactDrawer();
+            }
+        });
+
+        window.addEventListener('message', (e) => {
+            if (e.data && e.data.type === 'CLOSE_ARTIFACT_DRAWER') {
+                closeArtifactDrawer();
+            }
         });
 
         // ── Drawer User Editor Wiring ──
@@ -8688,7 +8711,7 @@ ffmpeg -f pulse -i default -acodec libmp3lame -ab 128k -f mp3 -listen 1 http://0
 
         window.addEventListener('keydown', (e) => {
             if (e.key === 'Escape' && artifactDrawerModal && !artifactDrawerModal.classList.contains('hidden')) {
-                artifactDrawerModal.classList.add('hidden');
+                closeArtifactDrawer();
             }
         });
 

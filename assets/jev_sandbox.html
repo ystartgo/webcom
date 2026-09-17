@@ -53,6 +53,12 @@
                     <i data-lucide="cpu" class="w-3.5 h-3.5 text-purple-400"></i>
                     <span>ONNX Runtime 加速</span>
                 </span>
+                <button type="button" onclick="closeFromInside()"
+                    class="px-2.5 py-1 rounded-lg bg-rose-950/80 hover:bg-rose-900 text-rose-300 hover:text-white border border-rose-700/60 font-bold transition flex items-center gap-1 cursor-pointer"
+                    title="離開沙盒並返回對話 (Esc)">
+                    <i data-lucide="x" class="w-3.5 h-3.5"></i>
+                    <span>離開</span>
+                </button>
             </div>
         </div>
     </header>
@@ -487,6 +493,24 @@
             if (!str) return '';
             return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
         }
+
+        function closeFromInside() {
+            try {
+                if (window.parent && typeof window.parent.closeArtifactDrawer === 'function') {
+                    window.parent.closeArtifactDrawer();
+                } else if (window.parent) {
+                    window.parent.postMessage({ type: 'CLOSE_ARTIFACT_DRAWER' }, '*');
+                }
+            } catch (e) {
+                window.parent?.postMessage({ type: 'CLOSE_ARTIFACT_DRAWER' }, '*');
+            }
+        }
+
+        window.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                closeFromInside();
+            }
+        });
 
         window.addEventListener('DOMContentLoaded', () => {
             lucide.createIcons();
