@@ -16711,8 +16711,8 @@ Important guidelines:
                     name: currentLang === 'en' ? 'Pomodoro Focus Timer (番茄鐘高效專注計時器)' : '番茄鐘高效專注計時器 (Pomodoro Focus Timer)',
                     category: 'html',
                     icon: '⏱️',
-                    version: 'v1.0',
-                    desc: currentLang === 'en' ? 'Interactive 25min focus & 5min break timer with audio chimes and modern dark glassmorphism design. (番茄鐘高效專注與休眠排程工具)' : '內建 25 分鐘專注、5 分鐘短休與長休模式，具備音效提示與現代深色毛玻璃介面的生產力小工具。(Focus timer with 25m/5m modes)',
+                    version: 'v1.2',
+                    desc: currentLang === 'en' ? 'Interactive Pomodoro focus timer with 25/50/5/15m preset modes, ±1/±5m quick adjustments, custom duration setting, visual progress ring, and audio chimes. (支援模式切換、增減微調與自訂時間)' : '支援 25/50/5/15 分鐘多模式即時切換、±1/±5 分快速微調、自訂時間設定、環形進度條與音效提示之番茄鐘專注工具。(Focus timer with mode switching, stepper adjustment & custom duration)',
                     prompt: currentLang === 'en' ? 'You are a productivity coach. Help the user optimize their focus sessions with this Pomodoro timer app. (你是一位專注力教練，請協助規劃並優化番茄鐘工作節奏。)' : '你是一位專注力教練。請根據使用者的工作節奏，協助引導番茄鐘專注循環，或按使用者需求調整計時參數與介面。(You are a productivity coach helping user optimize Pomodoro sessions.)',
                     code: `<!DOCTYPE html>
 <html lang="zh-TW">
@@ -16721,112 +16721,364 @@ Important guidelines:
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>番茄鐘專注計時器</title>
   <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
       background: radial-gradient(circle at top, #1e1b4b 0%, #030712 100%);
       color: #f3f4f6;
       display: flex;
       align-items: center;
       justify-content: center;
       min-height: 100vh;
-      margin: 0;
-      padding: 1.5rem;
-      box-sizing: border-box;
+      padding: 1rem;
+      user-select: none;
     }
     .timer-card {
-      background: rgba(17, 24, 39, 0.9);
-      border: 1px solid rgba(139, 92, 246, 0.4);
-      padding: 2.5rem 2rem;
+      background: rgba(17, 24, 39, 0.95);
+      border: 1px solid rgba(139, 92, 246, 0.35);
+      padding: 2rem 1.5rem;
       border-radius: 1.5rem;
-      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7), 0 0 30px rgba(139, 92, 246, 0.2);
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.8), 0 0 35px rgba(139, 92, 246, 0.2);
       text-align: center;
       max-width: 440px;
       width: 100%;
+      backdrop-filter: blur(12px);
     }
-    .badge {
-      display: inline-block;
-      background: rgba(139, 92, 246, 0.2);
-      color: #c4b5fd;
-      border: 1px solid rgba(139, 92, 246, 0.4);
-      font-size: 0.75rem;
-      font-weight: 700;
-      padding: 0.25rem 0.75rem;
-      border-radius: 9999px;
+    .badge-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
       margin-bottom: 1.25rem;
     }
-    .display {
-      font-size: 4rem;
-      font-weight: 900;
-      font-family: monospace;
-      color: #a78bfa;
-      margin: 1rem 0;
-      text-shadow: 0 0 20px rgba(167, 139, 250, 0.4);
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      background: rgba(139, 92, 246, 0.15);
+      color: #c4b5fd;
+      border: 1px solid rgba(139, 92, 246, 0.3);
+      font-size: 0.72rem;
+      font-weight: 700;
+      padding: 0.25rem 0.65rem;
+      border-radius: 9999px;
+      letter-spacing: 0.05em;
     }
-    .btn-row {
+    .sound-btn {
+      background: transparent;
+      border: 1px solid #374151;
+      color: #9ca3af;
+      padding: 0.2rem 0.55rem;
+      border-radius: 9999px;
+      font-size: 0.7rem;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .sound-btn:hover { border-color: #8b5cf6; color: #c4b5fd; }
+    .modes-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 0.4rem;
+      margin-bottom: 1.25rem;
+    }
+    .mode-btn {
+      background: #1f2937;
+      color: #9ca3af;
+      border: 1px solid #374151;
+      font-size: 0.75rem;
+      font-weight: 600;
+      padding: 0.45rem 0.25rem;
+      border-radius: 0.65rem;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .mode-btn:hover { background: #374151; color: #fff; border-color: #6b7280; }
+    .mode-btn.active {
+      background: #7c3aed;
+      color: #ffffff;
+      border-color: #a78bfa;
+      box-shadow: 0 0 12px rgba(124, 58, 237, 0.4);
+    }
+    .dial-container {
+      position: relative;
+      width: 200px;
+      height: 200px;
+      margin: 0.5rem auto 1rem;
       display: flex;
-      gap: 0.75rem;
+      align-items: center;
       justify-content: center;
-      margin-top: 1.5rem;
     }
-    button {
+    .progress-svg {
+      transform: rotate(-90deg);
+      width: 200px;
+      height: 200px;
+    }
+    .progress-bg {
+      stroke: #1f2937;
+      stroke-width: 8;
+      fill: none;
+    }
+    .progress-bar {
+      stroke: #a78bfa;
+      stroke-width: 8;
+      stroke-linecap: round;
+      fill: none;
+      transition: stroke-dashoffset 0.5s ease, stroke 0.3s;
+    }
+    .dial-inner {
+      position: absolute;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+    .display {
+      font-size: 3.25rem;
+      font-weight: 900;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      color: #f3f4f6;
+      line-height: 1;
+      text-shadow: 0 0 25px rgba(167, 139, 250, 0.4);
+      cursor: pointer;
+      transition: transform 0.15s;
+    }
+    .display:hover { transform: scale(1.03); }
+    .status-lbl {
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: #9ca3af;
+      margin-top: 0.35rem;
+      letter-spacing: 0.05em;
+    }
+    .stepper-row {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.35rem;
+      margin-bottom: 0.85rem;
+    }
+    .step-btn {
+      background: #1e293b;
+      color: #cbd5e1;
+      border: 1px solid #334155;
+      font-size: 0.7rem;
+      font-weight: 700;
+      padding: 0.25rem 0.55rem;
+      border-radius: 0.5rem;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .step-btn:hover { background: #334155; color: #fff; border-color: #8b5cf6; }
+    .custom-row {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.4rem;
+      margin-bottom: 1.25rem;
+      padding: 0.4rem;
+      background: rgba(15, 23, 42, 0.6);
+      border-radius: 0.75rem;
+      border: 1px dashed rgba(139, 92, 246, 0.3);
+    }
+    .custom-row span { font-size: 0.75rem; color: #9ca3af; }
+    .custom-input {
+      width: 58px;
+      background: #030712;
+      border: 1px solid #374151;
+      color: #a78bfa;
+      border-radius: 0.4rem;
+      padding: 0.25rem 0.4rem;
+      font-size: 0.8rem;
+      font-weight: bold;
+      text-align: center;
+      outline: none;
+    }
+    .custom-input:focus { border-color: #8b5cf6; }
+    .custom-btn {
+      background: #4c1d95;
+      color: #ddd6fe;
+      border: 1px solid #6d28d9;
+      font-size: 0.72rem;
+      font-weight: 700;
+      padding: 0.3rem 0.7rem;
+      border-radius: 0.4rem;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .custom-btn:hover { background: #5b21b6; color: #fff; }
+    .action-row {
+      display: flex;
+      gap: 0.65rem;
+      justify-content: center;
+    }
+    .main-btn {
+      flex: 2;
       background: #7c3aed;
       color: white;
       border: none;
-      padding: 0.65rem 1.25rem;
-      border-radius: 0.75rem;
+      padding: 0.75rem 1.25rem;
+      border-radius: 0.85rem;
+      cursor: pointer;
+      font-weight: 700;
+      font-size: 0.95rem;
+      transition: all 0.2s;
+      box-shadow: 0 4px 15px rgba(124, 58, 237, 0.3);
+    }
+    .main-btn:hover { background: #6d28d9; transform: translateY(-1px); }
+    .main-btn.running {
+      background: #d97706;
+      box-shadow: 0 4px 15px rgba(217, 119, 6, 0.3);
+    }
+    .main-btn.running:hover { background: #b45309; }
+    .sec-btn {
+      flex: 1;
+      background: #374151;
+      color: #e5e7eb;
+      border: 1px solid #4b5563;
+      padding: 0.75rem 0.85rem;
+      border-radius: 0.85rem;
       cursor: pointer;
       font-weight: 700;
       font-size: 0.875rem;
       transition: all 0.2s;
     }
-    button:hover { background: #6d28d9; transform: translateY(-1px); }
-    .btn-sec { background: #374151; }
-    .btn-sec:hover { background: #4b5563; }
-    .modes {
-      display: flex;
-      gap: 0.5rem;
-      justify-content: center;
-      margin-bottom: 1rem;
-    }
-    .mode-btn {
-      background: #1f2937;
-      font-size: 0.75rem;
-      padding: 0.35rem 0.75rem;
-    }
-    .mode-btn.active { background: #7c3aed; }
+    .sec-btn:hover { background: #4b5563; color: #fff; }
   </style>
 </head>
 <body>
   <div class="timer-card">
-    <div class="badge">FOCUS WORKBENCH</div>
-    <div class="modes">
-      <button class="mode-btn active" onclick="setMode(25, this)">25分 專注</button>
-      <button class="mode-btn" onclick="setMode(5, this)">5分 短休</button>
-      <button class="mode-btn" onclick="setMode(15, this)">15分 長休</button>
+    <div class="badge-row">
+      <div class="badge">
+        <span>⏱️</span>
+        <span id="badge-title">POMODORO FOCUS</span>
+      </div>
+      <button type="button" class="sound-btn" id="sound-toggle" onclick="toggleSound()">🔔 音效: 開</button>
     </div>
-    <div class="display" id="time">25:00</div>
-    <div class="btn-row">
-      <button id="toggle-btn" onclick="toggle()">開始專注</button>
-      <button class="btn-sec" onclick="reset()">重置</button>
+
+    <!-- Quick Mode Presets -->
+    <div class="modes-grid">
+      <button type="button" class="mode-btn active" data-mins="25" onclick="setMode(25, this)">25分 專注</button>
+      <button type="button" class="mode-btn" data-mins="50" onclick="setMode(50, this)">50分 深度</button>
+      <button type="button" class="mode-btn" data-mins="5" onclick="setMode(5, this)">5分 短休</button>
+      <button type="button" class="mode-btn" data-mins="15" onclick="setMode(15, this)">15分 長休</button>
+    </div>
+
+    <!-- Dial with SVG Progress Ring -->
+    <div class="dial-container">
+      <svg class="progress-svg" viewBox="0 0 200 200">
+        <circle class="progress-bg" cx="100" cy="100" r="88"></circle>
+        <circle class="progress-bar" id="progress-bar" cx="100" cy="100" r="88" stroke-dasharray="552.92" stroke-dashoffset="0"></circle>
+      </svg>
+      <div class="dial-inner">
+        <div class="display" id="time" onclick="focusCustomInput()" title="點擊設定自訂時間">25:00</div>
+        <div class="status-lbl" id="status-text">🎯 準備專注</div>
+      </div>
+    </div>
+
+    <!-- Step adjustment buttons (+ / -) -->
+    <div class="stepper-row">
+      <button type="button" class="step-btn" onclick="adjustMinutes(-5)">-5分</button>
+      <button type="button" class="step-btn" onclick="adjustMinutes(-1)">-1分</button>
+      <button type="button" class="step-btn" onclick="adjustMinutes(1)">+1分</button>
+      <button type="button" class="step-btn" onclick="adjustMinutes(5)">+5分</button>
+    </div>
+
+    <!-- Custom time input row -->
+    <div class="custom-row">
+      <span>自訂時間：</span>
+      <input type="number" class="custom-input" id="custom-min" min="1" max="360" value="25" onkeydown="if(event.key==='Enter')applyCustomTime()">
+      <span>分鐘</span>
+      <button type="button" class="custom-btn" onclick="applyCustomTime()">切換設定</button>
+    </div>
+
+    <!-- Controls -->
+    <div class="action-row">
+      <button type="button" class="main-btn" id="toggle-btn" onclick="toggleTimer()">開始專注</button>
+      <button type="button" class="sec-btn" onclick="resetTimer()">重置</button>
     </div>
   </div>
+
   <script>
     let totalSec = 25 * 60;
     let remain = totalSec;
     let timer = null;
+    let isRunning = false;
+    let currentModeName = '專注';
+    let soundEnabled = true;
+    const CIRCLE_CIRCUMFERENCE = 2 * Math.PI * 88;
+
+    function playBeep(freq = 880, duration = 0.18, type = 'sine') {
+      if (!soundEnabled) return;
+      try {
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        if (!AudioCtx) return;
+        const ctx = new AudioCtx();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = type;
+        osc.frequency.setValueAtTime(freq, ctx.currentTime);
+        gain.gain.setValueAtTime(0.2, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start();
+        osc.stop(ctx.currentTime + duration);
+      } catch (e) {}
+    }
+
+    function toggleSound() {
+      soundEnabled = !soundEnabled;
+      const btn = document.getElementById('sound-toggle');
+      if (btn) btn.textContent = soundEnabled ? '🔔 音效: 開' : '🔕 音效: 關';
+    }
+
     function updateDisplay() {
       const m = String(Math.floor(remain / 60)).padStart(2, '0');
       const s = String(remain % 60).padStart(2, '0');
       document.getElementById('time').textContent = m + ':' + s;
+
+      const bar = document.getElementById('progress-bar');
+      if (bar) {
+        const fraction = totalSec > 0 ? (remain / totalSec) : 0;
+        const offset = CIRCLE_CIRCUMFERENCE * (1 - fraction);
+        bar.style.strokeDashoffset = offset;
+        if (currentModeName.includes('休')) {
+          bar.style.stroke = '#10b981';
+        } else if (totalSec >= 50 * 60) {
+          bar.style.stroke = '#06b6d4';
+        } else {
+          bar.style.stroke = '#a78bfa';
+        }
+      }
+
+      const st = document.getElementById('status-text');
+      if (st) {
+        if (!isRunning && remain === totalSec) {
+          st.textContent = '🎯 準備' + currentModeName;
+        } else if (isRunning) {
+          st.textContent = '⏳ ' + currentModeName + '中...';
+        } else {
+          st.textContent = '⏸️ 已暫停 (' + currentModeName + ')';
+        }
+      }
     }
-    function toggle() {
+
+    function toggleTimer() {
       const btn = document.getElementById('toggle-btn');
-      if (timer) {
+      if (isRunning) {
         clearInterval(timer);
         timer = null;
-        btn.textContent = '繼續';
+        isRunning = false;
+        btn.textContent = '繼續計時';
+        btn.classList.remove('running');
+        playBeep(440, 0.12);
+        updateDisplay();
       } else {
-        btn.textContent = '暫停';
+        isRunning = true;
+        btn.textContent = '暫停計時';
+        btn.classList.add('running');
+        playBeep(659, 0.15);
+        updateDisplay();
+
         timer = setInterval(() => {
           if (remain > 0) {
             remain--;
@@ -16834,25 +17086,109 @@ Important guidelines:
           } else {
             clearInterval(timer);
             timer = null;
-            btn.textContent = '開始';
-            alert('⏰ 時間到！請適度放鬆伸展。');
+            isRunning = false;
+            btn.textContent = '開始' + currentModeName;
+            btn.classList.remove('running');
+            updateDisplay();
+
+            playBeep(587, 0.15);
+            setTimeout(() => playBeep(880, 0.35), 180);
+            setTimeout(() => {
+              alert('⏰ 【' + currentModeName + '時間到！】請適度放鬆伸展身心。');
+            }, 300);
           }
         }, 1000);
       }
     }
-    function reset() {
+
+    function resetTimer() {
       if (timer) clearInterval(timer);
       timer = null;
+      isRunning = false;
       remain = totalSec;
+      const btn = document.getElementById('toggle-btn');
+      if (btn) {
+        btn.textContent = '開始' + currentModeName;
+        btn.classList.remove('running');
+      }
+      playBeep(330, 0.1);
       updateDisplay();
-      document.getElementById('toggle-btn').textContent = '開始專注';
     }
-    function setMode(mins, btn) {
+
+    function setMode(mins, btnEl) {
       document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-      totalSec = mins * 60;
-      reset();
+      if (btnEl) {
+        btnEl.classList.add('active');
+      } else {
+        const found = Array.from(document.querySelectorAll('.mode-btn')).find(b => parseInt(b.dataset.mins) === mins);
+        if (found) found.classList.add('active');
+      }
+
+      currentModeName = mins <= 15 ? '休息' : (mins >= 50 ? '深度專注' : '專注');
+      totalSec = Math.max(1, mins) * 60;
+      remain = totalSec;
+
+      const customInput = document.getElementById('custom-min');
+      if (customInput) customInput.value = mins;
+
+      resetTimer();
     }
+
+    function adjustMinutes(delta) {
+      let currentMins = Math.floor(remain / 60);
+      let newMins = Math.max(1, Math.min(360, currentMins + delta));
+      let currentSecs = remain % 60;
+      let newRemain = newMins * 60 + currentSecs;
+
+      remain = newRemain;
+      totalSec = Math.max(totalSec, remain);
+
+      document.querySelectorAll('.mode-btn').forEach(b => {
+        b.classList.toggle('active', parseInt(b.dataset.mins) === newMins && currentSecs === 0);
+      });
+
+      const customInput = document.getElementById('custom-min');
+      if (customInput) customInput.value = newMins;
+
+      playBeep(520, 0.08);
+      updateDisplay();
+    }
+
+    function applyCustomTime() {
+      const input = document.getElementById('custom-min');
+      if (!input) return;
+      let val = parseInt(input.value);
+      if (isNaN(val) || val < 1) val = 1;
+      if (val > 360) val = 360;
+      input.value = val;
+
+      currentModeName = val <= 15 ? '自訂休息' : '自訂專注';
+      totalSec = val * 60;
+      remain = totalSec;
+
+      document.querySelectorAll('.mode-btn').forEach(b => {
+        b.classList.toggle('active', parseInt(b.dataset.mins) === val);
+      });
+
+      resetTimer();
+    }
+
+    function focusCustomInput() {
+      const input = document.getElementById('custom-min');
+      if (input) {
+        input.focus();
+        input.select();
+      }
+    }
+
+    window.setMode = setMode;
+    window.toggleTimer = toggleTimer;
+    window.resetTimer = resetTimer;
+    window.adjustMinutes = adjustMinutes;
+    window.applyCustomTime = applyCustomTime;
+    window.toggleSound = toggleSound;
+    window.focusCustomInput = focusCustomInput;
+
     updateDisplay();
   <\/script>
 </body>
@@ -17090,8 +17426,8 @@ if __name__ == "__main__":
             'pomodoro_timer': {
                 name_zh: '番茄鐘高效專注計時器',
                 name_en: 'Pomodoro Focus Timer',
-                desc_zh: '內建 25 分鐘專注、5 分鐘短休與長休模式，具備音效提示與現代深色毛玻璃介面的生產力小工具。',
-                desc_en: 'Interactive 25min focus & 5min break timer with audio chimes and modern dark glassmorphism design.'
+                desc_zh: '支援 25/50/5/15 分鐘多模式即時切換、±1/±5 分快速微調、自訂時間設定、環形進度條與音效提示之番茄鐘專注工具。',
+                desc_en: 'Interactive Pomodoro focus timer with 25/50/5/15m preset modes, ±1/±5m quick adjustments, custom duration setting, visual progress ring, and audio chimes.'
             },
             'net_ping_diag': {
                 name_zh: '網路連線檢測診斷腳本',

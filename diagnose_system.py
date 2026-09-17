@@ -116,10 +116,10 @@ def test_syntax():
             tf.write(code)
             tname = tf.name
         try:
-            res = subprocess.run(['node', '--check', tname], capture_output=True, text=True)
+            res = subprocess.run(['node', '--check', tname], capture_output=True, encoding='utf-8', errors='replace')
             if res.returncode != 0:
                 all_syntax_pass = False
-                err_msgs.append(f"Script #{idx}: {res.stderr.strip()[:100]}")
+                err_msgs.append(f"Script #{idx}: {(res.stderr or '').strip()[:100]}")
         finally:
             try: os.unlink(tname)
             except Exception: pass
