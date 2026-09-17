@@ -1088,11 +1088,11 @@
                     <i data-lucide="cpu" class="w-4 h-4 text-cyan-400 shrink-0"></i>
                     <select id="engine-mode-select"
                         class="bg-transparent text-xs text-cyan-300 font-bold focus:outline-none cursor-pointer max-w-[150px] sm:max-w-none">
-                        <option value="lmstudio" class="bg-gray-900 text-white">🌐 API 模式 (雲端 / 本機)</option>
-                        <option value="webgpu" class="bg-gray-900 text-white">⚡ WebGPU 瀏覽器純本機</option>
-                        <option value="onnx" class="bg-gray-900 text-white">📦 ONNX 瀏覽器本機 (ONNX Runtime)</option>
-                        <option value="cothink" class="bg-gray-900 text-white">🧠 雙引擎聯合思考 (1+1>2)</option>
-                        <option value="supervise" class="bg-gray-900 text-white">🛡️ 監督排查模式（雙 LLM 互查）</option>
+                        <option value="lmstudio" data-i18n="engineModeLmstudio" class="bg-gray-900 text-white">🌐 API 模式 (雲端 / 本機)</option>
+                        <option value="webgpu" data-i18n="engineModeWebgpu" class="bg-gray-900 text-white">⚡ WebGPU 瀏覽器純本機</option>
+                        <option value="onnx" data-i18n="engineModeOnnx" class="bg-gray-900 text-white">📦 ONNX 瀏覽器本機 (ONNX Runtime)</option>
+                        <option value="cothink" data-i18n="engineModeCoThink" class="bg-gray-900 text-white">🧠 雙引擎聯合思考 (1+1>2)</option>
+                        <option value="supervise" data-i18n="engineModeSupervise" class="bg-gray-900 text-white">🛡️ 監督排查模式（雙 LLM 互查）</option>
                     </select>
                 </div>
 
@@ -4185,6 +4185,8 @@ ffmpeg -f pulse -i default -acodec libmp3lame -ab 128k -f mp3 -listen 1 http://0
                 btnRunPyodide: "🐍 WASM 執行",
                 btnRunTerminal: "▶ 終端執行",
                 scrollToBottom: "回到底部",
+                engineModeLmstudio: "🌐 API 模式 (雲端 / 本機)",
+                engineModeWebgpu: "⚡ WebGPU 瀏覽器純本機",
                 engineModeOnnx: "📦 ONNX 瀏覽器本機 (ONNX Runtime)",
                 engineModeCoThink: "🧠 雙引擎聯合思考 (1+1>2)",
                 engineModeSupervise: "🛡️ 監督排查模式（雙 LLM 互查）",
@@ -4992,6 +4994,8 @@ ffmpeg -f pulse -i default -acodec libmp3lame -ab 128k -f mp3 -listen 1 http://0
                 btnRunPyodide: "🐍 Run in WASM",
                 btnRunTerminal: "▶ Run in Terminal",
                 scrollToBottom: "Scroll to bottom",
+                engineModeLmstudio: "🌐 API Mode (Cloud / Local)",
+                engineModeWebgpu: "⚡ WebGPU Browser Local",
                 engineModeOnnx: "📦 ONNX Browser Local (ONNX Runtime)",
                 engineModeCoThink: "🧠 Dual-LLM Co-Thinking (1+1>2)",
                 engineModeSupervise: "🛡️ Supervised-Mutual-Debug (Dual-LLM)",
@@ -7630,29 +7634,29 @@ ffmpeg -f pulse -i default -acodec libmp3lame -ab 128k -f mp3 -listen 1 http://0
 
             const isEn = currentLang === 'en';
 
-            updateSlashCommands();
-            checkDaemonHealth();
-            renderRagDocList();
-            renderMcpToolsList();
-            renderGuideContent(currentLang);
-            if (typeof renderMainProfileSelect === 'function') renderMainProfileSelect();
-            if (typeof renderModalProfileSelect === 'function') renderModalProfileSelect();
-            if (typeof syncKeySettingsToModal === 'function') syncKeySettingsToModal();
-            if (typeof renderRemoteShortcuts === 'function') renderRemoteShortcuts();
+            // ── Engine Mode Select Options 翻譯 ──
+            const engineSel = document.getElementById('engine-mode-select');
+            if (engineSel && engineSel.options.length >= 5) {
+                engineSel.options[0].textContent = t('engineModeLmstudio');
+                engineSel.options[1].textContent = t('engineModeWebgpu');
+                engineSel.options[2].textContent = t('engineModeOnnx');
+                engineSel.options[3].textContent = t('engineModeCoThink');
+                engineSel.options[4].textContent = t('engineModeSupervise');
+            }
+
+            try { updateSlashCommands(); } catch (e) { console.warn('updateSlashCommands error:', e); }
+            try { checkDaemonHealth(); } catch (e) { console.warn('checkDaemonHealth error:', e); }
+            try { renderRagDocList(); } catch (e) { console.warn('renderRagDocList error:', e); }
+            try { renderMcpToolsList(); } catch (e) { console.warn('renderMcpToolsList error:', e); }
+            try { renderGuideContent(currentLang); } catch (e) { console.warn('renderGuideContent error:', e); }
+            try { if (typeof renderMainProfileSelect === 'function') renderMainProfileSelect(); } catch (e) { console.warn(e); }
+            try { if (typeof renderModalProfileSelect === 'function') renderModalProfileSelect(); } catch (e) { console.warn(e); }
+            try { if (typeof syncKeySettingsToModal === 'function') syncKeySettingsToModal(); } catch (e) { console.warn(e); }
+            try { if (typeof renderRemoteShortcuts === 'function') renderRemoteShortcuts(); } catch (e) { console.warn(e); }
 
             // ── Daemon Modal 含 HTML 內容的翻譯 (innerHTML, not textContent) ──
             const daemonRestartDesc = document.getElementById('daemon-restart-desc');
             if (daemonRestartDesc) daemonRestartDesc.innerHTML = t('daemonRestartDesc');
-
-            // ── Engine Mode Select Options 翻譯 ──
-            const engineSel = document.getElementById('engine-mode-select');
-            if (engineSel && engineSel.options.length >= 5) {
-                engineSel.options[0].textContent = isEn ? "🌐 API Mode (Cloud / Local)" : "🌐 API 模式 (雲端 / 本機)";
-                engineSel.options[1].textContent = isEn ? "⚡ WebGPU Browser Local" : "⚡ WebGPU 瀏覽器純本機";
-                engineSel.options[2].textContent = isEn ? "📦 ONNX Browser Local (ONNX Runtime)" : "📦 ONNX 瀏覽器本機 (ONNX Runtime)";
-                engineSel.options[3].textContent = t('engineModeCoThink');
-                engineSel.options[4].textContent = t('engineModeSupervise');
-            }
 
             // ── App Edit Category Options 雙語同步 ──
             const appEditCatSel = document.getElementById('app-edit-category');
