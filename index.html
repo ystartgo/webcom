@@ -3845,7 +3845,7 @@ ffmpeg -f pulse -i default -acodec libmp3lame -ab 128k -f mp3 -listen 1 http://0
                 tabTermKeys: "終端機按鍵",
                 tabRemoteKeys: "遠端桌面快捷鍵",
                 tabAudioConfig: "音訊設置",
-                termReady: "終端機已就緒。當前環境：[本地 Shell]",
+                termReady: "已就緒。當前環境：[本地 Shell]",
                 daemonChecking: "常駐程式 (8001): 檢查中...",
                 daemonOnline: "常駐程式 (8001) 已連線",
                 daemonOffline: "常駐程式 (8001) 離線",
@@ -4643,7 +4643,7 @@ ffmpeg -f pulse -i default -acodec libmp3lame -ab 128k -f mp3 -listen 1 http://0
                 tabTermKeys: "Terminal Keys",
                 tabRemoteKeys: "Remote Shortcuts",
                 tabAudioConfig: "Audio Config",
-                termReady: "Terminal Ready. Current Context: [Local Shell]",
+                termReady: "Ready. Active: [Local Shell]",
                 daemonChecking: "Daemon (8001): Checking...",
                 daemonOnline: "Daemon (8001) Online",
                 daemonOffline: "Daemon (8001) Offline",
@@ -10790,22 +10790,12 @@ ${tools.join('\n')}${contextStr}
                     const need = Math.max(0, targetCols - cur);
                     return s + ' '.repeat(need);
                 };
-                const bannerBox = (innerLines, { forceCols = null } = {}) => {
+                const bannerBox = (innerLines) => {
                     const maxContentWidth = Math.max(...innerLines.map(displayWidth));
-                    const container = document.getElementById('term-wterm-container');
-                    const charW = (wtermInstance && typeof wtermInstance._measureCharSize === 'function' ? wtermInstance._measureCharSize()?.charWidth : null) || 8.4;
-                    const availCols = container ? Math.floor((container.clientWidth - 24) / charW) : 74;
-                    const innerCols = forceCols
-                        ? forceCols
-                        : Math.min(Math.max(availCols - 6, maxContentWidth), 72);
-                    const W = Math.max(10, innerCols + 6);
-                    const top = `\x1b[1;35m╔${'═'.repeat(W - 2)}╗\x1b[0m`;
-                    const bot = `\x1b[1;35m╚${'═'.repeat(W - 2)}╝\x1b[0m`;
-                    const rows = innerLines.map(line => {
-                        const padded = padDisplayRight(line, innerCols);
-                        return `\x1b[1;35m║\x1b[0m  ${padded}  \x1b[1;35m║\x1b[0m`;
-                    });
-                    return [top, ...rows, bot].join('\r\n');
+                    const borderLen = Math.max(29, maxContentWidth + 2);
+                    const border = `\x1b[1;35m#${'='.repeat(borderLen)}#\x1b[0m`;
+                    const rows = innerLines.map(line => ` ${line}`);
+                    return [border, ...rows, border].join('\r\n');
                 };
 
                 const termIsEn = currentLang === 'en';
@@ -10818,11 +10808,11 @@ ${tools.join('\n')}${contextStr}
                 }
 
                 const bannerRaw = termIsEn ? [
-                    "\x1b[1;36mWebcom Multi-Protocol Terminal v1.0.9\x1b[0m  \x1b[33m(Powered by Vercel Labs wterm)\x1b[0m",
-                    "\x1b[32m● WASM Core (~12KB)\x1b[0m   \x1b[32m● DOM Native Rendering\x1b[0m   \x1b[32m● 24-bit True Color\x1b[0m"
+                    "\x1b[1;36mWebcom Multi-Protocol Terminal v1.0.9\x1b[0m",
+                    "\x1b[32m● WASM Core ● 24-bit True Color\x1b[0m"
                 ] : [
-                    "\x1b[1;36mWebcom 多協定終端機 v1.0.9\x1b[0m  \x1b[33m(Powered by Vercel Labs wterm)\x1b[0m",
-                    "\x1b[32m● WASM 核心 (~12KB)\x1b[0m   \x1b[32m● DOM 原生渲染\x1b[0m   \x1b[32m● 24-bit 真彩色\x1b[0m"
+                    "\x1b[1;36mWebcom 多協定終端機 v1.0.9\x1b[0m",
+                    "\x1b[32m● WASM 核心 ● 24-bit 真彩色\x1b[0m"
                 ];
                 wtermInstance.write(bannerBox(bannerRaw) + '\r\n\r\n');
                 printToTerminal(t('termReady') || 'Terminal ready.', 'success');
