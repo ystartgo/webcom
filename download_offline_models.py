@@ -3,6 +3,12 @@ import sys
 import json
 import urllib.request
 
+if hasattr(sys.stdout, 'reconfigure'):
+    try:
+        sys.stdout.reconfigure(encoding='utf-8', errors='replace')
+    except Exception:
+        pass
+
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 MODELS_DIR = os.path.join(BASE_DIR, "models")
 os.makedirs(MODELS_DIR, exist_ok=True)
@@ -118,7 +124,9 @@ def download_onnx_model(model_name="onnx-community/Qwen2.5-0.5B-Instruct"):
         "tokenizer_config.json",
         "special_tokens_map.json",
         "vocab.json",
-        "merges.txt"
+        "merges.txt",
+        "sentencepiece.bpe.model",
+        "quantize_config.json"
     ]
     for fn in essential_files:
         url = f"{hf_base}/{fn}"

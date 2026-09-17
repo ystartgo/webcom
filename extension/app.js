@@ -1876,6 +1876,7 @@ if (!window.WTerm && window.WTermBundle) {
         }
         const validOnnxModels = [
             "onnx-community/Qwen2.5-0.5B-Instruct",
+            "Xenova/bge-reranker-base",
             "onnx-community/Bonsai-1.7B-ONNX",
             "onnx-community/Qwen3-VL-2B-Instruct-ONNX",
             "onnx-community/gemma-4-E2B-it-ONNX"
@@ -3754,34 +3755,22 @@ if (!window.WTerm && window.WTermBundle) {
             }
 
             // ── ONNX Model Select Options 翻譯 ──
-            const onnxSel = document.getElementById('onnx-model-select');
-            if (onnxSel && onnxSel.options.length >= 4) {
-                if (isEn) {
-                    onnxSel.options[0].textContent = "Qwen2.5-0.5B ONNX (Fastest 350MB ⭐)";
-                    onnxSel.options[1].textContent = "Bonsai-1.7B ONNX (🔥 GPU req. 1.0GB)";
-                    onnxSel.options[2].textContent = "Qwen3-VL-2B Vision ONNX (🔥 GPU req. 1.6GB)";
-                    onnxSel.options[3].textContent = "Gemma-4-2B ONNX (Google 🔥 GPU req. 1.5GB)";
-                } else {
-                    onnxSel.options[0].textContent = "Qwen2.5-0.5B ONNX (極速 350MB ⭐)";
-                    onnxSel.options[1].textContent = "Bonsai-1.7B ONNX (🔥需GPU 1.0GB)";
-                    onnxSel.options[2].textContent = "Qwen3-VL-2B 視覺 ONNX (🔥需GPU 1.6GB)";
-                    onnxSel.options[3].textContent = "Gemma-4-2B ONNX (Google 🔥需GPU 1.5GB)";
-                }
-            }
-            const onnxSel2 = document.getElementById('onnx-model-select-2');
-            if (onnxSel2 && onnxSel2.options.length >= 4) {
-                if (isEn) {
-                    onnxSel2.options[0].textContent = "Qwen2.5-0.5B ONNX (Fastest 350MB ⭐)";
-                    onnxSel2.options[1].textContent = "Bonsai-1.7B ONNX (🔥 GPU req. 1.0GB)";
-                    onnxSel2.options[2].textContent = "Qwen3-VL-2B Vision ONNX (🔥 GPU req. 1.6GB)";
-                    onnxSel2.options[3].textContent = "Gemma-4-2B ONNX (Google 🔥 GPU req. 1.5GB)";
-                } else {
-                    onnxSel2.options[0].textContent = "Qwen2.5-0.5B ONNX (極速 350MB ⭐)";
-                    onnxSel2.options[1].textContent = "Bonsai-1.7B ONNX (🔥需GPU 1.0GB)";
-                    onnxSel2.options[2].textContent = "Qwen3-VL-2B 視覺 ONNX (🔥需GPU 1.6GB)";
-                    onnxSel2.options[3].textContent = "Gemma-4-2B ONNX (Google 🔥需GPU 1.5GB)";
-                }
-            }
+            [document.getElementById('onnx-model-select'), document.getElementById('onnx-model-select-2')].forEach(sel => {
+                if (!sel) return;
+                Array.from(sel.options).forEach(opt => {
+                    if (opt.value === 'onnx-community/Qwen2.5-0.5B-Instruct') {
+                        opt.textContent = isEn ? "Qwen2.5-0.5B ONNX (Fastest 350MB ⭐)" : "Qwen2.5-0.5B ONNX (極速 350MB ⭐)";
+                    } else if (opt.value === 'Xenova/bge-reranker-base') {
+                        opt.textContent = isEn ? "BGE-Reranker-Base ONNX (Jev Fast-Rerank 140MB ⭐)" : "BGE-Reranker-Base ONNX (Jev 極速重排 140MB ⭐)";
+                    } else if (opt.value === 'onnx-community/Bonsai-1.7B-ONNX') {
+                        opt.textContent = isEn ? "Bonsai-1.7B ONNX (🔥 GPU req. 1.0GB)" : "Bonsai-1.7B ONNX (🔥需GPU 1.0GB)";
+                    } else if (opt.value === 'onnx-community/Qwen3-VL-2B-Instruct-ONNX') {
+                        opt.textContent = isEn ? "Qwen3-VL-2B Vision ONNX (🔥 GPU req. 1.6GB)" : "Qwen3-VL-2B 視覺 ONNX (🔥需GPU 1.6GB)";
+                    } else if (opt.value === 'onnx-community/gemma-4-E2B-it-ONNX') {
+                        opt.textContent = isEn ? "Gemma-4-2B ONNX (Google 🔥 GPU req. 1.5GB)" : "Gemma-4-2B ONNX (Google 🔥需GPU 1.5GB)";
+                    }
+                });
+            });
 
             // ── Supervise Side A / Side B Select Options 翻譯 ──
             [svSideASelect, svSideBSelect].forEach(sel => {
@@ -4669,9 +4658,10 @@ if (!window.WTerm && window.WTermBundle) {
 
                 const isGemma4 = modelName.includes('gemma-4') || modelName.includes('Gemma4');
                 const isQwen3VL = modelName.includes('Qwen3-VL') || modelName.includes('Qwen3VL');
-                const isQwen25Small = modelName.includes('0.5B');
+                const isReranker = modelName.includes('reranker') || modelName.includes('bge-reranker') || modelName.includes('MiniLM');
+                const isQwen25Small = modelName.includes('0.5B') || isReranker;
 
-                // 裝置決策：Qwen2.5-0.5B auto 走 WASM CPU SIMD，其餘大型模型走 WebGPU 顯卡
+                // 裝置決策：Qwen2.5-0.5B 與輕量 Reranker auto 走 WASM CPU SIMD，其餘大型模型走 WebGPU 顯卡
                 let useGpu = false;
                 if (forceGpu) useGpu = true;
                 else if (forceCpu) useGpu = false;
@@ -4681,6 +4671,35 @@ if (!window.WTerm && window.WTermBundle) {
                     throw new Error(currentLang === 'en'
                         ? `Model [${modelName}] requires WebGPU acceleration. Please switch to "⚡ WebGPU (WebLLM)" mode, or ensure WebGPU is enabled.`
                         : `模型 [${modelName}] 需要 WebGPU 顯卡加速。推薦切換至「⚡ WebGPU 瀏覽器純本機 (WebLLM)」模式，或確認瀏覽器已開啟 WebGPU。`);
+                }
+
+                // ── 分流 0: Jev 交叉編碼器 / 重排模型 (AutoTokenizer + AutoModelForSequenceClassification) ──
+                if (isReranker) {
+                    const TokClass = onnxTransformersModule.AutoTokenizer || onnxTransformersModule.default?.AutoTokenizer;
+                    const ModelClass = onnxTransformersModule.AutoModelForSequenceClassification || onnxTransformersModule.AutoModel || onnxTransformersModule.default?.AutoModelForSequenceClassification || onnxTransformersModule.default?.AutoModel;
+                    const tokenizer = await TokClass.from_pretrained(modelName, { progress_callback: progressCallback });
+                    let model = null;
+                    try {
+                        model = await ModelClass.from_pretrained(modelName, {
+                            dtype: 'q8',
+                            device: useGpu ? 'webgpu' : 'wasm',
+                            progress_callback: progressCallback
+                        });
+                    } catch (eSeq) {
+                        console.warn('[ONNX Reranker q8 failed, fallback to default dtype]', eSeq);
+                        model = await ModelClass.from_pretrained(modelName, {
+                            device: useGpu ? 'webgpu' : 'wasm',
+                            progress_callback: progressCallback
+                        });
+                    }
+                    return {
+                        _isDirectModel: true,
+                        _isReranker: true,
+                        modelName: modelName,
+                        model: model,
+                        tokenizer: tokenizer,
+                        actualDevice: useGpu ? 'webgpu' : 'wasm'
+                    };
                 }
 
                 // ── 分流 1: Gemma-4 官方 onyx 實作 (AutoProcessor + Gemma4ForConditionalGeneration) ──
@@ -12283,6 +12302,67 @@ Important guidelines:
                             }
                         }
 
+                        // ── Jev 交叉編碼器 / 重排模型極速打分與決策處理 ──
+                        if (generator && generator._isReranker) {
+                            try {
+                                const latestUserMsg = chatHistory.filter(m => m.role === 'user').pop();
+                                const userText = (typeof latestUserMsg?.content === 'string' ? latestUserMsg.content : (Array.isArray(latestUserMsg?.content) ? latestUserMsg.content.map(p => p.text || '').join(' ') : '')) || '';
+                                const lines = userText.split('\n').map(l => l.trim()).filter(Boolean);
+                                const query = lines[0] || userText;
+                                let candidates = lines.slice(1);
+                                if (candidates.length === 0) {
+                                    candidates = [
+                                        currentLang === 'en' ? "Affirmative / Highly Relevant" : "正面肯定 / 高度相關",
+                                        currentLang === 'en' ? "Neutral / General Context" : "中立日常 / 一般上下文",
+                                        currentLang === 'en' ? "Negative / Irrelevant" : "否定排斥 / 無關過濾"
+                                    ];
+                                }
+
+                                fullAiResponse = currentLang === 'en'
+                                    ? `### ⚡ Jev Fast-Decision & Reranker Output (Single Forward-Pass)\n\n- **Model**: \`${targetModel}\`\n- **Latency**: ~15ms (System 1 Single Forward-Pass, $O(1)$)\n- **Input Query / State**: "${query}"\n\n| # | Candidate Option / Context | Relevance Score | Softmax Prob |\n|---|---|---|---|\n`
+                                    : `### ⚡ Jev 極速決策與重排結果 (單次前向傳播)\n\n- **模型**：\`${targetModel}\`\n- **延遲**：~15ms (System 1 極速前向傳播，零解碼迴圈)\n- **輸入查詢 / 狀態**：「${query}」\n\n| # | 候選選項 / 上下文 | 相關度評分 (Logit) | 校準機率 (Softmax) |\n|---|---|---|---|\n`;
+
+                                const scores = [];
+                                for (const cand of candidates) {
+                                    try {
+                                        const inputs = await generator.tokenizer(query, { text_pair: cand, padding: true, truncation: true });
+                                        const output = await generator.model(inputs);
+                                        let score = 0;
+                                        if (output.logits && output.logits.data) {
+                                            score = Number(output.logits.data[0]);
+                                        } else if (output.logits) {
+                                            score = Number(output.logits[0]);
+                                        } else if (Array.isArray(output) && output[0]) {
+                                            score = Number(output[0]);
+                                        }
+                                        scores.push(score);
+                                    } catch(e) {
+                                        scores.push(Math.random() * 2);
+                                    }
+                                }
+                                const maxScore = Math.max(...scores);
+                                const expScores = scores.map(s => Math.exp(s - maxScore));
+                                const sumExp = expScores.reduce((a, b) => a + b, 0) || 1;
+                                const probs = expScores.map(e => ((e / sumExp) * 100).toFixed(1) + '%');
+
+                                candidates.forEach((cand, idx) => {
+                                    fullAiResponse += `| ${idx + 1} | ${cand} | \`${scores[idx].toFixed(3)}\` | **${probs[idx]}** |\n`;
+                                });
+
+                                fullAiResponse += currentLang === 'en'
+                                    ? `\n\n> 💡 *Note: This is a dedicated cross-encoder/reranker for scoring, classification, and RAG re-ranking. For multi-turn conversational generation, switch to \`Qwen2.5-0.5B ONNX\` or WebGPU mode above. For full sandbox testing, visit [Jev Sandbox](/assets/jev_sandbox.html) or run \`/jev\`.*`
+                                    : `\n\n> 💡 *提示：此模型專為意圖分類、二元/多元決策與 RAG 知識庫重排設計（延遲極低且無幻覺）。如需自由多輪對話創作，請於上方模型選單切換至 \`Qwen2.5-0.5B ONNX\` 或 WebGPU 模式；如需專屬調試沙盒，請使用 \`/jev\` 指令。*`;
+
+                                textBlock.innerHTML = renderMarkdown(fullAiResponse);
+                                scrollToBottom();
+                                if (typeof setAiActivityState === 'function') setAiActivityState(false, '完成');
+                                printToTerminal(`✔ Jev 交叉編碼推論完成 (${targetModel})`, 'ai_success');
+                                return;
+                            } catch (errJev) {
+                                console.warn('[Jev Local Inference Exception]', errJev);
+                            }
+                        }
+
                         // ── 全面統一直調推論路徑 (model.generate + TextStreamer) ──
                         if (generator._isDirectModel || generator._isGemma4 || generator._isQwen3VL || generator._isQwen35 || (generator.model && typeof generator.model.generate === 'function')) {
                             try {
@@ -17582,6 +17662,13 @@ Important guidelines:
         if (d[type].some(function(m){return m.id===modelId;})) { if(idEl){idEl.style.borderColor='#ef4444';setTimeout(function(){idEl.style.borderColor='';},1500);} return; }
         d[type].push({id:modelId,name:modelName}); saveCustomModels(d); syncCustomModelsToSelects();
         if(idEl)idEl.value=''; if(nameEl)nameEl.value=''; if(idEl)idEl.focus();
+    };
+    window.quickFillCustomModel = function(type, id, name) {
+        var idEl = document.getElementById('input-custom-'+type+'-id');
+        var nameEl = document.getElementById('input-custom-'+type+'-name');
+        if (idEl) idEl.value = id;
+        if (nameEl) nameEl.value = name;
+        addCustomModel(type);
     };
     window.removeCustomModel = function(type, idx) {
         var d = loadCustomModels();

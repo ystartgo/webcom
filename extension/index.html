@@ -1147,6 +1147,7 @@
                     <select id="onnx-model-select"
                         class="bg-transparent text-xs text-emerald-300 font-mono focus:outline-none cursor-pointer w-36 sm:w-44 truncate">
                         <option value="onnx-community/Qwen2.5-0.5B-Instruct" selected class="bg-gray-900 text-white">Qwen2.5-0.5B ONNX (極速 350MB ⭐)</option>
+                        <option value="Xenova/bge-reranker-base" class="bg-gray-900 text-white">BGE-Reranker-Base ONNX (Jev 極速重排 140MB ⭐)</option>
                         <option value="onnx-community/Bonsai-1.7B-ONNX" class="bg-gray-900 text-white">Bonsai-1.7B ONNX (🔥需GPU 1.0GB)</option>
                         <option value="onnx-community/Qwen3-VL-2B-Instruct-ONNX" class="bg-gray-900 text-white">Qwen3-VL-2B 視覺 ONNX (🔥需GPU 1.6GB)</option>
                         <option value="onnx-community/gemma-4-E2B-it-ONNX" class="bg-gray-900 text-white">Gemma-4-2B ONNX (Google 🔥需GPU 1.5GB)</option>
@@ -1163,6 +1164,7 @@
                     <select id="onnx-model-select-2"
                         class="bg-transparent text-xs text-teal-300 font-mono focus:outline-none cursor-pointer w-36 sm:w-44 truncate">
                         <option value="onnx-community/Qwen2.5-0.5B-Instruct" class="bg-gray-900 text-white">Qwen2.5-0.5B ONNX (極速 350MB ⭐)</option>
+                        <option value="Xenova/bge-reranker-base" class="bg-gray-900 text-white">BGE-Reranker-Base ONNX (Jev 極速重排 140MB ⭐)</option>
                         <option value="onnx-community/Bonsai-1.7B-ONNX" selected class="bg-gray-900 text-white">Bonsai-1.7B ONNX (🔥需GPU 1.0GB)</option>
                         <option value="onnx-community/Qwen3-VL-2B-Instruct-ONNX" class="bg-gray-900 text-white">Qwen3-VL-2B 視覺 ONNX (🔥需GPU 1.6GB)</option>
                         <option value="onnx-community/gemma-4-E2B-it-ONNX" class="bg-gray-900 text-white">Gemma-4-2B ONNX (Google 🔥需GPU 1.5GB)</option>
@@ -1984,7 +1986,22 @@
 
                 <!-- ONNX Tab -->
                 <div id="panel-custom-onnx" class="hidden">
-                    <p class="text-xs text-gray-400 mb-3">輸入 HuggingFace ONNX 模型 ID（如 <code class="text-emerald-400 bg-gray-800 px-1 rounded">onnx-community/Qwen2.5-1.5B-Instruct</code>），格式請參考 <a href="https://huggingface.co/onnx-community" target="_blank" class="text-emerald-400 hover:underline">onnx-community HuggingFace</a>。</p>
+                    <p class="text-xs text-gray-400 mb-2">輸入 HuggingFace ONNX 模型 ID（如 <code class="text-emerald-400 bg-gray-800 px-1 rounded">onnx-community/Qwen2.5-1.5B-Instruct</code>），格式請參考 <a href="https://huggingface.co/onnx-community" target="_blank" class="text-emerald-400 hover:underline">onnx-community HuggingFace</a>。</p>
+                    <div class="mb-3 flex flex-wrap gap-1.5 items-center">
+                        <span class="text-[10px] text-gray-400 font-medium">🔥 推薦模型快捷填入：</span>
+                        <button type="button" data-on-click="quickFillCustomModel('onnx', 'Xenova/bge-reranker-base', 'BGE-Reranker-Base (Jev 極速重排 ⭐)')"
+                            class="text-[10px] bg-emerald-950/60 border border-emerald-700/60 text-emerald-300 hover:bg-emerald-900 px-2 py-0.5 rounded-md transition font-mono cursor-pointer">
+                            + Xenova/bge-reranker-base (Jev 140MB ⭐)
+                        </button>
+                        <button type="button" data-on-click="quickFillCustomModel('onnx', 'Xenova/ms-marco-MiniLM-L-6-v2', 'MiniLM-L-6-v2 (5ms 極速 22MB)')"
+                            class="text-[10px] bg-gray-800 border border-gray-700 text-gray-300 hover:bg-gray-700 px-2 py-0.5 rounded-md transition font-mono cursor-pointer">
+                            + MiniLM-L-6-v2 (22MB)
+                        </button>
+                        <button type="button" data-on-click="quickFillCustomModel('onnx', 'onnx-community/bge-reranker-v2-m3-ONNX', 'BGE-Reranker-v2-M3 (多語長文本 300MB)')"
+                            class="text-[10px] bg-gray-800 border border-gray-700 text-gray-300 hover:bg-gray-700 px-2 py-0.5 rounded-md transition font-mono cursor-pointer">
+                            + BGE-M3 (300MB)
+                        </button>
+                    </div>
                     <div class="flex gap-2 mb-4">
                         <input id="input-custom-onnx-id" type="text" placeholder="模型 ID（如 onnx-community/Qwen2.5-1.5B-Instruct）"
                             class="flex-1 bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-xs text-gray-100 font-mono focus:outline-none focus:border-emerald-500 placeholder-gray-600" />
