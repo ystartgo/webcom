@@ -9868,6 +9868,32 @@ Important guidelines:
 
         // 語音朗讀 (Text to Speech - Gemini / ChatGPT 標準特色)
         let currentSpeakingBtn = null;
+
+        function getSpeakableMessageText(containerEl) {
+            if (!containerEl) return '';
+            const clone = containerEl.cloneNode(true);
+
+            // 1. 移除模型引擎與狀態標籤 (ONNX / WebLLM / API / Web Search 等 Badge)
+            clone.querySelectorAll('.web-search-badge, .cothink-card, .master-header').forEach(el => el.remove());
+            clone.querySelectorAll('div, span, p').forEach(el => {
+                const text = el.textContent || '';
+                if (text.includes('Engine Active') || text.includes('Model Active') || text.includes('WebLLM Active')) {
+                    if (el.parentElement === clone || el.classList.contains('font-mono') || el.classList.contains('text-[11px]')) {
+                        el.remove();
+                    }
+                }
+            });
+
+            // 2. 移除思考過程折疊盒的標題 summary（💭 思考過程 / Thinking Process / 點擊切換 / Toggle）
+            clone.querySelectorAll('.thinking-accordion summary, details.thinking-accordion > summary, summary').forEach(el => el.remove());
+
+            // 3. 移除操作列與按鈕
+            clone.querySelectorAll('.msg-action-bar, button, svg').forEach(el => el.remove());
+
+            return clone.innerText || clone.textContent || '';
+        }
+        window.getSpeakableMessageText = getSpeakableMessageText;
+
         function toggleSpeakMessage(text, btnElement) {
             if (!('speechSynthesis' in window)) {
                 alert(currentLang === 'en' ? 'Speech synthesis is not supported.' : '此瀏覽器不支援語音朗讀。');
@@ -9886,6 +9912,13 @@ Important guidelines:
                 }
             }
             const cleanText = (text || '')
+                // 移除可能殘留的模型標籤行 (例如 "📦 ONNX Engine Active: ...", "🚀 WebLLM Active: ...", "🌐 API Model Active: ...")
+                .replace(/^(?:📦|🚀|🌐|⚡)?\s*(?:ONNX Engine Active|WebLLM Active|API Model Active|Active Engine|Cloud Engine)[^\n]*\n?/gmi, '')
+                // 移除思考過程標籤與點擊切換 (例如 "💭 思考過程 (Thinking Process)", "點擊切換", "Thinking Process", "Toggle")
+                .replace(/💭?\s*(?:思考過程\s*\(Thinking Process\)|思考過程|Thinking Process)[\s\S]*?(?:點擊切換|Toggle)\s*/gi, '')
+                .replace(/💭\s*(?:思考過程|Thinking Process)[^\n]*/gi, '')
+                .replace(/(?:點擊切換|Click to toggle)/gi, '')
+                .replace(/<think>[\s\S]*?<\/think>/gi, '')
                 .replace(/```[\s\S]*?```/g, currentLang === 'en' ? ' [Code block omitted] ' : ' [已略過代碼區塊] ')
                 .replace(/`([^`]+)`/g, '$1')
                 .replace(/#+\s/g, '')
@@ -9896,7 +9929,7 @@ Important guidelines:
 
             const utter = new SpeechSynthesisUtterance(cleanText);
             utter.lang = currentLang === 'en' ? 'en-US' : 'zh-TW';
-            utter.rate = 1.0;
+            utter.rate = 1.15;
             utter.pitch = 1.0;
 
             utter.onstart = () => {
@@ -10369,7 +10402,7 @@ Important guidelines:
                 // 語音朗讀
                 const speakBtn = actionBar.querySelector('.btn-speak-msg');
                 speakBtn.addEventListener('click', () => {
-                    const txt = contentDiv.innerText || contentDiv.textContent || '';
+                    const txt = getSpeakableMessageText(contentDiv);
                     toggleSpeakMessage(txt, speakBtn);
                 });
 
