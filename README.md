@@ -2,7 +2,7 @@
 
 > **繁體中文** ・ [English](#english)
 >
-> 🎯 **當前版本：`v1.0.8-Dual-Engine-WebGPU-RAG-Supervise`** ・ 釋出日期：`2026-09-16`
+> 🎯 **當前版本：`v1.0.9-Dual-Engine-WebGPU-RAG-Supervise`** ・ 釋出日期：`2026-09-17`
 > 📝 變更紀錄：見下方 [## 🕓 變更日誌 (Changelog)](#-變更日誌-changelog) / [English Changelog](#-changelog)
 
 **Webcom** 是一套單檔 `index.html` 就能啟動的 **雙引擎 AI 主控台**，整合 **多協定終端機（WSL / SSH / Telnet / Web Serial / 後端 Serial）**、**LM Studio / API** 與 **WebGPU 瀏覽器本地 LLM** 兩種推理引擎、**RAG 知識庫管理**、**MCP 協定工具面板**、**純斷網模擬**、**WinPE 開機自動執行** 等常見的現場維運／離線操作需求。
@@ -404,6 +404,32 @@ Q1~Q3 請見內建手冊第 5 頁「常見問題」。以下為本次 v1.0.0 新
 
 ## 🕓 變更日誌 (Changelog)
 
+#### `v1.0.9-Dual-Engine-WebGPU-RAG-Supervise` — 2026-09-17 **對話記錄完整匯出修復、左側終端 Session ID 標註與精準導向、WSL Xorg 自動修復與守護 (Full Dialogue Export, Terminal Session IDs & WSL Xorg Auto-Recovery)**
+> 🚀 重大更新：右側 AI 對話完整匯出修復（雙軌動態智慧合併，徹底消除 `"..."` 佔位符與後續回合遺漏）＋ 左側多協定終端機 Session ID 標記（`#1` ~ `#8` 終端徽章與 Prompt 感知，支援 LLM `term_id` 精準導向切換）＋ WSL Xorg 桌面連線自動修復與持久守護進程（排除 `/tmp/.X11-unix` 唯讀掛載與 WSL2 閒置逾時休眠）＋ 全站版本號晉級 v1.0.9 ＋ 系統 55 項自我檢測 100% 通過。
+
+- **💬 對話記錄完整匯出修復 (Full Dialogue Log Export & Dual-Track Merge)**：
+  1. **雙軌動態智慧合併 (`exportChatHistory`)**：徹底解決先前匯出 JSON 遺漏後續對話或 AI 回答停留在 `"..."` 佔位符的問題。結合記憶體原始結構 `sessionChatLog` 與 DOM 畫面即時萃取，兩者依序智慧配對並擇優補充，保留完整 Markdown 程式碼區塊、格式排版、時間戳記與圖片資料。
+  2. **串流與工具執行即時同步 (`syncSessionLogWithAiResponse`)**：在 AI 串流輸出、工具調用攔截與錯誤處理各階段，保證 `sessionChatLog` 最後一則助理訊息即時同步最新內容，不再殘留 `"..."`。
+  3. **精準 DOM 清理防呆**：修正先前過度過濾 `.text-xs` 造成 Markdown 區塊或內文遺失的缺陷，僅精準剔除動作按鈕 (`.msg-action-bar`)、搜尋徽章與統計標籤。
+- **🏷️ 左側終端 Session ID 標註與精準導向 (Terminal Session IDs `#1` ~ `#8`)**：
+  1. **終端機工具列即時 ID 徽章 (`#term-id-badge`)**：於左側工作區頂部新增顯著標籤，為各終端與工作區定義統一編號：
+     - `#1-SHELL`：本地 Windows PowerShell / CMD
+     - `#2-WSL`：WSL2 Linux (Ubuntu / Debian) Bash
+     - `#3-PY`：Pyodide WASM 純瀏覽器 Python 3 REPL
+     - `#4-SERIAL`：硬體 COM 序列埠 (Web Serial / 後端 Serial)
+     - `#5-SSH`：遠端 SSH 終端
+     - `#6-TELNET`：遠端 Telnet
+     - `#7-NOVNC`：遠端桌面 GUI (noVNC)
+     - `#8-XORG`：WSL / X11 視窗直連 GUI
+  2. **System Prompt 終端機狀態深度注入**：在 LLM System Prompt 中明確注入當前活動終端 ID 與可用清單，讓 LLM 清楚理解當前操作的是哪一個終端環境。
+  3. **工具調用自動切換支援 (`term_id`)**：`write_frontend_terminal` 與 `read_frontend_terminal` 工具新增 `term_id` 參數支援（如 `{"command": "ls -la", "term_id": "#2-WSL"}`），執行指令前自動無縫切換至目標終端環境。
+- **🖥️ WSL & Xorg 桌面連線自動修復與持久守護 (WSL Xorg Auto-Recovery & Keepalive)**：
+  1. **`/tmp/.X11-unix` 唯讀掛載自動修復**：診斷 WSLg 預設將 `/tmp/.X11-unix` 唯讀掛載導致 Xvfb 與 X11 Socket 建立失敗之問題。在 `daemon.py` 啟動桌面服務時加入 `umount -l` 與權限 `1777` 重建機制，確保 Xorg 正常監聽 Port 5901/6080。
+  2. **WSL2 閒置逾時休眠守護**：解決 Windows 與 WSL2 在無背景處理程序時自動關閉 VM 導致斷線的問題。`daemon.py` 持有持續性背景 keepalive 進程，維持 WSL 虛擬機器與 Port 6080 WebSocket 轉發持續在線。
+  3. **前端自動偵測與自癒連線**：切換至 Xorg 模式或點擊連線時，前端自動探測 `/api/wsl/status`；若服務未就緒則自動呼叫 `/api/wsl/start-desktop` 自癒啟動並完成連線。
+- **🩺 全系統 55 項自我檢測 100% 通過**：
+  - `diagnose_system.py` 與 `self_test.bat` 執行 55 項全自動健康檢測，語法、雙目錄一致性與相依套件全數 PASS。
+
 #### `v1.0.8-Dual-Engine-WebGPU-RAG-Supervise` — 2026-09-16 **序列埠雙引擎完善、8001 後端自動探測、Chrome 擴充功能深層適配與純斷網/外網模擬修復 (Serial Dual-Engine, Daemon Auto-Prober, Chrome Extension & Network Mock Fix)**
 > 🚀 重大更新：序列埠連線雙引擎完善（Web Serial 瀏覽器直連 ＋ 8001 後端常駐 Serial 自動探測與免跳窗直連）＋ Chrome 擴充功能 (MV3) 2/3 視窗展開與拖曳調整 Resizer 支援 ＋ 徹底修復「外網／純斷網模擬開關」多語系切換與狀態指示 ＋ 補齊 Web Serial 完整會話日誌等多語系辭典 ＋ TokenTable 預設推薦更新為 `qwen3.8-flash` ＋ 系統 55 項自我檢測 100% 通過。
 
@@ -558,7 +584,7 @@ Q1~Q3 請見內建手冊第 5 頁「常見問題」。以下為本次 v1.0.0 新
 <a id="english"></a>
 # Webcom — Dual-Engine AI Console (English)
 
-> 🎯 **Current Release:** `v1.0.8-Dual-Engine-WebGPU-RAG-Supervise` ・ **Released:** `2026-09-16`
+> 🎯 **Current Release:** `v1.0.9-Dual-Engine-WebGPU-RAG-Supervise` ・ **Released:** `2026-09-17`
 > 📝 **Changelog:** [Jump to Changelog ↓](#-changelog)
 
 **Webcom** is a single-file (`index.html`) **Dual-Engine AI Console** that combines a **multi-protocol terminal (WSL / SSH / Telnet / Web Serial / Backend Serial)**, **LM Studio / API** and **WebGPU browser-local LLM** inference engines, **RAG Knowledge Base**, **MCP tool panel**, **pure-offline simulation switch**, and **WinPE autorun** for real-world on-site / offline ops.
@@ -938,6 +964,32 @@ Q1~Q3 live inside the built-in User Guide Tab 5 *FAQ*. The Q4~Q6 below cover v1.
 
 <a id="changelog"></a>
 ## 🕓 Changelog
+
+### `v1.0.9-Dual-Engine-WebGPU-RAG-Supervise` — 2026-09-17 **Full Dialogue Export Fix, Terminal Session IDs & WSL Xorg Auto-Recovery**
+> 🚀 Major update: Right-side AI dialogue log export overhaul (dual-track smart merge ensuring zero `"..."` placeholders and 100% conversation history retention) + Multi-protocol terminal session IDs (`#1` ~ `#8` badges and prompt perception, supporting LLM `term_id` targeting and auto-switching) + WSL Xorg desktop connection auto-recovery & persistent keepalive process (resolves `/tmp/.X11-unix` read-only mount and WSL2 VM idle termination) + Version bumped to v1.0.9 across all files + 55/55 automated system diagnostics passing.
+
+- **💬 Full Dialogue Log Export & Dual-Track Merge (`exportChatHistory`)**:
+  1. **Dual-Track Dynamic Merge**: Completely eliminates exported JSON containing `"..."` placeholders or omitting subsequent turns. Smartly pairs memory `sessionChatLog` with real-time DOM message extractions to preserve all conversation history, Markdown formatting, and multimodal attachments.
+  2. **Streaming & Tool Interception Sync (`syncSessionLogWithAiResponse`)**: The latest assistant message in `sessionChatLog` is continually synchronized during streaming generation, tool execution, and error handling.
+  3. **Preserved Code Formatting**: Removed overly aggressive `.text-xs` filtering, ensuring all code blocks and markdown sections are fully preserved in exported JSON files.
+- **🏷️ Terminal Session IDs (`#1` ~ `#8`)**:
+  1. **Real-Time ID Badge (`#term-id-badge`)**: Prominently displayed in the terminal toolbar with clear identifiers:
+     - `#1-SHELL`: Local Windows PowerShell / CMD
+     - `#2-WSL`: WSL2 Linux (Ubuntu / Debian) Bash
+     - `#3-PY`: Pyodide WASM In-Browser Python 3 REPL
+     - `#4-SERIAL`: Hardware COM Serial Port (Web Serial / Backend Serial)
+     - `#5-SSH`: Remote SSH Terminal
+     - `#6-TELNET`: Remote Telnet
+     - `#7-NOVNC`: Remote Desktop GUI (noVNC)
+     - `#8-XORG`: WSL / X11 Window Connection GUI
+  2. **System Prompt Dynamic Injection**: Injects active terminal ID and full session list into LLM system prompt, granting the agent complete awareness of its active terminal environment.
+  3. **Auto-Switching Protocol Target (`term_id`)**: `write_frontend_terminal` and `read_frontend_terminal` accept `term_id` (e.g., `{"command": "ls -la", "term_id": "#2-WSL"}`), automatically switching the active protocol before running commands.
+- **🖥️ WSL & Xorg Desktop Auto-Recovery & Keepalive**:
+  1. **`/tmp/.X11-unix` Read-Only Mount Fix**: Fixed WSLg mounting `/tmp/.X11-unix` as read-only. Added `umount -l` and permission `1777` recreation in `daemon.py` to ensure Xvfb successfully creates X11 sockets.
+  2. **WSL2 VM Idle Timeout Keepalive**: Solved WSL2 VM termination on Windows idle by running a persistent background keepalive process in `daemon.py`, maintaining Port 5901 and 6080 WebSocket services.
+  3. **Self-Healing Connection Flow**: Switching to Xorg or clicking Connect automatically probes `/api/wsl/status` and auto-invokes `/api/wsl/start-desktop` if desktop services are not yet running.
+- **🩺 Automated Diagnostic Suite 55/55 PASS**:
+  - `diagnose_system.py` and `self_test.bat` verified 55/55 tests passing with 100% SHA256 file parity across the project repository.
 
 ### `v1.0.8-Dual-Engine-WebGPU-RAG-Supervise` — 2026-09-16 **Serial Dual-Engine, Daemon Auto-Prober, Chrome Extension & Network Mock Fix**
 > 🚀 Major update: Comprehensive Dual-Engine Serial architecture (Browser-native Web Serial + Port 8001 Backend Daemon Serial with COM port auto-prober and dialog-free terminal routing) + Chrome Extension (MV3) 2/3 window & panel resizer support + Complete fix for Network/Offline Mock button language synchronization + Missing i18n translations added + Default recommendation updated to `qwen3.8-flash` + 55/55 automated system diagnostics passing.

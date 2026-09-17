@@ -545,18 +545,30 @@ def get_wsl_desktop_status():
     }
 
 
+_wsl_keepalive_proc = None
+
 @app.post("/api/wsl/start-desktop")
 def start_wsl_desktop_service():
     """一鍵於 WSL 背景拉起 TigerVNC、XFCE 桌面、websockify 與音訊轉發"""
     if not shutil.which("wsl.exe"):
         raise HTTPException(status_code=400, detail="本地未偵測到 WSL 環境")
     
+    global _wsl_keepalive_proc
+    if _wsl_keepalive_proc is None or _wsl_keepalive_proc.poll() is not None:
+        try:
+            _wsl_keepalive_proc = subprocess.Popen(
+                ["wsl.exe", "-e", "bash", "-c", "while true; do sleep 3600; done"],
+                stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
+            )
+        except Exception as ke:
+            logging.warning(f"WSL 持久守護進程啟動警告: {ke}")
+
     import time
     try:
-        # 0. 確保 /tmp/.X11-unix 在 WSL2 下可讀寫 (WSLg 預設可能掛載為唯讀)
+        # 0. 確保 /tmp/.X11-unix 在 WSL2 下可讀寫 (WSLg 預設唯讀掛載，先卸載後重建權限 1777)
         subprocess.run(
             ["wsl.exe", "-u", "root", "-e", "bash", "-c",
-             "mount -o remount,rw /tmp/.X11-unix 2>/dev/null || true; chmod 1777 /tmp/.X11-unix 2>/dev/null || true; chmod 1777 /tmp/.ICE-unix 2>/dev/null || true"],
+             "umount -l /tmp/.X11-unix 2>/dev/null || true; mkdir -p /tmp/.X11-unix && chmod 1777 /tmp/.X11-unix; chmod 1777 /tmp/.ICE-unix 2>/dev/null || true; loginctl enable-linger start 2>/dev/null || true"],
             capture_output=True, timeout=5
         )
 
@@ -616,6 +628,14 @@ def start_wsl_desktop_service():
 @app.post("/api/wsl/stop-desktop")
 def stop_wsl_desktop_service():
     """停止 WSL 背景的 VNC、Xvfb、XFCE 與 websockify 桌面服務"""
+    global _wsl_keepalive_proc
+    if _wsl_keepalive_proc and _wsl_keepalive_proc.poll() is None:
+        try:
+            _wsl_keepalive_proc.terminate()
+        except Exception:
+            pass
+        _wsl_keepalive_proc = None
+
     if shutil.which("wsl.exe"):
         import time
         try:
@@ -677,10 +697,10 @@ def _ensure_wsl_xinit_config():
         
         # 透過 root 寫入配置
         init_script = (
-            "mount -o remount,rw /tmp/.X11-unix 2>/dev/null || true; chmod 1777 /tmp/.X11-unix 2>/dev/null || true; "
+            "umount -l /tmp/.X11-unix 2>/dev/null || true; mkdir -p /tmp/.X11-unix && chmod 1777 /tmp/.X11-unix 2>/dev/null || true; "
             "cat << 'EOF' > /etc/X11/xinit/xserverrc\n"
             "#!/bin/bash\n"
-            "mount -o remount,rw /tmp/.X11-unix 2>/dev/null || true; chmod 1777 /tmp/.X11-unix 2>/dev/null || true;\n"
+            "umount -l /tmp/.X11-unix 2>/dev/null || true; mkdir -p /tmp/.X11-unix && chmod 1777 /tmp/.X11-unix 2>/dev/null || true;\n"
             "DPY=':1'\n"
             "for arg in \"$@\"; do if [[ \"$arg\" =~ ^:[0-9]+$ ]]; then DPY=\"$arg\"; break; fi; done\n"
             "DPY_NUM=$(echo \"$DPY\" | sed 's/[^0-9]//g'); [ -z \"$DPY_NUM\" ] && DPY_NUM=1;\n"

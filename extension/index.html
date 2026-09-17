@@ -6,11 +6,11 @@
     作者 startgo (startgo@yia.app)
     授權預設 GPLv3
     時間戳記: 2026-09-14 15:30:00
-    版本號: v1.0.8-Dual-Engine-WebGPU-RAG-Supervise
+    版本號: v1.0.9-Dual-Engine-WebGPU-RAG-Supervise
     -->
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>雙引擎 AI 協同控制台 (Dual-Engine AI Console) - v1.0.8</title>
+    <title>雙引擎 AI 協同控制台 (Dual-Engine AI Console) - v1.0.9</title>
     <!-- 離線優先 Local-First 資源載入 (斷網零依賴 + CDN 自動容錯備援) -->
     <script src="./assets/tailwindcss.js"></script>
     
@@ -314,7 +314,7 @@
                     </div>
                     <h1 class="text-xs sm:text-sm font-bold tracking-tight text-white flex items-center gap-1.5 truncate">
                         <span data-i18n="appTitle">雙引擎 AI 控制台</span>
-                        <span class="text-[10px] bg-purple-500/20 text-purple-300 px-1.5 py-0.2 rounded font-mono hidden sm:inline">v1.0.8</span>
+                        <span class="text-[10px] bg-purple-500/20 text-purple-300 px-1.5 py-0.2 rounded font-mono hidden sm:inline">v1.0.9</span>
                     </h1>
                 </div>
                 <div class="flex items-center gap-1.5 shrink-0 relative">
@@ -449,6 +449,7 @@
         <div
             class="bg-gray-800 px-3 py-2 flex flex-wrap items-center gap-2.5 border-b border-gray-700 text-xs shrink-0">
             <div class="flex items-center gap-1.5 shrink-0">
+                <span id="term-id-badge" class="px-2 py-0.5 rounded text-[11px] font-mono font-bold bg-indigo-950/80 border border-indigo-700/60 text-indigo-300 shadow-sm" title="左側終端機識別 ID (供 LLM 與使用者定向辨識)">ID: #1-SHELL</span>
                 <select id="conn-protocol"
                     class="bg-gray-900 text-white border border-gray-700 rounded-md px-2 py-1 text-xs focus:outline-none focus:border-purple-500 font-medium">
                     <option value="pyodide" class="text-yellow-300 font-bold" data-i18n="protoPyodide">🐍 Python 3 (Pyodide WASM 免安裝)</option>
@@ -2902,7 +2903,7 @@
                                 <div class="flex items-center gap-1.5">
                                     <i data-lucide="tag" class="w-3.5 h-3.5 text-indigo-400 shrink-0"></i>
                                     <span><strong class="text-gray-200">版本：</strong> <code
-                                            class="text-indigo-300">v1.0.8-Dual-Engine-WebGPU-RAG-Supervise</code></span>
+                                            class="text-indigo-300">v1.0.9-Dual-Engine-WebGPU-RAG-Supervise</code></span>
                                 </div>
                             </div>
                             <div class="space-y-1.5 text-[11px] text-gray-400">
@@ -3084,7 +3085,7 @@
                                 <div class="flex items-center gap-2">
                                     <i data-lucide="tag" class="w-3.5 h-3.5 text-indigo-400 shrink-0"></i>
                                     <span><strong class="text-gray-200">版本：</strong> <code
-                                            class="text-indigo-300">v1.0.8-Dual-Engine-WebGPU-RAG-Supervise</code></span>
+                                            class="text-indigo-300">v1.0.9-Dual-Engine-WebGPU-RAG-Supervise</code></span>
                                 </div>
                             </div>
                             <div class="space-y-2 text-[11px] text-gray-400">
@@ -3269,7 +3270,7 @@
             <div class="px-6 py-3 border-t border-gray-800 flex justify-between items-center bg-gray-950 shrink-0">
                 <div class="flex flex-col gap-0.5">
                     <span class="text-[11px] text-gray-400 font-mono font-semibold">Webcom Dual-Engine Console
-                        <span class="text-indigo-400">v1.0.8</span></span>
+                        <span class="text-indigo-400">v1.0.9</span></span>
                     <span class="text-[10px] text-gray-600">© 2026 startgo · Licensed under
                         <span class="text-green-600">GNU GPL v3.0</span> ·
                         <a href="mailto:startgo@yia.app"

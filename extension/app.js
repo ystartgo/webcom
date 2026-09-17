@@ -3022,7 +3022,7 @@ if (!window.WTerm && window.WTermBundle) {
                                 </div>
                                 <div class="flex items-center gap-2">
                                     <i data-lucide="tag" class="w-3.5 h-3.5 text-indigo-400 shrink-0"></i>
-                                    <span><strong class="text-gray-200">Version:</strong> <code class="text-indigo-300">v1.0.8-Dual-Engine-WebGPU-RAG-Supervise</code></span>
+                                    <span><strong class="text-gray-200">Version:</strong> <code class="text-indigo-300">v1.0.9-Dual-Engine-WebGPU-RAG-Supervise</code></span>
                                 </div>
                             </div>
                             <div class="space-y-2 text-[11px] text-gray-400">
@@ -3179,7 +3179,7 @@ if (!window.WTerm && window.WTermBundle) {
                                 </div>
                                 <div class="flex items-center gap-2">
                                     <i data-lucide="tag" class="w-3.5 h-3.5 text-indigo-400 shrink-0"></i>
-                                    <span><strong class="text-gray-200">版本：</strong> <code class="text-indigo-300">v1.0.8-Dual-Engine-WebGPU-RAG-Supervise</code></span>
+                                    <span><strong class="text-gray-200">版本：</strong> <code class="text-indigo-300">v1.0.9-Dual-Engine-WebGPU-RAG-Supervise</code></span>
                                 </div>
                             </div>
                             <div class="space-y-2 text-[11px] text-gray-400">
@@ -6244,6 +6244,27 @@ if (!window.WTerm && window.WTermBundle) {
         const termPrompt = document.getElementById('term-prompt');
 
         let activeTermContext = { protocol: 'shell' };
+        const termIdMap = {
+            'shell': 'ID: #1-SHELL',
+            'wsl': 'ID: #2-WSL',
+            'pyodide': 'ID: #3-PY',
+            'py': 'ID: #3-PY',
+            'python': 'ID: #3-PY',
+            'webserial': 'ID: #4-SERIAL',
+            'serial': 'ID: #4-SERIAL',
+            'ssh': 'ID: #5-SSH',
+            'telnet': 'ID: #6-TELNET',
+            'novnc': 'ID: #7-NOVNC',
+            'xorg': 'ID: #8-XORG'
+        };
+        function updateTermIdBadge(proto) {
+            const badge = document.getElementById('term-id-badge');
+            if (!badge) return;
+            const p = (proto || (typeof activeTermContext !== 'undefined' ? activeTermContext?.protocol : 'shell') || 'shell').toLowerCase();
+            badge.textContent = termIdMap[p] || `ID: #${p.toUpperCase()}`;
+        }
+        window.updateTermIdBadge = updateTermIdBadge;
+        window.termIdMap = termIdMap;
         let webSerialPort = null;
         let webSerialReader = null;
         let webSerialHistoryText = "";
@@ -6339,9 +6360,10 @@ if (!window.WTerm && window.WTermBundle) {
                 const isDaemonOnline = document.getElementById('daemon-status-badge')?.textContent.includes('Online') || document.getElementById('daemon-status-badge')?.textContent.includes('已連線');
                 const isEn = currentLang === 'en';
                 const timeString = isEn ? now.toLocaleString('en-US') : now.toLocaleString('zh-TW', { timeZone: 'Asia/Taipei' });
+                const curTermId = (typeof termIdMap !== 'undefined' && activeTermContext?.protocol) ? (termIdMap[activeTermContext.protocol] || `ID: #${activeTermContext.protocol.toUpperCase()}`) : 'ID: #1-SHELL';
                 let ctxLines = isEn
-                    ? `\n\n[Dynamic Environment Perception]\n- Time: ${timeString}\n- Terminal: [${activeTermContext.protocol.toUpperCase()}]\n- Daemon (8001): [${isDaemonOnline ? 'ONLINE' : 'OFFLINE'}]\n- OS: Windows / WinPE\n`
-                    : `\n\n【當前環境感知】\n- 系統時間: ${timeString}\n- 終端機連線: [${activeTermContext.protocol.toUpperCase()}]\n- 常駐程式 (8001): [${isDaemonOnline ? '已連線' : '離線'}]\n- 作業系統: Windows / WinPE\n`;
+                    ? `\n\n[Dynamic Environment Perception]\n- Time: ${timeString}\n- Active Terminal: [${curTermId}]\n- Daemon (8001): [${isDaemonOnline ? 'ONLINE' : 'OFFLINE'}]\n- OS: Windows / WinPE\n`
+                    : `\n\n【當前環境感知】\n- 系統時間: ${timeString}\n- 當前活動終端機: [${curTermId}]\n- 常駐程式 (8001): [${isDaemonOnline ? '已連線' : '離線'}]\n- 作業系統: Windows / WinPE\n`;
                 if (lastTerminalLines) ctxLines += isEn ? `- Terminal (last 30 lines):\n\`\`\`\n${lastTerminalLines}\n\`\`\`\n` : `- 左側終端機畫面 (最近 30 行):\n\`\`\`\n${lastTerminalLines}\n\`\`\`\n`;
                 if (ragContext) ctxLines += ragContext;
                 if (webContext) ctxLines += webContext;
@@ -6376,6 +6398,7 @@ if (!window.WTerm && window.WTermBundle) {
 
             // ── 以下僅適用於外部 API 模型 (Gemini / Claude / GPT) ──
             const isDaemonOnline = document.getElementById('daemon-status-badge')?.textContent.includes('Online') || document.getElementById('daemon-status-badge')?.textContent.includes('已連線');
+            const curTermId = (typeof termIdMap !== 'undefined' && activeTermContext?.protocol) ? (termIdMap[activeTermContext.protocol] || `ID: #${activeTermContext.protocol.toUpperCase()}`) : 'ID: #1-SHELL';
 
             if (currentLang === 'en') {
                 const timeString = now.toLocaleString('en-US');
@@ -6383,9 +6406,9 @@ if (!window.WTerm && window.WTermBundle) {
                     let prompt = `You are a helpful AI assistant. Please respond clearly and concisely.`;
                     if (lastTerminalLines) {
                         if (webToggle.checked && !isLocalTerminalCommand(userQuery)) {
-                            prompt += `\n\n[Left Workspace Status]: Active (Terminal connected)`;
+                            prompt += `\n\n[Left Workspace Status]: Active (Terminal: ${curTermId})`;
                         } else {
-                            prompt += `\n\n[Left Terminal Screen Perception]\n\`\`\`\n${lastTerminalLines}\n\`\`\``;
+                            prompt += `\n\n[Left Terminal Screen Perception (${curTermId})]\n\`\`\`\n${lastTerminalLines}\n\`\`\``;
                         }
                     }
                     if (ragContext) prompt += ragContext;
@@ -6401,8 +6424,8 @@ if (!window.WTerm && window.WTermBundle) {
                 }
                 const enToolOffset = tools.length;
                 tools.push(
-                    `${enToolOffset + 1}. write_frontend_terminal: Send and execute command directly in the active left terminal. Args: {"command": "cmd string"} (e.g. dir, ls -la, ip a, wsl -l -v)`,
-                    `${enToolOffset + 2}. read_frontend_terminal: Read latest screen output from the left terminal. Args: {}`,
+                    `${enToolOffset + 1}. write_frontend_terminal: Send and execute command directly in the active left terminal. Supports specifying target terminal session ID to auto-switch! Args: {"command": "cmd string", "term_id": "#1-SHELL" | "#2-WSL" | "#3-PY" | "#4-SERIAL" | "#5-SSH" | "#6-TELNET"} (e.g. run in WSL: {"command": "ls -la", "term_id": "#2-WSL"})`,
+                    `${enToolOffset + 2}. read_frontend_terminal: Read latest screen output from the left terminal. Args: {"term_id": "#1-SHELL" | "#2-WSL" | "#3-PY" | "#4-SERIAL"} (optional)`,
                     `${enToolOffset + 3}. execute_shell: Execute local shell command via backend daemon with echo to terminal. Args: {"command": "cmd string"}`,
                     `${enToolOffset + 4}. switch_left_mode: Switch the left workspace view mode. Args: {"mode": "term" | "novnc" | "xorg"}`,
                     `${enToolOffset + 5}. launch_wsl_app: Launch a GUI application on the left Xorg display. Args: {"app": "app name"} (e.g. xclock, gedit, thunar)`,
@@ -6416,7 +6439,7 @@ if (!window.WTerm && window.WTermBundle) {
                     `${enToolOffset + 13}. get_system_specs: Retrieve host hardware and system specifications (CPU, RAM, GPU, OS, disk storage, and installed editors/tools like Notepad++, Python, WSL, Git). Args: {}`
                 );
 
-                let contextStr = `\n\n[Current Environment] Time: ${timeString} | Terminal: [${activeTermContext.protocol.toUpperCase()}] | Daemon(8001): [${isDaemonOnline ? 'ONLINE' : 'OFFLINE'}] | Python: [Pyodide WASM Ready (Zero Install)]\n`;
+                let contextStr = `\n\n[Current Environment] Time: ${timeString} | Active Terminal: [${curTermId}] | Terminal Session IDs: [#1-SHELL (Windows PowerShell/CMD), #2-WSL (Linux Ubuntu/Debian), #3-PY (Pyodide WASM), #4-SERIAL (COM Port), #5-SSH, #6-TELNET, #7-NOVNC (Remote Desktop), #8-XORG (WSL Window)] | Daemon(8001): [${isDaemonOnline ? 'ONLINE' : 'OFFLINE'}] | Python: [Pyodide WASM Ready (Zero Install)]\n`;
 
                 if (lastTerminalLines) {
                     if (webToggle.checked && !isLocalTerminalCommand(userQuery)) {
@@ -6477,9 +6500,9 @@ Rules:
                     let prompt = `【輸出規範】請使用標準 UTF-8 編碼回答。\n你是一個強大的 AI 助理。請清楚、流暢地回答使用者的問題，並保持邏輯清晰與結構化。`;
                     if (lastTerminalLines) {
                         if (webToggle.checked && !isLocalTerminalCommand(userQuery)) {
-                            prompt += `\n\n【左側工作區狀態】: 終端機運行中`;
+                            prompt += `\n\n【左側工作區狀態】: 終端機運行中 (${curTermId})`;
                         } else {
-                            prompt += `\n\n【左側終端機當前畫面感知】\n\`\`\`\n${lastTerminalLines}\n\`\`\``;
+                            prompt += `\n\n【左側終端機當前畫面感知 (${curTermId})】\n\`\`\`\n${lastTerminalLines}\n\`\`\``;
                         }
                     }
                     if (ragContext) prompt += ragContext;
@@ -6495,8 +6518,8 @@ Rules:
                 }
                 const zhToolOffset = tools.length;
                 tools.push(
-                    `${zhToolOffset + 1}. write_frontend_terminal: 在左側終端機輸入並直接執行指令。參數: {"command": "指令字串"} (例如 dir, ls -la, ip a, wsl -l -v)`,
-                    `${zhToolOffset + 2}. read_frontend_terminal: 讀取左側終端機畫面最新的輸出文字。無參數: {}`,
+                    `${zhToolOffset + 1}. write_frontend_terminal: 在左側終端機輸入並直接執行指令。支援指定目標終端機 ID 自動切換！參數: {"command": "指令字串", "term_id": "#1-SHELL" | "#2-WSL" | "#3-PY" | "#4-SERIAL" | "#5-SSH" | "#6-TELNET"} (例如在 WSL 執行 ls: {"command": "ls -la", "term_id": "#2-WSL"})`,
+                    `${zhToolOffset + 2}. read_frontend_terminal: 讀取左側終端機畫面最新的輸出文字。選用參數: {"term_id": "#1-SHELL" | "#2-WSL" | "#3-PY" | "#4-SERIAL"}`,
                     `${zhToolOffset + 3}. execute_shell: 執行本機指令 (透過後端 Daemon，並自動回顯輸出至左側終端機)。參數: {"command": "指令字串"}`,
                     `${zhToolOffset + 4}. switch_left_mode: 切換左側工作區的顯示模式。參數: {"mode": "term" | "novnc" | "xorg"}`,
                     `${zhToolOffset + 5}. launch_wsl_app: 在左側 Xorg 畫面啟動 WSL GUI 應用程式。參數: {"app": "應用程式名稱"} (例如 xclock, gedit, thunar)`,
@@ -6510,7 +6533,7 @@ Rules:
                     `${zhToolOffset + 13}. get_system_specs: 查詢本機硬體與系統規格 (包含 OS、CPU、RAM 記憶體容量、GPU 顯卡、磁碟空間、以及已安裝之文字編輯器 Notepad++、Python、WSL 等工具)。無參數: {}`
                 );
 
-                let contextStr = `\n\n【當前環境】時間: ${timeString} | 終端機: [${activeTermContext.protocol.toUpperCase()}] | 常駐程式(8001): [${isDaemonOnline ? '已連線' : '離線'}] | Python: [Pyodide WASM 就緒 (免本機安裝)]\n`;
+                let contextStr = `\n\n【當前環境】時間: ${timeString} | 當前活動終端機: [${curTermId}] | 終端機編號清單: [#1-SHELL (Windows PowerShell/CMD), #2-WSL (Linux Ubuntu/Debian), #3-PY (Pyodide WASM), #4-SERIAL (序列埠 COM), #5-SSH, #6-TELNET, #7-NOVNC (遠端桌面), #8-XORG (視窗連線)] | 常駐程式(8001): [${isDaemonOnline ? '已連線' : '離線'}] | Python: [Pyodide WASM 就緒 (免本機安裝)]\n`;
 
                 if (lastTerminalLines) {
                     if (webToggle.checked && !isLocalTerminalCommand(userQuery)) {
@@ -7022,10 +7045,10 @@ ${tools.join('\n')}${contextStr}
                 }
 
                 const bannerRaw = termIsEn ? [
-                    "\x1b[1;36mWebcom Multi-Protocol Terminal v1.0.8\x1b[0m  \x1b[33m(Powered by Vercel Labs wterm)\x1b[0m",
+                    "\x1b[1;36mWebcom Multi-Protocol Terminal v1.0.9\x1b[0m  \x1b[33m(Powered by Vercel Labs wterm)\x1b[0m",
                     "\x1b[32m● WASM Core (~12KB)\x1b[0m   \x1b[32m● DOM Native Rendering\x1b[0m   \x1b[32m● 24-bit True Color\x1b[0m"
                 ] : [
-                    "\x1b[1;36mWebcom 多協定終端機 v1.0.8\x1b[0m  \x1b[33m(Powered by Vercel Labs wterm)\x1b[0m",
+                    "\x1b[1;36mWebcom 多協定終端機 v1.0.9\x1b[0m  \x1b[33m(Powered by Vercel Labs wterm)\x1b[0m",
                     "\x1b[32m● WASM 核心 (~12KB)\x1b[0m   \x1b[32m● DOM 原生渲染\x1b[0m   \x1b[32m● 24-bit 真彩色\x1b[0m"
                 ];
                 wtermInstance.write(bannerBox(bannerRaw) + '\r\n\r\n');
@@ -7239,6 +7262,7 @@ ${tools.join('\n')}${contextStr}
                 const protoName = protoOption?.textContent || proto.toUpperCase();
                 printToTerminal(currentLang === 'en' ? `[Protocol Selected: ${protoName}] Please confirm settings and click "Apply Connection".` : `[已選擇協定：${protoName}] 請確認連線參數後點擊「套用連線」。`, 'info');
             }
+            updateTermIdBadge(proto);
             const termIn = document.getElementById('term-input');
             if (termIn) termIn.focus();
         }
@@ -10472,6 +10496,15 @@ Important guidelines:
             };
         }
 
+        function syncSessionLogWithAiResponse(content) {
+            if (typeof sessionChatLog !== 'undefined' && Array.isArray(sessionChatLog) && sessionChatLog.length > 0) {
+                const lastMsg = sessionChatLog[sessionChatLog.length - 1];
+                if (lastMsg && lastMsg.role === 'assistant') {
+                    lastMsg.content = content;
+                }
+            }
+        }
+
         function extractAllToolCalls(text, userPrompt = "") {
             if (!text || typeof text !== 'string') return [];
 
@@ -10848,6 +10881,20 @@ Important guidelines:
             }
 
             if (toolName === 'read_frontend_terminal') {
+                const targetTerm = args.term_id || args.terminal_id || args.target_id || args.target || args.protocol;
+                if (targetTerm && typeof targetTerm === 'string') {
+                    let clean = targetTerm.toLowerCase().trim();
+                    if (clean.includes('1') || clean.includes('shell') || clean.includes('ps') || clean.includes('cmd') || clean.includes('powershell')) clean = 'shell';
+                    else if (clean.includes('2') || clean.includes('wsl') || clean.includes('bash') || clean.includes('linux')) clean = 'wsl';
+                    else if (clean.includes('3') || clean.includes('py')) clean = 'pyodide';
+                    else if (clean.includes('4') || clean.includes('serial') || clean.includes('com')) clean = 'webserial';
+                    else if (clean.includes('5') || clean.includes('ssh')) clean = 'ssh';
+                    else if (clean.includes('6') || clean.includes('telnet')) clean = 'telnet';
+                    if (typeof switchTerminalProtocol === 'function' && activeTermContext?.protocol !== clean) {
+                        await switchTerminalProtocol(clean, true);
+                        await new Promise(r => setTimeout(r, 120));
+                    }
+                }
                 if (typeof setAiActivityState === 'function') setAiActivityState(true, '感知識別終端機...');
                 printToTerminal('正在感知識別左側終端機畫面快照...', 'ai_status');
                 const fullText = getTerminalScreenText();
@@ -10859,7 +10906,8 @@ Important guidelines:
                 scrollToBottom();
                 printToTerminal(`終端機感知完成 (已傳遞最後 ${buffer.length} 字元至 LLM)`, 'ai_success');
                 if (typeof setAiActivityState === 'function') setAiActivityState(false, '完成');
-                return JSON.stringify({ status: "success", content: buffer });
+                const activeId = (typeof termIdMap !== 'undefined' && activeTermContext?.protocol) ? (termIdMap[activeTermContext.protocol] || activeTermContext.protocol) : '#1-SHELL';
+                return JSON.stringify({ status: "success", active_terminal_id: activeId, content: buffer });
             }
 
             if (toolName === 'switch_left_mode') {
@@ -10936,10 +10984,27 @@ Important guidelines:
             }
 
             if (toolName === 'write_frontend_terminal') {
+                const targetTerm = args.term_id || args.terminal_id || args.target_id || args.target || args.protocol;
+                if (targetTerm && typeof targetTerm === 'string') {
+                    let clean = targetTerm.toLowerCase().trim();
+                    if (clean.includes('1') || clean.includes('shell') || clean.includes('ps') || clean.includes('cmd') || clean.includes('powershell')) clean = 'shell';
+                    else if (clean.includes('2') || clean.includes('wsl') || clean.includes('bash') || clean.includes('linux')) clean = 'wsl';
+                    else if (clean.includes('3') || clean.includes('py')) clean = 'pyodide';
+                    else if (clean.includes('4') || clean.includes('serial') || clean.includes('com')) clean = 'webserial';
+                    else if (clean.includes('5') || clean.includes('ssh')) clean = 'ssh';
+                    else if (clean.includes('6') || clean.includes('telnet')) clean = 'telnet';
+                    else if (clean.includes('7') || clean.includes('novnc') || clean.includes('vnc')) clean = 'novnc';
+                    else if (clean.includes('8') || clean.includes('xorg')) clean = 'xorg';
+                    if (typeof switchTerminalProtocol === 'function' && activeTermContext?.protocol !== clean) {
+                        await switchTerminalProtocol(clean, true);
+                        await new Promise(r => setTimeout(r, 120));
+                    }
+                }
                 let cmd = args.command || args.cmd || args.input || args.code || args.text || (typeof args === 'string' ? args : "");
                 if (typeof cmd !== 'string') cmd = JSON.stringify(cmd);
                 await sendCommandToTerminal(cmd, true);
-                return JSON.stringify({ status: "success", executed: cmd });
+                const activeId = (typeof termIdMap !== 'undefined' && activeTermContext?.protocol) ? (termIdMap[activeTermContext.protocol] || activeTermContext.protocol) : '#1-SHELL';
+                return JSON.stringify({ status: "success", executed: cmd, active_terminal_id: activeId });
             }
 
             if (toolName === 'web_search') {
@@ -13142,6 +13207,7 @@ Important guidelines:
 
 
                     updateStats(true);
+                    syncSessionLogWithAiResponse(fullAiResponse);
 
                     if (!isAgentEnabled) {
                         chatHistory.push({ role: "assistant", content: fullAiResponse });
@@ -14679,18 +14745,24 @@ Important guidelines:
             if (window.lucide) lucide.createIcons();
             if (mode === 'novnc' || mode === 'xorg') {
                 if (typeof checkWslStatus === 'function') {
-                    checkWslStatus(false).then(status => {
-                        if (status && status.ready) {
-                            if (mode === 'xorg' && !rfbXorgInstance) {
-                                handleXorgConnect();
-                            } else if (mode === 'novnc' && !rfbNovncInstance) {
-                                handleNoVncConnect();
-                            }
+                    checkWslStatus(false).then(async (status) => {
+                        if (status && status.has_wsl && !status.ready) {
+                            const daemonEp = (typeof appSettings !== 'undefined' && appSettings?.daemonEndpoint) ? appSettings.daemonEndpoint : 'http://127.0.0.1:8001';
+                            await fetchWithTimeout(`${daemonEp}/api/wsl/start-desktop`, { method: 'POST', timeout: 8000 }).catch(() => null);
+                            await new Promise(r => setTimeout(r, 1000));
+                        }
+                        if (mode === 'xorg' && !rfbXorgInstance) {
+                            handleXorgConnect();
+                        } else if (mode === 'novnc' && !rfbNovncInstance) {
+                            handleNoVncConnect();
                         }
                     }).catch(() => {});
                 }
             }
-            // 5. 更新左側動作選單
+            // 5. 更新左側動作選單與終端識別 ID 徽章
+            if (typeof updateTermIdBadge === 'function') {
+                updateTermIdBadge(mode === 'term' ? (connProto?.value || 'shell') : mode);
+            }
             updateLeftActionsDropdownMenu(mode);
         }
         window.switchLeftMode = switchLeftMode;
@@ -15376,6 +15448,24 @@ Important guidelines:
                 statusEl.innerHTML = `<span class="w-2 h-2 rounded-full bg-yellow-500 animate-ping"></span> <span>${isEn ? `Connecting Xorg DISPLAY ${dpy} (Port ${port})...` : `連線 Xorg DISPLAY ${dpy} (Port ${port})...`}</span>`;
             }
 
+            // 0. 自動診斷與自癒：檢查 WSL 與後端連接埠 (5901/6080)
+            const daemonEp = (typeof appSettings !== 'undefined' && appSettings?.daemonEndpoint) ? appSettings.daemonEndpoint : 'http://127.0.0.1:8001';
+            try {
+                const wslStatusRes = await fetchWithTimeout(`${daemonEp}/api/wsl/status`, { timeout: 2500 }).catch(() => null);
+                if (wslStatusRes && wslStatusRes.ok) {
+                    const wslData = await wslStatusRes.json();
+                    if (wslData.has_wsl && !wslData.ready) {
+                        if (statusEl) {
+                            statusEl.innerHTML = `<span class="w-2 h-2 rounded-full bg-cyan-400 animate-pulse"></span> <span>${isEn ? 'WSL detected! Auto-starting X11 virtual display (:1)...' : '偵測到 WSL！正在自動拉起 X11 虛擬桌面與 websockify (:1)...'}</span>`;
+                        }
+                        await fetchWithTimeout(`${daemonEp}/api/wsl/start-desktop`, { method: 'POST', timeout: 8000 }).catch(() => null);
+                        await new Promise(r => setTimeout(r, 1200));
+                    }
+                }
+            } catch (diagErr) {
+                console.warn('[Xorg Auto-Heal Check]', diagErr);
+            }
+
             try {
                 const RFB = await getRFBClass();
                 const wsProto = window.location.protocol === 'https:' ? 'wss' : 'ws';
@@ -15934,54 +16024,13 @@ Important guidelines:
         function exportChatHistory() {
             try {
                 const chatBox = document.getElementById('chat-box');
-                let messages = [];
 
-                // 1. 先讀取記憶體快取的非系統訊息 (sessionChatLog 與 chatHistory)
-                const validSession = (typeof sessionChatLog !== 'undefined' && Array.isArray(sessionChatLog))
-                    ? sessionChatLog.filter(m => m && (m.role === 'user' || m.role === 'assistant'))
-                    : [];
-                const validHistory = (typeof chatHistory !== 'undefined' && Array.isArray(chatHistory))
-                    ? chatHistory.filter(m => m && (m.role === 'user' || m.role === 'assistant'))
-                    : [];
-
-                if (validSession.length > 0) {
-                    messages = validSession.map(m => {
-                        let c = m.content;
-                        if (Array.isArray(c)) {
-                            c = c.map(item => item.text || '').join('');
-                        } else if (typeof c !== 'string') {
-                            c = JSON.stringify(c);
-                        }
-                        return {
-                            role: m.role,
-                            content: c,
-                            images: (Array.isArray(m.images) && m.images.length > 0) ? m.images : undefined,
-                            timestamp: m.timestamp || new Date().toISOString()
-                        };
-                    });
-                } else if (validHistory.length > 0) {
-                    messages = validHistory.map(m => {
-                        let c = m.content;
-                        if (Array.isArray(c)) {
-                            c = c.map(item => item.text || '').join('');
-                        } else if (typeof c !== 'string') {
-                            c = JSON.stringify(c);
-                        }
-                        return {
-                            role: m.role,
-                            content: c,
-                            timestamp: new Date().toISOString()
-                        };
-                    });
-                }
-
-                // 2. 從 chatBox DOM 中即時萃取畫面訊息 (防止因切換語系/重整/非同步導致記憶體清空)
+                // 1. 萃取 DOM 畫面上每一則訊息 (保證畫面所見即所得)
+                const domMsgs = [];
                 if (chatBox) {
-                    const domMsgs = [];
-                    // 精準選取頂層訊息容器，嚴禁 match 內部子 flex 導致重複提取或誤抓 Action Bar
                     const msgEls = chatBox.querySelectorAll(':scope > .msg-wrapper, :scope > div.flex.justify-end, :scope > div.flex.justify-start');
                     msgEls.forEach(el => {
-                        if (el.classList.contains('py-12') || el.id === 'chat-welcome') return;
+                        if (el.classList.contains('py-12') || el.id === 'chat-welcome' || el.id === 'chat-welcome-container') return;
 
                         const isUser = el.classList.contains('justify-end') || 
                                        el.querySelector('.bg-blue-600') || 
@@ -15999,20 +16048,17 @@ Important guidelines:
                                 clone.querySelectorAll('.msg-action-bar, button, [data-lucide]').forEach(b => b.remove());
                                 text = (clone.innerText || clone.textContent || '').trim();
                             }
-                            // 去除意外殘留的按鈕文字
                             text = text.replace(/(?:\r?\n)?(?:複製\s*重試|複製|重試)$/g, '').trim();
                         } else {
-                            const clone = el.cloneNode(true);
-                            // 徹底移除按鈕、統計列與中途檢索徽章，防止徽章文字被誤當成 AI 回應
-                            clone.querySelectorAll('.msg-action-bar, button, [data-lucide], .web-search-badge, .msg-stats, .sv-card, .sv-stage-card, .sv-status-pill, .text-xs, .text-\\[10px\\]').forEach(b => b.remove());
+                            const proseEl = el.querySelector('.prose') || el;
+                            const clone = proseEl.cloneNode(true);
+                            clone.querySelectorAll('.msg-action-bar, button, [data-lucide], .web-search-badge, .msg-stats, .sv-card, .sv-stage-card, .sv-status-pill').forEach(b => b.remove());
                             text = (clone.innerText || clone.textContent || '').trim();
-                            // 排除純佔位符或檢索成功徽章字樣
                             if (text === '...' || text.includes('已成功檢索即時網路資訊') || text.includes('Live web data retrieved') || text.includes('已成功讀取目標網頁內容')) {
                                 text = '';
                             }
                         }
 
-                        // 提取夾帶的圖片資料
                         const imgs = [];
                         el.querySelectorAll('img').forEach(img => {
                             if (img.src && !img.src.includes('lucide') && !img.src.includes('avatar') && !img.src.includes('data:image/svg')) {
@@ -16020,7 +16066,6 @@ Important guidelines:
                             }
                         });
 
-                        // 排除純按鈕字眼、系統歡迎詞或空字元
                         const isGarbageButton = text === '複製' || text === '重試' || text === '複製\n重試' || text === '複製 重試';
                         if ((text || imgs.length > 0) && !isGarbageButton && !text.includes('系統已就緒') && !text.includes('System Ready')) {
                             domMsgs.push({
@@ -16031,20 +16076,52 @@ Important guidelines:
                             });
                         }
                     });
+                }
 
-                    // 若記憶體中無有效訊息，但 DOM 有訊息時，以 DOM 為準；若記憶體已有完整記錄，則以記憶體為準防止誤導
-                    if (messages.length === 0 && domMsgs.length > 0) {
-                        messages = domMsgs;
-                        if (typeof sessionChatLog !== 'undefined') sessionChatLog = [...domMsgs];
-                        if (chatHistory.length === 0) {
-                            domMsgs.forEach(m => chatHistory.push({ role: m.role, content: m.content }));
+                // 2. 雙向智慧合併：以 sessionChatLog 為基礎 (保留完整 Markdown 結構格式)，並以 domMsgs 補足後續對話與防漏
+                const validSession = (typeof sessionChatLog !== 'undefined' && Array.isArray(sessionChatLog))
+                    ? sessionChatLog.filter(m => m && (m.role === 'user' || m.role === 'assistant'))
+                    : [];
+
+                let messages = [];
+                const maxLen = Math.max(validSession.length, domMsgs.length);
+                for (let i = 0; i < maxLen; i++) {
+                    const sMsg = validSession[i];
+                    const dMsg = domMsgs[i];
+                    if (sMsg && dMsg) {
+                        const sContent = typeof sMsg.content === 'string' ? sMsg.content.trim() : JSON.stringify(sMsg.content);
+                        const chooseDom = (!sContent || sContent === '...' || sContent.length < (dMsg.content?.length || 0) / 2);
+                        messages.push({
+                            role: sMsg.role || dMsg.role,
+                            content: chooseDom ? (dMsg.content || sContent) : sContent,
+                            images: sMsg.images || dMsg.images,
+                            timestamp: sMsg.timestamp || dMsg.timestamp || new Date().toISOString()
+                        });
+                    } else if (sMsg) {
+                        const sContent = typeof sMsg.content === 'string' ? sMsg.content.trim() : JSON.stringify(sMsg.content);
+                        if (sContent && sContent !== '...') {
+                            messages.push({
+                                role: sMsg.role,
+                                content: sContent,
+                                images: sMsg.images,
+                                timestamp: sMsg.timestamp || new Date().toISOString()
+                            });
                         }
-                    } else if (domMsgs.length > messages.length) {
-                        messages = domMsgs;
+                    } else if (dMsg) {
+                        messages.push(dMsg);
                     }
                 }
 
-                // 3. 雙重防呆：若畫面上與記憶體皆確實為空
+                // 3. 防呆 fallback：若合併後為空但 chatHistory 有內容
+                if (messages.length === 0 && typeof chatHistory !== 'undefined' && Array.isArray(chatHistory)) {
+                    messages = chatHistory.filter(m => m && (m.role === 'user' || m.role === 'assistant')).map(m => ({
+                        role: m.role,
+                        content: typeof m.content === 'string' ? m.content : JSON.stringify(m.content),
+                        timestamp: new Date().toISOString()
+                    }));
+                }
+
+                // 4. 雙重防呆：若畫面上與記憶體皆確實為空
                 if (messages.length === 0) {
                     const noMsgText = (typeof currentLang !== 'undefined' && currentLang === 'en')
                         ? 'No chat history to export'
@@ -16061,7 +16138,7 @@ Important guidelines:
                 // 匯出包含完整中繼資訊的結構
                 const exportData = {
                     app: "Webcom Dual-Engine Console",
-                    version: "1.0.8",
+                    version: "1.0.9",
                     exportTimestamp: now.toISOString(),
                     engineMode: (typeof appSettings !== 'undefined' && appSettings?.engineMode) ? appSettings.engineMode : 'api',
                     totalMessages: messages.length,
@@ -16818,7 +16895,7 @@ if __name__ == "__main__":
 </head>
 <body>
   <h2>📦 JSON 格式化與驗證工具</h2>
-  <textarea id="box">{\n  "project": "Webcom",\n  "version": "1.0.8",\n  "features": ["Artifact", "AppLibrary", "Agent"]\n}</textarea>
+  <textarea id="box">{\n  "project": "Webcom",\n  "version": "1.0.9",\n  "features": ["Artifact", "AppLibrary", "Agent"]\n}</textarea>
   <div class="btn-row">
     <button onclick="formatJson()">格式化 (2 空格)</button>
     <button onclick="minifyJson()">壓縮 (Minify)</button>
