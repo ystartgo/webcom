@@ -10875,7 +10875,11 @@ Important guidelines:
                     resultEl.innerHTML += `<div class="text-green-400 mt-1 font-bold">✅ ${currentLang === 'en' ? 'Daemon is now ONLINE and ready (Port 8001)!' : '常駐程式已成功啟動並就緒 (Port 8001 連線中)！'}</div>`;
                     return JSON.stringify({ status: "success", message: "Daemon (Port 8001) has been successfully launched and is ONLINE now." });
                 } else {
-                    resultEl.innerHTML += `<div class="text-yellow-300 mt-1">⏳ ${currentLang === 'en' ? 'Daemon launch protocol triggered. Dialog opened for confirmation.' : '已觸發常駐程式啟動協定並彈出重啟確認面板。'}</div>`;
+                    // 若協議尚未註冊，在左側 Shell 終端輔助發送啟動指令
+                    if (typeof activeTermContext !== 'undefined' && activeTermContext?.protocol === 'shell') {
+                        try { sendCommandToTerminal('start_daemon.bat\r', false); } catch(e){}
+                    }
+                    resultEl.innerHTML += `<div class="text-yellow-300 mt-1">⏳ ${currentLang === 'en' ? 'Daemon launch protocol triggered. Dialog opened for confirmation (or run start_daemon.bat in #1-SHELL).' : '已觸發常駐程式啟動協定並彈出重啟確認面板 (或可直接於 #1-SHELL 終端執行 start_daemon.bat)。'}</div>`;
                     return JSON.stringify({ status: "triggered", message: "Daemon startup protocol triggered. If browser asked to open protocol, please confirm." });
                 }
             }

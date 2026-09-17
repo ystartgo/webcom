@@ -51,7 +51,7 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 import uvicorn
 
-app = FastAPI(title="Webcom Multi-Protocol Backend Daemon", version="1.0.8")
+app = FastAPI(title="Webcom Multi-Protocol Backend Daemon", version="1.0.9")
 
 app.add_middleware(
     CORSMiddleware,
@@ -59,12 +59,14 @@ app.add_middleware(
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+    allow_private_network=True,
     expose_headers=["Content-Type", "X-Original-Url"],
 )
 
 @app.middleware("http")
 async def add_security_headers_middleware(request: Request, call_next):
     response: Response = await call_next(request)
+    response.headers["Access-Control-Allow-Private-Network"] = "true"
     path = request.url.path
     if path.startswith("/markitdown") or path.startswith("/api/fetch-url"):
         response.headers["Cross-Origin-Opener-Policy"] = "same-origin"
@@ -927,7 +929,9 @@ class SerialRequest(BaseModel):
     command: Optional[str] = ""
 
 @app.get("/")
+@app.head("/")
 @app.get("/health")
+@app.head("/health")
 def health_check():
     return {"status": "online", "service": "Webcom Daemon", "port": 8001}
 
