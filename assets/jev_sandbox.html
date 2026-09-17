@@ -4,13 +4,17 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title data-i18n="jevPageTitle">Jev 極速單次傳播決策沙盒 (Single Forward-Pass Decision Sandbox)</title>
+    <!-- Dual paths support: root execution, iframe.srcdoc, and /assets/ standalone -->
+    <link rel="stylesheet" href="./assets/wterm.css">
     <link rel="stylesheet" href="./wterm.css">
+    <script src="./assets/tailwindcss.js"></script>
     <script src="./tailwindcss.js"></script>
     <script>
         if (window.tailwind) {
             tailwind.config = { darkMode: 'class' };
         }
     </script>
+    <script src="./assets/lucide.min.js"></script>
     <script src="./lucide.min.js"></script>
     <style>
         ::-webkit-scrollbar { width: 6px; height: 6px; }
@@ -590,6 +594,16 @@
             document.getElementById('model-desc-text').textContent = info.desc;
         }
 
+        function safeCreateIcons() {
+            try {
+                if (window.lucide && typeof window.lucide.createIcons === 'function') {
+                    window.lucide.createIcons();
+                }
+            } catch (e) {
+                console.warn('[Lucide] createIcons warning:', e);
+            }
+        }
+
         function renderOptionRows(options) {
             const container = document.getElementById('options-container');
             container.innerHTML = '';
@@ -605,7 +619,7 @@
                 `;
                 container.appendChild(div);
             });
-            lucide.createIcons();
+            safeCreateIcons();
         }
 
         function addOptionRow() {
@@ -621,7 +635,7 @@
                 </button>
             `;
             container.appendChild(div);
-            lucide.createIcons();
+            safeCreateIcons();
             div.querySelector('input').focus();
         }
 
@@ -756,7 +770,7 @@
                 `;
                 container.appendChild(row);
             });
-            lucide.createIcons();
+            safeCreateIcons();
         }
 
         function escapeHtml(str) {
@@ -792,7 +806,7 @@
         window.addEventListener('DOMContentLoaded', () => {
             const initialLang = detectInitialLanguage();
             setLanguage(initialLang, false);
-            lucide.createIcons();
+            safeCreateIcons();
             loadPreset('intent');
 
             fetch('http://127.0.0.1:8001/api/jev/models')

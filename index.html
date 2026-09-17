@@ -13092,12 +13092,13 @@ Important guidelines:
         window.openJevPlayground = async function() {
             const JEV_ID = 'jev_decision_sandbox';
             let htmlContent = '';
+            const cacheBuster = '?t=' + Date.now();
             try {
                 let url = './assets/jev_sandbox.html';
                 if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.getURL) {
                     url = chrome.runtime.getURL('assets/jev_sandbox.html');
                 }
-                const res = await fetch(url).catch(() => fetch('http://127.0.0.1:8001/assets/jev_sandbox.html'));
+                const res = await fetch(url + cacheBuster, { cache: 'no-store' }).catch(() => fetch('http://127.0.0.1:8001/assets/jev_sandbox.html' + cacheBuster, { cache: 'no-store' }));
                 if (res && res.ok) {
                     htmlContent = await res.text();
                 }
@@ -13107,7 +13108,7 @@ Important guidelines:
 
             if (!htmlContent) {
                 try {
-                    const r2 = await fetch('http://127.0.0.1:8001/assets/jev_sandbox.html');
+                    const r2 = await fetch('http://127.0.0.1:8001/assets/jev_sandbox.html' + cacheBuster, { cache: 'no-store' });
                     if (r2 && r2.ok) htmlContent = await r2.text();
                 } catch (e2) {}
             }
@@ -13116,7 +13117,11 @@ Important guidelines:
                 htmlContent = '<iframe src="./assets/jev_sandbox.html" class="w-full h-full border-0"></iframe>';
             } else {
                 const langToInject = (typeof currentLang !== 'undefined' ? currentLang : 'zh-TW');
-                htmlContent = htmlContent.replace('<head>', `<head><script>window.__INITIAL_LANG__ = "${langToInject}";<\/script>`);
+                let baseHref = './assets/';
+                if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.getURL) {
+                    baseHref = chrome.runtime.getURL('assets/');
+                }
+                htmlContent = htmlContent.replace('<head>', `<head><base href="${baseHref}"><script>window.__INITIAL_LANG__ = "${langToInject}";<\/script>`);
             }
 
             const art = {
