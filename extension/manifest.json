@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Webcom AI Console & Multi-Protocol Terminal",
-  "version": "1.0.8",
+  "version": "1.0.10",
   "description": "雙引擎邊緣 AI 控制台、多協定終端機 (Shell/SSH/Telnet/WebSerial) 與本機/WASM Python 運行環境",
   "icons": {
     "16": "icons/icon16.png",

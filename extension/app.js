@@ -3318,7 +3318,7 @@ if (!window.WTerm && window.WTermBundle) {
                                 </div>
                                 <div class="flex items-center gap-2">
                                     <i data-lucide="tag" class="w-3.5 h-3.5 text-indigo-400 shrink-0"></i>
-                                    <span><strong class="text-gray-200">Version:</strong> <code class="text-indigo-300">v1.0.9-Dual-Engine-WebGPU-RAG-Supervise</code></span>
+                                    <span><strong class="text-gray-200">Version:</strong> <code class="text-indigo-300">v1.0.10-Dual-Engine-Jev-WebGPU-RAG-Supervise</code></span>
                                 </div>
                             </div>
                             <div class="space-y-2 text-[11px] text-gray-400">
@@ -3330,11 +3330,11 @@ if (!window.WTerm && window.WTermBundle) {
                                 </div>
                                 <div class="flex items-center gap-2">
                                     <i data-lucide="calendar" class="w-3.5 h-3.5 text-indigo-400 shrink-0"></i>
-                                    <span><strong class="text-gray-200">Release Date:</strong> 2026-08-29</span>
+                                    <span><strong class="text-gray-200">Release Date:</strong> 2026-09-18</span>
                                 </div>
                                 <div class="flex items-center gap-1.5">
                                     <i data-lucide="calendar" class="w-3.5 h-3.5 text-indigo-400 shrink-0"></i>
-                                    <span><strong class="text-gray-200">Release Time:</strong> 02:10:00</span>
+                                    <span><strong class="text-gray-200">Release Time:</strong> 01:10:00</span>
                                 </div>
                                 <div class="flex items-center gap-2">
                                     <i data-lucide="code-2" class="w-3.5 h-3.5 text-indigo-400 shrink-0"></i>
@@ -3475,7 +3475,7 @@ if (!window.WTerm && window.WTermBundle) {
                                 </div>
                                 <div class="flex items-center gap-2">
                                     <i data-lucide="tag" class="w-3.5 h-3.5 text-indigo-400 shrink-0"></i>
-                                    <span><strong class="text-gray-200">版本：</strong> <code class="text-indigo-300">v1.0.9-Dual-Engine-WebGPU-RAG-Supervise</code></span>
+                                    <span><strong class="text-gray-200">版本：</strong> <code class="text-indigo-300">v1.0.10-Dual-Engine-Jev-WebGPU-RAG-Supervise</code></span>
                                 </div>
                             </div>
                             <div class="space-y-2 text-[11px] text-gray-400">
@@ -3487,11 +3487,11 @@ if (!window.WTerm && window.WTermBundle) {
                                 </div>
                                 <div class="flex items-center gap-2">
                                     <i data-lucide="calendar" class="w-3.5 h-3.5 text-indigo-400 shrink-0"></i>
-                                    <span><strong class="text-gray-200">發佈日期：</strong> 2026-08-29</span>
+                                    <span><strong class="text-gray-200">發佈日期：</strong> 2026-09-18</span>
                                 </div>
                                 <div class="flex items-center gap-1.5">
                                     <i data-lucide="calendar" class="w-3.5 h-3.5 text-indigo-400 shrink-0"></i>
-                                    <span><strong class="text-gray-200">發佈時間：</strong> 02:10:00</span>
+                                    <span><strong class="text-gray-200">發佈時間：</strong> 01:10:00</span>
                                 </div>
                                 <div class="flex items-center gap-2">
                                     <i data-lucide="code-2" class="w-3.5 h-3.5 text-indigo-400 shrink-0"></i>
@@ -7423,10 +7423,10 @@ ${tools.join('\n')}${contextStr}
                 }
 
                 const bannerRaw = termIsEn ? [
-                    "\x1b[1;36mWebcom Multi-Protocol Terminal v1.0.9\x1b[0m",
+                    "\x1b[1;36mWebcom Multi-Protocol Terminal v1.0.10\x1b[0m",
                     "\x1b[32m● WASM Core ● 24-bit True Color\x1b[0m"
                 ] : [
-                    "\x1b[1;36mWebcom 多協定終端機 v1.0.9\x1b[0m",
+                    "\x1b[1;36mWebcom 多協定終端機 v1.0.10\x1b[0m",
                     "\x1b[32m● WASM 核心 ● 24-bit 真彩色\x1b[0m"
                 ];
                 wtermInstance.write(bannerBox(bannerRaw) + '\r\n\r\n');
@@ -17085,7 +17085,7 @@ Important guidelines:
                 // 匯出包含完整中繼資訊的結構
                 const exportData = {
                     app: "Webcom Dual-Engine Console",
-                    version: "1.0.9",
+                    version: "1.0.10",
                     exportTimestamp: now.toISOString(),
                     engineMode: (typeof appSettings !== 'undefined' && appSettings?.engineMode) ? appSettings.engineMode : 'api',
                     totalMessages: messages.length,
@@ -18310,7 +18310,7 @@ if __name__ == "__main__":
 </head>
 <body>
   <h2>📦 JSON 格式化與驗證工具</h2>
-  <textarea id="box">{\n  "project": "Webcom",\n  "version": "1.0.9",\n  "features": ["Artifact", "AppLibrary", "Agent"]\n}</textarea>
+  <textarea id="box">{\n  "project": "Webcom",\n  "version": "1.0.10",\n  "features": ["Artifact", "AppLibrary", "Agent"]\n}</textarea>
   <div class="btn-row">
     <button onclick="formatJson()">格式化 (2 空格)</button>
     <button onclick="minifyJson()">壓縮 (Minify)</button>

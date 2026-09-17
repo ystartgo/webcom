@@ -371,7 +371,7 @@ def test_sync():
 
 def main():
     print(f"{BOLD}================================================================{RESET}")
-    print(f"{BOLD}{CYAN}      Webcom AI 控制台 — 系統與功能自我健康檢測工具 (v1.0.9)     {RESET}")
+    print(f"{BOLD}{CYAN}      Webcom AI 控制台 — 系統與功能自我健康檢測工具 (v1.0.10)    {RESET}")
     print(f"{BOLD}================================================================{RESET}")
 
     test_syntax()

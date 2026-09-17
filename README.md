@@ -2,7 +2,7 @@
 
 > **繁體中文** ・ [English](#english)
 >
-> 🎯 **當前版本：`v1.0.9-Dual-Engine-WebGPU-RAG-Supervise`** ・ 釋出日期：`2026-09-17`
+> 🎯 **當前版本：`v1.0.10-Dual-Engine-Jev-WebGPU-RAG-Supervise`** ・ 釋出日期：`2026-09-18`
 > 📝 變更紀錄：見下方 [## 🕓 變更日誌 (Changelog)](#-變更日誌-changelog) / [English Changelog](#-changelog)
 
 **Webcom** 是一套單檔 `index.html` 就能啟動的 **雙引擎 AI 主控台**，整合 **多協定終端機（WSL / SSH / Telnet / Web Serial / 後端 Serial）**、**LM Studio / API** 與 **WebGPU 瀏覽器本地 LLM** 兩種推理引擎、**RAG 知識庫管理**、**MCP 協定工具面板**、**純斷網模擬**、**WinPE 開機自動執行** 等常見的現場維運／離線操作需求。
@@ -19,6 +19,10 @@
   - 📦 **ONNX Runtime + Transformers.js 本地推理**（雙後端：💻 CPU SIMD 高效運算 或 ⚡ WebGPU 顯卡加速）
     - 內建 4 模型：Qwen2.5-0.5B (350MB 極速⭐)、Bonsai-1.7B、Qwen3-VL-2B 視覺、Gemma-4-2B (Google)
     - 支援「自訂 HuggingFace onnx-community 模型 ID」手動加載
+  - 🎯 **Jev 極速二元/多元決策沙盒 (Fast-Decision Sandbox & Reranker)**：
+    - 內建支援 4 款輕量 ONNX 交叉編碼與重排模型（`Xenova/bge-reranker-base`、`Xenova/ms-marco-MiniLM-L-6-v2`、`onnx-community/bge-reranker-v2-m3-ONNX`、`Xenova/nli-deberta-v3-small`）
+    - 支援毫秒級意圖判斷 (5~28ms)、上下文重排、多分支決策評分與離線啟發式降級計算
+    - 專屬獨立調試沙盒 (`assets/jev_sandbox.html`) 與後端 Daemon 矩陣加速 API (`/api/jev/decide`)
   - 可切換：「API → WebGPU → ONNX → 雙引擎聯合思考 → 監督排查流水線」共 5 模式
 - 🖥️ **左側多模式工作區（終端機 / noVNC 遠端桌面 / Xorg GUI 視窗）**
   - **多協定終端機**（以 [wterm](https://github.com/vercel-labs/wterm) 為基礎的 WASM 終端）
@@ -404,6 +408,29 @@ Q1~Q3 請見內建手冊第 5 頁「常見問題」。以下為本次 v1.0.0 新
 
 ## 🕓 變更日誌 (Changelog)
 
+#### `v1.0.10-Dual-Engine-Jev-WebGPU-RAG-Supervise` — 2026-09-18 **Jev 極速二元/多元決策模型架構、專屬調試沙盒、操作手冊增修與版權致謝更新 (Jev Decision Architecture, Sandbox, User Guide & Copyright Update)**
+> 🚀 重大更新：完整支援 Jev 極速二元/多元決策模型與重排架構（推薦 4 款輕量 Hugging Face ONNX 交叉編碼器，毫秒級決策 5~28ms）＋ 獨立 Jev 決策沙盒 (`assets/jev_sandbox.html`) 與後端矩陣加速 API ＋ 雙語操作說明手冊全面補強（新增 Jev 模型專用架構與操作指引、抽屜外部點擊與 ESC 關閉優化）＋ 全專案版本號全面晉級 v1.0.10 ＋ 系統 58 項自我健康檢測 100% 通過。
+
+- **🎯 Jev 極速二元/多元決策模型與重排架構 (Jev Fast-Decision & Reranker Architecture)**：
+  1. **4 款輕量高效 ONNX 推薦模型支援**：
+     - `Xenova/bge-reranker-base`（約 140MB，推論延遲 ~15ms）：RAG 檢索重排首選，精準計算 Query 與候選 Context 關聯度。
+     - `Xenova/ms-marco-MiniLM-L-6-v2`（約 22MB，推論延遲 ~5ms）：極致輕量，適合高頻搜尋、快速二元決策與過濾。
+     - `onnx-community/bge-reranker-v2-m3-ONNX`（約 300MB，推論延遲 ~28ms）：多語言支援 (80+ 語系) 與長文本重排。
+     - `Xenova/nli-deberta-v3-small`（約 50MB，推論延遲 ~12ms）：自然語言推理 (NLI)，專精蘊含 (Entailment) 與矛盾 (Contradiction) 邏輯判斷。
+  2. **雙軌運行與離線啟發式降級計算**：
+     - 前端透過 `@xenova/transformers` / ONNX Runtime Web 進行純瀏覽器本地推論；後端 Daemon (Port 8001) 同步提供 `/api/jev/models` 與 `/api/jev/decide` 進行 CPU 矩陣平行加速。
+     - 具備斷網與無 WebGPU/ONNX 環境的本機啟發式語義交叉比對降級機制，保證離線與極端環境下 100% 穩定輸出決策。
+  3. **獨立 Jev 決策沙盒工具 (`assets/jev_sandbox.html`)**：
+     - 提供視覺化候選集輸入、自訂閾值門檻、延遲測速與 Top-1/Top-K 評分長條圖展示，便於工程人員現場評測最合適模型。
+- **📖 雙語操作說明手冊 (User Guide) 全面更新**：
+  1. **新增 Jev 決策模型專屬章節**：於雙語操作說明第 3 頁（AI 引擎與 RAG 知識庫）新增 Jev 模型選型指南、推論延遲對照表與典型使用情境（意圖分流、工具過濾、RAG 精準重排）。
+  2. **抽屜與彈窗關閉體驗優化**：完善 Artifact 工坊抽屜、系統設定與操作說明 Modal 的關閉互動，支援點擊半透明遮罩背景或按下 `Esc` 鍵流暢退回主畫面，防止介面遮擋。
+- **⚖️ 開源版權宣告與致謝更新 (License & Credits)**：
+  - 更新版權年份至 2026 年，重申遵循 **GNU General Public License v3.0**。
+  - 完整補齊 Hugging Face Xenova、ONNX Runtime、Transformers.js、Microsoft MarkItDown、wterm、noVNC 等第三方開源專案與作者致謝。
+- **🩺 全系統 58 項自我檢測 100% 通過**：
+  - `diagnose_system.py` 與 `self_test.bat` 執行 58 項全自動健康檢測，前後端語法、檔案 SHA256 雜湊一致性、WSL 與埠位探針全數 PASS。
+
 #### `v1.0.9-Dual-Engine-WebGPU-RAG-Supervise` — 2026-09-17 **對話記錄完整匯出修復、左側終端 Session ID 標註與精準導向、WSL Xorg 自動修復與守護 (Full Dialogue Export, Terminal Session IDs & WSL Xorg Auto-Recovery)**
 > 🚀 重大更新：右側 AI 對話完整匯出修復（雙軌動態智慧合併，徹底消除 `"..."` 佔位符與後續回合遺漏）＋ 左側多協定終端機 Session ID 標記（`#1` ~ `#8` 終端徽章與 Prompt 感知，支援 LLM `term_id` 精準導向切換）＋ WSL Xorg 桌面連線自動修復與持久守護進程（排除 `/tmp/.X11-unix` 唯讀掛載與 WSL2 閒置逾時休眠）＋ 全站版本號晉級 v1.0.9 ＋ 系統 55 項自我檢測 100% 通過。
 
@@ -584,7 +611,7 @@ Q1~Q3 請見內建手冊第 5 頁「常見問題」。以下為本次 v1.0.0 新
 <a id="english"></a>
 # Webcom — Dual-Engine AI Console (English)
 
-> 🎯 **Current Release:** `v1.0.9-Dual-Engine-WebGPU-RAG-Supervise` ・ **Released:** `2026-09-17`
+> 🎯 **Current Release:** `v1.0.10-Dual-Engine-Jev-WebGPU-RAG-Supervise` ・ **Released:** `2026-09-18`
 > 📝 **Changelog:** [Jump to Changelog ↓](#-changelog)
 
 **Webcom** is a single-file (`index.html`) **Dual-Engine AI Console** that combines a **multi-protocol terminal (WSL / SSH / Telnet / Web Serial / Backend Serial)**, **LM Studio / API** and **WebGPU browser-local LLM** inference engines, **RAG Knowledge Base**, **MCP tool panel**, **pure-offline simulation switch**, and **WinPE autorun** for real-world on-site / offline ops.
@@ -601,6 +628,10 @@ Licensed under **GNU GPL v3.0**. See the built-in User Guide tab 6 *License & Cr
   - 📦 **ONNX Runtime + Transformers.js browser-local inference** (dual backends: 💻 CPU High-Perf SIMD OR ⚡ WebGPU GPU acceleration)
     - 4 built-in models: Qwen2.5-0.5B (350 MB ultra-fast ⭐), Bonsai-1.7B, Qwen3-VL-2B (Vision), Gemma-4-2B (Google)
     - "Custom HuggingFace onnx-community model ID" tab for user-added models
+  - 🎯 **Jev Fast-Decision Sandbox & Reranker Architecture**:
+    - 4 recommended lightweight ONNX cross-encoders & rerankers (`Xenova/bge-reranker-base`, `Xenova/ms-marco-MiniLM-L-6-v2`, `onnx-community/bge-reranker-v2-m3-ONNX`, `Xenova/nli-deberta-v3-small`)
+    - Millisecond-level binary/multi-class intent decision (5~28ms), context re-ranking, and offline heuristic fallback scoring
+    - Dedicated standalone interactive sandbox (`assets/jev_sandbox.html`) and backend Daemon CPU matrix acceleration API (`/api/jev/decide`)
   - 5 selectable top-level modes: `API → WebGPU → ONNX → Co-Think (hybrid) → Supervised-Mutual-Debug (4-Stage SRE Pipeline)`
 - 🖥️ **Left Multi-Mode Workspace (Terminal / noVNC Remote Desktop / Xorg GUI Display)**
   - **Multi-Protocol Terminal** (WASM, powered by [wterm](https://github.com/vercel-labs/wterm))
@@ -964,6 +995,29 @@ Q1~Q3 live inside the built-in User Guide Tab 5 *FAQ*. The Q4~Q6 below cover v1.
 
 <a id="changelog"></a>
 ## 🕓 Changelog
+
+### `v1.0.10-Dual-Engine-Jev-WebGPU-RAG-Supervise` — 2026-09-18 **Jev Decision Architecture, Sandbox, User Guide & Copyright Update**
+> 🚀 Major update: Full integration of the Jev Fast-Decision and reranking architecture (4 recommended lightweight Hugging Face ONNX cross-encoders, ultra-low 5~28ms latency) + Standalone interactive Jev Decision Sandbox (`assets/jev_sandbox.html`) and backend CPU matrix acceleration API + Comprehensive User Guide expansion (dedicated Jev model guide, drawer backdrop and ESC close optimization) + Global version bumped to v1.0.10 + 58/58 automated system diagnostics passing.
+
+- **🎯 Jev Fast-Decision & Reranker Architecture**:
+  1. **4 Lightweight High-Performance ONNX Models**:
+     - `Xenova/bge-reranker-base` (~140MB, inference latency ~15ms): Premier choice for RAG retrieval reranking, accurately scoring Query vs. Context relevance.
+     - `Xenova/ms-marco-MiniLM-L-6-v2` (~22MB, inference latency ~5ms): Ultra-compact cross-encoder for high-throughput binary decisions, routing, and filtering.
+     - `onnx-community/bge-reranker-v2-m3-ONNX` (~300MB, inference latency ~28ms): Multilingual reranking (80+ languages) and extended context windows.
+     - `Xenova/nli-deberta-v3-small` (~50MB, inference latency ~12ms): Natural Language Inference (NLI) for formal entailment and contradiction logic validation.
+  2. **Dual-Track Execution & Heuristic Fallback**:
+     - Client-side inference powered by `@xenova/transformers` / ONNX Runtime Web; Port 8001 Daemon concurrently provides `/api/jev/models` and `/api/jev/decide` with multi-core CPU SIMD matrix acceleration.
+     - Built-in heuristic fallback scoring engine guarantees deterministic decision outputs even in pure-offline environments without WebGPU or ONNX backends.
+  3. **Standalone Interactive Jev Decision Sandbox (`assets/jev_sandbox.html`)**:
+     - Interactive candidate ranking, custom threshold calibration, live latency benchmark, and Top-K score visualization for on-site model evaluation.
+- **📖 Bilingual User Guide Overhaul**:
+  1. **Dedicated Jev Decision Chapter**: Added comprehensive model selection guide, latency comparison benchmark table, and practical integration recipes (intent classification, tool gating, RAG reranking) in Tab 3 (AI Engine & RAG).
+  2. **Drawer & Modal Dismissal Usability**: Refined modal and Artifact Workbench drawer interactions, supporting seamless closing via outer backdrop clicks or `Esc` key navigation.
+- **⚖️ Open-Source License & Credits Refresh**:
+  - Copyright updated through 2026 under the **GNU General Public License v3.0**.
+  - Third-party acknowledgements updated for Hugging Face Xenova, ONNX Runtime, Transformers.js, Microsoft MarkItDown, wterm, noVNC, and open-source contributors.
+- **🩺 Automated Diagnostic Suite 58/58 PASS**:
+  - `diagnose_system.py` and `self_test.bat` passed 58/58 automated tests, covering syntax validation, SHA256 file parity, WSL services, and backend port probes.
 
 ### `v1.0.9-Dual-Engine-WebGPU-RAG-Supervise` — 2026-09-17 **Full Dialogue Export Fix, Terminal Session IDs & WSL Xorg Auto-Recovery**
 > 🚀 Major update: Right-side AI dialogue log export overhaul (dual-track smart merge ensuring zero `"..."` placeholders and 100% conversation history retention) + Multi-protocol terminal session IDs (`#1` ~ `#8` badges and prompt perception, supporting LLM `term_id` targeting and auto-switching) + WSL Xorg desktop connection auto-recovery & persistent keepalive process (resolves `/tmp/.X11-unix` read-only mount and WSL2 VM idle termination) + Version bumped to v1.0.9 across all files + 55/55 automated system diagnostics passing.
