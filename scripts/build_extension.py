@@ -106,7 +106,8 @@ def build_extension():
         "ort-wasm-simd-threaded.jsep.mjs",
         "ort-wasm-simd-threaded.jsep.wasm",
         "ort-wasm-simd-threaded.mjs",
-        "ort-wasm-simd-threaded.wasm"
+        "ort-wasm-simd-threaded.wasm",
+        "jev_sandbox.html"
     ]
     for asset in essential_assets:
         s_path = os.path.join(src_assets, asset)

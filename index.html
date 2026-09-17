@@ -349,6 +349,13 @@
                         <span class="w-2 h-2 rounded-full bg-gray-500"></span> <span data-i18n="daemonChecking">常駐程式: 檢查中...</span>
                     </span>
 
+                    <!-- ⚡ Jev 極速單次傳播決策器 (Cross-Encoder Sandbox) -->
+                    <button id="btn-quick-jev" type="button" onclick="openJevPlayground()"
+                        class="p-1.5 rounded-lg bg-gray-800 hover:bg-gray-700 text-amber-300 hover:text-white border border-gray-700 transition cursor-pointer select-none shrink-0"
+                        title="開啟 Jev 極速單次傳播決策沙盒 (Cross-Encoder / ~15ms)" data-i18n-title="tooltipQuickJev">
+                        <i data-lucide="zap" class="w-4 h-4 text-amber-400"></i>
+                    </button>
+
                     <!-- 手機式「三」工具選單按鈕 (縮排為選單) -->
                     <div class="relative">
                         <button id="btn-top-tools-menu" type="button" onclick="toggleTopToolsDropdown(event)"
@@ -358,8 +365,14 @@
                         </button>
                         <!-- 下拉選單 -->
                         <div id="dropdown-top-tools" class="hidden absolute right-0 top-full mt-1.5 w-56 bg-gray-900 border border-gray-700 rounded-xl shadow-2xl py-1.5 z-50 text-xs select-none">
+                            <button id="btn-open-jev" type="button" onclick="openJevPlayground(); closeTopToolsDropdown();"
+                                class="w-full flex items-center gap-2.5 px-3.5 py-2 hover:bg-gray-800 text-amber-300 transition text-left cursor-pointer"
+                                title="開啟 Jev 單次傳播極速決策沙盒 (~15ms Cross-Encoder)" data-i18n-title="tooltipJevSandbox">
+                                <i data-lucide="zap" class="w-4 h-4 text-amber-400"></i>
+                                <span data-i18n="btnJevSandbox" class="font-medium">⚡ Jev 極速決策沙盒</span>
+                            </button>
                             <a id="btn-open-markitdown" href="http://127.0.0.1:8001/markitdown/" target="_blank"
-                                class="flex items-center gap-2.5 px-3.5 py-2 hover:bg-gray-800 text-amber-300 transition no-underline cursor-pointer"
+                                class="flex items-center gap-2.5 px-3.5 py-2 hover:bg-gray-800 text-amber-300 transition no-underline cursor-pointer border-t border-gray-800/80"
                                 title="開啟 MarkItDown 文件轉換器" data-i18n-title="tooltipMarkItDown">
                                 <i data-lucide="file-text" class="w-4 h-4 text-amber-400"></i>
                                 <span class="font-medium" data-i18n="markitdownConverter">MarkItDown 轉換器</span>
@@ -3988,6 +4001,12 @@ ffmpeg -f pulse -i default -acodec libmp3lame -ab 128k -f mp3 -listen 1 http://0
                 slashCmd17_title: "/查詢python版本",
                 slashCmd17_desc: "查詢本機 Python (8001) 與瀏覽器端 Pyodide (WASM) 版本與執行環境",
                 slashCmd17_payload: "請查詢並檢測當前環境的所有 Python 執行引擎版本（包括本機 8001 Daemon Python 與瀏覽器端 Pyodide WASM Python 3.12 版本狀態），並列出可用的運算環境與套件庫支援。",
+                slashCmd18_title: "/jev決策沙盒",
+                slashCmd18_desc: "開啟 Jev 單次傳播極速決策沙盒 (15ms 交叉編碼器)",
+                slashCmd18_payload: "/jev",
+                btnJevSandbox: "⚡ Jev 極速決策沙盒",
+                tooltipJevSandbox: "開啟 Jev 單次傳播極速決策沙盒 (~15ms Cross-Encoder)",
+                tooltipQuickJev: "開啟 Jev 極速單次傳播決策沙盒 (~15ms)",
                 btnNewChat: "新對話",
                 tooltipNewChat: "開啟新對話或清空畫面",
                 chatInputPlaceholder: "輸入訊息，或貼上圖片、文字... (輸入 / 顯示快捷指令)",
@@ -4788,6 +4807,12 @@ ffmpeg -f pulse -i default -acodec libmp3lame -ab 128k -f mp3 -listen 1 http://0
                 slashCmd17_title: "/Query Python Version",
                 slashCmd17_desc: "Check local Python (8001) and browser Pyodide (WASM) runtime versions",
                 slashCmd17_payload: "Please query and check all available Python runtime engine versions in the current environment (including local 8001 Daemon Python and browser-side Pyodide WASM Python 3.12), and report their operational status and supported packages.",
+                slashCmd18_title: "/jev Decision Sandbox",
+                slashCmd18_desc: "Open Jev Single Forward-Pass Decision Sandbox (15ms Cross-Encoder)",
+                slashCmd18_payload: "/jev",
+                btnJevSandbox: "⚡ Jev Decision Sandbox",
+                tooltipJevSandbox: "Open Jev Single Forward-Pass Decision Sandbox (~15ms Cross-Encoder)",
+                tooltipQuickJev: "Open Jev Single Forward-Pass Decision Sandbox (~15ms)",
                 btnNewChat: "New Chat",
                 tooltipNewChat: "Start a new chat or clear conversation",
                 chatInputPlaceholder: "Type a message, paste image or text... (Type / for commands)",
@@ -10126,6 +10151,8 @@ ffmpeg -f pulse -i default -acodec libmp3lame -ab 128k -f mp3 -listen 1 http://0
                 { cmd: t('slashCmd15_title'), desc: t('slashCmd15_desc'), payload: t('slashCmd15_payload') },
                 { cmd: t('slashCmd16_title'), desc: t('slashCmd16_desc'), payload: t('slashCmd16_payload') },
                 { cmd: t('slashCmd17_title'), desc: t('slashCmd17_desc'), payload: t('slashCmd17_payload') },
+                { cmd: t('slashCmd18_title'), desc: t('slashCmd18_desc'), payload: t('slashCmd18_payload') },
+                { cmd: "/jev", desc: t('slashCmd18_desc'), payload: "/jev" },
                 { cmd: t('slashCmd4_title'), desc: t('slashCmd4_desc'), payload: t('slashCmd4_payload') },
                 { cmd: t('slashCmd5_title'), desc: t('slashCmd5_desc'), payload: t('slashCmd5_payload') },
                 { cmd: t('slashCmd6_title'), desc: t('slashCmd6_desc'), payload: t('slashCmd6_payload') },
@@ -12555,6 +12582,38 @@ Important guidelines:
             renderDrawerContent(art);
             modal.classList.remove('hidden');
             lucide.createIcons();
+        };
+
+        window.openJevPlayground = async function() {
+            const JEV_ID = 'jev_decision_sandbox';
+            let htmlContent = '';
+            try {
+                let url = './assets/jev_sandbox.html';
+                if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.getURL) {
+                    url = chrome.runtime.getURL('assets/jev_sandbox.html');
+                }
+                const res = await fetch(url);
+                if (res.ok) {
+                    htmlContent = await res.text();
+                }
+            } catch (e) {
+                console.warn('[Jev] Could not fetch assets/jev_sandbox.html:', e);
+            }
+
+            if (!htmlContent) {
+                htmlContent = '<iframe src="./assets/jev_sandbox.html" class="w-full h-full border-0"></iframe>';
+            }
+
+            const art = {
+                id: JEV_ID,
+                title: '⚡ Jev 極速單次傳播決策沙盒 (Cross-Encoder / System 1)',
+                type: 'html',
+                language: 'html',
+                fullContent: htmlContent,
+                versions: [{ version: 1, content: htmlContent, timestamp: new Date().toLocaleTimeString() }]
+            };
+            globalArtifactStore.set(JEV_ID, art);
+            openArtifactDrawer(JEV_ID);
         };
 
 
@@ -18024,6 +18083,12 @@ Important guidelines:
             const lowerP = promptText.trim().toLowerCase();
             if (lowerP === '/python' || lowerP === '/pyversion' || lowerP === '/py' || lowerP === '/version' || lowerP === '/查詢python版本') {
                 effectivePrompt = t('slashCmd17_payload');
+            } else if (lowerP === '/jev' || lowerP === '/jev-sandbox' || lowerP === '/jev決策沙盒' || lowerP === '/決策' || lowerP === '/jev架構') {
+                userInput.value = '';
+                appendMessage('user', promptText, false, false, '', imagesToSend);
+                appendMessage('assistant', '⚡ 正在開啟 **Jev 極速單次傳播決策沙盒 (Single Forward-Pass Decision Sandbox)** 工作區...', false, false);
+                openJevPlayground();
+                return;
             } else {
                 const matchedCmd = slashCommands.find(c => c.cmd.toLowerCase() === promptText.trim().toLowerCase());
             if (matchedCmd && matchedCmd.payload) {
