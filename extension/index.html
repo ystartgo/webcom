@@ -449,7 +449,7 @@
         <div
             class="bg-gray-800 px-3 py-2 flex flex-wrap items-center gap-2.5 border-b border-gray-700 text-xs shrink-0">
             <div class="flex items-center gap-1.5 shrink-0">
-                <span id="term-id-badge" class="px-2 py-0.5 rounded text-[11px] font-mono font-bold bg-indigo-950/80 border border-indigo-700/60 text-indigo-300 shadow-sm" title="左側終端機識別 ID (供 LLM 與使用者定向辨識)">ID: #1-SHELL</span>
+                <span id="term-id-badge" class="hidden" aria-hidden="true"></span>
                 <select id="conn-protocol"
                     class="bg-gray-900 text-white border border-gray-700 rounded-md px-2 py-1 text-xs focus:outline-none focus:border-purple-500 font-medium">
                     <option value="pyodide" class="text-yellow-300 font-bold" data-i18n="protoPyodide">🐍 Python 3 (Pyodide WASM 免安裝)</option>
@@ -2247,8 +2247,8 @@
                 <div class="p-3 bg-indigo-950/40 border border-indigo-700/50 rounded-xl flex items-center gap-2.5 text-xs text-indigo-200">
                     <i data-lucide="sparkles" class="w-4 h-4 text-indigo-400 shrink-0"></i>
                     <div>
-                        <span class="font-bold text-white">擴充功能已原生內建 Pyodide (WASM Python)！</span>
-                        <span class="text-indigo-300">所有 Python 運算、數學分析與 AI 腳本均在瀏覽器內獨立運行，<strong>無需安裝本機 Python 亦無需啟動 8001</strong>。僅在需要 WSL、主機檔案寫入或原生 Shell 時才需啟用常駐服務。</span>
+                        <span class="font-bold text-white" data-i18n="daemonModalPyodideTitle">擴充功能已原生內建 Pyodide (WASM Python)！</span>
+                        <span class="text-indigo-300" data-i18n-html="daemonModalPyodideDesc">所有 Python 運算、數學分析與 AI 腳本均在瀏覽器內獨立運行，<strong>無需安裝本機 Python 亦無需啟動 8001</strong>。僅在需要 WSL、主機檔案寫入或原生 Shell 時才需啟用常駐服務。</span>
                     </div>
                 </div>
 

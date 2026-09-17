@@ -78,6 +78,8 @@ if (!window.WTerm && window.WTermBundle) {
                 daemonOffline: "常駐程式 (8001) 離線",
                 btnLaunchDaemon: "啟動常駐程式",
                 daemonModalTitle: "常駐程式 (Daemon 8001) 啟動與診斷",
+                daemonModalPyodideTitle: "擴充功能已原生內建 Pyodide (WASM Python)！",
+                daemonModalPyodideDesc: "所有 Python 運算、數學分析與 AI 腳本均在瀏覽器內獨立運行，<strong>無需安裝本機 Python 亦無需啟動 8001</strong>。僅在需要 WSL、主機檔案寫入或原生 Shell 時才需啟用常駐服務。",
                 exportLog: "匯出 LOG",
                 clearTerm: "清除畫面",
                 applyConn: "套用連線",
@@ -876,6 +878,8 @@ if (!window.WTerm && window.WTermBundle) {
                 daemonOffline: "Daemon (8001) Offline",
                 btnLaunchDaemon: "Launch Daemon",
                 daemonModalTitle: "Daemon (8001) Launcher & Diagnostics",
+                daemonModalPyodideTitle: "Extension has built-in Pyodide (WASM Python) natively!",
+                daemonModalPyodideDesc: "All Python execution, math analysis, and AI scripts run independently in the browser, <strong>no local Python installation or Port 8001 Daemon needed</strong>. Only required when accessing WSL, host files, or native Shell.",
                 exportLog: "Export LOG",
                 clearTerm: "Clear",
                 applyConn: "Apply Conn",
@@ -3540,6 +3544,11 @@ if (!window.WTerm && window.WTermBundle) {
                         opt.textContent = translations[currentLang][key];
                     }
                 });
+            }
+
+            // ── 左側終端連線欄位動態多語系刷新 ──
+            if (typeof renderConnFields === 'function') {
+                renderConnFields();
             }
 
             // ── 進度列文字翻譯 ──
@@ -6245,23 +6254,23 @@ if (!window.WTerm && window.WTermBundle) {
 
         let activeTermContext = { protocol: 'shell' };
         const termIdMap = {
-            'shell': 'ID: #1-SHELL',
-            'wsl': 'ID: #2-WSL',
-            'pyodide': 'ID: #3-PY',
-            'py': 'ID: #3-PY',
-            'python': 'ID: #3-PY',
-            'webserial': 'ID: #4-SERIAL',
-            'serial': 'ID: #4-SERIAL',
-            'ssh': 'ID: #5-SSH',
-            'telnet': 'ID: #6-TELNET',
-            'novnc': 'ID: #7-NOVNC',
-            'xorg': 'ID: #8-XORG'
+            'shell': '#1-SHELL',
+            'wsl': '#2-WSL',
+            'pyodide': '#3-PY',
+            'py': '#3-PY',
+            'python': '#3-PY',
+            'webserial': '#4-SERIAL',
+            'serial': '#4-SERIAL',
+            'ssh': '#5-SSH',
+            'telnet': '#6-TELNET',
+            'novnc': '#7-NOVNC',
+            'xorg': '#8-XORG'
         };
         function updateTermIdBadge(proto) {
             const badge = document.getElementById('term-id-badge');
             if (!badge) return;
             const p = (proto || (typeof activeTermContext !== 'undefined' ? activeTermContext?.protocol : 'shell') || 'shell').toLowerCase();
-            badge.textContent = termIdMap[p] || `ID: #${p.toUpperCase()}`;
+            badge.textContent = termIdMap[p] || `#${p.toUpperCase()}`;
         }
         window.updateTermIdBadge = updateTermIdBadge;
         window.termIdMap = termIdMap;
@@ -7161,10 +7170,12 @@ ${tools.join('\n')}${contextStr}
         document.getElementById('btn-clear-term')?.addEventListener('click', window.handleClearTerminal);
 
         function renderConnFields() {
+            if (!connProtocol || !connFields) return;
             const proto = connProtocol.value;
             let html = '';
+            const isEn = (currentLang === 'en');
             if (proto === 'pyodide') {
-                html = `<span class="text-yellow-300 font-medium flex items-center gap-1.5"><i data-lucide="cpu" class="w-3.5 h-3.5 text-yellow-400"></i> <span data-i18n="pyodideStatusBadge">瀏覽器原生 Python</span></span>`;
+                html = `<span class="text-yellow-300 font-medium flex items-center gap-1.5"><i data-lucide="cpu" class="w-3.5 h-3.5 text-yellow-400"></i> <span data-i18n="pyodideStatusBadge">${t('pyodideStatusBadge') || (isEn ? 'Browser-Native Python' : '瀏覽器原生 Python')}</span></span>`;
             } else if (proto === 'ssh') {
                 html = `<input type="text" id="cfg-host" placeholder="Host (IP)" class="bg-gray-900 border border-gray-700 rounded px-2 py-1 w-28 text-xs font-mono">
                         <input type="number" id="cfg-port" value="22" class="bg-gray-900 border border-gray-700 rounded px-2 py-1 w-16 text-xs font-mono">
@@ -7180,16 +7191,16 @@ ${tools.join('\n')}${contextStr}
                 html = `<span id="term-wsl-badge" class="px-2 py-0.5 rounded bg-gray-900 border border-teal-800/60 text-[11px] font-mono text-teal-300 flex items-center gap-1">
                             <span class="w-2 h-2 rounded-full bg-teal-500"></span> <span>WSL Linux</span>
                         </span>
-                        <button type="button" onclick="checkWslStatus(true)" class="px-2 py-0.5 bg-gray-800 hover:bg-gray-700 text-teal-300 rounded text-[11px] font-medium cursor-pointer border border-teal-700/40">檢查狀態</button>
-                        <button type="button" onclick="startWslDesktopAndConnect('novnc')" class="px-2 py-0.5 bg-teal-800 hover:bg-teal-700 text-white rounded text-[11px] font-medium cursor-pointer">啟動桌面</button>`;
+                        <button type="button" onclick="checkWslStatus(true)" class="px-2 py-0.5 bg-gray-800 hover:bg-gray-700 text-teal-300 rounded text-[11px] font-medium cursor-pointer border border-teal-700/40">${isEn ? 'Check Status' : '檢查狀態'}</button>
+                        <button type="button" onclick="startWslDesktopAndConnect('novnc')" class="px-2 py-0.5 bg-teal-800 hover:bg-teal-700 text-white rounded text-[11px] font-medium cursor-pointer">${isEn ? 'Start Desktop' : '啟動桌面'}</button>`;
             } else if (proto === 'serial') {
-                html = `<span class="text-amber-400 font-medium flex items-center gap-1"><i data-lucide="cpu" class="w-3.5 h-3.5"></i> 後端 COM 埠:</span>
-                        <input type="text" id="cfg-port" placeholder="COM1 或 /dev/ttyUSB0" value="COM1" class="bg-gray-900 border border-gray-700 rounded px-2 py-1 w-32 text-xs font-mono" list="serial-port-datalist">
+                html = `<span class="text-amber-400 font-medium flex items-center gap-1"><i data-lucide="cpu" class="w-3.5 h-3.5"></i> ${isEn ? 'Backend COM:' : '後端 COM 埠:'}</span>
+                        <input type="text" id="cfg-port" placeholder="${isEn ? 'COM1 or /dev/ttyUSB0' : 'COM1 或 /dev/ttyUSB0'}" value="COM1" class="bg-gray-900 border border-gray-700 rounded px-2 py-1 w-32 text-xs font-mono" list="serial-port-datalist">
                         <datalist id="serial-port-datalist"><option value="COM1"><option value="COM2"><option value="COM3"><option value="COM4"></datalist>
                         <select id="cfg-baud" class="bg-gray-900 border border-gray-700 rounded px-2 py-1 text-xs font-mono">
                             <option value="9600">9600</option><option value="19200">19200</option><option value="38400">38400</option><option value="57600">57600</option><option value="115200" selected>115200</option>
                         </select>
-                        <button type="button" onclick="probeBackendSerialPorts()" class="px-2 py-0.5 bg-gray-800 hover:bg-gray-700 text-amber-300 rounded text-[11px] font-medium border border-gray-700 cursor-pointer" title="偵測本機所有可用 COM 埠">🔍 偵測 COM 埠</button>`;
+                        <button type="button" onclick="probeBackendSerialPorts()" class="px-2 py-0.5 bg-gray-800 hover:bg-gray-700 text-amber-300 rounded text-[11px] font-medium border border-gray-700 cursor-pointer" title="${isEn ? 'Detect available host COM ports' : '偵測本機所有可用 COM 埠'}">${isEn ? '🔍 Detect Ports' : '🔍 偵測 COM 埠'}</button>`;
             } else if (proto === 'webserial') {
                 html = `<span class="text-yellow-400 ml-1 font-medium flex items-center gap-1"><i data-lucide="cpu" class="w-3.5 h-3.5"></i> Web Serial</span>
                         <select id="cfg-baud" class="bg-gray-900 border border-gray-700 rounded px-2 py-1 ml-1 text-xs font-mono" title="通訊鮑率 (Baud Rate)">
@@ -7202,21 +7213,21 @@ ${tools.join('\n')}${contextStr}
                             <option value="460800">460800</option>
                             <option value="921600">921600</option>
                         </select>
-                        <button type="button" id="btn-serial-autoscroll" onclick="toggleSerialAutoScroll()" class="px-2 py-1 ml-1 rounded bg-gray-900 border border-gray-700 hover:bg-gray-800 text-xs font-mono flex items-center gap-1 ${isSerialAutoScrollEnabled ? 'text-emerald-400' : 'text-gray-400'}" title="鎖定/解鎖終端機即時捲動">
-                            <i data-lucide="arrow-down-to-line" class="w-3 h-3"></i> <span id="lbl-serial-autoscroll">${isSerialAutoScrollEnabled ? '捲動: 開' : '捲動: 關'}</span>
+                        <button type="button" id="btn-serial-autoscroll" onclick="toggleSerialAutoScroll()" class="px-2 py-1 ml-1 rounded bg-gray-900 border border-gray-700 hover:bg-gray-800 text-xs font-mono flex items-center gap-1 ${isSerialAutoScrollEnabled ? 'text-emerald-400' : 'text-gray-400'}" title="${isEn ? 'Toggle autoscroll' : '鎖定/解鎖終端機即時捲動'}">
+                            <i data-lucide="arrow-down-to-line" class="w-3 h-3"></i> <span id="lbl-serial-autoscroll">${isSerialAutoScrollEnabled ? (isEn ? 'Scroll: ON' : '捲動: 開') : (isEn ? 'Scroll: OFF' : '捲動: 關')}</span>
                         </button>
-                        <button type="button" id="btn-view-serial-log" onclick="openSerialLogModal()" class="px-2 py-1 ml-1 rounded bg-yellow-950/60 hover:bg-yellow-900/80 border border-yellow-800/60 text-yellow-400 text-xs font-medium flex items-center gap-1 cursor-pointer" title="查看無上限完整連線日誌">
-                            <i data-lucide="scroll-text" class="w-3 h-3"></i> <span>📜 完整日誌</span>
+                        <button type="button" id="btn-view-serial-log" onclick="openSerialLogModal()" class="px-2 py-1 ml-1 rounded bg-yellow-950/60 hover:bg-yellow-900/80 border border-yellow-800/60 text-yellow-400 text-xs font-medium flex items-center gap-1 cursor-pointer" title="${isEn ? 'View complete connection log' : '查看無上限完整連線日誌'}">
+                            <i data-lucide="scroll-text" class="w-3 h-3"></i> <span>${isEn ? '📜 Full Log' : '📜 完整日誌'}</span>
                         </button>
-                        <button type="button" id="btn-export-serial-log" onclick="exportSerialLog()" class="px-2 py-1 ml-1 rounded bg-blue-900/60 hover:bg-blue-800/80 border border-blue-700/60 text-blue-300 text-xs font-medium flex items-center gap-1 cursor-pointer" title="匯出完整日誌為 TXT 檔">
-                            <i data-lucide="download" class="w-3 h-3"></i> <span>💾 匯出</span>
+                        <button type="button" id="btn-export-serial-log" onclick="exportSerialLog()" class="px-2 py-1 ml-1 rounded bg-blue-900/60 hover:bg-blue-800/80 border border-blue-700/60 text-blue-300 text-xs font-medium flex items-center gap-1 cursor-pointer" title="${isEn ? 'Export full log as TXT' : '匯出完整日誌為 TXT 檔'}">
+                            <i data-lucide="download" class="w-3 h-3"></i> <span>${isEn ? '💾 Export' : '💾 匯出'}</span>
                         </button>`;
             } else if (proto === 'novnc') {
-                html = `<span class="text-blue-400 font-medium flex items-center gap-1"><i data-lucide="monitor" class="w-3.5 h-3.5"></i> noVNC 桌面模式</span>
-                        <button type="button" onclick="switchLeftMode('novnc')" class="px-2 py-0.5 bg-blue-600 hover:bg-blue-500 text-white rounded text-[11px] font-medium cursor-pointer">切換至桌面</button>`;
+                html = `<span class="text-blue-400 font-medium flex items-center gap-1"><i data-lucide="monitor" class="w-3.5 h-3.5"></i> ${isEn ? 'noVNC Desktop Mode' : 'noVNC 桌面模式'}</span>
+                        <button type="button" onclick="switchLeftMode('novnc')" class="px-2 py-0.5 bg-blue-600 hover:bg-blue-500 text-white rounded text-[11px] font-medium cursor-pointer">${isEn ? 'Switch to Desktop' : '切換至桌面'}</button>`;
             } else if (proto === 'xorg') {
-                html = `<span class="text-emerald-400 font-medium flex items-center gap-1"><i data-lucide="layout-grid" class="w-3.5 h-3.5"></i> Xorg 視窗模式 (DISPLAY=:0)</span>
-                        <button type="button" onclick="switchLeftMode('xorg')" class="px-2 py-0.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded text-[11px] font-medium cursor-pointer">切換至視窗</button>`;
+                html = `<span class="text-emerald-400 font-medium flex items-center gap-1"><i data-lucide="layout-grid" class="w-3.5 h-3.5"></i> ${isEn ? 'Xorg Window Mode (DISPLAY=:0)' : 'Xorg 視窗模式 (DISPLAY=:0)'}</span>
+                        <button type="button" onclick="switchLeftMode('xorg')" class="px-2 py-0.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded text-[11px] font-medium cursor-pointer">${isEn ? 'Switch to Window' : '切換至視窗'}</button>`;
             }
             connFields.innerHTML = html;
             if (window.lucide) lucide.createIcons();
