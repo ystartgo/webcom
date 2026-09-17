@@ -1347,7 +1347,7 @@
                     <button id="btn-open-jev-pill" type="button" onclick="openJevPlayground()"
                         class="text-xs bg-amber-950/60 hover:bg-amber-900/80 text-amber-300 px-2 py-1 rounded-md border border-amber-500/50 flex items-center gap-1 font-medium transition shadow-sm cursor-pointer whitespace-nowrap shrink-0"
                         title="開啟 Jev 極速單次傳播決策沙盒 (15ms 交叉編碼器)" data-i18n-title="tooltipQuickJev">
-                        <i data-lucide="zap" class="w-3.5 h-3.5 shrink-0 text-amber-400 fill-amber-400"></i> <span class="whitespace-nowrap">⚡ Jev 決策器</span>
+                        <i data-lucide="zap" class="w-3.5 h-3.5 shrink-0 text-amber-400 fill-amber-400"></i> <span class="whitespace-nowrap" data-i18n="btnJevDecider">⚡ Jev 決策器</span>
                     </button>
 
                     <button id="btn-open-app-lib" type="button" onclick="openAppLibraryModal()"
@@ -4169,6 +4169,7 @@ ffmpeg -f pulse -i default -acodec libmp3lame -ab 128k -f mp3 -listen 1 http://0
                 slashCmd18_desc: "開啟 Jev 單次傳播極速決策沙盒 (15ms 交叉編碼器)",
                 slashCmd18_payload: "/jev",
                 btnJevSandbox: "⚡ Jev 極速決策沙盒",
+                btnJevDecider: "⚡ Jev 決策器",
                 tooltipJevSandbox: "開啟 Jev 單次傳播極速決策沙盒 (~15ms Cross-Encoder)",
                 tooltipQuickJev: "開啟 Jev 極速單次傳播決策沙盒 (~15ms)",
                 btnNewChat: "新對話",
@@ -4978,6 +4979,7 @@ ffmpeg -f pulse -i default -acodec libmp3lame -ab 128k -f mp3 -listen 1 http://0
                 slashCmd18_desc: "Open Jev Single Forward-Pass Decision Sandbox (15ms Cross-Encoder)",
                 slashCmd18_payload: "/jev",
                 btnJevSandbox: "⚡ Jev Decision Sandbox",
+                btnJevDecider: "⚡ Jev Decider",
                 tooltipJevSandbox: "Open Jev Single Forward-Pass Decision Sandbox (~15ms Cross-Encoder)",
                 tooltipQuickJev: "Open Jev Single Forward-Pass Decision Sandbox (~15ms)",
                 btnNewChat: "New Chat",
@@ -7642,6 +7644,13 @@ ffmpeg -f pulse -i default -acodec libmp3lame -ab 128k -f mp3 -listen 1 http://0
                 engineSel.options[2].textContent = t('engineModeOnnx');
                 engineSel.options[3].textContent = t('engineModeCoThink');
                 engineSel.options[4].textContent = t('engineModeSupervise');
+            }
+
+            // ── Jev 決策器按鈕 翻譯 ──
+            const btnJevPill = document.getElementById('btn-open-jev-pill');
+            if (btnJevPill) {
+                const s = btnJevPill.querySelector('[data-i18n="btnJevDecider"]') || btnJevPill.querySelector('span');
+                if (s) s.textContent = t('btnJevDecider');
             }
 
             try { updateSlashCommands(); } catch (e) { console.warn('updateSlashCommands error:', e); }
@@ -13104,7 +13113,7 @@ Important guidelines:
 
             const art = {
                 id: JEV_ID,
-                title: '⚡ Jev 極速單次傳播決策沙盒 (Cross-Encoder / System 1)',
+                title: (typeof currentLang !== 'undefined' && currentLang === 'en') ? '⚡ Jev Decision Sandbox (Cross-Encoder / System 1)' : '⚡ Jev 極速單次傳播決策沙盒 (Cross-Encoder / System 1)',
                 type: 'html',
                 language: 'html',
                 fullContent: htmlContent,
