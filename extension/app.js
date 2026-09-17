@@ -4635,8 +4635,7 @@ if (!window.WTerm && window.WTermBundle) {
                         const isSvg = art.type === 'svg' || art.language === 'svg';
                         const isMd = art.type === 'markdown' || art.language === 'markdown';
                         if (isHtml) {
-                            const iframe = document.getElementById('drawer-artifact-iframe');
-                            if (iframe) iframe.srcdoc = art.fullContent;
+                            setArtifactIframeContent(art.fullContent);
                         } else if (isSvg) {
                             const nonHtml = document.getElementById('drawer-artifact-nonhtml');
                             if (nonHtml) nonHtml.innerHTML = `<div class="w-full flex justify-center items-center min-h-[300px] p-6">${art.fullContent}</div>`;
@@ -4837,8 +4836,7 @@ if (!window.WTerm && window.WTermBundle) {
             const activeId = artifactDrawerModal.getAttribute('data-active-id');
             const art = globalArtifactStore.get(activeId);
             if (art) {
-                const iframe = document.getElementById('drawer-artifact-iframe');
-                if (iframe) iframe.srcdoc = art.fullContent;
+                setArtifactIframeContent(art.fullContent);
             }
         });
 
@@ -8958,6 +8956,49 @@ Important guidelines:
             if (contentEl) contentEl.innerHTML = renderDiffLinesHtml(diff);
         }
 
+        let isArtifactSandboxReady = false;
+        let lastArtifactHtml = null;
+
+        window.addEventListener('message', (e) => {
+            if (e.data && e.data.type === 'SANDBOX_READY') {
+                isArtifactSandboxReady = true;
+                if (lastArtifactHtml !== null) {
+                    const iframe = document.getElementById('drawer-artifact-iframe');
+                    try {
+                        iframe?.contentWindow?.postMessage({ type: 'RENDER_CODE', html: lastArtifactHtml }, '*');
+                    } catch (err) {}
+                }
+            }
+        });
+
+        function setArtifactIframeContent(htmlContent) {
+            const iframe = document.getElementById('drawer-artifact-iframe');
+            if (!iframe) return;
+
+            const isExtension = typeof chrome !== 'undefined' && chrome.runtime && !!chrome.runtime.id;
+
+            if (isExtension) {
+                lastArtifactHtml = htmlContent;
+                const sandboxUrl = chrome.runtime.getURL('sandbox.html');
+                const isLoaded = iframe.src && iframe.src.includes('sandbox.html');
+                if (!isLoaded) {
+                    isArtifactSandboxReady = false;
+                    iframe.src = sandboxUrl;
+                    iframe.onload = () => {
+                        try {
+                            iframe.contentWindow?.postMessage({ type: 'RENDER_CODE', html: htmlContent }, '*');
+                        } catch (err) {}
+                    };
+                } else {
+                    try {
+                        iframe.contentWindow?.postMessage({ type: 'RENDER_CODE', html: htmlContent }, '*');
+                    } catch (err) {}
+                }
+            } else {
+                iframe.srcdoc = htmlContent;
+            }
+        }
+
         function renderDrawerContent(art) {
             const iframe = document.getElementById('drawer-artifact-iframe');
             const nonHtml = document.getElementById('drawer-artifact-nonhtml');
@@ -8972,7 +9013,7 @@ Important guidelines:
             if (isHtml) {
                 iframe.classList.remove('hidden');
                 nonHtml.classList.add('hidden');
-                iframe.srcdoc = art.fullContent;
+                setArtifactIframeContent(art.fullContent);
             } else if (isScript) {
                 iframe.classList.add('hidden');
                 nonHtml.classList.remove('hidden');
@@ -9000,7 +9041,7 @@ Important guidelines:
             const displayCode = currentVerObj.content;
 
             if (isHtml) {
-                iframe.srcdoc = displayCode;
+                setArtifactIframeContent(displayCode);
             } else if (isScript) {
                 renderScriptRunner(art);
             } else if (isSvg) {
@@ -16850,7 +16891,7 @@ Important guidelines:
                     name: currentLang === 'en' ? 'Pomodoro Focus Timer (番茄鐘高效專注計時器)' : '番茄鐘高效專注計時器 (Pomodoro Focus Timer)',
                     category: 'html',
                     icon: '⏱️',
-                    version: 'v1.2',
+                    version: 'v1.3',
                     desc: currentLang === 'en' ? 'Interactive Pomodoro focus timer with 25/50/5/15m preset modes, ±1/±5m quick adjustments, custom duration setting, visual progress ring, and audio chimes. (支援模式切換、增減微調與自訂時間)' : '支援 25/50/5/15 分鐘多模式即時切換、±1/±5 分快速微調、自訂時間設定、環形進度條與音效提示之番茄鐘專注工具。(Focus timer with mode switching, stepper adjustment & custom duration)',
                     prompt: currentLang === 'en' ? 'You are a productivity coach. Help the user optimize their focus sessions with this Pomodoro timer app. (你是一位專注力教練，請協助規劃並優化番茄鐘工作節奏。)' : '你是一位專注力教練。請根據使用者的工作節奏，協助引導番茄鐘專注循環，或按使用者需求調整計時參數與介面。(You are a productivity coach helping user optimize Pomodoro sessions.)',
                     code: `<!DOCTYPE html>
@@ -17095,10 +17136,10 @@ Important guidelines:
 
     <!-- Quick Mode Presets -->
     <div class="modes-grid">
-      <button type="button" class="mode-btn active" data-mins="25" onclick="setMode(25, this)">25分 專注</button>
-      <button type="button" class="mode-btn" data-mins="50" onclick="setMode(50, this)">50分 深度</button>
-      <button type="button" class="mode-btn" data-mins="5" onclick="setMode(5, this)">5分 短休</button>
-      <button type="button" class="mode-btn" data-mins="15" onclick="setMode(15, this)">15分 長休</button>
+      <button type="button" class="mode-btn active" id="mode-25" data-mins="25" onclick="setMode(25, this)">25分 專注</button>
+      <button type="button" class="mode-btn" id="mode-50" data-mins="50" onclick="setMode(50, this)">50分 深度</button>
+      <button type="button" class="mode-btn" id="mode-5" data-mins="5" onclick="setMode(5, this)">5分 短休</button>
+      <button type="button" class="mode-btn" id="mode-15" data-mins="15" onclick="setMode(15, this)">15分 長休</button>
     </div>
 
     <!-- Dial with SVG Progress Ring -->
@@ -17115,10 +17156,10 @@ Important guidelines:
 
     <!-- Step adjustment buttons (+ / -) -->
     <div class="stepper-row">
-      <button type="button" class="step-btn" onclick="adjustMinutes(-5)">-5分</button>
-      <button type="button" class="step-btn" onclick="adjustMinutes(-1)">-1分</button>
-      <button type="button" class="step-btn" onclick="adjustMinutes(1)">+1分</button>
-      <button type="button" class="step-btn" onclick="adjustMinutes(5)">+5分</button>
+      <button type="button" class="step-btn" id="step-m5" data-delta="-5" onclick="adjustMinutes(-5)">-5分</button>
+      <button type="button" class="step-btn" id="step-m1" data-delta="-1" onclick="adjustMinutes(-1)">-1分</button>
+      <button type="button" class="step-btn" id="step-p1" data-delta="1" onclick="adjustMinutes(1)">+1分</button>
+      <button type="button" class="step-btn" id="step-p5" data-delta="5" onclick="adjustMinutes(5)">+5分</button>
     </div>
 
     <!-- Custom time input row -->
@@ -17126,13 +17167,13 @@ Important guidelines:
       <span>自訂時間：</span>
       <input type="number" class="custom-input" id="custom-min" min="1" max="360" value="25" onkeydown="if(event.key==='Enter')applyCustomTime()">
       <span>分鐘</span>
-      <button type="button" class="custom-btn" onclick="applyCustomTime()">切換設定</button>
+      <button type="button" class="custom-btn" id="custom-apply-btn" onclick="applyCustomTime()">切換設定</button>
     </div>
 
     <!-- Controls -->
     <div class="action-row">
       <button type="button" class="main-btn" id="toggle-btn" onclick="toggleTimer()">開始專注</button>
-      <button type="button" class="sec-btn" onclick="resetTimer()">重置</button>
+      <button type="button" class="sec-btn" id="reset-btn" onclick="resetTimer()">重置</button>
     </div>
   </div>
 
@@ -17143,6 +17184,10 @@ Important guidelines:
     let isRunning = false;
     let currentModeName = '專注';
     let soundEnabled = true;
+    let lastToggleTime = 0;
+    let lastSoundToggleTime = 0;
+    let lastModeTime = 0;
+    let lastStepTime = 0;
     const CIRCLE_CIRCUMFERENCE = 2 * Math.PI * 88;
 
     function playBeep(freq = 880, duration = 0.18, type = 'sine') {
@@ -17165,6 +17210,9 @@ Important guidelines:
     }
 
     function toggleSound() {
+      const now = performance.now();
+      if (now - lastSoundToggleTime < 100) return;
+      lastSoundToggleTime = now;
       soundEnabled = !soundEnabled;
       const btn = document.getElementById('sound-toggle');
       if (btn) btn.textContent = soundEnabled ? '🔔 音效: 開' : '🔕 音效: 關';
@@ -17202,19 +17250,27 @@ Important guidelines:
     }
 
     function toggleTimer() {
+      const now = performance.now();
+      if (now - lastToggleTime < 100) return;
+      lastToggleTime = now;
+
       const btn = document.getElementById('toggle-btn');
       if (isRunning) {
         clearInterval(timer);
         timer = null;
         isRunning = false;
-        btn.textContent = '繼續計時';
-        btn.classList.remove('running');
+        if (btn) {
+          btn.textContent = '繼續計時';
+          btn.classList.remove('running');
+        }
         playBeep(440, 0.12);
         updateDisplay();
       } else {
         isRunning = true;
-        btn.textContent = '暫停計時';
-        btn.classList.add('running');
+        if (btn) {
+          btn.textContent = '暫停計時';
+          btn.classList.add('running');
+        }
         playBeep(659, 0.15);
         updateDisplay();
 
@@ -17226,8 +17282,10 @@ Important guidelines:
             clearInterval(timer);
             timer = null;
             isRunning = false;
-            btn.textContent = '開始' + currentModeName;
-            btn.classList.remove('running');
+            if (btn) {
+              btn.textContent = '開始' + currentModeName;
+              btn.classList.remove('running');
+            }
             updateDisplay();
 
             playBeep(587, 0.15);
@@ -17255,6 +17313,10 @@ Important guidelines:
     }
 
     function setMode(mins, btnEl) {
+      const now = performance.now();
+      if (now - lastModeTime < 80) return;
+      lastModeTime = now;
+
       document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
       if (btnEl) {
         btnEl.classList.add('active');
@@ -17274,6 +17336,10 @@ Important guidelines:
     }
 
     function adjustMinutes(delta) {
+      const now = performance.now();
+      if (now - lastStepTime < 80) return;
+      lastStepTime = now;
+
       let currentMins = Math.floor(remain / 60);
       let newMins = Math.max(1, Math.min(360, currentMins + delta));
       let currentSecs = remain % 60;
@@ -17318,6 +17384,42 @@ Important guidelines:
         input.focus();
         input.select();
       }
+    }
+
+    function initEventListeners() {
+      document.addEventListener('click', (e) => {
+        const btn = e.target.closest('button, .display');
+        if (!btn) return;
+        if (btn.id === 'sound-toggle') {
+          toggleSound();
+        } else if (btn.id === 'toggle-btn') {
+          toggleTimer();
+        } else if (btn.id === 'reset-btn' || btn.classList.contains('sec-btn')) {
+          resetTimer();
+        } else if (btn.id === 'custom-apply-btn' || btn.classList.contains('custom-btn')) {
+          applyCustomTime();
+        } else if (btn.id === 'time') {
+          focusCustomInput();
+        } else if (btn.classList.contains('mode-btn')) {
+          const mins = parseInt(btn.getAttribute('data-mins'));
+          if (!isNaN(mins)) setMode(mins, btn);
+        } else if (btn.classList.contains('step-btn')) {
+          const delta = parseInt(btn.getAttribute('data-delta') || btn.textContent);
+          if (!isNaN(delta)) adjustMinutes(delta);
+        }
+      });
+
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && e.target && e.target.id === 'custom-min') {
+          applyCustomTime();
+        }
+      });
+    }
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', initEventListeners);
+    } else {
+      initEventListeners();
     }
 
     window.setMode = setMode;
@@ -17761,7 +17863,7 @@ if __name__ == "__main__":
                 if (iframe) {
                     iframe.classList.remove('hidden');
                     if (nonHtml) nonHtml.classList.add('hidden');
-                    iframe.srcdoc = app.code;
+                    setArtifactIframeContent(app.code);
                 }
             }
         };

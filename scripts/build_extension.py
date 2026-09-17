@@ -115,6 +115,13 @@ def build_extension():
             shutil.copy2(s_path, d_path)
     print("  [✔] 成功同步必備 assets (Tailwind, Lucide, Marked, WTerm, noVNC, WebLLM, html2canvas)")
 
+    # 5.1 複製沙盒隔離頁面 (用於 Chrome MV3 執行富文本/自建應用之 HTML Artifacts)
+    sandbox_src = os.path.join(BASE_DIR, "sandbox.html")
+    sandbox_dst = os.path.join(EXT_DIR, "sandbox.html")
+    if os.path.exists(sandbox_src):
+        shutil.copy2(sandbox_src, sandbox_dst)
+        print("  [✔] 成功同步 Chrome MV3 專屬沙盒頁面 (sandbox.html)")
+
     # 6. 同步 pyodide 子專案核心
     src_pyodide = os.path.join(BASE_DIR, "pyodide")
     dst_pyodide = os.path.join(EXT_DIR, "pyodide")
