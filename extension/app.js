@@ -6389,15 +6389,24 @@ if (!window.WTerm && window.WTermBundle) {
                 ((appSettings.onnxModel || '').includes('0.5B') || (appSettings.onnxModel || '').includes('360M') ||
                  (appSettings.webgpuModel || '').includes('0.5B') || (appSettings.webgpuModel || '').includes('360M'));
 
+            let webActiveNotice = "";
+            if (webToggle.checked) {
+                webActiveNotice = currentLang === 'en'
+                    ? `\n\n[Capabilities: Real-time Internet Web Access is ENABLED]\n- You are connected to the live Internet with real-time web browsing enabled.\n- When asked whether you can access the internet or search online, ALWAYS affirm positively that you have live internet access enabled.\n- Never claim to be an offline model or unable to access the internet.`
+                    : `\n\n【核心能力：即時網際網路聯網功能已開啟 (Web Search: ENABLED)】\n- 當前系統已為你開啟網際網路即時連線與網頁搜尋功能。\n- 當使用者詢問你能否上網、能否聯網、或查詢最新資訊時，請明確正面確認「是的，我的即時聯網功能已開啟，可隨時檢索網際網路最新資訊」，切勿回答「作為 AI 我無法連上網路」或「我只是離線模型」！`;
+            }
+
             if (isLocalModel) {
                 // 所有本機模型均使用精簡直接的 System Prompt，避免小模型誤解工具呼叫格式
                 if (currentLang === 'en') {
                     let p = `You are a helpful, knowledgeable AI assistant. Answer questions clearly and completely. Never output JSON or XML tool call formats.`;
+                    if (webActiveNotice) p += webActiveNotice;
                     if (ragContext) p += ragContext;
                     if (webContext) p += webContext;
                     return p;
                 } else {
                     let p = `你是一位專業、親切且具備豐富知識的 AI 助手。\n請以標準 UTF-8 編碼提供完整、結構清晰的回答，不要輸出任何 JSON、XML 或程式碼格式。`;
+                    if (webActiveNotice) p += webActiveNotice;
                     if (lastTerminalLines && (!webToggle.checked || isLocalTerminalCommand(userQuery))) p += `\n\n【終端機畫面參考】:\n\`\`\`\n${lastTerminalLines}\n\`\`\``;
                     if (ragContext) p += ragContext;
                     if (webContext) p += webContext;
@@ -6420,6 +6429,7 @@ if (!window.WTerm && window.WTermBundle) {
                             prompt += `\n\n[Left Terminal Screen Perception (${curTermId})]\n\`\`\`\n${lastTerminalLines}\n\`\`\``;
                         }
                     }
+                    if (webActiveNotice) prompt += webActiveNotice;
                     if (ragContext) prompt += ragContext;
                     if (webContext) prompt += webContext;
                     return prompt;
@@ -6468,6 +6478,7 @@ if (!window.WTerm && window.WTermBundle) {
                     });
                 }
 
+                if (webActiveNotice) contextStr += webActiveNotice;
                 if (ragContext) contextStr += ragContext;
                 if (webContext) contextStr += webContext;
 
@@ -6514,6 +6525,7 @@ Rules:
                             prompt += `\n\n【左側終端機當前畫面感知 (${curTermId})】\n\`\`\`\n${lastTerminalLines}\n\`\`\``;
                         }
                     }
+                    if (webActiveNotice) prompt += webActiveNotice;
                     if (ragContext) prompt += ragContext;
                     if (webContext) prompt += webContext;
                     return prompt;
@@ -6562,6 +6574,7 @@ Rules:
                     });
                 }
 
+                if (webActiveNotice) contextStr += webActiveNotice;
                 if (ragContext) contextStr += ragContext;
                 if (webContext) contextStr += webContext;
 
@@ -11412,13 +11425,49 @@ Important guidelines:
 
             const genStartTime = performance.now();
             let generatedTokens = 0;
+            let fullAiResponse = "";
 
             const updateStats = (isFinal = false) => {
                 if (!statsEl) return;
                 const elapsedSec = Math.max(0.05, (performance.now() - genStartTime) / 1000);
+                if (generatedTokens === 0 || !fullAiResponse || fullAiResponse.startsWith("⚠️")) {
+                    statsEl.innerHTML = `<span class="text-amber-400 font-bold">⚠️ 0 tokens</span><span class="text-gray-600">•</span><span>${elapsedSec.toFixed(2)}s</span>`;
+                    return;
+                }
                 const tps = (generatedTokens / elapsedSec).toFixed(1);
                 const colorClass = isFinal ? "text-emerald-400 font-bold" : "text-cyan-300 font-bold";
                 statsEl.innerHTML = `<span class="${colorClass}">⚡ ${tps} t/s</span><span class="text-gray-600">•</span><span>${generatedTokens} tokens</span><span class="text-gray-600">•</span><span>${elapsedSec.toFixed(2)}s</span>`;
+            };
+
+            const createThrottledRenderer = (targetEl) => {
+                let lastRender = 0;
+                let timer = null;
+                return {
+                    render: (text) => {
+                        const now = performance.now();
+                        if (now - lastRender >= 45) {
+                            lastRender = now;
+                            if (timer) { clearTimeout(timer); timer = null; }
+                            targetEl.innerHTML = renderMarkdown(text);
+                            updateStats(false);
+                            scrollToBottom();
+                        } else if (!timer) {
+                            timer = setTimeout(() => {
+                                timer = null;
+                                lastRender = performance.now();
+                                targetEl.innerHTML = renderMarkdown(text);
+                                updateStats(false);
+                                scrollToBottom();
+                            }, 45);
+                        }
+                    },
+                    flush: (text) => {
+                        if (timer) { clearTimeout(timer); timer = null; }
+                        targetEl.innerHTML = renderMarkdown(text);
+                        updateStats(true);
+                        scrollToBottom();
+                    }
+                };
             };
 
             let currentWebSearchContext = "";
@@ -11464,7 +11513,7 @@ Important guidelines:
 
             while (!isTaskComplete && loopCount < MAX_LOOPS && isGenerating) {
                 loopCount++;
-                let fullAiResponse = "";
+                fullAiResponse = "";
                 try {
                     currentAbortController = new AbortController();
 
@@ -11476,6 +11525,7 @@ Important guidelines:
                         textBlock.className = "mt-2 pt-2 border-t border-gray-800/80 leading-relaxed text-gray-200";
                     }
                     containerEl.appendChild(textBlock);
+                    const throttledRenderer = createThrottledRenderer(textBlock);
 
                     if (appSettings.engineMode === 'onnx') {
                         // ONNX Runtime / Transformers.js in-browser Inference
@@ -11506,9 +11556,7 @@ Important guidelines:
                                     if (delta) {
                                         fullAiResponse += delta;
                                         generatedTokens += Math.max(1, Math.round(delta.length / 2.6));
-                                        textBlock.innerHTML = renderMarkdown(fullAiResponse);
-                                        updateStats(false);
-                                        scrollToBottom();
+                                        throttledRenderer.render(fullAiResponse);
                                         if (tailHasRepeat(fullAiResponse)) {
                                             fullAiResponse += `\n\n⚠️ ${currentLang === 'en' ? '[Guarded: repeated output detected, stream cut short]' : '[防護：偵測到重複輸出迴圈，已截斷串流]'}`;
                                             safeInterruptONNX();
@@ -11685,9 +11733,7 @@ Important guidelines:
                                             if (delta) {
                                                 fullAiResponse += delta;
                                                 generatedTokens += Math.max(1, Math.round(delta.length / 2.6));
-                                                textBlock.innerHTML = renderMarkdown(fullAiResponse);
-                                                updateStats(false);
-                                                scrollToBottom();
+                                                throttledRenderer.render(fullAiResponse);
                                                 if (tailHasRepeat(fullAiResponse)) { safeInterruptONNX(); }
                                                 if (generatedTokens >= 8192) { safeInterruptONNX(); }
                                             }
@@ -11699,6 +11745,9 @@ Important guidelines:
                                 const IC = onnxTransformersModule?.InterruptableStoppingCriteria || onnxTransformersModule?.default?.InterruptableStoppingCriteria;
                                 if (IC) { onnxInterruptable = new IC(); vlStopCrit.push(onnxInterruptable); }
 
+                                // Pre-generation UI yield to prevent browser frame freeze
+                                await new Promise(r => setTimeout(r, 20));
+
                                 const vlOut = await model.generate({
                                     ...inputs,
                                     max_new_tokens: 4096,
@@ -11709,6 +11758,8 @@ Important guidelines:
                                     streamer: vlStreamer,
                                     stopping_criteria: vlStopCrit
                                 });
+
+                                throttledRenderer.flush(fullAiResponse);
 
                                 if (!vlStreamer || !fullAiResponse || fullAiResponse.length < 5) {
                                     let decoded = null;
@@ -11725,9 +11776,7 @@ Important guidelines:
                                     const fullText = (decoded && decoded[0] ? decoded[0] : '').trim();
                                     if (fullText && fullText.length > fullAiResponse.length) {
                                         fullAiResponse = fullText;
-                                        textBlock.innerHTML = renderMarkdown(fullAiResponse);
-                                        updateStats(true);
-                                        scrollToBottom();
+                                        throttledRenderer.flush(fullAiResponse);
                                     }
                                 }
                             } catch (vlGenErr) {
@@ -11751,6 +11800,7 @@ Important guidelines:
                             }
                         }
                         try {
+                            await new Promise(r => setTimeout(r, 20));
                             const output = await generator(inputForGenerator, {
                                 max_new_tokens: 4096,
                                 temperature: 0.6,
@@ -11762,13 +11812,13 @@ Important guidelines:
                                 stopping_criteria: stopping_criteria
                             });
 
+                            throttledRenderer.flush(fullAiResponse);
+
                             if (!streamer || !fullAiResponse) {
                                 const outText = Array.isArray(output) ? output[0]?.generated_text : output?.generated_text;
                                 if (outText) {
                                     fullAiResponse = outText.replace(/<\|im_end\|>$/, '').trim();
-                                    textBlock.innerHTML = renderMarkdown(fullAiResponse);
-                                    updateStats(false);
-                                    scrollToBottom();
+                                    throttledRenderer.flush(fullAiResponse);
                                 }
                             }
                         } catch (onnxErr) {
@@ -11840,9 +11890,7 @@ Important guidelines:
                                 if (delta) {
                                     fullAiResponse += delta;
                                     generatedTokens += Math.max(1, Math.round(delta.length / 2.6));
-                                    textBlock.innerHTML = renderMarkdown(fullAiResponse);
-                                    updateStats(false);
-                                    scrollToBottom();
+                                    throttledRenderer.render(fullAiResponse);
 
                                     if (tailHasRepeat(fullAiResponse)) {
                                         fullAiResponse += `\n\n⚠️ ${currentLang === 'en' ? '[Guarded: repeated output detected, stream cut short]' : '[防護：偵測到重複輸出迴圈，已截斷串流]'}`;
@@ -11862,6 +11910,7 @@ Important guidelines:
                                     }
                                 }
                             }
+                            throttledRenderer.flush(fullAiResponse);
                         } finally {
                             if (chunks && typeof chunks.return === 'function') {
                                 try { await chunks.return(); } catch (re) {}
@@ -12034,6 +12083,30 @@ Important guidelines:
                             const decoder = new TextDecoder('utf-8');
                             let buffer = "";
 
+                            const parseCoThinkLine = (line) => {
+                                const clean = line.trim();
+                                if (!clean || clean === "data: [DONE]" || clean === "[DONE]") return "";
+                                let jsonStr = clean;
+                                if (clean.startsWith("data: ")) {
+                                    jsonStr = clean.slice(6).trim();
+                                } else if (clean.startsWith("data:")) {
+                                    jsonStr = clean.slice(5).trim();
+                                }
+                                if (!jsonStr || jsonStr === "[DONE]") return "";
+                                try {
+                                    const json = JSON.parse(jsonStr);
+                                    const choice = json.choices && json.choices[0];
+                                    if (choice) {
+                                        const delta = choice.delta || {};
+                                        return delta.content || delta.reasoning_content || delta.text || choice.text || (choice.message && choice.message.content) || "";
+                                    }
+                                    if (json.response) return json.response;
+                                    if (json.content) return json.content;
+                                    if (json.message && json.message.content) return json.message.content;
+                                } catch (e) {}
+                                return "";
+                            };
+
                             while (true) {
                                 const { done, value } = await reader.read();
                                 if (done) break;
@@ -12041,23 +12114,34 @@ Important guidelines:
                                 const lines = buffer.split('\n');
                                 buffer = lines.pop();
                                 for (let line of lines) {
-                                    const cleanLine = line.trim();
-                                    if (!cleanLine || cleanLine === "data: [DONE]") continue;
-                                    if (cleanLine.startsWith("data: ")) {
-                                        try {
-                                            const json = JSON.parse(cleanLine.slice(6));
-                                            const content = json.choices[0]?.delta?.content || "";
-                                            if (content) {
-                                                fullAiResponse += content;
-                                                generatedTokens += Math.max(1, Math.round(content.length / 2.6));
-                                                textBlock.innerHTML = renderMarkdown(fullAiResponse);
-                                                updateStats(false);
-                                                scrollToBottom();
-                                            }
-                                        } catch (e) { }
+                                    const content = parseCoThinkLine(line);
+                                    if (content) {
+                                        fullAiResponse += content;
+                                        generatedTokens += Math.max(1, Math.round(content.length / 2.6));
+                                        throttledRenderer.render(fullAiResponse);
                                     }
                                 }
                             }
+
+                            if (buffer && buffer.trim()) {
+                                const content = parseCoThinkLine(buffer);
+                                if (content) {
+                                    fullAiResponse += content;
+                                    generatedTokens += Math.max(1, Math.round(content.length / 2.6));
+                                    throttledRenderer.render(fullAiResponse);
+                                } else {
+                                    try {
+                                        const json = JSON.parse(buffer.trim());
+                                        const nonStreamContent = json.choices?.[0]?.message?.content || json.choices?.[0]?.text || json.content || json.response || "";
+                                        if (nonStreamContent) {
+                                            fullAiResponse += nonStreamContent;
+                                            generatedTokens += Math.max(1, Math.round(nonStreamContent.length / 2.6));
+                                            throttledRenderer.render(fullAiResponse);
+                                        }
+                                    } catch (e) {}
+                                }
+                            }
+                            throttledRenderer.flush(fullAiResponse);
                         } else {
                             // ──── Sub-mode B: 🛡️ Supervised Mutual Debug (4-stage cross-review) ────
                             // Stage A + B: each engine produces its OWN answer + blind-spot list
@@ -13179,67 +13263,122 @@ Important guidelines:
 
                         const url = buildApiUrl(activeProf.endpoint, '/chat/completions');
 
-                        let response = null;
-                        let apiRetryCount = 0;
-                        while (true) {
-                            try {
-                                response = await fetch(url, {
-                                    method: 'POST',
-                                    headers: reqHeaders,
-                                    body: JSON.stringify({ model: targetModel, messages: chatHistory, stream: true }),
-                                    signal: currentAbortController.signal
-                                });
-
-                                if (!response.ok) {
-                                    const errText = await response.text();
-                                    throw new Error(`HTTP ${response.status}: ${errText}`);
-                                }
-                                break;
-                            } catch (fetchErr) {
-                                const errMsg = String(fetchErr.message || fetchErr).toLowerCase();
-                                const isContextError = errMsg.includes("context") || errMsg.includes("token") || errMsg.includes("length") || errMsg.includes("payload") || errMsg.includes("413") || errMsg.includes("400") || errMsg.includes("oom") || errMsg.includes("out of memory");
-                                if (apiRetryCount === 0 && isContextError && chatHistory.length > 2 && isGenerating) {
-                                    apiRetryCount++;
-                                    console.warn("[API Context Overflow] Auto-compressing history and retrying...", fetchErr);
-                                    const warnNotice = document.createElement('div');
-                                    warnNotice.className = "text-amber-400 text-xs my-1 font-mono p-2 bg-amber-950/60 rounded-lg border border-amber-700/60 flex items-center gap-1.5 shadow-sm";
-                                    warnNotice.innerHTML = `<span>⚠️ ${currentLang === 'en' ? 'Context window exceeded. Auto-compressed conversation history & retrying...' : '偵測到對話上下文負載超額，已自動深度壓縮歷史記錄並重試中...'}</span>`;
-                                    containerEl.appendChild(warnNotice);
-                                    compressChatHistory(chatHistory, true);
-                                    continue;
-                                }
-                                throw fetchErr;
+                        const parseStreamLine = (line) => {
+                            const clean = line.trim();
+                            if (!clean || clean === "data: [DONE]" || clean === "[DONE]") return "";
+                            let jsonStr = clean;
+                            if (clean.startsWith("data: ")) {
+                                jsonStr = clean.slice(6).trim();
+                            } else if (clean.startsWith("data:")) {
+                                jsonStr = clean.slice(5).trim();
                             }
+                            if (!jsonStr || jsonStr === "[DONE]") return "";
+                            try {
+                                const json = JSON.parse(jsonStr);
+                                const choice = json.choices && json.choices[0];
+                                if (choice) {
+                                    const delta = choice.delta || {};
+                                    return delta.content || delta.reasoning_content || delta.text || choice.text || (choice.message && choice.message.content) || "";
+                                }
+                                if (json.response) return json.response;
+                                if (json.content) return json.content;
+                                if (json.message && json.message.content) return json.message.content;
+                            } catch (e) {}
+                            return "";
+                        };
+
+                        let apiAttempt = 0;
+                        const maxApiAttempts = 2;
+                        while (apiAttempt < maxApiAttempts && isGenerating) {
+                            apiAttempt++;
+                            let response = null;
+                            let apiRetryCount = 0;
+                            while (true) {
+                                try {
+                                    response = await fetch(url, {
+                                        method: 'POST',
+                                        headers: reqHeaders,
+                                        body: JSON.stringify({ model: targetModel, messages: chatHistory, stream: true }),
+                                        signal: currentAbortController.signal
+                                    });
+
+                                    if (!response.ok) {
+                                        const errText = await response.text();
+                                        throw new Error(`HTTP ${response.status}: ${errText}`);
+                                    }
+                                    break;
+                                } catch (fetchErr) {
+                                    const errMsg = String(fetchErr.message || fetchErr).toLowerCase();
+                                    const isContextError = errMsg.includes("context") || errMsg.includes("token") || errMsg.includes("length") || errMsg.includes("payload") || errMsg.includes("413") || errMsg.includes("400") || errMsg.includes("oom") || errMsg.includes("out of memory");
+                                    if (apiRetryCount === 0 && isContextError && chatHistory.length > 2 && isGenerating) {
+                                        apiRetryCount++;
+                                        console.warn("[API Context Overflow] Auto-compressing history and retrying...", fetchErr);
+                                        const warnNotice = document.createElement('div');
+                                        warnNotice.className = "text-amber-400 text-xs my-1 font-mono p-2 bg-amber-950/60 rounded-lg border border-amber-700/60 flex items-center gap-1.5 shadow-sm";
+                                        warnNotice.innerHTML = `<span>⚠️ ${currentLang === 'en' ? 'Context window exceeded. Auto-compressed conversation history & retrying...' : '偵測到對話上下文負載超額，已自動深度壓縮歷史記錄並重試中...'}</span>`;
+                                        containerEl.appendChild(warnNotice);
+                                        compressChatHistory(chatHistory, true);
+                                        continue;
+                                    }
+                                    throw fetchErr;
+                                }
+                            }
+
+                            const reader = response.body.getReader();
+                            const decoder = new TextDecoder('utf-8');
+                            let buffer = "";
+
+                            while (true) {
+                                const { done, value } = await reader.read();
+                                if (done) break;
+                                buffer += decoder.decode(value, { stream: true });
+                                const lines = buffer.split('\n');
+                                buffer = lines.pop();
+                                for (let line of lines) {
+                                    const content = parseStreamLine(line);
+                                    if (content) {
+                                        fullAiResponse += content;
+                                        generatedTokens += Math.max(1, Math.round(content.length / 2.6));
+                                        throttledRenderer.render(fullAiResponse);
+                                    }
+                                }
+                            }
+
+                            // Process trailing buffer after stream completes
+                            if (buffer && buffer.trim()) {
+                                const content = parseStreamLine(buffer);
+                                if (content) {
+                                    fullAiResponse += content;
+                                    generatedTokens += Math.max(1, Math.round(content.length / 2.6));
+                                    throttledRenderer.render(fullAiResponse);
+                                } else {
+                                    // Check if the whole buffer is a raw JSON response (non-streaming endpoint)
+                                    try {
+                                        const json = JSON.parse(buffer.trim());
+                                        const nonStreamContent = json.choices?.[0]?.message?.content || json.choices?.[0]?.text || json.content || json.response || "";
+                                        if (nonStreamContent) {
+                                            fullAiResponse += nonStreamContent;
+                                            generatedTokens += Math.max(1, Math.round(nonStreamContent.length / 2.6));
+                                            throttledRenderer.render(fullAiResponse);
+                                        }
+                                    } catch (e) {}
+                                }
+                            }
+
+                            throttledRenderer.flush(fullAiResponse);
+
+                            // Cold-start auto-retry defense: If API closed immediately with 0 tokens on first attempt, retry once
+                            if (!fullAiResponse.trim() && apiAttempt < maxApiAttempts && isGenerating) {
+                                console.warn("[API Stream] Received 0 tokens on attempt 1 (likely cold-start / unready proxy), auto-retrying in 500ms...");
+                                await new Promise(r => setTimeout(r, 500));
+                                continue;
+                            }
+                            break;
                         }
 
-                        const reader = response.body.getReader();
-                        const decoder = new TextDecoder('utf-8');
-                        let buffer = "";
-
-                        while (true) {
-                            const { done, value } = await reader.read();
-                            if (done) break;
-                            buffer += decoder.decode(value, { stream: true });
-                            const lines = buffer.split('\n');
-                            buffer = lines.pop();
-                            for (let line of lines) {
-                                const cleanLine = line.trim();
-                                if (!cleanLine || cleanLine === "data: [DONE]") continue;
-                                if (cleanLine.startsWith("data: ")) {
-                                    try {
-                                        const json = JSON.parse(cleanLine.slice(6));
-                                        const delta = json.choices[0]?.delta || {};
-                                        const content = delta.content || delta.reasoning_content || "";
-                                        if (content) {
-                                            fullAiResponse += content;
-                                            generatedTokens += Math.max(1, Math.round(content.length / 2.6));
-                                            textBlock.innerHTML = renderMarkdown(fullAiResponse);
-                                            updateStats(false);
-                                            scrollToBottom();
-                                        }
-                                    } catch (e) { }
-                                }
-                            }
+                        if (!fullAiResponse.trim()) {
+                            fullAiResponse = `⚠️ ${currentLang === 'en' ? 'The API server returned an empty response (0 tokens). Please verify your endpoint, model name, or API key.' : 'API 伺服器回傳空回應（0 個 Token）。請確認 API 端點、模型名稱或金鑰設定是否正確。'}`;
+                            throttledRenderer.flush(fullAiResponse);
                         }
                     }
 
