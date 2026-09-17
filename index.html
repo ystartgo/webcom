@@ -20640,43 +20640,114 @@ Important guidelines:
                     name: currentLang === 'en' ? 'Network Ping & Port Diagnostic (網路連線檢測診斷腳本)' : '網路連線檢測診斷腳本 (Network Ping & Port Diagnostic)',
                     category: 'py',
                     icon: '🌐',
-                    version: 'v1.1',
-                    desc: currentLang === 'en' ? 'Python diagnostic script for multi-host ICMP Ping latency checks and TCP port reachability testing. (支援多重主機 Ping 延遲檢驗與 TCP 連接埠暢通度測試)' : '支援多重主機 Ping 延遲檢驗與 TCP 連接埠暢通度測試的 Python 診斷工具。(Multi-host Ping latency & TCP port connectivity check)',
+                    version: 'v1.2',
+                    desc: currentLang === 'en' ? 'Python diagnostic script for multi-host ping latency checks and connectivity testing, with automatic Pyodide WASM & Native Python adaptation. (支援多重主機 Ping 延遲檢驗與連線暢通度測試，具備 Pyodide 瀏覽器端自動適配)' : '支援多重主機 Ping 延遲檢驗與連線暢通度測試的 Python 診斷工具，具備本地原生與瀏覽器 Pyodide WASM 雙模式智慧適配。(Multi-host Ping latency & connectivity check with Pyodide WASM support)',
                     prompt: currentLang === 'en' ? 'You are a network engineer. Analyze connection latencies or modify diagnostic targets according to user requirements. (你是一位網路工程師，請協助分析檢測結果或調整主機清單。)' : '你是一位網路工程師。請協助分析以下腳本的檢測結果，或按使用者網路架構調整檢測主機清單。(You are a network engineer assisting with connection tests.)',
                     code: `#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Webcom Network Connectivity Diagnostic Tool
-支援多主機 Ping 延遲與 TCP 連接埠檢測
+Webcom Network Connectivity & Latency Diagnostic Tool
+支援多主機 Ping 延遲與連線暢通度檢測
+具備智慧雙環境適配：支援本地 Python (TCP Socket) 與瀏覽器端 (Pyodide WASM / Web API)
 """
 
-import socket
+import sys
 import time
 
+IS_PYODIDE = ('pyodide' in sys.modules or sys.platform == 'emscripten')
+
 TARGETS = [
-    {"name": "Local Gateway", "host": "127.0.0.1", "port": 8001},
-    {"name": "Cloudflare DNS", "host": "1.1.1.1", "port": 53},
-    {"name": "Google DNS", "host": "8.8.8.8", "port": 53},
+    {
+        "name": "Local Daemon",
+        "host": "127.0.0.1",
+        "port": 8001,
+        "url": "http://127.0.0.1:8001/health",
+        "desc": "Webcom 本機常駐服務 (Port 8001)"
+    },
+    {
+        "name": "Cloudflare DNS",
+        "host": "1.1.1.1",
+        "port": 53,
+        "url": "https://1.1.1.1/cdn-cgi/trace",
+        "desc": "Cloudflare 全球節點 (1.1.1.1)"
+    },
+    {
+        "name": "Google DNS",
+        "host": "8.8.8.8",
+        "port": 53,
+        "url": "https://dns.google/resolve?name=example.com",
+        "desc": "Google 公共 DNS (8.8.8.8)"
+    },
+    {
+        "name": "Public CDN",
+        "host": "cdn.jsdelivr.net",
+        "port": 443,
+        "url": "https://cdn.jsdelivr.net",
+        "desc": "全球 CDN 靜態資源節點"
+    }
 ]
 
-def check_target(name, host, port, timeout=2.0):
+def check_target_socket(target, timeout=2.5):
+    import socket
     start = time.perf_counter()
+    endpoint = f"{target['host']}:{target['port']}"
+    with socket.create_connection((target["host"], target["port"]), timeout=timeout):
+        elapsed_ms = (time.perf_counter() - start) * 1000
+        return True, f"{elapsed_ms:.1f} ms", endpoint
+
+def check_target_web(target, timeout=3.0):
+    start = time.perf_counter()
+    target_url = target.get("url") or f"https://{target['host']}"
+    # 策略 1: pyodide.http.open_url (Pyodide 官方同步 HTTP 核心)
     try:
-        with socket.create_connection((host, port), timeout=timeout):
+        from pyodide.http import open_url
+        res = open_url(target_url)
+        elapsed_ms = (time.perf_counter() - start) * 1000
+        disp = target_url.split("?")[0].replace("https://", "").replace("http://", "")
+        return True, f"{elapsed_ms:.1f} ms", disp
+    except Exception:
+        pass
+
+    # 策略 2: urllib.request (標準 Python 或 Pyodide 降級相容)
+    try:
+        import urllib.request
+        req = urllib.request.Request(
+            target_url,
+            headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) WebcomPing/1.0", "Accept": "*/*"}
+        )
+        with urllib.request.urlopen(req, timeout=timeout) as res:
             elapsed_ms = (time.perf_counter() - start) * 1000
-            return True, f"{elapsed_ms:.1f} ms"
+            disp = target_url.split("?")[0].replace("https://", "").replace("http://", "")
+            return True, f"{elapsed_ms:.1f} ms", disp
     except Exception as err:
-        return False, str(err)
+        disp = target_url.split("?")[0].replace("https://", "").replace("http://", "")
+        return False, str(err), disp
+
+def check_target(target):
+    if not IS_PYODIDE:
+        try:
+            return check_target_socket(target)
+        except Exception:
+            return check_target_web(target)
+    else:
+        # Pyodide 運行於瀏覽器沙箱環境，自動調用 Web API 延遲探測
+        return check_target_web(target)
 
 def main():
-    print("=" * 60)
-    print("  Webcom 網路連線快速診斷")
-    print("=" * 60)
+    env_str = "Pyodide WASM (瀏覽器端獨立運算沙箱)" if IS_PYODIDE else f"Native Host Python ({sys.version.split()[0]})"
+    print("=" * 66)
+    print(f"  Webcom 網路連線快速診斷")
+    print(f"  執行環境: {env_str}")
+    print("=" * 66)
     for t in TARGETS:
-        ok, res = check_target(t["name"], t["host"], t["port"])
+        ok, res, endpoint = check_target(t)
         status = "[PASS]" if ok else "[FAIL]"
-        print(f" {status:<6} {t['name']:<20} {t['host']}:{t['port']:<6} -> {res}")
-    print("=" * 60)
+        print(f" {status:<6} {t['name']:<22} {endpoint:<26} -> {res}")
+    print("=" * 66)
+    if IS_PYODIDE:
+        print(" 💡 說明：瀏覽器端 WebAssembly 沙箱安全機制禁止直接開啟 RAW TCP/ICMP")
+        print("    Sockets，本工具已自動適配為高精度 Web API 延遲探測 (支援 DoH/CDN/8001)。")
+        print("=" * 66)
 
 if __name__ == "__main__":
     main()`,
@@ -20755,6 +20826,23 @@ if __name__ == "__main__":
                 const raw = localStorage.getItem(APP_LIB_STORAGE_KEY);
                 if (raw) {
                     customAppList = JSON.parse(raw);
+                    // 升級或補齊預設範例應用（確保如 net_ping_diag 獲得最新之 Pyodide 跨平台適配程式碼）
+                    let updated = false;
+                    const sampleApps = getSampleCustomApps();
+                    sampleApps.forEach(sApp => {
+                        const idx = customAppList.findIndex(a => a.id === sApp.id);
+                        if (idx >= 0) {
+                            if (sApp.version !== customAppList[idx].version) {
+                                customAppList[idx].code = sApp.code;
+                                customAppList[idx].version = sApp.version;
+                                customAppList[idx].desc = sApp.desc;
+                                updated = true;
+                            }
+                        }
+                    });
+                    if (updated) {
+                        saveCustomAppsToStorage();
+                    }
                 } else {
                     customAppList = getSampleCustomApps();
                     saveCustomAppsToStorage();
