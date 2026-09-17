@@ -448,19 +448,27 @@
         <div id="view-container-term" class="flex-1 flex flex-col h-full min-h-0 min-w-0 overflow-hidden">
         <div
             class="bg-gray-800 px-3 py-2 flex flex-wrap items-center gap-2.5 border-b border-gray-700 text-xs shrink-0">
-            <select id="conn-protocol"
-                class="bg-gray-900 text-white border border-gray-700 rounded-md px-2 py-1 text-xs focus:outline-none focus:border-purple-500 font-medium">
-                <option value="pyodide" class="text-yellow-300 font-bold" data-i18n="protoPyodide">🐍 Python 3 (Pyodide WASM 免安裝)</option>
-                <option value="shell" data-i18n="protoShell">本地 Shell (PowerShell/CMD)</option>
-                <option value="wsl" class="text-teal-400 font-semibold" data-i18n="protoWsl">本地 Shell (WSL Linux)</option>
-                <option value="ssh" data-i18n="protoSSH">TCP/IP: SSH 遠端</option>
-                <option value="telnet" data-i18n="protoTelnet">TCP/IP: Telnet 遠端</option>
-                <option value="webserial" class="text-yellow-400 font-bold" data-i18n="protoWebSerial">Web Serial
-                    (瀏覽器直連)</option>
-                <option value="serial" class="text-amber-400 font-semibold" data-i18n="protoSerial">後端 Serial (8001 常駐服務 / COM 埠)</option>
-                <option value="novnc" class="text-blue-400 font-semibold" data-i18n="protoNoVNC">noVNC (HTML5 桌面)</option>
-                <option value="xorg" class="text-emerald-400 font-semibold" data-i18n="protoXorg">Xorg GUI (Linux/WSL)</option>
-            </select>
+            <div class="flex items-center gap-1.5 shrink-0">
+                <select id="conn-protocol"
+                    class="bg-gray-900 text-white border border-gray-700 rounded-md px-2 py-1 text-xs focus:outline-none focus:border-purple-500 font-medium">
+                    <option value="pyodide" class="text-yellow-300 font-bold" data-i18n="protoPyodide">🐍 Python 3 (Pyodide WASM 免安裝)</option>
+                    <option value="shell" data-i18n="protoShell">本地 Shell (PowerShell/CMD)</option>
+                    <option value="wsl" class="text-teal-400 font-semibold" data-i18n="protoWsl">本地 Shell (WSL Linux)</option>
+                    <option value="ssh" data-i18n="protoSSH">TCP/IP: SSH 遠端</option>
+                    <option value="telnet" data-i18n="protoTelnet">TCP/IP: Telnet 遠端</option>
+                    <option value="webserial" class="text-yellow-400 font-bold" data-i18n="protoWebSerial">Web Serial
+                        (瀏覽器直連)</option>
+                    <option value="serial" class="text-amber-400 font-semibold" data-i18n="protoSerial">後端 Serial (8001 常駐服務 / COM 埠)</option>
+                    <option value="novnc" class="text-blue-400 font-semibold" data-i18n="protoNoVNC">noVNC (HTML5 桌面)</option>
+                    <option value="xorg" class="text-emerald-400 font-semibold" data-i18n="protoXorg">Xorg GUI (Linux/WSL)</option>
+                </select>
+                <button id="btn-next-protocol" type="button" data-on-click="cycleNextTerminalProtocol()"
+                    class="px-2 py-1 bg-gray-900 hover:bg-purple-950/80 active:bg-purple-800 text-gray-300 hover:text-purple-300 border border-gray-700 hover:border-purple-600 rounded-md transition text-xs font-mono flex items-center gap-1 cursor-pointer shrink-0 shadow-sm"
+                    title="切換至下一個終端模式 (Alt+M / 快速循環切換)" data-i18n-title="tooltipNextTerminalMode">
+                    <i data-lucide="refresh-cw" class="w-3.5 h-3.5 text-purple-400"></i>
+                    <span class="hidden sm:inline font-sans text-xs" data-i18n="nextTerminalMode">切換模式</span>
+                </button>
+            </div>
 
             <div id="conn-fields" class="flex flex-wrap items-center gap-2 flex-1"></div>
 

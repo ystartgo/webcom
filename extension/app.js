@@ -828,6 +828,9 @@ if (!window.WTerm && window.WTermBundle) {
                 tooltipTabNoVNC: "noVNC HTML5 遠端桌面 (VNC / websockify)",
                 tooltipTabXorg: "Xorg GUI 視窗模式 (Linux/WSL2/Docker DISPLAY:1)",
                 tooltipVkeyEsc: "發送 Escape (Esc) 鍵",
+                tooltipNextTerminalMode: "切換至下一個終端模式 (Alt+M / 快速循環切換)",
+                nextTerminalMode: "切換模式",
+                cycleWorkspaceMode: "切換工作區 (終端/桌面/視窗)",
                 tooltipWslStartNoVnc: "在 WSL2 自動啟動 noVNC 桌面會話並即時連線",
                 tooltipNoVncPresetMenu: "快速切換連線目標與探測",
                 tooltipWslStartXorg: "在 WSL2 自動啟動 Xorg 桌面會話並即時連線",
@@ -1178,6 +1181,9 @@ if (!window.WTerm && window.WTermBundle) {
                 tooltipVkeyCtrlC: "Interrupt / Send SIGINT (Ctrl+C)",
                 tooltipVkeyCtrlV: "Paste from Clipboard (Ctrl+V)",
                 tooltipVkeyCtrlX: "Ctrl+X / Exit or Clear",
+                tooltipNextTerminalMode: "Switch to next terminal mode (Alt+M / Cycle)",
+                nextTerminalMode: "Cycle Mode",
+                cycleWorkspaceMode: "Cycle Workspace (Terminal/Desktop/Window)",
 
                 // ── Loading Progress ──
                 webgpuProgressLoading: "⚡ Loading WebGPU model weights...",
@@ -7203,20 +7209,60 @@ ${tools.join('\n')}${contextStr}
             if (window.lucide) lucide.createIcons();
         }
 
-        connProtocol.addEventListener('change', () => {
-            const val = connProtocol.value;
-            if (val === 'novnc') {
-                switchLeftMode('novnc');
-            } else if (val === 'xorg') {
-                switchLeftMode('xorg');
-            } else {
-                switchLeftMode('term');
-                renderConnFields();
-                if (val === 'serial') {
-                    probeBackendSerialPorts();
-                }
-                termInput.focus();
+        async function switchTerminalProtocol(proto, autoApply = true) {
+            if (!proto) return;
+            const connProto = document.getElementById('conn-protocol');
+            if (connProto && connProto.value !== proto) {
+                connProto.value = proto;
             }
+            if (proto === 'novnc') {
+                switchLeftMode('novnc');
+                return;
+            }
+            if (proto === 'xorg') {
+                switchLeftMode('xorg');
+                return;
+            }
+
+            switchLeftMode('term');
+            renderConnFields();
+
+            if (proto === 'serial') {
+                probeBackendSerialPorts();
+            }
+
+            if (autoApply || proto === 'pyodide' || proto === 'shell' || proto === 'wsl') {
+                await applyCurrentConnection();
+            } else {
+                activeTermContext = { protocol: proto };
+                const protoOption = document.querySelector(`#conn-protocol option[value="${proto}"]`);
+                const protoName = protoOption?.textContent || proto.toUpperCase();
+                printToTerminal(currentLang === 'en' ? `[Protocol Selected: ${protoName}] Please confirm settings and click "Apply Connection".` : `[已選擇協定：${protoName}] 請確認連線參數後點擊「套用連線」。`, 'info');
+            }
+            const termIn = document.getElementById('term-input');
+            if (termIn) termIn.focus();
+        }
+        window.switchTerminalProtocol = switchTerminalProtocol;
+
+        async function cycleNextTerminalProtocol() {
+            const connProto = document.getElementById('conn-protocol');
+            if (!connProto) return;
+            const cycleList = ['pyodide', 'shell', 'wsl', 'webserial'];
+            const curVal = connProto.value;
+            let curIdx = cycleList.indexOf(curVal);
+            if (curIdx === -1) curIdx = 0;
+            const nextVal = cycleList[(curIdx + 1) % cycleList.length];
+            await switchTerminalProtocol(nextVal, true);
+        }
+        window.cycleNextTerminalProtocol = cycleNextTerminalProtocol;
+
+        function cycleNextLeftMode() {
+            switchLeftMode('next');
+        }
+        window.cycleNextLeftMode = cycleNextLeftMode;
+
+        connProtocol.addEventListener('change', async () => {
+            await switchTerminalProtocol(connProtocol.value, true);
         });
 
         // ── 智能 Web Serial 連線引擎與環境防禦 ──
@@ -10818,6 +10864,26 @@ Important guidelines:
 
             if (toolName === 'switch_left_mode') {
                 const targetMode = (args.mode || args.view || args.tab || 'term').toLowerCase();
+                if (targetMode === 'next') {
+                    if (typeof cycleNextLeftMode === 'function') cycleNextLeftMode();
+                    return JSON.stringify({ status: "success", mode: currentLeftMode, message: `已切換至下一個工作區模式：${currentLeftMode}` });
+                }
+                if (targetMode.includes('py') || targetMode.includes('python')) {
+                    if (typeof switchTerminalProtocol === 'function') await switchTerminalProtocol('pyodide', true);
+                    return JSON.stringify({ status: "success", mode: 'term', protocol: 'pyodide', message: "已切換至 Python 3 (Pyodide WASM) 終端模式" });
+                }
+                if (targetMode.includes('shell') || targetMode.includes('powershell') || targetMode.includes('cmd')) {
+                    if (typeof switchTerminalProtocol === 'function') await switchTerminalProtocol('shell', true);
+                    return JSON.stringify({ status: "success", mode: 'term', protocol: 'shell', message: "已切換至本地 Shell 終端模式" });
+                }
+                if (targetMode.includes('wsl')) {
+                    if (typeof switchTerminalProtocol === 'function') await switchTerminalProtocol('wsl', true);
+                    return JSON.stringify({ status: "success", mode: 'term', protocol: 'wsl', message: "已切換至 WSL Linux 終端模式" });
+                }
+                if (targetMode.includes('serial')) {
+                    if (typeof switchTerminalProtocol === 'function') await switchTerminalProtocol('webserial', true);
+                    return JSON.stringify({ status: "success", mode: 'term', protocol: 'webserial', message: "已切換至 Web Serial 終端模式" });
+                }
                 const normalizedMode = (targetMode.includes('vnc') || targetMode.includes('desk')) ? 'novnc' : (targetMode.includes('xorg') || targetMode.includes('win') || targetMode.includes('app') ? 'xorg' : 'term');
                 if (typeof switchLeftMode === 'function') {
                     switchLeftMode(normalizedMode);
@@ -14524,6 +14590,11 @@ Important guidelines:
         let rfbXorgInstance = null;
 
         function switchLeftMode(mode) {
+            if (mode === 'next') {
+                const modes = ['term', 'novnc', 'xorg'];
+                const nextIdx = (modes.indexOf(currentLeftMode) + 1) % modes.length;
+                mode = modes[nextIdx];
+            }
             if (!['term', 'novnc', 'xorg'].includes(mode)) mode = 'term';
             currentLeftMode = mode;
 
@@ -14551,14 +14622,23 @@ Important guidelines:
                 else tabXorg.classList.add(...inactiveCls);
             }
 
-            // 2. 切換容器可見性
+            // 2. 切換容器可見性 (雙重保障：classList + style.display)
             const viewTerm = document.getElementById('view-container-term');
             const viewNovnc = document.getElementById('view-container-novnc');
             const viewXorg = document.getElementById('view-container-xorg');
 
-            if (viewTerm) viewTerm.classList.toggle('hidden', mode !== 'term');
-            if (viewNovnc) viewNovnc.classList.toggle('hidden', mode !== 'novnc');
-            if (viewXorg) viewXorg.classList.toggle('hidden', mode !== 'xorg');
+            if (viewTerm) {
+                viewTerm.classList.toggle('hidden', mode !== 'term');
+                viewTerm.style.display = (mode === 'term' ? 'flex' : 'none');
+            }
+            if (viewNovnc) {
+                viewNovnc.classList.toggle('hidden', mode !== 'novnc');
+                viewNovnc.style.display = (mode === 'novnc' ? 'flex' : 'none');
+            }
+            if (viewXorg) {
+                viewXorg.classList.toggle('hidden', mode !== 'xorg');
+                viewXorg.style.display = (mode === 'xorg' ? 'flex' : 'none');
+            }
 
             // 3. 切換動作按鈕群組
             const actTerm = document.getElementById('actions-left-term');
@@ -14569,7 +14649,7 @@ Important guidelines:
             if (actNovnc) actNovnc.classList.toggle('hidden', mode !== 'novnc');
             if (actXorg) actXorg.classList.toggle('hidden', mode !== 'xorg');
 
-            // 4. 同步更新 #conn-protocol 選單
+            // 4. 同步更新 #conn-protocol 選單與欄位
             const connProto = document.getElementById('conn-protocol');
             if (connProto) {
                 if (mode === 'novnc' && connProto.value !== 'novnc') connProto.value = 'novnc';
@@ -14577,6 +14657,12 @@ Important guidelines:
                 else if (mode === 'term' && (connProto.value === 'novnc' || connProto.value === 'xorg')) {
                     connProto.value = (typeof activeTermContext !== 'undefined' && activeTermContext.protocol) ? activeTermContext.protocol : 'shell';
                 }
+            }
+            if (mode === 'term') {
+                if (typeof renderConnFields === 'function') renderConnFields();
+                fitTerminal();
+                const termIn = document.getElementById('term-input');
+                if (termIn) termIn.focus();
             }
 
             if (window.lucide) lucide.createIcons();
@@ -14595,7 +14681,6 @@ Important guidelines:
             }
             // 5. 更新左側動作選單
             updateLeftActionsDropdownMenu(mode);
-            if (mode === 'term') { fitTerminal(); }
         }
         window.switchLeftMode = switchLeftMode;
 
@@ -14873,6 +14958,10 @@ Important guidelines:
             if (mode === 'term') {
                 html = `
                     <div class="px-3 py-1.5 text-[10px] font-bold text-gray-400 uppercase tracking-wider border-b border-gray-800">${escapeHtml(t('termActionsCategory'))}</div>
+                    <button type="button" onclick="cycleNextLeftMode(); closeLeftActionsDropdown();" class="w-full flex items-center gap-2.5 px-3 py-2 text-indigo-300 hover:bg-gray-800 transition text-left cursor-pointer border-b border-gray-800">
+                        <i data-lucide="layers" class="w-3.5 h-3.5 text-indigo-400"></i>
+                        <span class="font-medium" data-i18n="cycleWorkspaceMode">${escapeHtml(t('cycleWorkspaceMode') || '切換工作區 (終端/桌面/視窗)')}</span>
+                    </button>
                     <button type="button" onclick="runXinitInTerm(); closeLeftActionsDropdown();" class="w-full flex items-center gap-2.5 px-3 py-2 text-emerald-300 hover:bg-gray-800 transition text-left cursor-pointer">
                         <i data-lucide="play" class="w-3.5 h-3.5 text-emerald-400"></i>
                         <span class="font-medium">${escapeHtml(t('termActionXinit'))}</span>
@@ -15479,11 +15568,10 @@ Important guidelines:
         window.runXorgCommandsInTerm = runXorgCommandsInTerm;
 
         async function runXinitInTerm() {
-            switchLeftMode('term');
-            const protoSelect = document.getElementById('conn-protocol');
-            if (protoSelect) {
-                protoSelect.value = 'wsl';
-                if (typeof updateConnFields === 'function') updateConnFields();
+            if (typeof switchTerminalProtocol === 'function') {
+                await switchTerminalProtocol('wsl', true);
+            } else {
+                switchLeftMode('term');
             }
             if (typeof sendCommandToTerminal === 'function') {
                 await sendCommandToTerminal('xinit');
@@ -16192,6 +16280,22 @@ Important guidelines:
             if ((e.ctrlKey && e.shiftKey && (e.code === 'KeyS' || e.key === 'S' || e.key === 's')) || (e.altKey && (e.code === 'KeyS' || e.key === 's'))) {
                 e.preventDefault();
                 takeFullWindowScreenshot();
+            } else if (e.altKey && (e.code === 'KeyM' || e.key === 'M' || e.key === 'm')) {
+                e.preventDefault();
+                if (currentLeftMode === 'term') {
+                    if (typeof cycleNextTerminalProtocol === 'function') cycleNextTerminalProtocol();
+                } else {
+                    if (typeof cycleNextLeftMode === 'function') cycleNextLeftMode();
+                }
+            } else if (e.altKey && e.key === '1') {
+                e.preventDefault();
+                if (typeof switchLeftMode === 'function') switchLeftMode('term');
+            } else if (e.altKey && e.key === '2') {
+                e.preventDefault();
+                if (typeof switchLeftMode === 'function') switchLeftMode('novnc');
+            } else if (e.altKey && e.key === '3') {
+                e.preventDefault();
+                if (typeof switchLeftMode === 'function') switchLeftMode('xorg');
             }
         });
 
