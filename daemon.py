@@ -1683,6 +1683,106 @@ def parse_document(req: DocumentParseRequest):
     engine_used = "fallback"
 
     try:
+        # ── 0. CAD / PCB DXF 高精度向量轉檔與 GeoJSON 產出 ─────────────────────────
+        if ext == ".dxf":
+            try:
+                from scripts.pcb_dxf_geojson import PcbDxfGeoJsonConverter
+                converter = PcbDxfGeoJsonConverter(target_unit="mm", default_tolerance=0.01, precision=6)
+                geojson_data = converter.dxf_to_geojson(file_bytes)
+                meta = geojson_data.get("metadata", {})
+                dims = meta.get("board_dimensions", {})
+                w = dims.get("width", 0)
+                h = dims.get("height", 0)
+                area_cm2 = dims.get("area_cm2", 0)
+                layers = meta.get("layer_breakdown", {})
+                layer_lines = "\n".join([f"- **{k}**: {v} 個圖元" for k, v in layers.items()])
+
+                stem = os.path.splitext(req.filename)[0]
+                safe_stem = "".join(c for c in stem if c.isalnum() or c in (" ", "-", "_", "(", ")", ".", "（", "）")).strip() or "drawing"
+                geojson_filename = f"{safe_stem}.geojson"
+                rag_docs_dir = os.path.join(webcom_dir, "rag_docs")
+                os.makedirs(rag_docs_dir, exist_ok=True)
+                geojson_save_path = os.path.join(rag_docs_dir, geojson_filename)
+                with open(geojson_save_path, "w", encoding="utf-8") as f_geo:
+                    json.dump(geojson_data, f_geo, indent=2, ensure_ascii=False)
+
+                text = f"""# CAD / PCB DXF 高精度向量分析與 GeoJSON 轉檔報告: {req.filename}
+
+- **電路板/幾何尺寸**: 寬 **{w} mm** × 高 **{h} mm**
+- **板材面積**: **{area_cm2} cm²**
+- **總特徵圖元數**: **{meta.get('total_features', 0)} 個 Feature**
+- **本機 GeoJSON 儲存路徑**: `{geojson_save_path.replace(os.sep, '/')}`
+
+### 圖層分佈 (Layer Breakdown)
+{layer_lines}
+
+> 💡 本檔案已成功轉換為高精度 GeoJSON FeatureCollection，可直接在右側 Artifact 畫布渲染互動式向量檢視器 (支援滑鼠平移縮放、圖層切換與焊盤量測)。
+"""
+                engine_used = "dxf2geojson"
+                char_count = len(text)
+                save_info = save_converted_markdown(req.filename, text)
+                return {
+                    "status": "success",
+                    "filename": req.filename,
+                    "ext": ext,
+                    "engine": "dxf2geojson",
+                    "format": "geojson",
+                    "char_count": char_count,
+                    "tables_count": len(layers),
+                    "images_count": 0,
+                    "images": [],
+                    "text": text,
+                    "markdown": text,
+                    "geojson": geojson_data,
+                    "saved_geojson_path": geojson_save_path.replace(os.sep, "/"),
+                    "dimensions": dims,
+                    **save_info
+                }
+            except Exception as dxf_err:
+                logging.warning(f"DXF to GeoJSON parse warning: {dxf_err}")
+
+        # ── 0.1 GeoJSON 向量格式直接讀取 ─────────────────────────────────────────
+        elif ext in (".geojson",) or (ext == ".json" and b'"FeatureCollection"' in file_bytes[:1000]):
+            try:
+                geojson_data = json.loads(file_bytes.decode("utf-8", errors="replace"))
+                features = geojson_data.get("features", [])
+                stem = os.path.splitext(req.filename)[0]
+                safe_stem = "".join(c for c in stem if c.isalnum() or c in (" ", "-", "_", "(", ")", ".", "（", "）")).strip() or "drawing"
+                rag_docs_dir = os.path.join(webcom_dir, "rag_docs")
+                os.makedirs(rag_docs_dir, exist_ok=True)
+                geojson_save_path = os.path.join(rag_docs_dir, f"{safe_stem}.geojson")
+                with open(geojson_save_path, "w", encoding="utf-8") as f_geo:
+                    json.dump(geojson_data, f_geo, indent=2, ensure_ascii=False)
+
+                text = f"""# GeoJSON 向量圖形分析報告: {req.filename}
+
+- **幾何特徵總數**: **{len(features)} 個 Feature**
+- **格式**: GeoJSON FeatureCollection
+- **本機 GeoJSON 儲存路徑**: `{geojson_save_path.replace(os.sep, '/')}`
+
+> 💡 本檔案為標準 GeoJSON，可直接在右側 Artifact 畫布渲染互動式向量檢視器。
+"""
+                engine_used = "geojson_reader"
+                save_info = save_converted_markdown(req.filename, text)
+                return {
+                    "status": "success",
+                    "filename": req.filename,
+                    "ext": ext,
+                    "engine": "geojson_reader",
+                    "format": "geojson",
+                    "char_count": len(text),
+                    "tables_count": 0,
+                    "images_count": 0,
+                    "images": [],
+                    "text": text,
+                    "markdown": text,
+                    "geojson": geojson_data,
+                    "saved_geojson_path": geojson_save_path.replace(os.sep, "/"),
+                    **save_info
+                }
+            except Exception as geo_err:
+                logging.warning(f"GeoJSON parse warning: {geo_err}")
+
         # ── 1. 優先使用 Microsoft MarkItDown 進行全格式原生 Markdown 轉檔 ────────
         # 支援 PDF, Word (.docx/.doc), Excel (.xlsx/.xls), PPT (.pptx/.ppt), EPUB, HTML, CSV 等
         try:

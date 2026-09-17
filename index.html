@@ -17766,13 +17766,22 @@ Important guidelines:
                 }
             }
 
-            showUploadToast(`⏳ 正在透過 Microsoft MarkItDown 深度解析 <b>${file.name}</b>...`);
+            const isDxf = ext === 'dxf';
+            const isGeoJson = ext === 'geojson' || (ext === 'json' && file.name.toLowerCase().includes('geojson'));
+
+            if (isDxf) {
+                showUploadToast(`📐 正在透過向量轉檔核心將 DXF 轉換為高精度 GeoJSON: <b>${file.name}</b>...`);
+            } else if (isGeoJson) {
+                showUploadToast(`🌍 正在載入 GeoJSON 向量幾何圖形: <b>${file.name}</b>...`);
+            } else {
+                showUploadToast(`⏳ 正在透過 Microsoft MarkItDown 深度解析 <b>${file.name}</b>...`);
+            }
 
             let parsedText = '';
             let charCount = 0;
             let extractedImages = [];
             let tablesCount = 0;
-            let engineUsed = 'markitdown';
+            let engineUsed = isDxf ? 'dxf2geojson' : (isGeoJson ? 'geojson_reader' : 'markitdown');
             let savedDiskPath = '';
 
             if (isDaemonOnline) {
@@ -17784,7 +17793,7 @@ Important guidelines:
                         reader.readAsDataURL(file);
                     });
 
-                    // 優先使用 /tools/parse_document (具備 MarkItDown 核心 + PyMuPDF 圖片提取 + 表格識別)
+                    // 優先使用 /tools/parse_document (具備 MarkItDown 核心 + PyMuPDF 圖片提取 + DXF/GeoJSON 向量轉檔)
                     const res = await fetchWithTimeout(`${appSettings.daemonEndpoint}/tools/parse_document`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
@@ -17799,12 +17808,12 @@ Important guidelines:
                             charCount = data.char_count || parsedText.length;
                             extractedImages = data.images || [];
                             tablesCount = data.tables_count || 0;
-                            engineUsed = data.engine || 'markitdown';
-                            savedDiskPath = data.saved_root_path || data.saved_path || '';
+                            engineUsed = data.engine || (isDxf ? 'dxf2geojson' : 'markitdown');
+                            savedDiskPath = data.saved_geojson_path || data.saved_root_path || data.saved_path || '';
                         }
                     }
                 } catch (err) {
-                    console.warn('[MarkItDown Daemon Warning, trying fallback]', err);
+                    console.warn('[Document Parse Daemon Warning, trying fallback]', err);
                 }
             }
 
@@ -17869,21 +17878,39 @@ Important guidelines:
                 console.warn('[RAG Auto Index Warning]', ragErr);
             }
 
-            // 4. 注入 Markdown 與提示詞至對話輸入框，供 LLM 深度理解分析
+            // 4. 注入提示詞至對話輸入框，供 LLM 深度理解分析
             const currentText = userInput.value.trim();
             const snippet = parsedText.length <= 15000 ? parsedText : parsedText.slice(0, 12000) + `\n\n... (其餘 ${(charCount - 12000).toLocaleString()} 字符已同步加入 RAG 知識庫)`;
             const imgNote = (extractedImages.length > 0) ? `\n> 🖼️ 已從文件提取 ${extractedImages.length} 張圖片附加至 Vision 對話！` : '';
             const tableNote = (tablesCount > 0) ? `\n> 📊 已識別並轉為 Markdown 表格 (${tablesCount} 個)` : '';
-            const engineBadge = engineUsed === 'markitdown' ? 'Microsoft MarkItDown' : '文字直讀';
             const pathNote = savedDiskPath ? `\n> 📁 本機儲存路徑: ${savedDiskPath}` : '';
-            const promptInjection = `【📄 MarkItDown 轉檔附件: ${file.name} (${sizeKb} KB / 由 ${engineBadge} 轉換為結構化 Markdown)】${pathNote}${imgNote}${tableNote}\n\n${snippet}`;
+
+            let engineBadge = '文字直讀';
+            let promptInjection = '';
+            if (isDxf || engineUsed === 'dxf2geojson') {
+                engineBadge = '高精度 CAD DXF ➔ GeoJSON 引擎';
+                promptInjection = `【📐 CAD / PCB DXF 轉檔分析: ${file.name} (${sizeKb} KB / 由 ${engineBadge} 轉換)】${pathNote}\n\n${snippet}\n\n請依據上方轉換後的幾何特徵，在右側 Artifact 畫布為我呈現「可縮放、拖曳、圖層切換與焊盤量測」的互動式向量檢視器 (Interactive CAD / PCB Viewer)！`;
+            } else if (isGeoJson || engineUsed === 'geojson_reader') {
+                engineBadge = 'GeoJSON 向量引擎';
+                promptInjection = `【🌍 GeoJSON 向量幾何圖形: ${file.name} (${sizeKb} KB)】${pathNote}\n\n${snippet}\n\n請在右側 Artifact 畫布為我呈現可互動操作的向量圖形檢視器！`;
+            } else {
+                engineBadge = engineUsed === 'markitdown' ? 'Microsoft MarkItDown' : '文字直讀';
+                promptInjection = `【📄 MarkItDown 轉檔附件: ${file.name} (${sizeKb} KB / 由 ${engineBadge} 轉換為結構化 Markdown)】${pathNote}${imgNote}${tableNote}\n\n${snippet}`;
+            }
 
             userInput.value = currentText ? `${currentText}\n\n${promptInjection}` : promptInjection;
             userInput.style.height = 'auto';
             userInput.style.height = Math.min(userInput.scrollHeight, 180) + 'px';
             userInput.focus();
             userInput.dispatchEvent(new Event('input'));
-            showUploadToast(`✅ <b>${file.name}</b> 已由 MarkItDown 轉為 Markdown (${charCount.toLocaleString()} 字${extractedImages.length ? ` / ${extractedImages.length} 張圖片` : ''}${tablesCount ? ` / ${tablesCount} 個表格` : ''})，已載入對話供 LLM 分析！`);
+
+            if (isDxf || engineUsed === 'dxf2geojson') {
+                showUploadToast(`✅ <b>${file.name}</b> 已成功轉為高精度 GeoJSON！(可即時於右側 Artifact 畫布檢視互動圖形)`);
+            } else if (isGeoJson || engineUsed === 'geojson_reader') {
+                showUploadToast(`✅ <b>${file.name}</b> GeoJSON 已載入，可於右側 Artifact 畫布渲染互動檢視器！`);
+            } else {
+                showUploadToast(`✅ <b>${file.name}</b> 已由 MarkItDown 轉為 Markdown (${charCount.toLocaleString()} 字${extractedImages.length ? ` / ${extractedImages.length} 張圖片` : ''}${tablesCount ? ` / ${tablesCount} 個表格` : ''})，已載入對話供 LLM 分析！`);
+            }
         }
 
         if (fileUploadDoc) {
