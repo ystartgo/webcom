@@ -7,12 +7,20 @@ echo        Webcom Office 增益集 (Add-in) 自動免共用註冊工具
 echo ========================================================
 echo.
 
+:: 0. 自動檢測並請求系統管理員權限 (確保 100% 成功寫入本機 Root 憑證與 hosts 離線映射)
+net session >nul 2>&1
+if %ERRORLEVEL% neq 0 (
+    echo [提示] 正在請求系統管理員權限以完成證書安裝與離線 hosts 設定...
+    powershell -NoProfile -Command "Start-Process '%~f0' -Verb RunAs"
+    exit /b
+)
+
 set "SCRIPT_DIR=%~dp0"
 set "SCRIPT_DIR=%SCRIPT_DIR:~0,-1%"
 set "ROOT_DIR=%SCRIPT_DIR%\.."
 set "MANIFEST_PATH=%SCRIPT_DIR%\manifest.xml"
 
-echo [1/5] 檢查增益集清單檔案:
+echo [1/6] 檢查增益集清單檔案:
 if not exist "%MANIFEST_PATH%" (
     echo   [錯誤] 找不到 manifest.xml！
     echo   請確認本工具位於 office-addin 資料夾內。
@@ -23,7 +31,7 @@ if not exist "%MANIFEST_PATH%" (
 echo   [OK] 清單檔案就緒: "%MANIFEST_PATH%"
 
 echo.
-echo [2/5] 寫入 Office 開發者直接旁載 (Sideload) 註冊表...
+echo [2/6] 寫入 Office 開發者直接旁載 (Sideload) 註冊表...
 :: 微軟官方推薦之免開網路共用開發者旁載註冊
 reg add "HKCU\Software\Microsoft\Office\16.0\WEF\Developer" /v "%MANIFEST_PATH%" /t REG_SZ /d "%MANIFEST_PATH%" /f >nul 2>&1
 if %ERRORLEVEL% equ 0 (
@@ -63,17 +71,24 @@ if exist "%LOCALAPPDATA%\Microsoft\Office\16.0\Wef" (
 echo.
 echo [5/6] 設定本機開發者 SSL 憑證信任 - 支援 view.yia.app 與 localhost...
 set "CERT_FILE="
-if exist "%ROOT_DIR%\assets\ssl\cert.pem" (
+if exist "%SCRIPT_DIR%\view.yia.app.crt" (
+    set "CERT_FILE=%SCRIPT_DIR%\view.yia.app.crt"
+) else if exist "%ROOT_DIR%\assets\ssl\cert.crt" (
+    set "CERT_FILE=%ROOT_DIR%\assets\ssl\cert.crt"
+) else if exist "%ROOT_DIR%\assets\ssl\cert.pem" (
     set "CERT_FILE=%ROOT_DIR%\assets\ssl\cert.pem"
-) else if exist "%USERPROFILE%\.office-addin-dev-certs\ca.crt" (
-    set "CERT_FILE=%USERPROFILE%\.office-addin-dev-certs\ca.crt"
 )
 
 if defined CERT_FILE (
     echo   找到本機 SSL 憑證: %CERT_FILE%
-    echo   正在註冊至 Windows 受信任根授權單位...
-    certutil -user -f -addstore Root "%CERT_FILE%" >nul 2>&1
-    echo   [OK] SSL 憑證信任已就緒。
+    certutil -addstore -f Root "%CERT_FILE%" >nul 2>&1
+    certutil -store Root view.yia.app >nul 2>&1
+    if %ERRORLEVEL% equ 0 (
+        echo   [OK] 憑證已成功加入【受信任的根憑證授權單位】！
+    ) else (
+        certutil -user -f -addstore Root "%CERT_FILE%" >nul 2>&1
+        echo   [OK] 已送出受信任根憑證註冊請求。
+    )
 ) else (
     echo   [提示] 憑證將於首次啟動 python daemon.py 時自動建立。
 )
