@@ -1,298 +1,322 @@
 <!DOCTYPE html>
 <html lang="zh-TW" class="dark">
 <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Webcom for Office</title>
-    <!-- 本地離線優先樣式 (完全內嵌，即使作為單檔案雙擊開啟亦保證 100% 完整排版與互動) -->
+    <!-- 相容 IE11 (Trident / Office 2019) 與現代 Chromium 之精簡深色樣式 -->
     <style>
-        :root {
-            --bg-main: #0b0f19;
-            --bg-header: rgba(17, 24, 39, 0.95);
-            --bg-card: #111827;
-            --border-color: #1f2937;
-            --accent-indigo: #6366f1;
-            --accent-purple: #8b5cf6;
-            --text-primary: #f3f4f6;
-            --text-secondary: #9ca3af;
-        }
-        * { box-sizing: border-box; margin: 0; padding: 0; }
+        * { -webkit-box-sizing: border-box; -moz-box-sizing: border-box; box-sizing: border-box; margin: 0; padding: 0; }
         body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            background-color: var(--bg-main);
-            color: var(--text-primary);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Microsoft JhengHei", "微軟正黑體", sans-serif;
+            background-color: #0b0f19;
+            color: #f3f4f6;
             height: 100vh;
+            display: -webkit-box;
+            display: -ms-flexbox;
             display: flex;
+            -webkit-box-orient: vertical;
+            -webkit-box-direction: normal;
+            -ms-flex-direction: column;
             flex-direction: column;
             overflow: hidden;
+            font-size: 11px;
             user-select: none;
             -webkit-user-select: none;
         }
-        /* 工具列 Header */
+        /* 頂部工具列 Header */
         header {
-            background-color: var(--bg-header);
-            border-bottom: 1px solid var(--border-color);
-            padding: 8px 12px;
+            background-color: #111827;
+            border-bottom: 1px solid #1f2937;
+            padding: 5px 8px;
+            display: -webkit-box;
+            display: -ms-flexbox;
             display: flex;
+            -webkit-box-align: center;
+            -ms-flex-align: center;
             align-items: center;
+            -webkit-box-pack: justify;
+            -ms-flex-pack: justify;
             justify-content: space-between;
             flex-shrink: 0;
             z-index: 10;
+            height: 36px;
         }
-        .logo-group { display: flex; align-items: center; gap: 8px; }
+        .logo-group {
+            display: -webkit-box;
+            display: -ms-flexbox;
+            display: flex;
+            -webkit-box-align: center;
+            -ms-flex-align: center;
+            align-items: center;
+            white-space: nowrap;
+        }
         .logo-icon {
-            width: 26px; height: 26px; border-radius: 8px;
-            background: linear-gradient(135deg, #7c3aed, #4f46e5);
-            display: flex; align-items: center; justify-content: center;
-            font-weight: 800; font-size: 13px; color: #fff;
-            box-shadow: 0 2px 8px rgba(99, 102, 241, 0.4);
+            width: 20px; height: 20px; border-radius: 5px;
+            background: #7c3aed;
+            display: -webkit-box; display: -ms-flexbox; display: flex;
+            -webkit-box-align: center; -ms-flex-align: center; align-items: center;
+            -webkit-box-pack: center; -ms-flex-pack: center; justify-content: center;
+            font-weight: bold; font-size: 11px; color: #fff;
+            margin-right: 5px;
         }
-        .logo-title { font-weight: 700; font-size: 13px; letter-spacing: 0.5px; color: #fff; }
+        .logo-title { font-weight: bold; font-size: 11px; color: #fff; margin-right: 5px; }
         .badge {
-            font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: 6px;
+            font-size: 9px; font-weight: bold; padding: 1px 4px; border-radius: 4px;
             background: #1f2937; color: #94a3b8; border: 1px solid #374151;
-            transition: all 0.2s;
+            white-space: nowrap; display: inline-block;
         }
-        .badge.word { background: rgba(30, 58, 138, 0.6); color: #93c5fd; border-color: rgba(59, 130, 246, 0.5); }
-        .badge.excel { background: rgba(6, 78, 59, 0.6); color: #6ee7b7; border-color: rgba(16, 185, 129, 0.5); }
-        .badge.ppt { background: rgba(124, 45, 18, 0.6); color: #fdba74; border-color: rgba(249, 115, 22, 0.5); }
+        .badge.word { background: #1e3a8a; color: #93c5fd; border-color: #3b82f6; }
+        .badge.excel { background: #064e3b; color: #6ee7b7; border-color: #10b981; }
+        .badge.ppt { background: #7c2d12; color: #fdba74; border-color: #f97316; }
 
+        .toolbar-right {
+            display: -webkit-box;
+            display: -ms-flexbox;
+            display: flex;
+            -webkit-box-align: center;
+            -ms-flex-align: center;
+            align-items: center;
+            white-space: nowrap;
+        }
         .btn-toolbar {
             background: #1f2937; border: 1px solid #374151; color: #d1d5db;
-            padding: 4px 8px; border-radius: 8px; font-size: 11px; font-weight: 600;
-            display: inline-flex; align-items: center; gap: 4px; cursor: pointer;
-            transition: all 0.15s; outline: none;
+            padding: 2px 5px; border-radius: 5px; font-size: 10px; font-weight: bold;
+            display: inline-block; cursor: pointer; white-space: nowrap;
+            margin-left: 3px; outline: none; vertical-align: middle;
         }
         .btn-toolbar:hover { background: #374151; color: #fff; }
-        .btn-toolbar:active { transform: scale(0.96); }
-        .btn-icon { padding: 5px; color: #9ca3af; }
+        .btn-toolbar:active { background: #4b5563; }
+        .btn-icon { padding: 3px 4px; color: #9ca3af; line-height: 1; }
+        .btn-icon svg { display: inline-block; vertical-align: middle; width: 12px; height: 12px; }
         .btn-icon:hover { color: #818cf8; background: #374151; }
-        .btn-icon.btn-danger:hover { color: #f87171; background: rgba(153, 27, 27, 0.4); }
+        .btn-icon.btn-danger:hover { color: #f87171; background: #7f1d1d; }
 
-        /* 設定面板 */
+        /* 設定面板 (下拉抽屜) */
         #settings-panel {
-            background: #030712; border-bottom: 1px solid var(--border-color);
-            padding: 12px; font-size: 11px; display: flex; flex-direction: column; gap: 8px;
+            background: #030712; border-bottom: 1px solid #1f2937;
+            padding: 8px 10px; font-size: 10px;
             flex-shrink: 0;
         }
         #settings-panel.hidden { display: none; }
-        .input-label { font-size: 10px; font-weight: 700; color: #9ca3af; margin-bottom: 3px; display: block; }
+        .input-label { font-size: 9px; font-weight: bold; color: #9ca3af; margin-bottom: 2px; display: block; }
         .text-input {
-            width: 100%; background: #111827; border: 1px solid #374151; border-radius: 8px;
-            padding: 6px 10px; color: #fff; font-size: 11px; font-family: monospace; outline: none;
+            width: 100%; background: #111827; border: 1px solid #374151; border-radius: 5px;
+            padding: 4px 6px; color: #fff; font-size: 10px; font-family: Consolas, monospace; outline: none;
+            margin-bottom: 5px;
         }
-        .text-input:focus { border-color: var(--accent-indigo); }
-        .preset-row { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 4px; }
+        .text-input:focus { border-color: #6366f1; }
+        .preset-row {
+            display: -webkit-box; display: -ms-flexbox; display: flex;
+            -ms-flex-wrap: wrap; flex-wrap: wrap;
+            margin-bottom: 4px;
+        }
         .btn-preset {
             background: #1e1b4b; border: 1px solid #4338ca; color: #c7d2fe;
-            padding: 4px 8px; border-radius: 6px; font-size: 10px; font-weight: 600;
-            cursor: pointer; transition: all 0.15s; outline: none; display: inline-flex; align-items: center; gap: 4px;
+            padding: 2px 6px; border-radius: 4px; font-size: 9px; font-weight: bold;
+            cursor: pointer; margin-right: 3px; margin-bottom: 3px; white-space: nowrap; outline: none;
         }
         .btn-preset:hover { background: #312e81; color: #fff; border-color: #6366f1; }
-        .btn-preset:active { transform: scale(0.96); }
         .model-chip {
             background: #1f2937; border: 1px solid #374151; color: #9ca3af;
-            padding: 2px 7px; border-radius: 5px; font-size: 9px; cursor: pointer;
-            transition: all 0.15s; outline: none; font-family: monospace;
+            padding: 1px 5px; border-radius: 4px; font-size: 8px; cursor: pointer;
+            margin-right: 3px; margin-bottom: 2px; outline: none; display: inline-block;
         }
         .model-chip:hover { background: #374151; color: #38bdf8; border-color: #38bdf8; }
-        .model-chip:active { transform: scale(0.96); }
         .btn-primary {
-            background: #4f46e5; color: #fff; border: none; padding: 6px 14px; border-radius: 8px;
-            font-size: 11px; font-weight: 700; cursor: pointer; transition: all 0.15s;
+            background: #4f46e5; color: #fff; border: none; padding: 4px 10px; border-radius: 5px;
+            font-size: 10px; font-weight: bold; cursor: pointer; outline: none;
         }
         .btn-primary:hover { background: #4338ca; }
-        .btn-primary:active { transform: scale(0.96); }
 
         /* 對話主區域 */
         main {
-            flex: 1; overflow-y: auto; padding: 12px; display: flex; flex-direction: column; gap: 12px;
+            -webkit-box-flex: 1; -ms-flex: 1; flex: 1;
+            overflow-y: auto; padding: 8px;
+            display: -webkit-box; display: -ms-flexbox; display: flex;
+            -webkit-box-orient: vertical; -webkit-box-direction: normal; -ms-flex-direction: column; flex-direction: column;
         }
         /* 歡迎卡片 */
         .card-welcome {
-            background: rgba(17, 24, 39, 0.7); border: 1px solid var(--border-color);
-            border-radius: 16px; padding: 14px; display: flex; flex-direction: column; gap: 10px;
+            background: #111827; border: 1px solid #1f2937;
+            border-radius: 10px; padding: 10px; margin-bottom: 8px;
         }
         .card-title {
-            font-size: 12px; font-weight: 700; color: #a5b4fc; display: flex; align-items: center; gap: 6px;
+            font-size: 11px; font-weight: bold; color: #a5b4fc; margin-bottom: 4px;
+            display: -webkit-box; display: -ms-flexbox; display: flex;
+            -webkit-box-align: center; -ms-flex-align: center; align-items: center;
         }
-        .card-desc { font-size: 11px; color: #9ca3af; line-height: 1.5; }
-        .chip-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+        .card-desc { font-size: 10px; color: #9ca3af; line-height: 1.4; margin-bottom: 8px; }
+        
+        /* 2 列快捷標籤 (完美相容 IE11 彈性佈局) */
+        .chip-grid {
+            display: -webkit-box; display: -ms-flexbox; display: flex;
+            -ms-flex-wrap: wrap; flex-wrap: wrap;
+            margin-left: -2px; margin-right: -2px;
+        }
+        .chip-item {
+            width: 50%;
+            padding: 2px;
+            -webkit-box-sizing: border-box; -moz-box-sizing: border-box; box-sizing: border-box;
+        }
         .chip-btn {
-            background: rgba(3, 7, 18, 0.7); border: 1px solid #1f2937; border-radius: 10px;
-            padding: 8px 10px; text-align: left; cursor: pointer; transition: all 0.15s;
-            outline: none; color: #e5e7eb; display: flex; flex-direction: column; gap: 2px;
+            background: #030712; border: 1px solid #1f2937; border-radius: 6px;
+            padding: 5px 6px; text-align: left; cursor: pointer; width: 100%; display: block;
+            outline: none; color: #e5e7eb;
         }
-        .chip-btn:hover { background: #1f2937; border-color: var(--accent-indigo); }
-        .chip-btn:active { transform: scale(0.98); }
-        .chip-title { font-size: 11px; font-weight: 700; }
-        .chip-sub { font-size: 9px; color: #6b7280; }
+        .chip-btn:hover { background: #1f2937; border-color: #6366f1; }
+        .chip-title { font-size: 10px; font-weight: bold; display: block; }
+        .chip-sub { font-size: 8px; color: #6b7280; display: block; margin-top: 1px; }
 
         /* 對話氣泡 */
         .msg-bubble {
-            padding: 10px 14px; border-radius: 16px; font-size: 12px; line-height: 1.6;
-            max-width: 90%; word-break: break-word; user-select: text; -webkit-user-select: text;
+            padding: 8px 10px; border-radius: 10px; font-size: 11px; line-height: 1.5;
+            max-width: 95%; word-break: break-all; word-wrap: break-word;
+            margin-bottom: 8px;
         }
         .msg-user {
-            align-self: flex-end;
-            background: linear-gradient(135deg, rgba(88, 28, 135, 0.4), rgba(49, 46, 129, 0.5));
-            border: 1px solid rgba(147, 51, 234, 0.4); color: #f3e8ff; border-bottom-right-radius: 4px;
+            -ms-flex-item-align: end; align-self: flex-end;
+            background: #3b0764; border: 1px solid #7e22ce; color: #f3e8ff;
         }
         .msg-assistant {
-            align-self: flex-start; background: #111827; border: 1px solid var(--border-color);
-            color: #f3f4f6; border-bottom-left-radius: 4px;
+            -ms-flex-item-align: start; align-self: flex-start;
+            background: #111827; border: 1px solid #1f2937; color: #f3f4f6;
         }
         .msg-meta {
-            font-size: 9px; font-weight: 700; color: #6b7280; margin-bottom: 4px;
-            display: flex; justify-content: space-between; gap: 12px;
+            font-size: 8px; font-weight: bold; color: #6b7280; margin-bottom: 3px;
+            display: -webkit-box; display: -ms-flexbox; display: flex;
+            -webkit-box-pack: justify; -ms-flex-pack: justify; justify-content: space-between;
         }
 
-        /* 底部輸入列 (Capsule 艙) */
+        /* 底部輸入列 */
         footer {
-            background: var(--bg-header); border-top: 1px solid var(--border-color);
-            padding: 8px 12px; flex-shrink: 0;
+            background: #111827; border-top: 1px solid #1f2937;
+            padding: 6px 8px; flex-shrink: 0;
         }
         .input-capsule {
-            background: #030712; border: 1px solid #374151; border-radius: 14px;
-            padding: 4px 6px 4px 10px; display: flex; align-items: flex-end; gap: 8px;
-            transition: border-color 0.2s;
+            background: #030712; border: 1px solid #374151; border-radius: 8px;
+            padding: 3px 6px;
+            display: -webkit-box; display: -ms-flexbox; display: flex;
+            -webkit-box-align: end; -ms-flex-align: end; align-items: flex-end;
         }
-        .input-capsule:focus-within { border-color: var(--accent-indigo); }
+        .input-capsule:focus-within { border-color: #6366f1; }
         #input-user-msg {
-            flex: 1; background: transparent; border: none; color: #fff; font-size: 12px;
-            font-family: inherit; line-height: 1.5; resize: none; outline: none; padding: 4px 0;
-            max-height: 100px;
+            -webkit-box-flex: 1; -ms-flex: 1; flex: 1;
+            background: transparent; border: none; color: #fff; font-size: 11px;
+            font-family: inherit; line-height: 1.4; resize: none; outline: none; padding: 2px 0;
+            height: 28px; max-height: 70px;
         }
-        #input-user-msg::placeholder { color: #6b7280; }
         .btn-send {
-            width: 32px; height: 32px; border-radius: 10px; border: none;
-            background: linear-gradient(135deg, #9333ea, #4f46e5); color: #fff;
-            display: flex; align-items: center; justify-content: center; cursor: pointer;
-            transition: all 0.15s; flex-shrink: 0; box-shadow: 0 2px 8px rgba(124, 58, 237, 0.4);
+            width: 26px; height: 26px; border-radius: 6px; border: none;
+            background: #7c3aed; color: #fff;
+            display: -webkit-box; display: -ms-flexbox; display: flex;
+            -webkit-box-align: center; -ms-flex-align: center; align-items: center;
+            -webkit-box-pack: center; -ms-flex-pack: center; justify-content: center;
+            cursor: pointer; flex-shrink: 0; margin-left: 4px;
         }
-        .btn-send:hover { transform: scale(1.06); background: linear-gradient(135deg, #a855f7, #6366f1); }
-        .btn-send:active { transform: scale(0.94); }
-        .btn-send:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+        .btn-send:hover { background: #6d28d9; }
+        .btn-send:disabled { opacity: 0.5; cursor: not-allowed; }
 
-        /* 操作浮動條 (插入文件/取代選取) */
-        .action-strip {
-            display: flex; gap: 6px; margin-top: 8px; padding-top: 6px;
-            border-top: 1px solid #1f2937;
-        }
+        /* 浮動操作列 */
+        .action-strip { margin-top: 6px; padding-top: 4px; border-top: 1px solid #1f2937; }
         .action-btn {
             background: #1f2937; border: 1px solid #374151; color: #a5b4fc;
-            padding: 3px 8px; border-radius: 6px; font-size: 10px; font-weight: 700;
-            cursor: pointer; transition: all 0.15s;
+            padding: 2px 6px; border-radius: 4px; font-size: 9px; font-weight: bold;
+            cursor: pointer; margin-right: 4px; outline: none;
         }
         .action-btn:hover { background: #374151; color: #fff; }
-        .action-btn.replace { color: #fcd34d; border-color: rgba(245, 158, 11, 0.4); }
+        .action-btn.replace { color: #fcd34d; border-color: #d97706; }
 
-        /* Toast 浮動提示 */
+        /* Toast 提示 */
         #addin-toast {
-            position: fixed; bottom: 65px; left: 50%; transform: translateX(-50%);
-            background: rgba(30, 27, 75, 0.95); border: 1px solid #6366f1; color: #e0e7ff;
-            padding: 6px 14px; border-radius: 12px; font-size: 11px; font-weight: 700;
-            box-shadow: 0 8px 24px rgba(0,0,0,0.6); pointer-events: none; z-index: 99;
-            transition: opacity 0.2s;
+            position: fixed; bottom: 50px; left: 50%;
+            background: #1e1b4b; border: 1px solid #6366f1; color: #e0e7ff;
+            padding: 4px 10px; border-radius: 8px; font-size: 10px; font-weight: bold;
+            z-index: 99; text-align: center;
+            margin-left: -100px; width: 200px;
         }
-        #addin-toast.error { background: rgba(127, 29, 29, 0.95); border-color: #ef4444; color: #fee2e2; }
+        #addin-toast.error { background: #7f1d1d; border-color: #ef4444; color: #fee2e2; }
 
-        /* Markdown 語意結構 */
-        pre { background: #030712; padding: 8px; border-radius: 8px; overflow-x: auto; margin: 6px 0; border: 1px solid #1f2937; }
-        code { font-family: monospace; color: #38bdf8; font-size: 11px; }
-        p { margin-bottom: 6px; }
-        p:last-child { margin-bottom: 0; }
-        ul, ol { padding-left: 18px; margin-bottom: 6px; }
+        pre { background: #030712; padding: 6px; border-radius: 5px; overflow-x: auto; margin: 4px 0; border: 1px solid #1f2937; }
+        code { font-family: Consolas, monospace; color: #38bdf8; font-size: 10px; }
+        p { margin-bottom: 4px; }
     </style>
-    <!-- 微軟 Office.js (採用非同步 defer，絕不阻塞頁面執行) -->
+    <!-- 微軟 Office.js (defer 載入，絕不阻斷 DOM 解析) -->
     <script src="https://appsforoffice.microsoft.com/lib/1/hosted/office.js" defer></script>
 </head>
 <body>
 
-    <!-- 頂部工具列 -->
+    <!-- 頂部精簡工具列 (緊湊單行，保證在 240px 狹窄側邊欄絕不折字) -->
     <header>
         <div class="logo-group">
             <div class="logo-icon">W</div>
-            <span class="logo-title">Webcom AI</span>
-            <span id="host-badge" class="badge">Web 模式</span>
+            <span class="logo-title">Webcom</span>
+            <span id="host-badge" class="badge">Web</span>
         </div>
-        <div style="display:flex; align-items:center; gap:4px;">
-            <!-- 帶入選取按鈕 (原生 onclick) -->
-            <button id="btn-read-selection" onclick="window.readDocumentSelection()" type="button" class="btn-toolbar" title="讀取當前選取內容注入對話">
-                <span>📑 帶入選取</span>
+        <div class="toolbar-right">
+            <!-- 帶入選取按鈕 (簡化文字避免折行) -->
+            <button id="btn-read-selection" onclick="window.readDocumentSelection()" type="button" class="btn-toolbar" title="讀取游標選取內容">
+                <span>📑 帶入</span>
             </button>
             <!-- 匯入紀錄 -->
-            <button id="btn-import-chat" onclick="window.triggerChatImport()" type="button" class="btn-toolbar btn-icon" title="自 Webcom 匯入對話紀錄 (.json)">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>
+            <button id="btn-import-chat" onclick="window.triggerChatImport()" type="button" class="btn-toolbar btn-icon" title="自 Webcom 匯入紀錄 (.json)">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>
             </button>
             <input type="file" id="file-import-chat" style="display:none;" accept=".json" onchange="window.handleChatFileSelected(event)">
             <!-- 匯出紀錄 -->
-            <button id="btn-export-chat" onclick="window.exportChatForWebcom()" type="button" class="btn-toolbar btn-icon" title="匯出對話紀錄給 Webcom (.json)">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+            <button id="btn-export-chat" onclick="window.exportChatForWebcom()" type="button" class="btn-toolbar btn-icon" title="匯出對話紀錄給 Webcom">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
             </button>
             <!-- 設定面板開關 -->
-            <button id="btn-toggle-settings" onclick="window.toggleSettingsPanel()" type="button" class="btn-toolbar btn-icon" title="模型與端點設定">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+            <button id="btn-toggle-settings" onclick="window.toggleSettingsPanel()" type="button" class="btn-toolbar btn-icon" title="端點與模型設定">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
             </button>
             <!-- 清空對話 -->
             <button id="btn-clear-chat" onclick="window.clearChatHistory()" type="button" class="btn-toolbar btn-icon btn-danger" title="清空對話">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
             </button>
         </div>
     </header>
 
-    <!-- 設定面板 (預設摺疊) -->
+    <!-- 設定面板 (抽屜) -->
     <div id="settings-panel" class="hidden">
-        <div>
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
-                <label class="input-label" style="margin:0;">⚡ 快速套用預設組態：</label>
-                <a href="https://top.yia.app/token" target="_blank" rel="noopener noreferrer" style="color:#a5b4fc; font-size:10px; text-decoration:none; display:inline-flex; align-items:center; gap:2px;">
-                    🔑 推薦申請 TokenTable Key ↗
-                </a>
+        <div style="margin-bottom:4px;">
+            <div style="display:-webkit-box; display:-ms-flexbox; display:flex; -webkit-box-pack:justify; -ms-flex-pack:justify; justify-content:space-between; margin-bottom:3px;">
+                <span class="input-label" style="margin:0;">⚡ 快速預設：</span>
+                <a href="https://top.yia.app/token" target="_blank" rel="noopener noreferrer" style="color:#a5b4fc; font-size:9px; text-decoration:none;">🔑 申請 Key ↗</a>
             </div>
             <div class="preset-row">
-                <button type="button" onclick="window.applyPreset('tokentable')" class="btn-preset" title="官方推薦高速端點，相容 qwen3.8-flash, gpt-4o 等">
-                    <span>✨ TokenTable (推薦)</span>
-                </button>
-                <button type="button" onclick="window.applyPreset('copilot')" class="btn-preset" style="background:#064e3b; border-color:#059669; color:#a7f3d0;" title="使用與微軟 Copilot 相同之 GPT-4o 核心引擎">
-                    <span>🤖 微軟 Copilot (GPT-4o)</span>
-                </button>
-                <button type="button" onclick="window.applyPreset('daemon')" class="btn-preset" style="background:#1f2937; border-color:#4b5563; color:#d1d5db;" title="透過本機 Webcom 常駐程式代理轉發">
-                    <span>💻 Webcom 代理 (8001/8002)</span>
-                </button>
-                <button type="button" onclick="window.applyPreset('lmstudio')" class="btn-preset" style="background:#1f2937; border-color:#4b5563; color:#d1d5db;" title="本機離線 LM Studio 伺服器">
-                    <span>🖥️ LM Studio (1234)</span>
-                </button>
-                <button type="button" onclick="window.applyPreset('azure')" class="btn-preset" style="background:#1e3a8a; border-color:#2563eb; color:#bfdbfe;" title="企業微軟 Azure OpenAI / Copilot 端點">
-                    <span>🏢 Azure OpenAI</span>
-                </button>
+                <button type="button" onclick="window.applyPreset('tokentable')" class="btn-preset">✨ TokenTable (推薦)</button>
+                <button type="button" onclick="window.applyPreset('copilot')" class="btn-preset" style="background:#064e3b; border-color:#059669; color:#a7f3d0;">🤖 Copilot (GPT-4o)</button>
+                <button type="button" onclick="window.applyPreset('daemon')" class="btn-preset" style="background:#1f2937; border-color:#4b5563; color:#d1d5db;">💻 Webcom (8001)</button>
+                <button type="button" onclick="window.applyPreset('lmstudio')" class="btn-preset" style="background:#1f2937; border-color:#4b5563; color:#d1d5db;">🖥️ LM Studio</button>
+                <button type="button" onclick="window.applyPreset('azure')" class="btn-preset" style="background:#1e3a8a; border-color:#2563eb; color:#bfdbfe;">🏢 Azure</button>
             </div>
         </div>
 
         <div>
-            <label class="input-label">API 端點 (支援 Base URL 如 https://tokentable.asia/v1 或完整 URL)</label>
+            <label class="input-label">API 端點 (Base URL 或完整 URL)</label>
             <input type="text" id="input-endpoint" class="text-input" placeholder="https://tokentable.asia/v1">
         </div>
-        <div style="display:flex; gap:8px;">
-            <div style="flex:1;">
-                <label class="input-label">API 金鑰 (Bearer / Azure api-key)</label>
-                <input type="password" id="input-key" class="text-input" placeholder="TokenTable 或 OpenAI 金鑰">
+        <div style="display:-webkit-box; display:-ms-flexbox; display:flex;">
+            <div style="-webkit-box-flex:1; -ms-flex:1; flex:1; margin-right:4px;">
+                <label class="input-label">API 金鑰</label>
+                <input type="password" id="input-key" class="text-input" placeholder="填入 API Key">
             </div>
-            <div style="flex:1;">
+            <div style="-webkit-box-flex:1; -ms-flex:1; flex:1;">
                 <label class="input-label">模型名稱</label>
                 <input type="text" id="input-model" class="text-input" placeholder="qwen3.8-flash">
             </div>
         </div>
-        <div style="display:flex; align-items:center; justify-content:space-between; margin-top:2px; flex-wrap:wrap; gap:6px;">
-            <div style="display:flex; gap:4px; flex-wrap:wrap; align-items:center;">
-                <span style="font-size:9px; color:#6b7280;">常用模型：</span>
-                <button type="button" onclick="window.selectModel('qwen3.8-flash')" class="model-chip" title="TokenTable 高速推理，推薦首選">qwen3.8-flash</button>
-                <button type="button" onclick="window.selectModel('gpt-4o')" class="model-chip" style="color:#34d399;" title="微軟 Copilot 核心旗艦模型">gpt-4o (Copilot核心)</button>
-                <button type="button" onclick="window.selectModel('claude-3-5-sonnet')" class="model-chip" title="強大長文本與程式邏輯">claude-3-5-sonnet</button>
-                <button type="button" onclick="window.selectModel('gpt-4o-mini')" class="model-chip" title="高速輕量模型">gpt-4o-mini</button>
-                <button type="button" onclick="window.selectModel('auto')" class="model-chip">auto</button>
+        <div style="display:-webkit-box; display:-ms-flexbox; display:flex; -webkit-box-pack:justify; -ms-flex-pack:justify; justify-content:space-between; -webkit-box-align:center; -ms-flex-align:center; align-items:center; margin-top:2px;">
+            <div style="display:inline-block;">
+                <span style="font-size:8px; color:#6b7280;">推薦：</span>
+                <button type="button" onclick="window.selectModel('qwen3.8-flash')" class="model-chip">qwen3.8-flash</button>
+                <button type="button" onclick="window.selectModel('gpt-4o')" class="model-chip" style="color:#34d399;">gpt-4o</button>
+                <button type="button" onclick="window.selectModel('claude-3-5-sonnet')" class="model-chip">claude-3.5</button>
             </div>
-            <button type="button" onclick="window.saveSettings()" class="btn-primary">儲存設定</button>
+            <button type="button" onclick="window.saveSettings()" class="btn-primary">儲存</button>
         </div>
     </div>
 
@@ -301,29 +325,37 @@
         <!-- 歡迎引導卡片 -->
         <div id="welcome-card" class="card-welcome">
             <div class="card-title">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/></svg>
-                <span>歡迎使用 Webcom Office 智慧助理</span>
+                <span style="color:#f59e0b; margin-right:4px;">✨</span>
+                <span>Webcom Office 智慧助理</span>
             </div>
             <p class="card-desc">
-                隨時在下方輸入指令，或點擊上方 <strong>[📑 帶入選取]</strong> 讓 AI 自動潤飾、分析或校對 Word 與 Excel 的文件內容。
+                在下方輸入指令，或點上方 <strong>[📑 帶入]</strong> 由 AI 潤飾 Word/Excel 文件。
             </p>
             <div class="chip-grid">
-                <button type="button" onclick="window.quickPrompt('請幫我分析並潤飾我選取的文字內容，使其具備清晰專業的商業風格。')" class="chip-btn">
-                    <span class="chip-title" style="color:#60a5fa;">✍️ 潤飾與排版</span>
-                    <span class="chip-sub">改善文筆與商業修辭</span>
-                </button>
-                <button type="button" onclick="window.quickPrompt('請幫我繪製一幅圖表展示營運趨勢，使用 ```chart JSON 區塊輸出圖表定義。')" class="chip-btn">
-                    <span class="chip-title" style="color:#34d399;">📊 智能繪圖</span>
-                    <span class="chip-sub">生成圖表並一鍵插入</span>
-                </button>
-                <button type="button" onclick="window.quickPrompt('請幫我將這份資料整理成結構化的 Markdown 表格。')" class="chip-btn">
-                    <span class="chip-title" style="color:#fbbf24;">📋 結構化表格</span>
-                    <span class="chip-sub">整理為試算表資料</span>
-                </button>
-                <button type="button" onclick="window.readDocumentSelection()" class="chip-btn">
-                    <span class="chip-title" style="color:#c084fc;">📑 帶入當前選取</span>
-                    <span class="chip-sub">抓取游標選取內容</span>
-                </button>
+                <div class="chip-item">
+                    <button type="button" onclick="window.quickPrompt('請幫我分析並潤飾我選取的文字內容，使其具備清晰專業的商業風格。')" class="chip-btn">
+                        <span class="chip-title" style="color:#60a5fa;">✍️ 潤飾排版</span>
+                        <span class="chip-sub">改善修辭</span>
+                    </button>
+                </div>
+                <div class="chip-item">
+                    <button type="button" onclick="window.quickPrompt('請幫我繪製一幅圖表展示營運趨勢，使用 chart JSON 區塊輸出圖表定義。')" class="chip-btn">
+                        <span class="chip-title" style="color:#34d399;">📊 智能繪圖</span>
+                        <span class="chip-sub">繪製圖表</span>
+                    </button>
+                </div>
+                <div class="chip-item">
+                    <button type="button" onclick="window.quickPrompt('請幫我將這份資料整理成結構化的 Markdown 表格。')" class="chip-btn">
+                        <span class="chip-title" style="color:#fbbf24;">📋 結構表格</span>
+                        <span class="chip-sub">試算表整理</span>
+                    </button>
+                </div>
+                <div class="chip-item">
+                    <button type="button" onclick="window.readDocumentSelection()" class="chip-btn">
+                        <span class="chip-title" style="color:#c084fc;">📑 帶入選取</span>
+                        <span class="chip-sub">讀取游標內容</span>
+                    </button>
+                </div>
             </div>
         </div>
     </main>
@@ -331,235 +363,315 @@
     <!-- 底部輸入區域 -->
     <footer>
         <div class="input-capsule">
-            <textarea id="input-user-msg" rows="2"
-                onkeydown="if(event.key==='Enter' && !event.shiftKey){event.preventDefault();window.handleSendMessage();}"
-                placeholder="輸入指令 (Enter 發送，Shift+Enter 換行)..."></textarea>
+            <textarea id="input-user-msg" rows="1"
+                onkeydown="if(event.keyCode===13 && !event.shiftKey){if(event.preventDefault){event.preventDefault();}window.handleSendMessage();return false;}"
+                placeholder="輸入指令 (Enter 發送)..."></textarea>
             <button id="btn-send" onclick="window.handleSendMessage()" type="button" class="btn-send" title="發送指令">
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
             </button>
         </div>
     </footer>
 
-    <!-- 完全內嵌業務邏輯 (零外部依賴、防禦性 Storage、單檔案雙擊 100% 正常執行) -->
+    <!-- 
+      純 ES5 業務邏輯 (Strict ES5: 零 ES6 語法、全面相容 IE11 Trident / Office 2019 / 現代瀏覽器)
+    -->
     <script>
-    // ── 0. 安全 LocalStorage 存取封裝 (防禦 file:/// 下的 SecurityError) ──
-    function safeGetStorage(key, fallback = '') {
+    // ── 0. 防禦性 Storage 封裝 (防禦 file:/// 與 IE11 沙箱限制) ──
+    var memoryStore = {};
+    function safeGetStorage(key, fallback) {
+        if (fallback === undefined) fallback = '';
         try {
-            if (typeof localStorage !== 'undefined') {
-                const val = localStorage.getItem(key);
-                return val !== null ? val : fallback;
+            if (typeof window !== 'undefined' && window.localStorage) {
+                var val = window.localStorage.getItem(key);
+                return (val !== null && val !== undefined) ? val : fallback;
             }
         } catch (e) {}
-        return fallback;
+        return memoryStore.hasOwnProperty(key) ? memoryStore[key] : fallback;
     }
     function safeSetStorage(key, val) {
         try {
-            if (typeof localStorage !== 'undefined') {
-                localStorage.setItem(key, val);
+            if (typeof window !== 'undefined' && window.localStorage) {
+                window.localStorage.setItem(key, val);
             }
         } catch (e) {}
+        memoryStore[key] = val;
     }
 
     // ── 1. 全域配置與狀態 ──
-    let chatHistory = [];
-    let isGenerating = false;
+    var chatHistory = [];
+    var isGenerating = false;
 
-    // 預設推薦端點與模型 (首選官方 TokenTable 高速端點，相容微軟 Copilot 核心模型)
-    const defaultEndpoint = safeGetStorage('webcom_addin_endpoint', 'https://tokentable.asia/v1');
-    const defaultModel = safeGetStorage('webcom_addin_model', 'qwen3.8-flash');
+    var defaultEndpoint = safeGetStorage('webcom_addin_endpoint', 'https://tokentable.asia/v1');
+    var defaultModel = safeGetStorage('webcom_addin_model', 'qwen3.8-flash');
 
-    const addinConfig = {
+    var addinConfig = {
         apiEndpoint: defaultEndpoint,
         apiKey: safeGetStorage('webcom_addin_key', ''),
         model: defaultModel,
-        systemPrompt: `你是一個專業的微軟 Office 智慧協作助理 (Webcom for Office)。可以直接協助使用者讀取、分析、編修 Word 文件、Excel 試算表或 PowerPoint 簡報。回答請條理清晰、專業。`
+        systemPrompt: "你是一個專業的微軟 Office 智慧協作助理 (Webcom for Office)。可以直接協助使用者讀取、分析、編修 Word 文件、Excel 試算表或 PowerPoint 簡報。回答請條理清晰、專業。"
     };
 
-    // ── 2. 內嵌微軟 Office.js 橋接器 (具備 800ms 自動超時降級保護) ──
+    // ── 2. 泛用 HTTP 傳輸 (標準 XMLHttpRequest，全面相容 IE10/IE11/Office 2019/現代瀏覽器) ──
+    function httpPostJson(url, headers, payload, callback) {
+        try {
+            var xhr = new XMLHttpRequest();
+            xhr.open('POST', url, true);
+            xhr.setRequestHeader('Content-Type', 'application/json');
+            if (headers) {
+                for (var k in headers) {
+                    if (headers.hasOwnProperty(k)) {
+                        xhr.setRequestHeader(k, headers[k]);
+                    }
+                }
+            }
+            xhr.timeout = 120000;
+            xhr.onreadystatechange = function() {
+                if (xhr.readyState === 4) {
+                    if (xhr.status >= 200 && xhr.status < 300) {
+                        try {
+                            var data = JSON.parse(xhr.responseText);
+                            callback(null, data);
+                        } catch(err) {
+                            callback(new Error("解析 JSON 回應失敗: " + xhr.responseText));
+                        }
+                    } else {
+                        var errMsg = "HTTP " + xhr.status;
+                        try {
+                            var errJson = JSON.parse(xhr.responseText);
+                            if (errJson && errJson.error && errJson.error.message) {
+                                errMsg = errMsg + ": " + errJson.error.message;
+                            } else if (xhr.responseText) {
+                                errMsg = errMsg + ": " + xhr.responseText;
+                            }
+                        } catch(pe) {
+                            if (xhr.responseText) errMsg = errMsg + ": " + xhr.responseText;
+                        }
+                        callback(new Error(errMsg));
+                    }
+                }
+            };
+            xhr.onerror = function() {
+                callback(new Error("連線失敗，請確認網路連線或本機常駐程式狀態"));
+            };
+            xhr.ontimeout = function() {
+                callback(new Error("連線請求逾時 (Timeout)"));
+            };
+            xhr.send(JSON.stringify(payload));
+        } catch(ex) {
+            callback(ex);
+        }
+    }
+
+    // ── 3. 內嵌微軟 Office.js 橋接器 (相容 ES5 Promise / 超時 800ms 自動切換) ──
     window.OfficeBridge = {
         _hostType: 'Web',
         _isOfficeReady: false,
         init: function(onHostChange) {
-            return new Promise((resolve) => {
-                let settled = false;
-                const timer = setTimeout(() => {
-                    if (!settled) {
-                        settled = true;
-                        this._hostType = 'Web';
-                        resolve({ isOfficeReady: false, host: 'Web' });
-                    }
-                }, 800);
+            var self = this;
+            var settled = false;
+            var timer = setTimeout(function() {
+                if (!settled) {
+                    settled = true;
+                    self._hostType = 'Web';
+                    if (typeof onHostChange === 'function') onHostChange('Web');
+                }
+            }, 800);
 
-                try {
-                    if (typeof Office !== 'undefined' && Office.onReady) {
-                        Office.onReady((info) => {
-                            if (settled) return;
-                            settled = true;
-                            clearTimeout(timer);
-                            if (info && info.host) {
-                                this._isOfficeReady = true;
-                                if (info.host === Office.HostType.Word) this._hostType = 'Word';
-                                else if (info.host === Office.HostType.Excel) this._hostType = 'Excel';
-                                else if (info.host === Office.HostType.PowerPoint) this._hostType = 'PowerPoint';
-                                else this._hostType = 'Office';
-                            } else {
-                                this._hostType = 'Web';
-                            }
-                            if (typeof onHostChange === 'function') onHostChange(this._hostType);
-                            resolve({ isOfficeReady: this._isOfficeReady, host: this._hostType });
-                        }).catch(() => {
-                            if (!settled) { settled = true; clearTimeout(timer); resolve({ isOfficeReady: false, host: 'Web' }); }
-                        });
-                    } else {
+            try {
+                if (typeof Office !== 'undefined' && Office.onReady) {
+                    Office.onReady(function(info) {
+                        if (settled) return;
                         settled = true;
                         clearTimeout(timer);
-                        resolve({ isOfficeReady: false, host: 'Web' });
-                    }
-                } catch (e) {
-                    if (!settled) { settled = true; clearTimeout(timer); resolve({ isOfficeReady: false, host: 'Web' }); }
+                        if (info && info.host) {
+                            self._isOfficeReady = true;
+                            if (typeof Office.HostType !== 'undefined') {
+                                if (info.host === Office.HostType.Word) self._hostType = 'Word';
+                                else if (info.host === Office.HostType.Excel) self._hostType = 'Excel';
+                                else if (info.host === Office.HostType.PowerPoint) self._hostType = 'PowerPoint';
+                                else self._hostType = 'Office';
+                            } else {
+                                self._hostType = String(info.host);
+                            }
+                        } else {
+                            self._hostType = 'Web';
+                        }
+                        if (typeof onHostChange === 'function') onHostChange(self._hostType);
+                    })['catch'](function() {
+                        if (!settled) {
+                            settled = true;
+                            clearTimeout(timer);
+                            if (typeof onHostChange === 'function') onHostChange('Web');
+                        }
+                    });
+                } else {
+                    // 非 Office 環境
                 }
-            });
+            } catch(e) {
+                // 防禦性捕捉
+            }
         },
-        getSelectedContent: async function() {
+        getSelectedContent: function(callback) {
             if (!this._isOfficeReady) {
-                return "【單檔案預覽模式】尚未連接微軟 Office 主機，此為模擬選取內容測試。";
+                callback("【單檔案/預覽模式】尚未連接 Office 主機，此為模擬選取文字。");
+                return;
             }
             try {
-                if (this._hostType === 'Word') {
-                    return await Word.run(async (context) => {
-                        const sel = context.document.getSelection();
+                if (this._hostType === 'Word' && typeof Word !== 'undefined' && Word.run) {
+                    Word.run(function(context) {
+                        var sel = context.document.getSelection();
                         sel.load('text');
-                        await context.sync();
-                        return sel.text.trim();
+                        return context.sync().then(function() {
+                            var txt = sel.text ? sel.text.replace(/^\s+|\s+$/g, '') : '';
+                            callback(txt);
+                        });
+                    })['catch'](function() {
+                        callback('');
                     });
-                } else if (this._hostType === 'Excel') {
-                    return await Excel.run(async (context) => {
-                        const range = context.workbook.getSelectedRange();
+                    return;
+                } else if (this._hostType === 'Excel' && typeof Excel !== 'undefined' && Excel.run) {
+                    Excel.run(function(context) {
+                        var range = context.workbook.getSelectedRange();
                         range.load(['values', 'rowCount', 'columnCount']);
-                        await context.sync();
-                        return range.values.map(row => row.join('\t')).join('\n');
+                        return context.sync().then(function() {
+                            var rows = range.values || [];
+                            var lines = [];
+                            for (var r = 0; r < rows.length; r++) {
+                                lines.push(rows[r].join('\t'));
+                            }
+                            callback(lines.join('\n'));
+                        });
+                    })['catch'](function() {
+                        callback('');
                     });
+                    return;
                 }
-            } catch (e) {
-                return '';
+            } catch(e) {
+                callback('');
+                return;
             }
-            return '';
+            callback('');
         },
-        insertText: async function(text, { replace = false } = {}) {
+        insertText: function(text, replace, callback) {
             if (!this._isOfficeReady) {
-                return { success: true, mocked: true };
+                callback({ success: true, mocked: true });
+                return;
             }
             try {
-                if (this._hostType === 'Word') {
-                    await Word.run(async (context) => {
-                        const sel = context.document.getSelection();
-                        if (replace) sel.insertText(text, Word.InsertLocation.replace);
-                        else sel.insertText('\n' + text, Word.InsertLocation.after);
-                        await context.sync();
+                if (this._hostType === 'Word' && typeof Word !== 'undefined' && Word.run) {
+                    Word.run(function(context) {
+                        var sel = context.document.getSelection();
+                        if (replace) {
+                            sel.insertText(text, Word.InsertLocation.replace);
+                        } else {
+                            sel.insertText('\n' + text, Word.InsertLocation.after);
+                        }
+                        return context.sync().then(function() {
+                            callback({ success: true });
+                        });
+                    })['catch'](function(err) {
+                        callback({ success: false, error: err.message || String(err) });
                     });
-                    return { success: true };
-                } else if (this._hostType === 'Excel') {
-                    await Excel.run(async (context) => {
-                        const range = context.workbook.getSelectedRange();
+                    return;
+                } else if (this._hostType === 'Excel' && typeof Excel !== 'undefined' && Excel.run) {
+                    Excel.run(function(context) {
+                        var range = context.workbook.getSelectedRange();
                         range.values = [[text]];
-                        await context.sync();
+                        return context.sync().then(function() {
+                            callback({ success: true });
+                        });
+                    })['catch'](function(err) {
+                        callback({ success: false, error: err.message || String(err) });
                     });
-                    return { success: true };
+                    return;
                 }
-            } catch (e) {
-                return { success: false, error: e.message };
+            } catch(e) {
+                callback({ success: false, error: e.message || String(e) });
+                return;
             }
-            return { success: false, error: '不支援的主機環境' };
+            callback({ success: false, error: '不支援的主機環境' });
         }
     };
 
-    // ── 3. 全域按鈕事件函式 (100% 隨點隨應) ──
+    // ── 4. URL 標準化函式 (相容 TokenTable、Azure OpenAI、LM Studio 等) ──
+    function normalizeApiUrl(base) {
+        if (!base) return '';
+        var clean = base.replace(/^\s+|\s+$/g, '');
+        if (clean.indexOf('openai.azure.com') !== -1) {
+            return clean;
+        }
+        if (clean.slice(-17) === '/chat/completions') {
+            return clean;
+        }
+        if (clean.charAt(clean.length - 1) === '/') {
+            clean = clean.slice(0, -1);
+        }
+        if (clean.slice(-3) !== '/v1' && clean.indexOf('/v1/') === -1) {
+            clean = clean + '/v1';
+        }
+        return clean + '/chat/completions';
+    }
+
+    // ── 5. 全域操作函式 (掛載至 window 供 HTML 原生 onclick 即點即應) ──
 
     // 發送訊息
-    window.handleSendMessage = async function() {
-        const input = document.getElementById('input-user-msg');
+    window.handleSendMessage = function() {
+        var input = document.getElementById('input-user-msg');
         if (!input) return;
-        const text = input.value.trim();
+        var text = input.value.replace(/^\s+|\s+$/g, '');
         if (!text || isGenerating) return;
 
         input.value = '';
-        appendMessage('user', text);
+        appendMessage('user', escapeHtml(text).replace(/\n/g, '<br>'));
         chatHistory.push({ role: 'user', content: text, timestamp: new Date().toISOString() });
 
         isGenerating = true;
-        const btnSend = document.getElementById('btn-send');
+        var btnSend = document.getElementById('btn-send');
         if (btnSend) btnSend.disabled = true;
 
-        const aiBubble = appendMessage('assistant', '<span style="color:#818cf8; animation:pulse 1.5s infinite;">正在分析與生成中...</span>');
+        var aiBubble = appendMessage('assistant', '<span style="color:#818cf8;">正在分析與生成中...</span>');
 
-        try {
-            const msgs = [
-                { role: 'system', content: addinConfig.systemPrompt },
-                ...chatHistory.map(m => ({ role: m.role, content: m.content }))
-            ];
+        var msgs = [
+            { role: 'system', content: addinConfig.systemPrompt }
+        ];
+        for (var i = 0; i < chatHistory.length; i++) {
+            msgs.push({ role: chatHistory[i].role, content: chatHistory[i].content });
+        }
 
-            // 智慧標準化 API 端點 (完整相容 TokenTable、Azure OpenAI、LM Studio、OpenAI 等)
-            function normalizeApiUrl(base) {
-                if (!base) return '';
-                let clean = base.trim();
-                // 若為 Azure OpenAI 端點，保留完整部署路徑與 api-version query string
-                if (clean.includes('openai.azure.com')) return clean;
-                if (clean.endsWith('/chat/completions')) return clean;
-                if (clean.endsWith('/')) clean = clean.slice(0, -1);
-                if (!clean.endsWith('/v1') && !clean.includes('/v1/')) {
-                    clean += '/v1';
-                }
-                return clean + '/chat/completions';
-            }
+        var targetUrl = normalizeApiUrl(addinConfig.apiEndpoint);
+        var headers = {};
+        if (addinConfig.apiKey) {
+            headers['Authorization'] = 'Bearer ' + addinConfig.apiKey;
+            headers['api-key'] = addinConfig.apiKey; // 相容 Azure OpenAI
+        }
 
-            const targetUrl = normalizeApiUrl(addinConfig.apiEndpoint);
+        var payload = {
+            model: addinConfig.model || 'qwen3.8-flash',
+            messages: msgs,
+            temperature: 0.7
+        };
 
-            const headers = { 'Content-Type': 'application/json' };
-            if (addinConfig.apiKey) {
-                headers['Authorization'] = 'Bearer ' + addinConfig.apiKey;
-                headers['api-key'] = addinConfig.apiKey; // 相容 Azure OpenAI / Copilot
-            }
-
-            const res = await fetch(targetUrl, {
-                method: 'POST',
-                headers,
-                body: JSON.stringify({
-                    model: addinConfig.model || 'qwen3.8-flash',
-                    messages: msgs,
-                    temperature: 0.7
-                })
-            });
-
-            if (!res.ok) {
-                let errDetail = await res.text();
-                try {
-                    const parsedErr = JSON.parse(errDetail);
-                    if (parsedErr.error && parsedErr.error.message) errDetail = parsedErr.error.message;
-                } catch(e) {}
-                throw new Error(`HTTP ${res.status}: ${errDetail}`);
-            }
-
-            const data = await res.json();
-            const reply = data.choices?.[0]?.message?.content || '（無回應）';
-
-            aiBubble.innerHTML = escapeHtml(reply).replace(/\n/g, '<br>');
-            chatHistory.push({ role: 'assistant', content: reply, timestamp: new Date().toISOString() });
-
-            attachInsertActions(aiBubble, reply);
-
-        } catch (err) {
-            console.error('[Send Error]', err);
-            aiBubble.innerHTML = `<span style="color:#f87171; font-weight:bold;">⚠️ 連線失敗:</span> ${escapeHtml(err.message)}<br><span style="font-size:10px; color:#9ca3af; margin-top:4px; display:block;">💡 提示：若使用 TokenTable 或雲端模型，請點擊右上角「⚙️ 設定」輸入 API Key。<br>推薦申請 Key：<a href="https://top.yia.app/token" target="_blank" style="color:#818cf8; text-decoration:underline;">https://top.yia.app/token</a></span>`;
-        } finally {
+        httpPostJson(targetUrl, headers, payload, function(err, data) {
             isGenerating = false;
             if (btnSend) btnSend.disabled = false;
+
+            if (err) {
+                var errStr = err.message || String(err);
+                aiBubble.innerHTML = '<span style="color:#f87171; font-weight:bold;">⚠️ 連線失敗:</span> ' + escapeHtml(errStr) +
+                    '<br><span style="font-size:9px; color:#9ca3af; margin-top:3px; display:block;">💡 提示：若使用 TokenTable 或雲端模型，請點右上角「⚙️ 設定」輸入 Key。<br>申請 Key：<a href="https://top.yia.app/token" target="_blank" style="color:#818cf8; text-decoration:underline;">https://top.yia.app/token</a></span>';
+            } else {
+                var reply = (data && data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content) ? data.choices[0].message.content : '（無回應）';
+                aiBubble.innerHTML = escapeHtml(reply).replace(/\n/g, '<br>');
+                chatHistory.push({ role: 'assistant', content: reply, timestamp: new Date().toISOString() });
+                attachInsertActions(aiBubble, reply);
+            }
             scrollToBottom();
-        }
+        });
     };
 
     // 快捷提示詞
     window.quickPrompt = function(promptText) {
-        const input = document.getElementById('input-user-msg');
+        var input = document.getElementById('input-user-msg');
         if (!input) return;
         input.value = promptText;
         input.focus();
@@ -567,41 +679,45 @@
     };
 
     // 讀取選取文字
-    window.readDocumentSelection = async function() {
-        const text = await window.OfficeBridge.getSelectedContent();
-        const input = document.getElementById('input-user-msg');
-        if (text && input) {
-            input.value = `【以下為我選取的文件內容】：\n${text}\n\n請幫我分析並潤飾這段內容。`;
-            input.focus();
-            showToast('已成功帶入選取內容！');
-        } else {
-            showToast('目前未選取任何內容', true);
-        }
+    window.readDocumentSelection = function() {
+        window.OfficeBridge.getSelectedContent(function(text) {
+            var input = document.getElementById('input-user-msg');
+            if (text && input) {
+                input.value = "【以下為選取內容】：\n" + text + "\n\n請幫我分析並潤飾這段內容。";
+                input.focus();
+                showToast('已帶入選取內容！');
+            } else {
+                showToast('目前未選取任何內容', true);
+            }
+        });
     };
 
     // 設定面板開關
     window.toggleSettingsPanel = function() {
-        const p = document.getElementById('settings-panel');
-        if (p) p.classList.toggle('hidden');
+        var p = document.getElementById('settings-panel');
+        if (!p) return;
+        if (p.className.indexOf('hidden') !== -1) {
+            p.className = p.className.replace('hidden', '').replace(/^\s+|\s+$/g, '');
+        } else {
+            p.className = p.className + ' hidden';
+        }
     };
 
     // 快速套用預設組態
     window.applyPreset = function(name) {
-        const epEl = document.getElementById('input-endpoint');
-        const modelEl = document.getElementById('input-model');
+        var epEl = document.getElementById('input-endpoint');
+        var modelEl = document.getElementById('input-model');
         if (!epEl || !modelEl) return;
         if (name === 'tokentable') {
             epEl.value = 'https://tokentable.asia/v1';
             modelEl.value = 'qwen3.8-flash';
-            showToast('已套用 TokenTable 高速推薦配置！請輸入 Key 後儲存。');
+            showToast('已套用 TokenTable 高速推薦配置！');
         } else if (name === 'copilot') {
             epEl.value = 'https://tokentable.asia/v1';
             modelEl.value = 'gpt-4o';
             showToast('已套用微軟 Copilot 同核心 (GPT-4o)！');
         } else if (name === 'daemon') {
-            epEl.value = (window.location.protocol.startsWith('https')) 
-                ? 'https://127.0.0.1:8002/v1' 
-                : 'http://127.0.0.1:8001/v1';
+            epEl.value = (window.location.protocol.indexOf('https') === 0) ? 'https://127.0.0.1:8002/v1' : 'http://127.0.0.1:8001/v1';
             modelEl.value = 'qwen3.8-flash';
             showToast('已套用本機 Webcom 常駐代理 (8001/8002)');
         } else if (name === 'lmstudio') {
@@ -617,18 +733,22 @@
 
     // 快速選取模型標籤
     window.selectModel = function(modelName) {
-        const modelEl = document.getElementById('input-model');
+        var modelEl = document.getElementById('input-model');
         if (modelEl) {
             modelEl.value = modelName;
-            showToast(`已選取模型：${modelName}`);
+            showToast('已選取模型：' + modelName);
         }
     };
 
     // 儲存設定
     window.saveSettings = function() {
-        const ep = document.getElementById('input-endpoint')?.value.trim();
-        const key = document.getElementById('input-key')?.value.trim();
-        const model = document.getElementById('input-model')?.value.trim();
+        var epEl = document.getElementById('input-endpoint');
+        var keyEl = document.getElementById('input-key');
+        var modelEl = document.getElementById('input-model');
+        var ep = epEl ? epEl.value.replace(/^\s+|\s+$/g, '') : '';
+        var key = keyEl ? keyEl.value.replace(/^\s+|\s+$/g, '') : '';
+        var model = modelEl ? modelEl.value.replace(/^\s+|\s+$/g, '') : '';
+
         if (ep) {
             addinConfig.apiEndpoint = ep;
             safeSetStorage('webcom_addin_endpoint', ep);
@@ -638,90 +758,109 @@
         addinConfig.model = model || 'qwen3.8-flash';
         safeSetStorage('webcom_addin_model', addinConfig.model);
 
-        document.getElementById('settings-panel')?.classList.add('hidden');
+        var p = document.getElementById('settings-panel');
+        if (p && p.className.indexOf('hidden') === -1) {
+            p.className = p.className + ' hidden';
+        }
         showToast('設定已儲存！');
     };
 
     // 清空對話
     window.clearChatHistory = function() {
         chatHistory = [];
-        const c = document.getElementById('chat-container');
+        var c = document.getElementById('chat-container');
         if (c) {
-            c.innerHTML = '<div class="card-welcome" style="text-align:center; padding:20px; font-size:11px; color:#9ca3af;"><span>💬 對話已清空，請隨時在下方輸入新的指令。</span></div>';
+            c.innerHTML = '<div class="card-welcome" style="text-align:center; padding:15px; font-size:10px; color:#9ca3af;"><span>💬 對話已清空，請隨時在下方輸入新的指令。</span></div>';
         }
         showToast('對話紀錄已清空');
     };
 
-    // 匯出對話紀錄 (完全相容 Webcom)
+    // 匯出對話紀錄 (完全相容 Webcom 主控台)
     window.exportChatForWebcom = function() {
         if (chatHistory.length === 0) {
             showToast('目前無對話紀錄可匯出', true);
             return;
         }
-        const now = new Date();
-        const pad = (n) => String(n).padStart(2, '0');
-        const ts = `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}_${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}`;
+        var now = new Date();
+        var pad = function(n) { return (n < 10 ? '0' : '') + n; };
+        var ts = '' + now.getFullYear() + pad(now.getMonth() + 1) + pad(now.getDate()) + '_' + pad(now.getHours()) + pad(now.getMinutes()) + pad(now.getSeconds());
 
-        const data = {
+        var data = {
             app: "Webcom Dual-Engine Console",
-            source: "Webcom Office Add-in",
-            exportTimestamp: now.toISOString(),
+            source: "Webcom Office Add-in (IE11/Edge 相容版)",
+            exportTimestamp: now.toISOString ? now.toISOString() : now.toString(),
             messages: chatHistory
         };
-        const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-        const a = document.createElement('a');
+        var jsonStr = JSON.stringify(data, null, 2);
+
+        // 相容 IE11 msSaveBlob 檔案下載
+        if (window.navigator && window.navigator.msSaveBlob) {
+            var blob = new Blob([jsonStr], { type: 'application/json' });
+            window.navigator.msSaveBlob(blob, 'chat_history_office_' + ts + '.json');
+            showToast('📁 已透過 IE11 下載對話紀錄！');
+            return;
+        }
+
+        var blob = new Blob([jsonStr], { type: 'application/json' });
+        var a = document.createElement('a');
         a.href = URL.createObjectURL(blob);
-        a.download = `chat_history_office_${ts}.json`;
+        a.download = 'chat_history_office_' + ts + '.json';
         document.body.appendChild(a);
         a.click();
-        setTimeout(() => { a.remove(); URL.revokeObjectURL(a.href); }, 1500);
+        setTimeout(function() {
+            a.parentNode.removeChild(a);
+            if (URL.revokeObjectURL) URL.revokeObjectURL(a.href);
+        }, 1500);
         showToast('📁 已匯出對話紀錄！');
     };
 
     // 匯入紀錄
     window.triggerChatImport = function() {
-        document.getElementById('file-import-chat')?.click();
+        var f = document.getElementById('file-import-chat');
+        if (f) f.click();
     };
     window.handleChatFileSelected = function(e) {
-        if (e.target.files && e.target.files[0]) {
-            const r = new FileReader();
-            r.onload = (evt) => {
+        var files = e.target.files;
+        if (files && files[0]) {
+            var r = new FileReader();
+            r.onload = function(evt) {
                 try {
-                    const parsed = JSON.parse(evt.target.result);
-                    const msgs = Array.isArray(parsed) ? parsed : (parsed.messages || []);
+                    var parsed = JSON.parse(evt.target.result);
+                    var msgs = (parsed instanceof Array) ? parsed : (parsed.messages || []);
                     if (msgs.length === 0) throw new Error('檔案無訊息');
                     chatHistory = [];
-                    const c = document.getElementById('chat-container');
+                    var c = document.getElementById('chat-container');
                     if (c) c.innerHTML = '';
-                    msgs.forEach(m => {
-                        chatHistory.push(m);
-                        appendMessage(m.role || 'user', escapeHtml(m.content || '').replace(/\n/g, '<br>'));
-                    });
-                    showToast(`✅ 成功匯入 ${msgs.length} 則對話！`);
-                } catch (err) {
+                    for (var m = 0; m < msgs.length; m++) {
+                        var item = msgs[m];
+                        chatHistory.push(item);
+                        appendMessage(item.role || 'user', escapeHtml(item.content || '').replace(/\n/g, '<br>'));
+                    }
+                    showToast('✅ 成功匯入 ' + msgs.length + ' 則對話！');
+                } catch(err) {
                     showToast('❌ 匯入失敗: ' + err.message, true);
                 }
             };
-            r.readAsText(e.target.files[0]);
+            r.readAsText(files[0]);
             e.target.value = '';
         }
     };
 
-    // ── 4. 輔助渲染函式 ──
+    // ── 6. 輔助渲染函式 ──
     function appendMessage(role, contentHtml) {
-        const c = document.getElementById('chat-container');
+        var c = document.getElementById('chat-container');
         if (!c) return null;
-        const w = document.getElementById('welcome-card');
-        if (w) w.remove();
+        var w = document.getElementById('welcome-card');
+        if (w && w.parentNode) w.parentNode.removeChild(w);
 
-        const wrap = document.createElement('div');
+        var wrap = document.createElement('div');
         wrap.className = 'msg-bubble ' + (role === 'user' ? 'msg-user' : 'msg-assistant');
 
-        const meta = document.createElement('div');
+        var meta = document.createElement('div');
         meta.className = 'msg-meta';
-        meta.innerHTML = `<span>${role === 'user' ? '👤 閣下' : '🤖 Webcom AI'}</span><span>${new Date().toLocaleTimeString()}</span>`;
+        meta.innerHTML = '<span>' + (role === 'user' ? '👤 閣下' : '🤖 Webcom') + '</span><span>' + (new Date().toLocaleTimeString()) + '</span>';
 
-        const body = document.createElement('div');
+        var body = document.createElement('div');
         body.innerHTML = contentHtml;
 
         wrap.appendChild(meta);
@@ -732,25 +871,33 @@
     }
 
     function attachInsertActions(bubbleEl, rawText) {
-        const strip = document.createElement('div');
+        var strip = document.createElement('div');
         strip.className = 'action-strip';
 
-        const btnIns = document.createElement('button');
+        var btnIns = document.createElement('button');
         btnIns.className = 'action-btn';
-        btnIns.textContent = '📥 寫入游標處';
-        btnIns.onclick = async () => {
-            const res = await window.OfficeBridge.insertText(rawText, { replace: false });
-            if (res.success) showToast(res.mocked ? '【單檔案預覽】已模擬寫入' : '已寫入文件！');
-            else showToast('寫入失敗: ' + res.error, true);
+        btnIns.innerHTML = '📥 寫入游標處';
+        btnIns.onclick = function() {
+            window.OfficeBridge.insertText(rawText, false, function(res) {
+                if (res.success) {
+                    showToast(res.mocked ? '【預覽】已模擬寫入' : '已寫入文件！');
+                } else {
+                    showToast('寫入失敗: ' + res.error, true);
+                }
+            });
         };
 
-        const btnRep = document.createElement('button');
+        var btnRep = document.createElement('button');
         btnRep.className = 'action-btn replace';
-        btnRep.textContent = '🔄 取代選取';
-        btnRep.onclick = async () => {
-            const res = await window.OfficeBridge.insertText(rawText, { replace: true });
-            if (res.success) showToast(res.mocked ? '【單檔案預覽】已模擬取代' : '已取代選取！');
-            else showToast('取代失敗: ' + res.error, true);
+        btnRep.innerHTML = '🔄 取代選取';
+        btnRep.onclick = function() {
+            window.OfficeBridge.insertText(rawText, true, function(res) {
+                if (res.success) {
+                    showToast(res.mocked ? '【預覽】已模擬取代' : '已取代選取！');
+                } else {
+                    showToast('取代失敗: ' + res.error, true);
+                }
+            });
         };
 
         strip.appendChild(btnIns);
@@ -759,47 +906,47 @@
     }
 
     function scrollToBottom() {
-        const c = document.getElementById('chat-container');
+        var c = document.getElementById('chat-container');
         if (c) c.scrollTop = c.scrollHeight;
     }
 
     function escapeHtml(str) {
-        const d = document.createElement('div');
+        if (!str) return '';
+        var d = document.createElement('div');
         d.textContent = str;
         return d.innerHTML;
     }
 
-    window.showToast = function(msg, isErr = false) {
-        const old = document.getElementById('addin-toast');
-        if (old) old.remove();
-        const t = document.createElement('div');
+    window.showToast = function(msg, isErr) {
+        var old = document.getElementById('addin-toast');
+        if (old && old.parentNode) old.parentNode.removeChild(old);
+        var t = document.createElement('div');
         t.id = 'addin-toast';
         if (isErr) t.className = 'error';
-        t.textContent = msg;
+        t.innerHTML = escapeHtml(msg);
         document.body.appendChild(t);
-        setTimeout(() => {
-            t.style.opacity = '0';
-            setTimeout(() => t.remove(), 300);
-        }, 2000);
+        setTimeout(function() {
+            if (t && t.parentNode) t.parentNode.removeChild(t);
+        }, 2200);
     };
 
-    // ── 5. 立即執行初始化 (確保輸入框數值就緒，超時 800ms 自動切換主機標記) ──
+    // ── 7. 初始化執行 (超時 800ms 自動切換主機狀態標籤) ──
     (function initUI() {
-        const epEl = document.getElementById('input-endpoint');
-        const keyEl = document.getElementById('input-key');
-        const modelEl = document.getElementById('input-model');
+        var epEl = document.getElementById('input-endpoint');
+        var keyEl = document.getElementById('input-key');
+        var modelEl = document.getElementById('input-model');
         if (epEl) epEl.value = addinConfig.apiEndpoint;
         if (keyEl) keyEl.value = addinConfig.apiKey;
         if (modelEl) modelEl.value = addinConfig.model;
 
         window.OfficeBridge.init(function(host) {
-            const b = document.getElementById('host-badge');
+            var b = document.getElementById('host-badge');
             if (!b) return;
             b.className = 'badge';
-            if (host === 'Word') { b.textContent = 'Word 模式'; b.classList.add('word'); }
-            else if (host === 'Excel') { b.textContent = 'Excel 模式'; b.classList.add('excel'); }
-            else if (host === 'PowerPoint') { b.textContent = 'PPT 模式'; b.classList.add('ppt'); }
-            else { b.textContent = 'Web 模式'; }
+            if (host === 'Word') { b.innerHTML = 'Word'; b.className = 'badge word'; }
+            else if (host === 'Excel') { b.innerHTML = 'Excel'; b.className = 'badge excel'; }
+            else if (host === 'PowerPoint') { b.innerHTML = 'PPT'; b.className = 'badge ppt'; }
+            else { b.innerHTML = 'Web'; }
         });
     })();
     </script>
