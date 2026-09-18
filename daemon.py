@@ -2800,6 +2800,64 @@ async def open_in_system_browser(request: Request):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+# ── Windows SAPI 原生語音朗讀服務 (支援 Office 2019 / Trident / Webcom Add-in) ──
+_sapi_voice = None
+
+def _get_sapi_voice():
+    global _sapi_voice
+    if _sapi_voice is None:
+        try:
+            import win32com.client
+            _sapi_voice = win32com.client.Dispatch("SAPI.SpVoice")
+        except Exception:
+            _sapi_voice = False
+    return _sapi_voice if _sapi_voice is not False else None
+
+@app.post("/api/tts/speak")
+async def tts_speak(request: Request):
+    """為 Office 增益集與 Webcom 提供 Windows 原生語音朗讀 (非同步、可調速)"""
+    import re
+    try:
+        data = await request.json()
+        text = data.get("text", "").strip()
+        rate_multiplier = float(data.get("rate", 1.15))
+        if not text:
+            return {"status": "ok", "speaking": False}
+
+        # 清除 Markdown 符號使朗讀流暢
+        clean_text = re.sub(r'[`#\*_\[\]\(\)\|]', ' ', text)
+        clean_text = re.sub(r'\s+', ' ', clean_text).strip()
+        if len(clean_text) > 4000:
+            clean_text = clean_text[:4000]
+
+        # 速度換算：1.0x -> 0, 1.15x -> 1, 1.3x -> 2, 1.5x -> 3, 2.0x -> 5
+        sapi_rate = int(round((rate_multiplier - 1.0) * 5))
+        sapi_rate = max(-10, min(10, sapi_rate))
+
+        voice = _get_sapi_voice()
+        if voice:
+            # SVSFPurgeBeforeSpeak = 2 (停止先前的朗讀)
+            voice.Speak("", 2)
+            voice.Rate = sapi_rate
+            # SVSFlagsAsync = 1 (非同步背景發音)
+            voice.Speak(clean_text, 1)
+            return {"status": "ok", "speaking": True, "engine": "SAPI.SpVoice", "rate": rate_multiplier}
+        else:
+            return {"status": "error", "message": "未安裝 SAPI.SpVoice COM 介面"}
+    except Exception as e:
+        return {"status": "error", "error": str(e)}
+
+@app.post("/api/tts/stop")
+def tts_stop():
+    """立即停止目前進行中的 Windows 語音朗讀"""
+    voice = _get_sapi_voice()
+    if voice:
+        try:
+            voice.Speak("", 2) # SVSFPurgeBeforeSpeak = 2
+        except Exception:
+            pass
+    return {"status": "ok", "stopped": True}
+
 
 if __name__ == "__main__":
     import time

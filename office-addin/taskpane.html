@@ -227,6 +227,7 @@
         }
         .action-btn:hover { background: #374151; color: #fff; }
         .action-btn.replace { color: #fcd34d; border-color: #d97706; }
+        .action-btn.speaking { background: #7f1d1d !important; border-color: #ef4444 !important; color: #fee2e2 !important; }
 
         /* Toast 提示 */
         #addin-toast {
@@ -255,6 +256,10 @@
             <span id="host-badge" class="badge">Word</span>
         </div>
         <div class="toolbar-right">
+            <!-- 停止朗讀按鈕 (朗讀進行中時自動顯示) -->
+            <button id="btn-stop-tts" onclick="window.ttsManager && window.ttsManager.stop()" type="button" class="btn-toolbar hidden" style="color:#f87171; border-color:#dc2626; background:#450a0a; padding:1px 5px;" title="停止目前語音朗讀">
+                <span>⏹️ 停讀</span>
+            </button>
             <!-- 讀取 Word 選取或全文 -->
             <button id="btn-read-selection" onclick="window.readDocumentSelection(false)" type="button" class="btn-toolbar" title="從左側 Word 讀取選取或全文內容">
                 <span>📤 讀取</span>
@@ -322,6 +327,31 @@
                 <button type="button" onclick="window.testConnection()" class="btn-preset" style="color:#38bdf8; border-color:#0284c7; margin-right:3px;" title="測試目前端點與金鑰是否暢通">🔍 測試</button>
                 <button type="button" onclick="window.syncFromWebcom()" class="btn-preset" style="color:#a78bfa; border-color:#7c3aed; margin-right:3px;" title="自 Webcom 讀取最新設定">🔄 同步</button>
                 <button type="button" onclick="window.saveSettings()" class="btn-primary">儲存</button>
+            </div>
+        </div>
+
+        <!-- 🔊 語音朗讀模式設定 (速度預設 1.15x，最快 2.0x) -->
+        <div style="margin-top:6px; border-top:1px solid #374151; padding-top:6px;">
+            <div style="display:-webkit-box; display:-ms-flexbox; display:flex; -webkit-box-pack:justify; -ms-flex-pack:justify; justify-content:space-between; -webkit-box-align:center; -ms-flex-align:center; align-items:center; margin-bottom:3px;">
+                <span class="input-label" style="margin:0;">🔊 語音朗讀速度 (預設 1.15x，最快 2.0x)：</span>
+                <span id="label-tts-speed" style="font-size:9px; color:#38bdf8; font-weight:bold;">1.15x</span>
+            </div>
+            <div style="display:-webkit-box; display:-ms-flexbox; display:flex; -webkit-box-align:center; -ms-flex-align:center; align-items:center;">
+                <input type="range" id="range-tts-speed" min="0.8" max="2.0" step="0.05" value="1.15" onchange="window.handleTtsSpeedChange(this.value)" oninput="window.handleTtsSpeedInput(this.value)" style="width:100%; cursor:pointer;">
+            </div>
+            <div style="display:-webkit-box; display:-ms-flexbox; display:flex; -webkit-box-pack:justify; -ms-flex-pack:justify; justify-content:space-between; margin-top:3px;">
+                <button type="button" onclick="window.setQuickTtsSpeed(1.0)" class="model-chip">1.0x</button>
+                <button type="button" onclick="window.setQuickTtsSpeed(1.15)" class="model-chip" style="color:#fbbf24; border-color:#d97706;">1.15x (預設)</button>
+                <button type="button" onclick="window.setQuickTtsSpeed(1.3)" class="model-chip">1.3x</button>
+                <button type="button" onclick="window.setQuickTtsSpeed(1.5)" class="model-chip">1.5x</button>
+                <button type="button" onclick="window.setQuickTtsSpeed(2.0)" class="model-chip" style="color:#ef4444; border-color:#dc2626;">2.0x (最快)</button>
+            </div>
+            <div style="margin-top:5px; display:-webkit-box; display:-ms-flexbox; display:flex; -webkit-box-pack:justify; -ms-flex-pack:justify; justify-content:space-between; -webkit-box-align:center; -ms-flex-align:center; align-items:center;">
+                <label style="cursor:pointer; display:-webkit-box; display:-ms-flexbox; display:flex; -webkit-box-align:center; -ms-flex-align:center; align-items:center; font-size:9px; color:#d1d5db;">
+                    <input type="checkbox" id="chk-auto-tts" onchange="window.handleAutoTtsChange(this.checked)" style="margin-right:4px;">
+                    <span>生成完畢自動朗讀</span>
+                </label>
+                <button type="button" onclick="window.testTts()" class="btn-preset" style="padding:1px 6px; font-size:8px;">試聽朗讀</button>
             </div>
         </div>
     </div>
@@ -424,7 +454,7 @@
         apiEndpoint: defaultEndpoint,
         apiKey: safeGetStorage('webcom_addin_key', ''),
         model: defaultModel,
-        systemPrompt: "你是一個專業的微軟 Office 智慧協作助理 (Webcom for Office)。可以直接協助使用者讀取、分析、編修 Word 文件、Excel 試算表或 PowerPoint 簡報。回答請條理清晰、專業。"
+        systemPrompt: "你是一個專業的微軟 Office 智慧協作助理 (Webcom for Office)。可以直接協助使用者潤飾、撰寫、分析 Word 文件、Excel 試算表或 PowerPoint 簡報。\n【極為重要之輸出規範】：\n1. 請直接輸出正文成果（文章正文、潤飾段落、結構表格），供使用者直接插入左側 Word 文件。\n2. 嚴禁在開頭輸出自我介紹、模型提供商說明（例如『我的模型提供商是...』）或客套廢話（例如『好的，以下為您整理...』）。輸出內容需直接可用於 Word 文件。"
     };
 
     // ── 2. 泛用 HTTP 傳輸 (標準 XMLHttpRequest，全面相容 IE10/IE11/Office 2019/現代瀏覽器) ──
@@ -478,6 +508,41 @@
         }
     }
 
+    // ── 2.4 正文內容過濾器 (自動剝離模型導讀、自我介紹與前綴廢話，保證純淨正文寫入 Word 或朗讀) ──
+    function cleanSubstantiveContent(raw) {
+        if (!raw) return '';
+        var text = String(raw).replace(/\r\n/g, '\n').replace(/\r/g, '\n').replace(/^\s+|\s+$/g, '');
+
+        // 模式 1: 具有 --- 或 *** 或 ___ 分隔線 (前段為模型自我介紹/提示，後段為文章正文)
+        var hrMatch = text.match(/^([\s\S]*?)\n\s*(?:---+|\*\*\*+|___+)\s*\n([\s\S]*)$/);
+        if (hrMatch) {
+            var preamble = hrMatch[1].replace(/^\s+|\s+$/g, '');
+            var mainBody = hrMatch[2].replace(/^\s+|\s+$/g, '');
+            if (/模型|tokentable|openai|gpt|claude|qwen|deepseek|提供商|助理|好的|以下|整理|為您/i.test(preamble)) {
+                if (mainBody.length > 0) {
+                    return mainBody;
+                }
+            }
+        }
+
+        // 模式 2: 開頭無分隔線，但前幾行包含模型導讀或客套問候語
+        var lines = text.split('\n');
+        while (lines.length > 0) {
+            var firstLine = lines[0].replace(/^\s+|\s+$/g, '');
+            if (/^(?:[\*\-_#>\s]*(?:我的模型提供商|我是|我是一個|由\s*TokenTable|好的[，,、]|當然[，,、]|以下[是為]|已為您[整理潤飾]))/i.test(firstLine)) {
+                lines.shift();
+                while (lines.length > 0 && lines[0].replace(/^\s+|\s+$/g, '').length === 0) {
+                    lines.shift();
+                }
+            } else {
+                break;
+            }
+        }
+
+        var result = lines.join('\n').replace(/^\s+|\s+$/g, '');
+        return result.length > 0 ? result : text;
+    }
+
     // ── 2.5 Markdown 轉微軟 Word 原生富文字 HTML 轉換器 (Strict ES5) ──
     function formatInlineWord(str) {
         if (!str) return '';
@@ -485,7 +550,7 @@
         str = str.replace(/\*\*(.+?)\*\*/g, '<b>$1</b>');
         // italic: *text*
         str = str.replace(/\*([^\*]+?)\*/g, '<i>$1</i>');
-        // inline code: `code`
+        // inline code
         str = str.replace(/\x60([^\x60]+?)\x60/g, '<code style="background:#f1f5f9; padding:1px 4px; border-radius:3px; font-family:Consolas,monospace; font-size:10pt;">$1</code>');
         return str;
     }
@@ -560,6 +625,190 @@
 
         return html.join('');
     }
+
+    // ── 2.6 語音朗讀管理員 (雙核心：Edge/Chrome 原生 SpeechSynthesis + Office 2019/IE11 Windows SAPI 8001 備援) ──
+    window.ttsManager = {
+        currentSpeed: 1.15,
+        autoRead: false,
+        isSpeaking: false,
+        currentBtn: null,
+        _activeUtterance: null,
+        _sapiTimer: null,
+
+        init: function() {
+            var savedSpeed = safeGetStorage('webcom_tts_speed', '1.15');
+            var parsedSpeed = parseFloat(savedSpeed);
+            if (!isNaN(parsedSpeed) && parsedSpeed >= 0.8 && parsedSpeed <= 2.0) {
+                this.currentSpeed = parsedSpeed;
+            } else {
+                this.currentSpeed = 1.15;
+            }
+            this.autoRead = (safeGetStorage('webcom_tts_auto', 'false') === 'true');
+        },
+
+        setSpeed: function(speed) {
+            var val = parseFloat(speed);
+            if (isNaN(val)) val = 1.15;
+            val = Math.max(0.8, Math.min(2.0, Math.round(val * 100) / 100));
+            this.currentSpeed = val;
+            safeSetStorage('webcom_tts_speed', String(val));
+
+            var rangeEl = document.getElementById('range-tts-speed');
+            var labelEl = document.getElementById('label-tts-speed');
+            if (rangeEl) rangeEl.value = val;
+            if (labelEl) labelEl.innerHTML = val + 'x';
+            showToast('語音朗讀速度已設為 ' + val + 'x');
+        },
+
+        setAutoRead: function(enabled) {
+            this.autoRead = !!enabled;
+            safeSetStorage('webcom_tts_auto', this.autoRead ? 'true' : 'false');
+            var chkEl = document.getElementById('chk-auto-tts');
+            if (chkEl) chkEl.checked = this.autoRead;
+            showToast(this.autoRead ? '已開啟生成完畢自動朗讀' : '已關閉生成完畢自動朗讀');
+        },
+
+        speak: function(rawText, btnElement) {
+            var self = this;
+            if (!rawText) return;
+
+            // 核心：剝離模型自我介紹與導讀前綴，只朗讀正文
+            var cleanText = cleanSubstantiveContent(rawText);
+            if (!cleanText) cleanText = rawText;
+
+            // 清除 Markdown 符號與網址，讓發音自然順暢 (使用 \x60 代替反引號)
+            cleanText = cleanText.replace(/[\x60#\*_\[\]\(\)\|]/g, ' ')
+                                 .replace(/https?:\/\/\S+/g, ' ')
+                                 .replace(/\s+/g, ' ')
+                                 .replace(/^\s+|\s+$/g, '');
+            if (!cleanText) return;
+
+            // 先停止先前之朗讀
+            self.stop();
+
+            self.isSpeaking = true;
+            self.currentBtn = btnElement || null;
+            self._updateUiState(true);
+
+            // 途徑 1：現代瀏覽器 / Edge WebView2 原生 SpeechSynthesis
+            if (typeof window !== 'undefined' && 'speechSynthesis' in window && typeof SpeechSynthesisUtterance !== 'undefined') {
+                try {
+                    window.speechSynthesis.cancel();
+                    var utter = new SpeechSynthesisUtterance(cleanText);
+                    utter.rate = self.currentSpeed;
+                    utter.lang = 'zh-TW';
+
+                    utter.onend = function() {
+                        self._handleSpeechEnd();
+                    };
+                    utter.onerror = function(e) {
+                        self._fallbackSapiSpeak(cleanText);
+                    };
+
+                    self._activeUtterance = utter;
+                    window.speechSynthesis.speak(utter);
+                    return;
+                } catch(sErr) {
+                    // 若引發異常，降級至本機 SAPI
+                }
+            }
+
+            // 途徑 2：Office 2019 / Trident (IE11) Windows 本機 SAPI COM 朗讀
+            self._fallbackSapiSpeak(cleanText);
+        },
+
+        _fallbackSapiSpeak: function(cleanText) {
+            var self = this;
+            try {
+                var xhr = new XMLHttpRequest();
+                xhr.open('POST', 'http://127.0.0.1:8001/api/tts/speak', true);
+                xhr.setRequestHeader('Content-Type', 'application/json');
+                xhr.timeout = 10000;
+                xhr.onreadystatechange = function() {
+                    if (xhr.readyState === 4) {
+                        if (xhr.status === 200) {
+                            var words = cleanText.length;
+                            var estimatedSec = Math.max(3, Math.min(120, Math.round(words / (4.5 * self.currentSpeed))));
+                            if (self._sapiTimer) clearTimeout(self._sapiTimer);
+                            self._sapiTimer = setTimeout(function() {
+                                self._handleSpeechEnd();
+                            }, estimatedSec * 1000);
+                        } else {
+                            self._handleSpeechEnd();
+                            showToast('無法調用本機語音服務 (請確認 8001 運行中)', true);
+                        }
+                    }
+                };
+                xhr.onerror = function() {
+                    self._handleSpeechEnd();
+                };
+                xhr.send(JSON.stringify({
+                    text: cleanText,
+                    rate: self.currentSpeed
+                }));
+            } catch(ex) {
+                self._handleSpeechEnd();
+            }
+        },
+
+        stop: function() {
+            var self = this;
+            if (self._sapiTimer) {
+                clearTimeout(self._sapiTimer);
+                self._sapiTimer = null;
+            }
+
+            // 1. 停止瀏覽器原生 SpeechSynthesis
+            if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+                try {
+                    window.speechSynthesis.cancel();
+                } catch(e) {}
+            }
+
+            // 2. 停止本機 SAPI
+            try {
+                var xhr = new XMLHttpRequest();
+                xhr.open('POST', 'http://127.0.0.1:8001/api/tts/stop', true);
+                xhr.timeout = 1500;
+                xhr.send(null);
+            } catch(ex) {}
+
+            self._handleSpeechEnd();
+        },
+
+        _handleSpeechEnd: function() {
+            this.isSpeaking = false;
+            this._activeUtterance = null;
+            this._updateUiState(false);
+            this.currentBtn = null;
+        },
+
+        _updateUiState: function(speaking) {
+            var stopBtn = document.getElementById('btn-stop-tts');
+            if (stopBtn) {
+                if (speaking) {
+                    stopBtn.className = stopBtn.className.replace('hidden', '').replace(/^\s+|\s+$/g, '');
+                } else {
+                    if (stopBtn.className.indexOf('hidden') === -1) {
+                        stopBtn.className = stopBtn.className + ' hidden';
+                    }
+                }
+            }
+
+            if (this.currentBtn) {
+                if (speaking) {
+                    if (this.currentBtn.className.indexOf('speaking') === -1) {
+                        this.currentBtn.className = this.currentBtn.className + ' speaking';
+                    }
+                    this.currentBtn.innerHTML = '⏹️ 停止';
+                } else {
+                    this.currentBtn.className = this.currentBtn.className.replace('speaking', '').replace(/^\s+|\s+$/g, '');
+                    this.currentBtn.innerHTML = '🔊 朗讀';
+                }
+            }
+        }
+    };
+    window.ttsManager.init();
 
     // ── 3. 內嵌微軟 Office 雙核心橋接器 (Universal Common API + Word.run 雙軌備援) ──
     window.OfficeBridge = {
@@ -903,6 +1152,9 @@
                 aiBubble.innerHTML = escapeHtml(reply).replace(/\n/g, '<br>');
                 chatHistory.push({ role: 'assistant', content: reply, timestamp: new Date().toISOString() });
                 attachInsertActions(aiBubble, reply);
+                if (window.ttsManager && window.ttsManager.autoRead) {
+                    window.ttsManager.speak(reply);
+                }
             }
             scrollToBottom();
         });
@@ -1049,6 +1301,26 @@
             p.className = p.className + ' hidden';
         }
         showToast('設定已儲存！');
+    };
+
+    // ── 語音朗讀事件處理函式 (預設 1.15x，最快 2.0x) ──
+    window.handleTtsSpeedChange = function(val) {
+        if (window.ttsManager) window.ttsManager.setSpeed(val);
+    };
+    window.handleTtsSpeedInput = function(val) {
+        var label = document.getElementById('label-tts-speed');
+        if (label) label.innerHTML = val + 'x';
+    };
+    window.setQuickTtsSpeed = function(val) {
+        if (window.ttsManager) window.ttsManager.setSpeed(val);
+    };
+    window.handleAutoTtsChange = function(checked) {
+        if (window.ttsManager) window.ttsManager.setAutoRead(checked);
+    };
+    window.testTts = function() {
+        if (window.ttsManager) {
+            window.ttsManager.speak("您好！這是 Webcom 智慧助理語音朗讀測試，目前語速為 " + window.ttsManager.currentSpeed + " 倍速。");
+        }
     };
 
     // 測試連線 (即時檢測端點與 Key 是否有效)
@@ -1258,9 +1530,10 @@
         var btnIns = document.createElement('button');
         btnIns.className = 'action-btn';
         btnIns.innerHTML = '📥 帶入 Word';
-        btnIns.title = '在左側 Word 游標處插入此文字 (自動排版與繪製表格)';
+        btnIns.title = '在左側 Word 游標處插入此文字 (自動排版與繪製表格，已自動濾除模型自我介紹)';
         btnIns.onclick = function() {
-            window.OfficeBridge.insertText(rawText, false, function(res) {
+            var cleanText = cleanSubstantiveContent(rawText);
+            window.OfficeBridge.insertText(cleanText, false, function(res) {
                 if (res.success) {
                     showToast(res.mocked ? '【預覽模式】已模擬帶入 Word' : '✅ 已成功帶入文字至 Word！');
                 } else {
@@ -1272,9 +1545,10 @@
         var btnRep = document.createElement('button');
         btnRep.className = 'action-btn replace';
         btnRep.innerHTML = '🔄 取代選取';
-        btnRep.title = '用此內容直接取代左側 Word 目前選取的文字';
+        btnRep.title = '用此內容直接取代左側 Word 目前選取的文字 (已自動濾除模型自我介紹)';
         btnRep.onclick = function() {
-            window.OfficeBridge.insertText(rawText, true, function(res) {
+            var cleanText = cleanSubstantiveContent(rawText);
+            window.OfficeBridge.insertText(cleanText, true, function(res) {
                 if (res.success) {
                     showToast(res.mocked ? '【預覽模式】已模擬取代選取' : '✅ 已成功取代 Word 選取文字！');
                 } else {
@@ -1286,31 +1560,45 @@
         var btnCopy = document.createElement('button');
         btnCopy.className = 'action-btn';
         btnCopy.innerHTML = '📋 複製';
-        btnCopy.title = '複製內容至剪貼簿';
+        btnCopy.title = '複製純淨正文至剪貼簿';
         btnCopy.onclick = function() {
+            var cleanText = cleanSubstantiveContent(rawText);
             try {
                 if (window.clipboardData && window.clipboardData.setData) {
-                    window.clipboardData.setData('Text', rawText);
-                    showToast('已複製至剪貼簿！');
+                    window.clipboardData.setData('Text', cleanText);
+                    showToast('已複製正文至剪貼簿！');
                     return;
                 }
                 var ta = document.createElement('textarea');
-                ta.value = rawText;
+                ta.value = cleanText;
                 ta.style.position = 'fixed';
                 ta.style.opacity = '0';
                 document.body.appendChild(ta);
                 ta.select();
                 document.execCommand('copy');
                 document.body.removeChild(ta);
-                showToast('已複製至剪貼簿！');
+                showToast('已複製正文至剪貼簿！');
             } catch(e) {
                 showToast('複製失敗', true);
+            }
+        };
+
+        var btnTts = document.createElement('button');
+        btnTts.className = 'action-btn';
+        btnTts.innerHTML = '🔊 朗讀';
+        btnTts.title = '語音朗讀此段回答正文 (預設 1.15 倍速)';
+        btnTts.onclick = function() {
+            if (window.ttsManager.isSpeaking && window.ttsManager.currentBtn === btnTts) {
+                window.ttsManager.stop();
+            } else {
+                window.ttsManager.speak(rawText, btnTts);
             }
         };
 
         strip.appendChild(btnIns);
         strip.appendChild(btnRep);
         strip.appendChild(btnCopy);
+        strip.appendChild(btnTts);
         bubbleEl.appendChild(strip);
     }
 
@@ -1410,6 +1698,16 @@
         if (epEl) epEl.value = addinConfig.apiEndpoint;
         if (keyEl) keyEl.value = addinConfig.apiKey;
         if (modelEl) modelEl.value = addinConfig.model;
+
+        // 初始化語音朗讀設定元件
+        if (window.ttsManager) {
+            var speedRange = document.getElementById('range-tts-speed');
+            var speedLabel = document.getElementById('label-tts-speed');
+            var autoChk = document.getElementById('chk-auto-tts');
+            if (speedRange) speedRange.value = window.ttsManager.currentSpeed;
+            if (speedLabel) speedLabel.innerHTML = window.ttsManager.currentSpeed + 'x';
+            if (autoChk) autoChk.checked = window.ttsManager.autoRead;
+        }
 
         window.OfficeBridge.init(function(host) {
             var b = document.getElementById('host-badge');
