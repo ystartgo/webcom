@@ -1339,35 +1339,59 @@
         }, 2200);
     };
 
-    // ── 7. Webcom ⟷ Office 雙向橋接輪詢器 (讓 Webcom 主控台一鍵寫入 Word/Excel) ──
+    // ── 7. Webcom ⟷ Office 雙向橋接輪詢器 (嚴格快取破除與唯一指令 ID 去重，徹底杜絕重複貼上) ──
     var bridgePollTimer = null;
+    var lastProcessedActionId = safeGetStorage('webcom_last_bridge_id', '');
+    var isBridgeProcessing = false;
+
     function pollOfficeBridge() {
-        var bridgeUrl = 'http://127.0.0.1:8001/api/office/bridge';
+        if (isBridgeProcessing) return;
+        // 關鍵 1: 附加時間戳避免 IE11 磁碟快取重播舊的指令 JSON
+        var bridgeUrl = 'http://127.0.0.1:8001/api/office/bridge?_t=' + (new Date().getTime());
         try {
             var xhr = new XMLHttpRequest();
             xhr.open('GET', bridgeUrl, true);
+            try {
+                xhr.setRequestHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+                xhr.setRequestHeader('Pragma', 'no-cache');
+            } catch(hErr) {}
             xhr.timeout = 2500;
             xhr.onreadystatechange = function() {
                 if (xhr.readyState === 4 && xhr.status === 200) {
                     try {
                         var res = JSON.parse(xhr.responseText);
                         if (res && res.hasAction && res.action && res.action.text) {
-                            var isReplace = !!res.action.replace;
-                            window.OfficeBridge.insertText(res.action.text, isReplace, function(insRes) {
+                            var act = res.action;
+                            var actionId = act.id || (act.text.slice(0, 30) + '_' + (act.timestamp || ''));
+                            // 關鍵 2: 唯一 ID 去重檢驗，已執行過之指令堅決不重複貼上
+                            if (actionId === lastProcessedActionId) {
+                                return;
+                            }
+                            lastProcessedActionId = actionId;
+                            safeSetStorage('webcom_last_bridge_id', actionId);
+                            isBridgeProcessing = true;
+
+                            var isReplace = !!act.replace;
+                            window.OfficeBridge.insertText(act.text, isReplace, function(insRes) {
+                                isBridgeProcessing = false;
                                 if (insRes.success) {
-                                    showToast('📥 已接收 Webcom 寫入指令！');
-                                    var bubble = appendMessage('assistant', '<span style="color:#a78bfa; font-weight:bold;">[來自 Webcom 網頁主控台寫入]</span><br>' + escapeHtml(res.action.text).replace(/\n/g, '<br>'));
-                                    attachInsertActions(bubble, res.action.text);
+                                    showToast('📥 已接收 Webcom 主控台寫入指令！');
+                                    var bubble = appendMessage('assistant', '<span style="color:#a78bfa; font-weight:bold;">[來自 Webcom 網頁主控台寫入]</span><br>' + escapeHtml(act.text).replace(/\n/g, '<br>'));
+                                    attachInsertActions(bubble, act.text);
                                 }
                             });
                         }
-                    } catch(e) {}
+                    } catch(e) {
+                        isBridgeProcessing = false;
+                    }
                 }
             };
             xhr.send(null);
-        } catch(ex) {}
+        } catch(ex) {
+            isBridgeProcessing = false;
+        }
     }
-    bridgePollTimer = setInterval(pollOfficeBridge, 2500);
+    bridgePollTimer = setInterval(pollOfficeBridge, 4000);
 
     // ── 8. 初始化執行 (自我修復舊端點、超時 800ms 切換主機狀態標籤、自 Webcom 預載配置) ──
     (function initUI() {

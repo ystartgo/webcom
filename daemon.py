@@ -2745,7 +2745,9 @@ async def push_office_bridge_action(request: Request):
     import time
     try:
         data = await request.json()
+        action_id = f"act_{int(time.time() * 1000)}_{len(_office_bridge_queue)}"
         _office_bridge_queue.append({
+            "id": action_id,
             "action": data.get("action", "insert"),
             "text": data.get("text", ""),
             "replace": data.get("replace", False),
@@ -2753,17 +2755,32 @@ async def push_office_bridge_action(request: Request):
         })
         if len(_office_bridge_queue) > 20:
             _office_bridge_queue.pop(0)
-        return {"status": "ok", "queued": len(_office_bridge_queue)}
+        return {"status": "ok", "id": action_id, "queued": len(_office_bridge_queue)}
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
 @app.get("/api/office/bridge")
 def pop_office_bridge_action():
-    """供 Office taskpane.html 輪詢取得由 Webcom 主畫面發出的寫入指令"""
+    """供 Office taskpane.html 輪詢取得由 Webcom 主畫面發出的寫入指令 (嚴格停用快取)"""
+    from fastapi.responses import JSONResponse
+    no_cache_headers = {
+        "Cache-Control": "no-cache, no-store, must-revalidate, max-age=0",
+        "Pragma": "no-cache",
+        "Expires": "0"
+    }
     if _office_bridge_queue:
         action = _office_bridge_queue.pop(0)
-        return {"hasAction": True, "action": action}
-    return {"hasAction": False}
+        return JSONResponse(content={"hasAction": True, "action": action}, headers=no_cache_headers)
+    return JSONResponse(content={"hasAction": False}, headers=no_cache_headers)
+
+@app.post("/api/office/bridge/clear")
+@app.delete("/api/office/bridge")
+def clear_office_bridge_queue():
+    """清空所有待處理之 Office 橋接指令，防止堆疊與重複貼上"""
+    from fastapi.responses import JSONResponse
+    global _office_bridge_queue
+    _office_bridge_queue.clear()
+    return JSONResponse(content={"status": "ok", "cleared": True}, headers={"Cache-Control": "no-cache, no-store"})
 
 @app.post("/api/open_browser")
 async def open_in_system_browser(request: Request):
