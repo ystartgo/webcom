@@ -1092,7 +1092,7 @@
                         <option value="webgpu" data-i18n="engineModeWebgpu" class="bg-gray-900 text-white">⚡ WebGPU 瀏覽器純本機</option>
                         <option value="onnx" data-i18n="engineModeOnnx" class="bg-gray-900 text-white">📦 ONNX 瀏覽器本機 (ONNX Runtime)</option>
                         <option value="cothink" data-i18n="engineModeCoThink" class="bg-gray-900 text-white">🧠 雙引擎聯合思考 (1+1>2)</option>
-                        <option value="supervise" data-i18n="engineModeSupervise" class="bg-gray-900 text-white">🛡️ 監督排查模式（雙 LLM 互查）</option>
+                        <option value="supervise" data-i18n="engineModeSupervise" class="bg-gray-900 text-white">🛡️ 雙互查模式</option>
                     </select>
                 </div>
 
@@ -1259,7 +1259,7 @@
                  這裡只保留 Side A / Side B 兩個引擎類型 selector + pairing label 動態 A/B 名稱。
                  單獨成為最外層 flex 子節點，搭配 w-full 自動換行到 Row-2。 -->
             <div id="wrapper-dualengine-submode"
-                class="hidden items-center gap-1.5 text-xs bg-gray-900 border border-rose-800/40 rounded-lg px-2 py-1 w-full">
+                class="hidden items-center gap-1 text-xs bg-gray-900 border border-rose-800/40 rounded-lg px-2 py-0.5 shrink-0 max-w-full">
                 <div id="sv-pairing-controls" class="flex items-center gap-1 text-[10px] font-mono">
                     <div class="flex items-center gap-1">
                         <span class="text-sky-300 font-bold">Side A:</span>
@@ -2687,7 +2687,7 @@
                             <div id="guide-card-supervise"
                                 class="p-3 bg-gray-900/90 rounded-lg border border-rose-800/50 bg-rose-950/10">
                                 <div class="font-bold text-rose-300 text-xs mb-1"
-                                    data-i18n="superviseCardTitle">🛡️ 監督排查模式 (雙 LLM 互查)</div>
+                                    data-i18n="superviseCardTitle">🛡️ 雙互查模式</div>
                                 <p class="text-[11px] text-gray-400"
                                     data-i18n="superviseCardDesc">當任一方卡死、回應空白、或程式碼出現明顯缺陷時，另一方將自動介入進行審查、點出盲點、並提出修正方案。適用於除錯、疑難排解、與穩定性要求高之場景。</p>
                             </div>
@@ -4190,7 +4190,7 @@ ffmpeg -f pulse -i default -acodec libmp3lame -ab 128k -f mp3 -listen 1 http://0
                 engineModeWebgpu: "⚡ WebGPU 瀏覽器純本機",
                 engineModeOnnx: "📦 ONNX 瀏覽器本機 (ONNX Runtime)",
                 engineModeCoThink: "🧠 雙引擎聯合思考 (1+1>2)",
-                engineModeSupervise: "🛡️ 監督排查模式（雙 LLM 互查）",
+                engineModeSupervise: "🛡️ 雙互查模式",
                 onnxProgressLoading: "📦 正在載入 ONNX Runtime 本地模型...",
                 onnxEngineActive: "📦 ONNX Engine Active: ",
                 coThinkPhase1Title: "🧠 階段一：WebGPU 邊緣初步思考與意圖拆解",
@@ -4200,9 +4200,9 @@ ffmpeg -f pulse -i default -acodec libmp3lame -ab 128k -f mp3 -listen 1 http://0
                 // 雙引擎子模式（Co-Thinking / Supervised-Mutual-Debug）
                 dualEngineSubModeLabel: "雙引擎子模式",
                 dualEngineModeCoThink: "🧠 聯合思考 (1+1>2)",
-                dualEngineModeSupervise: "🛡️ 監督排查（雙方互查）",
+                dualEngineModeSupervise: "🛡️ 雙互查模式",
                 // 監督排查配對（Pairing）：三選
-                supervisePairingLabel: "🛡️ 雙 LLM 配對：",
+                supervisePairingLabel: "配對：",
                 supervisePairWgpuApi: "⚡ WebGPU ↔ 🖥️ API",
                 supervisePairApiApi: "🖥️ API A ↔ 🖥️ API B（可為 LM Studio ↔ OpenAI）",
                 supervisePairWgpuWgpu: "⚡ WebGPU Model A ↔ ⚡ WebGPU Model B（可選不同大小）",
@@ -4211,7 +4211,7 @@ ffmpeg -f pulse -i default -acodec libmp3lame -ab 128k -f mp3 -listen 1 http://0
                 superviseClarifyHint: "為了避免無效猜想，目前先不亂下結論；請補充下方任一項資訊，我再繼續精準排查。",
                 // 第 4 張功能說明卡片（Tab 1: 操作說明）
                 fourModesTitle: "五大推論模式說明 (1+1>2)",
-                superviseCardTitle: "🛡️ 監督排查模式 (雙 LLM 互查)",
+                superviseCardTitle: "🛡️ 雙互查模式",
                 superviseCardDesc: "當任一方卡死、回應空白、或程式碼出現明顯缺陷時，另一方將自動介入進行審查、點出盲點、並提出修正方案。適用於除錯、疑難排解、與穩定性要求高之場景。若雙方都認為資訊不足，會主動列出需要你補充的關鍵資訊，不會空轉。",
                 // 監督排查模式 - 4 階段 system prompt
                 superviseSysPromptWebgpu: "你是一個精準但資源有限的邊緣推理引擎（WebGPU 瀏覽器端）。嚴格遵守以下規則，絕對禁止重複同一句話超過 3 次：\n\n【第一步：狀態判斷（只寫 1 行總結 + 子彈 3-5 點）】\n- 先判斷使用者提供的上下文（錯誤訊息 / 程式碼 / 環境 / 期望 vs 實際 / 終端輸出）是否足夠讓你下可信賴結論。\n- 若不足夠：先輸出一行 → ❗CLARIFY_NEEDED ← 然後條列「你優先想請使用者補充的 3-5 個關鍵資訊」。\n- 若足夠：先輸出一行 → ✅ CONTEXT_OK ← 不要抄寫題目中的環境資訊。\n\n【第二步：診斷草案（最多 6 行）】\n- 只寫你自己的解法草案，禁止複製 user prompt 或 system prompt 中的任何固定句。\n\n【第三步：盲點清單（2-6 項）】\n- 列出你最不確定、最可能犯錯、或「最需要被另一個模型再檢查一遍」的程式碼段落 / 假設 / API 呼叫點。\n- 每一項控制在 1 行以內。\n\n【強制收尾】\n- 不論前面寫了什麼，在最末端一定用單獨一行結尾 → --- END STAGE --- ← 絕對不能省略；看到這個標記後另一個模型就會接手。\n- 若你發現自己在重複同一行 2 次以上，立刻輸出 --- END STAGE --- 結束。",
@@ -5000,7 +5000,7 @@ ffmpeg -f pulse -i default -acodec libmp3lame -ab 128k -f mp3 -listen 1 http://0
                 engineModeWebgpu: "⚡ WebGPU Browser Local",
                 engineModeOnnx: "📦 ONNX Browser Local (ONNX Runtime)",
                 engineModeCoThink: "🧠 Dual-LLM Co-Thinking (1+1>2)",
-                engineModeSupervise: "🛡️ Supervised-Mutual-Debug (Dual-LLM)",
+                engineModeSupervise: "🛡️ Dual Cross-Review Mode",
                 onnxProgressLoading: "📦 Initializing ONNX Runtime & Model...",
                 onnxEngineActive: "📦 ONNX Engine Active: ",
                 coThinkPhase1Title: "🧠 Phase 1: WebGPU Edge Pre-Thinking & Breakdown",
@@ -5010,9 +5010,9 @@ ffmpeg -f pulse -i default -acodec libmp3lame -ab 128k -f mp3 -listen 1 http://0
                 // Dual-engine sub-mode (Co-Thinking / Supervised-Mutual-Debug)
                 dualEngineSubModeLabel: "Dual-Engine Sub Mode",
                 dualEngineModeCoThink: "🧠 Co-Thinking (1+1>2)",
-                dualEngineModeSupervise: "🛡️ Supervised-Debug (Cross Review)",
+                dualEngineModeSupervise: "🛡️ Dual Cross-Review Mode",
                 // Pairing options for supervised mode: 3 combinations
-                supervisePairingLabel: "🛡️ Pairing: ",
+                supervisePairingLabel: "Pair: ",
                 supervisePairWgpuApi: "⚡ WebGPU ↔ 🖥️ API",
                 supervisePairApiApi: "🖥️ API A ↔ 🖥️ API B (e.g. LM Studio ↔ OpenAI)",
                 supervisePairWgpuWgpu: "⚡ WebGPU Model A ↔ ⚡ WebGPU Model B (any 2 sizes)",
@@ -5021,7 +5021,7 @@ ffmpeg -f pulse -i default -acodec libmp3lame -ab 128k -f mp3 -listen 1 http://0
                 superviseClarifyHint: "To avoid guessing wildly, I will not produce a fake diagnosis. Please provide any of the items below so I can resume the investigation precisely.",
                 // Tab 1 Feature Cards: now 5 modes
                 fourModesTitle: "Five Inference Modes (1+1 > 2)",
-                superviseCardTitle: "🛡️ Supervised Mutual Debug (Dual-LLM)",
+                superviseCardTitle: "🛡️ Dual Cross-Review Mode",
                 superviseCardDesc: "If either engine gets stuck, returns empty, or contains obvious code defects, the other engine automatically steps in to review, point out blind spots, and propose a corrected fix. When both sides agree the information is insufficient, they explicitly ask the user for the next missing data points instead of spinning idle.",
                 // Supervised-Debug 4-stage system prompts
                 superviseSysPromptWebgpu: "You are a compact but precise edge reasoning engine (browser-side WebGPU). Strictly follow these rules; NEVER repeat the same sentence more than 3 times in a row:\n\n[Step 1: Sufficiency check — 1 line summary + 3-5 bullets ONLY]\n- First judge whether the user-provided context (error msg / code / environment / expected vs. actual / terminal output) is enough to draw a trustworthy conclusion.\n- If NOT enough: output the EXACT single line → ❗CLARIFY_NEEDED ← then list the 3-5 key pieces of information you want the user to fill in first.\n- If enough: output the EXACT single line → ✅ CONTEXT_OK ← do NOT copy environment info from the prompt.\n\n[Step 2: Diagnostic draft — max 6 lines]\n- Write only your own solution draft. Never copy sentences from the user/system prompt.\n\n[Step 3: Blind-spot list — 2-6 bullets, one line each]\n- List the code sections / assumptions / API call points where you are MOST likely to be wrong, and which should therefore be double-checked by the other model.\n\n[Mandatory tail]\n- No matter what you wrote, end with this EXACT line on its own → --- END STAGE --- ← NEVER omit. If you notice yourself repeating any sentence twice in a row, immediately end with --- END STAGE --- and stop.",
@@ -8153,16 +8153,19 @@ ffmpeg -f pulse -i default -acodec libmp3lame -ab 128k -f mp3 -listen 1 http://0
             if (svPairingLabel) {
                 if (isSupervise) {
                     svPairingLabel.classList.remove('hidden');
+                    const tooltipText = `A: ${sideAName} ↔ B: ${sideBName}`;
+                    svPairingLabel.title = tooltipText;
                     svPairingLabel.innerHTML =
-                        `<div><span class="opacity-70">${t('supervisePairingLabel')}</span>` +
-                        `<span class="ml-0.5">${categoryText}</span>` +
-                        `<span class="opacity-90 ml-1 text-amber-300">` +
-                        `｜A=${sideAName}｜B=${sideBName}</span>` +
+                        `<div class="flex items-center gap-1 cursor-help" title="${tooltipText}">` +
+                        `<span class="opacity-70">${t('supervisePairingLabel')}</span>` +
+                        `<span class="ml-0.5 truncate max-w-[130px] sm:max-w-[200px]" title="${tooltipText}">${categoryText}</span>` +
+                        `<span class="opacity-80 text-amber-300 font-mono text-[9px] bg-amber-950/40 px-1 py-0.2 rounded border border-amber-800/40 shrink-0" title="${tooltipText}">ℹ️ 詳情</span>` +
                         `</div>` +
                         warnHtml;
                 } else {
                     svPairingLabel.classList.add('hidden');
                     svPairingLabel.textContent = "";
+                    svPairingLabel.title = "";
                 }
             }
             lucide.createIcons();
@@ -17741,11 +17744,12 @@ Important guidelines:
                                 const bodyMinH = "min-h-[200px]";
                                 let bodyMinHStyle = "min-height: 200px;";
                                 card.innerHTML = `
-                                    <div class="px-3.5 py-2 ${headBg} border-b ${headBorder} flex items-center justify-between cursor-pointer select-none">
+                                    <div class="sv-stage-header px-3.5 py-2 ${headBg} border-b ${headBorder} flex items-center justify-between cursor-pointer select-none" title="點擊收合 / 展開本階段內容">
                                         <span class="font-bold text-xs ${titleColor} flex items-center gap-1.5">
                                             <i data-lucide="${icon}" class="w-4 h-4 ${badgeColor}"></i>
                                             <span class="sv-stage-title">${title}</span>
                                             <span class="sv-subtitle text-[10px] ${badgeColor}/80 font-mono">${subtitle}</span>
+                                            <i data-lucide="chevron-down" class="w-3.5 h-3.5 sv-stage-chevron transition-transform duration-200 opacity-60"></i>
                                         </span>
                                         <span class="${badgeClass} text-[11px] font-mono ${badgeColor} flex items-center gap-1">
                                             <span class="w-2 h-2 rounded-full animate-ping"></span>
@@ -17754,8 +17758,8 @@ Important guidelines:
                                             <span class="sv-stage-progress-idle opacity-50"></span>
                                         </span>
                                     </div>
-                                    <div class="p-3 prose prose-invert prose-sm text-xs ${bodyColor} ${bodyClass} ${bodyMinH} font-mono leading-relaxed max-h-[260px] overflow-y-auto sv-stage-body-main" style="${bodyMinHStyle}"></div>
-                                    <div class="sv-stage-actions flex items-center justify-end gap-1.5 px-3 py-2 border-t ${headBorder} ${headBg}/60">
+                                    <div class="p-3 prose prose-invert prose-sm text-xs ${bodyColor} ${bodyClass} font-mono leading-relaxed max-h-[220px] overflow-y-auto sv-stage-body-main" style="min-height: 48px;"></div>
+                                    <div class="sv-stage-actions flex items-center justify-end gap-1.5 px-3 py-1.5 border-t ${headBorder} ${headBg}/60">
                                         <button type="button" data-action="copy-stage" data-stage-id="${stageId || ''}"
                                             class="sv-copy-stage text-[10px] font-bold
                                                    bg-slate-600/85 hover:bg-slate-500 text-white px-2 py-1 rounded-md
@@ -17779,6 +17783,19 @@ Important guidelines:
                                         </button>
                                     </div>
                                 `;
+                                const headerEl = card.querySelector('.sv-stage-header');
+                                const bodyElMain = card.querySelector('.sv-stage-body-main');
+                                const actionsEl = card.querySelector('.sv-stage-actions');
+                                const chevronEl = card.querySelector('.sv-stage-chevron');
+                                if (headerEl && bodyElMain) {
+                                    headerEl.addEventListener('click', function (e) {
+                                        if (e.target.closest('button')) return;
+                                        const isHidden = bodyElMain.classList.contains('hidden');
+                                        bodyElMain.classList.toggle('hidden', !isHidden);
+                                        if (actionsEl) actionsEl.classList.toggle('hidden', !isHidden);
+                                        if (chevronEl) chevronEl.style.transform = isHidden ? 'rotate(0deg)' : 'rotate(-90deg)';
+                                    });
+                                }
                                 containerEl.insertBefore(card, textBlock);
                                 lucide.createIcons();
                                 return card;
@@ -17897,7 +17914,7 @@ Important guidelines:
                                         const engineBLabel = engineB.subtitle || engineB.label;
                                         const reviewBAFallback = currentLang === 'en' ? '<none>' : '<無>';
                                         const dPrompt_en = '## 🧾 FULL DIAGNOSTICS TABLE (A → B → C)\n' + diagABCDTable + '\n\n## 🎯 Reference Inputs for your audit\n\n### Stage B Final Proposed Answer (reference base)\n' + answerB + '\n\n### Stage C Audit + Repair Patches (MUST be verified line by line)\n' + (reviewBA || reviewBAFallback) + '\n\n## 🛡️ YOUR 3-STEP MISSION\n\n### STEP 1 — PATCH VERIFICATION (LINE BY LINE VALIDATION)\nRead Stage C\'s 🔧 Step 2 Repair Patches. For EACH patch, state explicitly:\n- Patch ID (in order)\n- Is this patch actually executable / correct for the stated OS / environment?\n- Does it correctly fix the problem it claims to fix?\n- Any missing prerequisite steps / side effects / destructive commands (like rm -rf /) that would cause damage?\n- Mark [VERIFIED✅] / [NEEDS-EDIT⚠️] / [DANGEROUS❌].\n\n### STEP 2 — RESIDUAL RISK SCAN\nScan Stage C Diagnostics Report 4-8 lines, what is STILL broken:\n- If Blocker = P0 / P1 AND Next-action = escalate, this MUST BE HONESTLY not hidden.\n- What STILL MISSING, even after patches applied?\n\n### STEP 3 — OFFICIAL 🛡️ SUPERVISION FINAL AUDIT REPORT (MANDATORY LAST SECTION, EXACT 5-SECTION FORMAT)\n\nYou MUST end your entire output with exactly these FIVE sections. Do not omit any section.\n\n```\n🛡️ FINAL SUPERVISION AUDIT REPORT\n===================================\n✅ EXECUTIVE SUMMARY (1 sentence, PASS / FAIL / PARTIAL-PASS)\n     <state result, and overall status in 1-2 lines>\n\n🔍 CONFIRMED PROBLEMS\n     - bullet 1 (with severity P0/P1/P2)\n     - bullet 2 ...\n\n🔧 VERIFIED PATCHES (EXECUTABLE)\n     Patch-001 [VERIFIED✅] / [NEEDS-EDIT⚠️] / [DANGEROUS❌]\n     > <corrected final version, executable, with language fence>\n\n⚠️ RESIDUAL RISKS & FOLLOW-UP ACTIONS\n     - <risk 1, next action + owner>\n     - <risk 2, next action + owner>\n     Escalate question (if any, ONE line user ask: <question or —>\n\n🧭 FINAL EXECUTION PLAN (what the user should run NOW)\n     Prefer Stage-B original answer if patches are HIGH confidence, otherwise the merged patch set 1-2-3 order. Use NUMBERED steps for the terminal / list. MUST be exact commands, not prose>\n```\n\nIf Stage C gave you empty / missing the Diagnostic Report section, STILL produce these 5 sections anyway, filling in what you infer from Stage C content. NEVER omit the final report.';
-                                        const dPrompt_zh = '## 🧾 完整診斷對照表（A → B → C）\n' + diagABCDTable + '\n\n## 🎯 稽核需要的參考輸入\n\n### Stage B 最終解法（作為修補基底）\n' + answerB + '\n\n### Stage C 的稽核 + 修補程式（請你要 逐行 驗證 每一段修補）\n' + (reviewBA || reviewBAFallback) + '\n\n## 🛡️ 你的 3 步驟任務\n\n### 步驟 1 — 修補驗證（逐行驗證有效性）\n讀 Stage C 的「🔧 步驟 2. 修補程式」每一段：\n- 編號（依序 Patch-001、Patch-002…）\n- 這段修補 是否針對宣告的作業系統環境，真的可執行 / 正確嗎？\n- 真的能修它宣稱要修的問題嗎？\n- 有遺漏前置步驟嗎？有 side effect 嗎？有危險指令（如 rm -rf /）會破壞系統嗎？\n- 標記 [驗證通過✅] / [需要修改⚠️] / [危險❌]\n\n### 步驟 2 — 殘留風險掃描\n掃 Stage C 最後 📋 診斷報告 7 行：\n- 若 阻斷級別 是 P0 / P1，一定要誠實揭露，不可以隱藏。\n- 即使套用修補後，還有什麼缺口？\n\n### 步驟 3 — 正式 🛡️ 監督排查最終稽核報告（必填，固定 5 節格式，擺最後）\n\n你 一定 要把 這 5 節格式擺在結尾。不能漏 1 節。\n\n```\n🛡️ 監督排查最終稽核報告\n=======================\n✅ 執行摘要（1 句 通過 / 不通過 / 部分通過）\n  <整體結論，1-2 行>\n\n🔍 已確認的問題清單\n  - 項目 1（標註嚴重度 P0/P1/P2)\n  - 項目 2 ...\n\n🔧 已驗證修補（可直接執行）\n  Patch-001 [驗證通過✅] / [需修改⚠️] / [危險❌]\n  > <給出最終可執行版本，附上 language fence>\n\n⚠️ 殘留風險 與 後續行動\n  - <風險 1，下一步 + 負責>\n  - <風險 2，下一步 + 負責>\n  如需升級使用者 1 行精準提問：<問題 或「—」>\n\n🧭 最終執行方案（使用者現在該做什麼）\n  信心高就優先 Stage B 原答案；否則就用修補集合 1、2、3 照順序執行。\n  使用 編號步驟。 一定要是精準指令，不要散文。\n```\n\n即使 Stage C 忘記附上 📋 診斷報告段落，你依然要照樣產出 5 節，用 Stage C 其餘內容盡可能誠實補齊。最後的 5 節絕對不能省略。';
+                                        const dPrompt_zh = '## 🧾 完整診斷對照表（A → B → C）\n' + diagABCDTable + '\n\n## 🎯 稽核需要的參考輸入\n\n### Stage B 最終解法（作為修補基底）\n' + answerB + '\n\n### Stage C 的稽核 + 修補程式（請你要 逐行 驗證 每一段修補）\n' + (reviewBA || reviewBAFallback) + '\n\n## 🛡️ 你的 3 步驟任務\n\n### 步驟 1 — 修補驗證（逐行驗證有效性）\n讀 Stage C 的「🔧 步驟 2. 修補程式」每一段：\n- 編號（依序 Patch-001、Patch-002…）\n- 這段修補 是否針對宣告的作業系統環境，真的可執行 / 正確嗎？\n- 真的能修它宣稱要修的問題嗎？\n- 有遺漏前置步驟嗎？有 side effect 嗎？有危險指令（如 rm -rf /）會破壞系統嗎？\n- 標記 [驗證通過✅] / [需要修改⚠️] / [危險❌]\n\n### 步驟 2 — 殘留風險掃描\n掃 Stage C 最後 📋 診斷報告 7 行：\n- 若 阻斷級別 是 P0 / P1，一定要誠實揭露，不可以隱藏。\n- 即使套用修補後，還有什麼缺口？\n\n### 步驟 3 — 正式 🛡️ 雙互查最終稽核報告（必填，固定 5 節格式，擺最後）\n\n你 一定 要把 這 5 節格式擺在結尾。不能漏 1 節。\n\n```\n🛡️ 雙互查最終稽核報告\n=======================\n✅ 執行摘要（1 句 通過 / 不通過 / 部分通過）\n  <整體結論，1-2 行>\n\n🔍 已確認的問題清單\n  - 項目 1（標註嚴重度 P0/P1/P2)\n  - 項目 2 ...\n\n🔧 已驗證修補（可直接執行）\n  Patch-001 [驗證通過✅] / [需修改⚠️] / [危險❌]\n  > <給出最終可執行版本，附上 language fence>\n\n⚠️ 殘留風險 與 後續行動\n  - <風險 1，下一步 + 負責>\n  - <風險 2，下一步 + 負責>\n  如需升級使用者 1 行精準提問：<問題 或「—」>\n\n🧭 最終執行方案（使用者現在該做什麼）\n  信心高就優先 Stage B 原答案；否則就用修補集合 1、2、3 照順序執行。\n  使用 編號步驟。 一定要是精準指令，不要散文。\n```\n\n即使 Stage C 忘記附上 📋 診斷報告段落，你依然要照樣產出 5 節，用 Stage C 其餘內容盡可能誠實補齊。最後的 5 節絕對不能省略。';
                                         const dPrompt = currentLang === 'en' ? dPrompt_en : dPrompt_zh;
                                         const savedSys = engineA.sys; engineA.sys = dSys;
                                         rD = await runEngineSide({
@@ -17965,7 +17982,7 @@ Important guidelines:
                                 const hasFinalAuditReport = reviewAB && /🛡️.*(FINAL|最終).*(AUDIT|稽核|REPORT|報告)/i.test(reviewAB);
                                 const pairingDisp = appSettings.superviseSideAType + ' ↔ ' + appSettings.superviseSideBType;
                                 const isEn = currentLang === 'en';
-                                const superviseHeader = loopCount === 1 ? `## 🛡️ ${isEn ? 'Supervised Mutual-Debug Pipeline Report' : '🛡️ 監督排查流水線正式報告'}\n` : '';
+                                const superviseHeader = loopCount === 1 ? `## 🛡️ ${isEn ? 'Dual Cross-Review Pipeline Report' : '🛡️ 雙互查流水線正式報告'}\n` : '';
                                 const pipelineMeta = (loopCount === 1) ? (isEn
                                     ? `> 📌 **Pipeline**: Stage-A (${engineA.label || finalDiagA.stage}) → Stage-B (${engineB.label || finalDiagB.stage}) → Stage-C (Patch Eng) → Stage-D (Audit Sign-off)  \n> 🧬 **Pairing**: \`${pairingDisp}\` | Any failure detected: **${anyFail ? '⚠️ YES' : '✅ NO'}**\n`
                                     : `> 📌 **流水線**：Stage-A（${engineA.label || finalDiagA.stage}）→ Stage-B（${engineB.label || finalDiagB.stage}）→ Stage-C（修補工程）→ Stage-D（稽核簽核）  \n> 🧬 **配對**：\`${pairingDisp}\`｜偵測到失敗？：**${anyFail ? '⚠️ 有' : '✅ 無'}**\n`) : '';
@@ -17991,6 +18008,17 @@ Important guidelines:
                             // the post-review corrected / post-clarify plan.
                             textBlock.innerHTML = renderMarkdown(superviseSummary);
                             fullAiResponse = superviseSummary;
+                            // 自動將前置階段卡片收合，釋放聊天框空間，使用者點擊標題可再展開
+                            try {
+                                containerEl.querySelectorAll('[data-stage-id]').forEach(function (stCard) {
+                                    const bMain = stCard.querySelector('.sv-stage-body-main');
+                                    const aAct = stCard.querySelector('.sv-stage-actions');
+                                    const chev = stCard.querySelector('.sv-stage-chevron');
+                                    if (bMain) bMain.classList.add('hidden');
+                                    if (aAct) aAct.classList.add('hidden');
+                                    if (chev) chev.style.transform = 'rotate(-90deg)';
+                                });
+                            } catch (eFold) {}
                             // Use streamed tokens from each individual stage; add a small
                             // estimate if the summary reflowed (this is cosmetic only for stats).
                             generatedTokens = Math.max(generatedTokens, tokenBox.value) +
