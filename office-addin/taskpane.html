@@ -242,8 +242,8 @@
         code { font-family: Consolas, monospace; color: #38bdf8; font-size: 10px; }
         p { margin-bottom: 4px; }
     </style>
-    <!-- 微軟 Office.js (defer 載入，絕不阻斷 DOM 解析) -->
-    <script src="https://appsforoffice.microsoft.com/lib/1/hosted/office.js" defer></script>
+    <!-- 微軟 Office.js 官方標準函式庫 (同步載入，確保 Office.initialize / Office.onReady 即時就緒) -->
+    <script src="https://appsforoffice.microsoft.com/lib/1/hosted/office.js"></script>
 </head>
 <body>
 
@@ -252,12 +252,16 @@
         <div class="logo-group">
             <div class="logo-icon">W</div>
             <span class="logo-title">Webcom</span>
-            <span id="host-badge" class="badge">Web</span>
+            <span id="host-badge" class="badge">Word</span>
         </div>
         <div class="toolbar-right">
-            <!-- 帶入選取按鈕 (簡化文字避免折行) -->
-            <button id="btn-read-selection" onclick="window.readDocumentSelection()" type="button" class="btn-toolbar" title="讀取游標選取內容">
-                <span>📑 帶入</span>
+            <!-- 讀取 Word 選取或全文 -->
+            <button id="btn-read-selection" onclick="window.readDocumentSelection(false)" type="button" class="btn-toolbar" title="從左側 Word 讀取選取或全文內容">
+                <span>📤 讀取</span>
+            </button>
+            <!-- 直接將下方輸入文字帶入至 Word -->
+            <button id="btn-insert-doc" onclick="window.insertCurrentInputToDoc()" type="button" class="btn-toolbar" style="color:#38bdf8; border-color:#0284c7;" title="將下方輸入文字直接帶入/寫入左側 Word 游標處">
+                <span>📥 帶入</span>
             </button>
             <!-- 匯入紀錄 -->
             <button id="btn-import-chat" onclick="window.triggerChatImport()" type="button" class="btn-toolbar btn-icon" title="自 Webcom 匯入紀錄 (.json)">
@@ -369,7 +373,10 @@
                 <input type="checkbox" id="chk-auto-doc" checked style="margin-right:4px; cursor:pointer;">
                 <span style="font-weight:bold;">👁️ 自動讀取左側文件</span>
             </label>
-            <button type="button" onclick="window.readDocumentSelection(false)" class="btn-preset" style="padding:1px 5px; font-size:8px; margin:0;" title="手動將目前游標選取或全文文字帶入下方輸入框">📑 帶入文字</button>
+            <div>
+                <button type="button" onclick="window.readDocumentSelection(false)" class="btn-preset" style="padding:2px 5px; font-size:8px; margin:0 2px;" title="從左側 Word 讀取選取或全文文字至下方輸入框">📤 讀取 Word</button>
+                <button type="button" onclick="window.insertCurrentInputToDoc()" class="btn-preset" style="padding:2px 5px; font-size:8px; margin:0 2px; background:#4338ca; border-color:#6366f1; color:#fff;" title="將下方輸入框中的文字直接帶入/寫入至左側 Word 游標處">📥 帶入 Word</button>
+            </div>
         </div>
         <div class="input-capsule">
             <textarea id="input-user-msg" rows="2"
@@ -471,73 +478,193 @@
         }
     }
 
-    // ── 3. 內嵌微軟 Office.js 橋接器 (相容 ES5 Promise / 超時 800ms 自動切換) ──
+    // ── 2.5 Markdown 轉微軟 Word 原生富文字 HTML 轉換器 (Strict ES5) ──
+    function formatInlineWord(str) {
+        if (!str) return '';
+        // bold: **text**
+        str = str.replace(/\*\*(.+?)\*\*/g, '<b>$1</b>');
+        // italic: *text*
+        str = str.replace(/\*([^\*]+?)\*/g, '<i>$1</i>');
+        // inline code: `code`
+        str = str.replace(/\x60([^\x60]+?)\x60/g, '<code style="background:#f1f5f9; padding:1px 4px; border-radius:3px; font-family:Consolas,monospace; font-size:10pt;">$1</code>');
+        return str;
+    }
+
+    function markdownToWordHtml(md) {
+        if (!md) return '';
+        var lines = md.split('\n');
+        var inTable = false;
+        var inList = false;
+        var html = [];
+
+        for (var i = 0; i < lines.length; i++) {
+            var raw = lines[i];
+            var trimmed = raw.replace(/^\s+|\s+$/g, '');
+
+            // Markdown 表格檢測 (| a | b |)
+            if (trimmed.charAt(0) === '|' && trimmed.charAt(trimmed.length - 1) === '|') {
+                // 分隔行 (例如 |---|---|) 跳過
+                if (trimmed.replace(/[\s\|\-\:]/g, '').length === 0) {
+                    continue;
+                }
+                if (!inTable) {
+                    if (inList) { html.push('</ul>'); inList = false; }
+                    inTable = true;
+                    html.push('<table border="1" cellpadding="6" cellspacing="0" style="border-collapse:collapse; width:100%; margin:8px 0; border:1px solid #cbd5e1; font-family:Calibri,sans-serif; font-size:11pt;">');
+                }
+                var rawCells = trimmed.slice(1, -1).split('|');
+                var isHeader = (i + 1 < lines.length && lines[i+1].replace(/^\s+|\s+$/g, '').replace(/[\s\|\-\:]/g, '').length === 0);
+                html.push('<tr>');
+                for (var c = 0; c < rawCells.length; c++) {
+                    var cellContent = formatInlineWord(escapeHtml(rawCells[c].replace(/^\s+|\s+$/g, '')));
+                    if (isHeader) {
+                        html.push('<th style="background:#f1f5f9; font-weight:bold; text-align:left; padding:6px; border:1px solid #cbd5e1;">' + cellContent + '</th>');
+                    } else {
+                        html.push('<td style="padding:6px; border:1px solid #cbd5e1;">' + cellContent + '</td>');
+                    }
+                }
+                html.push('</tr>');
+                continue;
+            } else if (inTable) {
+                html.push('</table>');
+                inTable = false;
+            }
+
+            // 清單項目 (- 或 *)
+            if (/^[\*\-]\s+/.test(trimmed)) {
+                if (!inList) {
+                    inList = true;
+                    html.push('<ul style="margin:4px 0 4px 20px; font-family:Calibri,sans-serif; font-size:11pt;">');
+                }
+                var itemText = formatInlineWord(escapeHtml(trimmed.replace(/^[\*\-]\s+/, '')));
+                html.push('<li>' + itemText + '</li>');
+                continue;
+            } else if (inList) {
+                html.push('</ul>');
+                inList = false;
+            }
+
+            // 標題 (###, ##, #)
+            if (/^###\s+/.test(trimmed)) {
+                html.push('<h3 style="font-family:Calibri,sans-serif; color:#1e40af; margin:10px 0 4px 0;">' + formatInlineWord(escapeHtml(trimmed.slice(4))) + '</h3>');
+            } else if (/^##\s+/.test(trimmed)) {
+                html.push('<h2 style="font-family:Calibri,sans-serif; color:#1e3a8a; margin:12px 0 4px 0;">' + formatInlineWord(escapeHtml(trimmed.slice(3))) + '</h2>');
+            } else if (/^#\s+/.test(trimmed)) {
+                html.push('<h1 style="font-family:Calibri,sans-serif; color:#0f172a; margin:14px 0 6px 0;">' + formatInlineWord(escapeHtml(trimmed.slice(2))) + '</h1>');
+            } else if (trimmed.length > 0) {
+                html.push('<p style="font-family:Calibri,sans-serif; font-size:11pt; line-height:1.45; margin:4px 0;">' + formatInlineWord(escapeHtml(trimmed)) + '</p>');
+            }
+        }
+        if (inTable) html.push('</table>');
+        if (inList) html.push('</ul>');
+
+        return html.join('');
+    }
+
+    // ── 3. 內嵌微軟 Office 雙核心橋接器 (Universal Common API + Word.run 雙軌備援) ──
     window.OfficeBridge = {
-        _hostType: 'Web',
+        _hostType: 'Word', // 預設優先以 Word 增益集為標靶
         _isOfficeReady: false,
+        _readyCallbacks: [],
+
         init: function(onHostChange) {
             var self = this;
-            var settled = false;
-            var timer = setTimeout(function() {
-                if (!settled) {
-                    settled = true;
-                    self._hostType = 'Web';
-                    if (typeof onHostChange === 'function') onHostChange('Web');
-                }
-            }, 800);
+            if (typeof onHostChange === 'function') {
+                self._readyCallbacks.push(onHostChange);
+            }
 
-            try {
-                if (typeof Office !== 'undefined' && Office.onReady) {
-                    Office.onReady(function(info) {
-                        if (settled) return;
-                        settled = true;
-                        clearTimeout(timer);
-                        if (info && info.host) {
-                            self._isOfficeReady = true;
-                            if (typeof Office.HostType !== 'undefined') {
-                                if (info.host === Office.HostType.Word) self._hostType = 'Word';
-                                else if (info.host === Office.HostType.Excel) self._hostType = 'Excel';
-                                else if (info.host === Office.HostType.PowerPoint) self._hostType = 'PowerPoint';
-                                else self._hostType = 'Office';
-                            } else {
-                                self._hostType = String(info.host);
-                            }
-                        } else {
-                            self._hostType = 'Web';
-                        }
-                        if (typeof onHostChange === 'function') onHostChange(self._hostType);
-                    })['catch'](function() {
-                        if (!settled) {
-                            settled = true;
-                            clearTimeout(timer);
-                            if (typeof onHostChange === 'function') onHostChange('Web');
-                        }
-                    });
-                } else {
-                    // 非 Office 環境
+            function triggerReady(rawHost) {
+                self._isOfficeReady = true;
+                var h = 'Word';
+                if (rawHost) {
+                    var strH = String(rawHost).toLowerCase();
+                    if (strH.indexOf('excel') !== -1) h = 'Excel';
+                    else if (strH.indexOf('powerpoint') !== -1) h = 'PowerPoint';
+                    else if (strH.indexOf('word') !== -1) h = 'Word';
+                    else h = String(rawHost);
+                } else if (typeof Office !== 'undefined' && Office.context && Office.context.host) {
+                    var cHost = String(Office.context.host).toLowerCase();
+                    if (cHost.indexOf('excel') !== -1) h = 'Excel';
+                    else if (cHost.indexOf('powerpoint') !== -1) h = 'PowerPoint';
+                    else if (cHost.indexOf('word') !== -1) h = 'Word';
                 }
-            } catch(e) {
-                // 防禦性捕捉
+                self._hostType = h;
+                for (var i = 0; i < self._readyCallbacks.length; i++) {
+                    try { self._readyCallbacks[i](h); } catch(e) {}
+                }
             }
-        },
-        getDocumentContent: function(preferWholeDoc, callback) {
-            if (!this._isOfficeReady) {
-                callback({ text: "【單檔案/預覽模式】尚未連接 Office 主機，此為模擬選取文字。", source: "mock", length: 28 });
-                return;
-            }
+
+            // 雙軌偵測：Office.initialize (相容所有 Office 2013/2016/2019) 與 Office.onReady (相容 365)
             try {
-                if (this._hostType === 'Word' && typeof Word !== 'undefined' && Word.run) {
+                if (typeof Office !== 'undefined') {
+                    Office.initialize = function(reason) {
+                        triggerReady(Office.context ? Office.context.host : 'Word');
+                    };
+                    if (Office.onReady) {
+                        Office.onReady(function(info) {
+                            triggerReady(info ? info.host : (Office.context ? Office.context.host : 'Word'));
+                        })['catch'](function() {});
+                    }
+                }
+            } catch(e) {}
+
+            // 若執行環境已具有 Office 物件，立即標記就緒
+            if (typeof Office !== 'undefined' && Office.context && Office.context.document) {
+                triggerReady(Office.context.host || 'Word');
+            }
+
+            // 超時保護：若 2.5 秒後仍無 Office 回調，標記 Web 模式 (但不阻斷後續 Office 事件)
+            setTimeout(function() {
+                if (!self._isOfficeReady) {
+                    if (typeof Office !== 'undefined' && Office.context && Office.context.document) {
+                        triggerReady(Office.context.host || 'Word');
+                    } else {
+                        self._hostType = 'Web';
+                        for (var i = 0; i < self._readyCallbacks.length; i++) {
+                            try { self._readyCallbacks[i]('Web'); } catch(e) {}
+                        }
+                    }
+                }
+            }, 2500);
+        },
+
+        // 讀取左側文件內容 (優先選取文字，次之全文)
+        getDocumentContent: function(preferWholeDoc, callback) {
+            var self = this;
+            if (!callback) callback = function() {};
+
+            // 途徑 1：通用 Common API (Office.context.document.getSelectedDataAsync) - 支援所有 Office 版本
+            if (typeof Office !== 'undefined' && Office.context && Office.context.document && Office.context.document.getSelectedDataAsync && !preferWholeDoc) {
+                try {
+                    Office.context.document.getSelectedDataAsync(Office.CoercionType.Text, function(asyncResult) {
+                        if (asyncResult.status === Office.AsyncResultStatus.Succeeded && asyncResult.value) {
+                            var cleanSel = String(asyncResult.value).replace(/^\s+|\s+$/g, '');
+                            if (cleanSel.length > 0) {
+                                callback({ text: cleanSel, source: 'selection', length: cleanSel.length });
+                                return;
+                            }
+                        }
+                        self._readFullBodyFallback(callback);
+                    });
+                    return;
+                } catch(e) {
+                    self._readFullBodyFallback(callback);
+                    return;
+                }
+            }
+            self._readFullBodyFallback(callback);
+        },
+
+        _readFullBodyFallback: function(callback) {
+            var self = this;
+            try {
+                if (typeof Word !== 'undefined' && Word.run) {
                     Word.run(function(context) {
-                        var sel = context.document.getSelection();
-                        sel.load('text');
                         var body = context.document.body;
                         body.load('text');
                         return context.sync().then(function() {
-                            var selText = sel.text ? sel.text.replace(/^\s+|\s+$/g, '') : '';
                             var bodyText = body.text ? body.text.replace(/^\s+|\s+$/g, '') : '';
-                            if (selText && !preferWholeDoc) {
-                                callback({ text: selText, source: 'selection', length: selText.length });
-                            } else if (bodyText) {
+                            if (bodyText) {
                                 var maxLen = 4000;
                                 var trimmed = (bodyText.length > maxLen) ? (bodyText.slice(0, maxLen) + '\n...(後續字元因長度限制已截斷)...') : bodyText;
                                 callback({ text: trimmed, source: 'body', length: bodyText.length });
@@ -546,86 +673,132 @@
                             }
                         });
                     })['catch'](function(err) {
-                        callback(null);
+                        callback(self._isOfficeReady ? null : { text: "【預覽模式】未連接 Office 主機，此為模擬文件文字。", source: "mock", length: 26 });
                     });
                     return;
-                } else if (this._hostType === 'Excel' && typeof Excel !== 'undefined' && Excel.run) {
+                } else if (typeof Excel !== 'undefined' && Excel.run) {
                     Excel.run(function(context) {
-                        var range = context.workbook.getSelectedRange();
-                        range.load(['values', 'rowCount', 'columnCount']);
                         var sheet = context.workbook.worksheets.getActiveWorksheet();
                         var usedRange = sheet.getUsedRange();
                         usedRange.load(['values', 'rowCount', 'columnCount']);
                         return context.sync().then(function() {
-                            var selVals = range.values || [];
-                            var hasSel = false;
-                            if (selVals.length > 1 || (selVals.length === 1 && selVals[0].length > 1) || (selVals.length === 1 && selVals[0][0])) {
-                                hasSel = true;
-                            }
-                            var targetVals = (!preferWholeDoc && hasSel) ? selVals : (usedRange.values || selVals);
+                            var targetVals = usedRange.values || [];
                             var lines = [];
                             var maxRows = Math.min(targetVals.length, 120);
                             for (var r = 0; r < maxRows; r++) {
                                 lines.push(targetVals[r].join('\t'));
                             }
-                            if (targetVals.length > 120) lines.push('...(後續列數因長度限制已截斷)...');
                             var resText = lines.join('\n');
-                            callback({ text: resText, source: (!preferWholeDoc && hasSel) ? 'selection' : 'sheet', length: resText.length });
+                            callback({ text: resText, source: 'sheet', length: resText.length });
                         });
-                    })['catch'](function(err) {
+                    })['catch'](function() {
                         callback(null);
                     });
                     return;
                 }
-            } catch(e) {
+            } catch(ex) {
                 callback(null);
                 return;
             }
-            callback(null);
+            callback(self._isOfficeReady ? null : { text: "【預覽模式】未連接 Office 主機，此為模擬文件文字。", source: "mock", length: 26 });
         },
-        getSelectedContent: function(callback) {
-            this.getDocumentContent(false, function(res) {
-                callback(res ? res.text : '');
-            });
-        },
+
+        // 帶入/寫入文字至左側 Word 或 Excel (參考微軟官方與 ChatGPT/DeepL 雙軌架構)
         insertText: function(text, replace, callback) {
-            if (!this._isOfficeReady) {
+            if (!callback) callback = function() {};
+            var self = this;
+
+            var hasOfficeDoc = (typeof Office !== 'undefined' && Office.context && Office.context.document);
+            var hasWordRun = (typeof Word !== 'undefined' && Word.run);
+            var hasExcelRun = (typeof Excel !== 'undefined' && Excel.run);
+
+            // 若完全不在 Office 宿主內 (例如在純 Chrome/Edge 獨立開啟預覽)
+            if (!hasOfficeDoc && !hasWordRun && !hasExcelRun && !self._isOfficeReady) {
                 callback({ success: true, mocked: true });
                 return;
             }
-            try {
-                if (this._hostType === 'Word' && typeof Word !== 'undefined' && Word.run) {
-                    Word.run(function(context) {
-                        var sel = context.document.getSelection();
-                        if (replace) {
-                            sel.insertText(text, Word.InsertLocation.replace);
-                        } else {
-                            sel.insertText('\n' + text, Word.InsertLocation.after);
+
+            // 途徑 1：微軟官方最推薦之 Universal Common API (Office.context.document.setSelectedDataAsync)
+            // 具備極佳相容性 (Word 2013/2016/2019/365/Mac/Web)，游標處插入或取代選取自動處理
+            if (hasOfficeDoc && Office.context.document.setSelectedDataAsync) {
+                var wordHtml = markdownToWordHtml(text);
+                try {
+                    Office.context.document.setSelectedDataAsync(
+                        wordHtml,
+                        { coercionType: Office.CoercionType.Html },
+                        function(asyncResult) {
+                            if (asyncResult.status === Office.AsyncResultStatus.Succeeded) {
+                                callback({ success: true, method: 'setSelectedDataAsync (HTML)' });
+                            } else {
+                                // 若 HTML 格式被宿主拒絕，降級以純文字 Text 寫入
+                                Office.context.document.setSelectedDataAsync(
+                                    text,
+                                    { coercionType: Office.CoercionType.Text },
+                                    function(textResult) {
+                                        if (textResult.status === Office.AsyncResultStatus.Succeeded) {
+                                            callback({ success: true, method: 'setSelectedDataAsync (Text)' });
+                                        } else {
+                                            // 若 Common API 失敗，推進至 Word.run 途徑
+                                            self._fallbackWordRunInsert(text, replace, callback);
+                                        }
+                                    }
+                                );
+                            }
                         }
-                        return context.sync().then(function() {
-                            callback({ success: true });
-                        });
-                    })['catch'](function(err) {
-                        callback({ success: false, error: err.message || String(err) });
-                    });
+                    );
                     return;
-                } else if (this._hostType === 'Excel' && typeof Excel !== 'undefined' && Excel.run) {
-                    Excel.run(function(context) {
-                        var range = context.workbook.getSelectedRange();
-                        range.values = [[text]];
-                        return context.sync().then(function() {
-                            callback({ success: true });
-                        });
-                    })['catch'](function(err) {
-                        callback({ success: false, error: err.message || String(err) });
-                    });
+                } catch(eHtml) {
+                    self._fallbackWordRunInsert(text, replace, callback);
                     return;
                 }
-            } catch(e) {
-                callback({ success: false, error: e.message || String(e) });
+            }
+
+            self._fallbackWordRunInsert(text, replace, callback);
+        },
+
+        _fallbackWordRunInsert: function(text, replace, callback) {
+            // 途徑 2：Word.run API (使用嚴格字串常數 'Replace' 與 'After'，杜絕 undefined 枚舉錯誤)
+            if (typeof Word !== 'undefined' && Word.run) {
+                Word.run(function(context) {
+                    var sel = context.document.getSelection();
+                    var location = replace ? 'Replace' : 'After';
+                    sel.insertText(replace ? text : ('\n' + text), location);
+                    return context.sync().then(function() {
+                        callback({ success: true, method: 'Word.run' });
+                    });
+                })['catch'](function(err) {
+                    // 途徑 3：若 Selection 無效 (如游標未置於內文)，直接插入至文件末端 (Body End)
+                    try {
+                        Word.run(function(context) {
+                            context.document.body.insertText('\n' + text, 'End');
+                            return context.sync().then(function() {
+                                callback({ success: true, method: 'Word.body.insertText' });
+                            });
+                        })['catch'](function(bErr) {
+                            callback({ success: false, error: err.message || String(err) });
+                        });
+                    } catch(ex) {
+                        callback({ success: false, error: err.message || String(err) });
+                    }
+                });
                 return;
             }
-            callback({ success: false, error: '不支援的主機環境' });
+
+            // 途徑 4：Excel 試算表寫入
+            if (typeof Excel !== 'undefined' && Excel.run) {
+                Excel.run(function(context) {
+                    var range = context.workbook.getSelectedRange();
+                    range.values = [[text]];
+                    return context.sync().then(function() {
+                        callback({ success: true, method: 'Excel.run' });
+                    });
+                })['catch'](function(err) {
+                    callback({ success: false, error: err.message || String(err) });
+                });
+                return;
+            }
+
+            callback({ success: false, error: '未檢測到 Office 宿主環境' });
         }
     };
 
@@ -744,17 +917,35 @@
         showToast('已帶入快捷指令');
     };
 
-    // 讀取選取或全文文字至輸入框
+    // 讀取左側 Word 選取或全文文字至輸入框
     window.readDocumentSelection = function(preferWholeDoc) {
         window.OfficeBridge.getDocumentContent(preferWholeDoc, function(res) {
             var input = document.getElementById('input-user-msg');
             if (res && res.text && input) {
-                var label = (res.source === 'selection') ? '選取內容' : (window.OfficeBridge._hostType + ' 全文內容');
+                var label = (res.source === 'selection') ? 'Word 選取段落' : (window.OfficeBridge._hostType + ' 全文內容');
                 input.value = "【以下為" + label + "】：\n" + res.text + "\n\n請幫我分析並潤飾以上內容。";
                 input.focus();
-                showToast('已帶入' + label + '！');
+                showToast('✅ 已帶入' + label + '！');
             } else {
-                showToast('目前未選取任何內容', true);
+                showToast('⚠️ 目前左側 Word 未選取文字且文件為空', true);
+            }
+        });
+    };
+
+    // 將輸入框文字直接帶入/寫入至左側 Word 游標處
+    window.insertCurrentInputToDoc = function() {
+        var input = document.getElementById('input-user-msg');
+        if (!input) return;
+        var text = input.value.replace(/^\s+|\s+$/g, '');
+        if (!text) {
+            showToast('⚠️ 請先在下方輸入框輸入欲帶入 Word 的文字', true);
+            return;
+        }
+        window.OfficeBridge.insertText(text, false, function(res) {
+            if (res.success) {
+                showToast(res.mocked ? '【預覽模式】已模擬帶入 Word' : '✅ 已成功帶入文字至 Word！');
+            } else {
+                showToast('❌ 帶入 Word 失敗: ' + (res.error || '未知錯誤'), true);
             }
         });
     };
@@ -1066,13 +1257,14 @@
 
         var btnIns = document.createElement('button');
         btnIns.className = 'action-btn';
-        btnIns.innerHTML = '📥 寫入游標處';
+        btnIns.innerHTML = '📥 帶入 Word';
+        btnIns.title = '在左側 Word 游標處插入此文字 (自動排版與繪製表格)';
         btnIns.onclick = function() {
             window.OfficeBridge.insertText(rawText, false, function(res) {
                 if (res.success) {
-                    showToast(res.mocked ? '【預覽】已模擬寫入' : '已寫入文件！');
+                    showToast(res.mocked ? '【預覽模式】已模擬帶入 Word' : '✅ 已成功帶入文字至 Word！');
                 } else {
-                    showToast('寫入失敗: ' + res.error, true);
+                    showToast('帶入 Word 失敗: ' + (res.error || '未知錯誤'), true);
                 }
             });
         };
@@ -1080,18 +1272,45 @@
         var btnRep = document.createElement('button');
         btnRep.className = 'action-btn replace';
         btnRep.innerHTML = '🔄 取代選取';
+        btnRep.title = '用此內容直接取代左側 Word 目前選取的文字';
         btnRep.onclick = function() {
             window.OfficeBridge.insertText(rawText, true, function(res) {
                 if (res.success) {
-                    showToast(res.mocked ? '【預覽】已模擬取代' : '已取代選取！');
+                    showToast(res.mocked ? '【預覽模式】已模擬取代選取' : '✅ 已成功取代 Word 選取文字！');
                 } else {
-                    showToast('取代失敗: ' + res.error, true);
+                    showToast('取代失敗: ' + (res.error || '未知錯誤'), true);
                 }
             });
         };
 
+        var btnCopy = document.createElement('button');
+        btnCopy.className = 'action-btn';
+        btnCopy.innerHTML = '📋 複製';
+        btnCopy.title = '複製內容至剪貼簿';
+        btnCopy.onclick = function() {
+            try {
+                if (window.clipboardData && window.clipboardData.setData) {
+                    window.clipboardData.setData('Text', rawText);
+                    showToast('已複製至剪貼簿！');
+                    return;
+                }
+                var ta = document.createElement('textarea');
+                ta.value = rawText;
+                ta.style.position = 'fixed';
+                ta.style.opacity = '0';
+                document.body.appendChild(ta);
+                ta.select();
+                document.execCommand('copy');
+                document.body.removeChild(ta);
+                showToast('已複製至剪貼簿！');
+            } catch(e) {
+                showToast('複製失敗', true);
+            }
+        };
+
         strip.appendChild(btnIns);
         strip.appendChild(btnRep);
+        strip.appendChild(btnCopy);
         bubbleEl.appendChild(strip);
     }
 

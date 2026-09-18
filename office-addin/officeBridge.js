@@ -133,37 +133,40 @@ window.OfficeBridge = (function() {
 
     // ── 2. 自動在文件游標處插入 / 取代文字或表格 ──
     async function insertText(text, options = {}) {
-        if (!_isOfficeReady) {
+        if (!_isOfficeReady && (!Office || !Office.context || !Office.context.document)) {
             console.log('[Mock Insert Text]', text);
             return { success: true, mock: true, text };
         }
 
         try {
-            if (_hostType === 'Word') {
+            // 途徑 1：通用 Common API (最相容且支援 Word/PPT/Excel)
+            if (typeof Office !== 'undefined' && Office.context && Office.context.document && Office.context.document.setSelectedDataAsync) {
+                const res = await new Promise((resolve) => {
+                    Office.context.document.setSelectedDataAsync(text, { coercionType: Office.CoercionType.Text }, (asyncResult) => {
+                        resolve(asyncResult.status === Office.AsyncResultStatus.Succeeded);
+                    });
+                });
+                if (res) return { success: true };
+            }
+
+            // 途徑 2：Word.run API
+            if (_hostType === 'Word' && typeof Word !== 'undefined' && Word.run) {
                 await Word.run(async (context) => {
                     const selection = context.document.getSelection();
-                    if (options.replace) {
-                        selection.insertText(text, Word.InsertLocation.replace);
-                    } else {
-                        selection.insertText(text, Word.InsertLocation.after);
-                    }
+                    const location = options.replace ? 'Replace' : 'After';
+                    selection.insertText(options.replace ? text : ('\n' + text), location);
                     await context.sync();
                 });
                 return { success: true };
-            } else if (_hostType === 'Excel') {
+            } else if (_hostType === 'Excel' && typeof Excel !== 'undefined' && Excel.run) {
                 await Excel.run(async (context) => {
                     const range = context.workbook.getSelectedRange();
                     range.values = [[text]];
                     await context.sync();
                 });
                 return { success: true };
-            } else if (_hostType === 'PowerPoint') {
-                return await new Promise((resolve) => {
-                    Office.context.document.setSelectedDataAsync(text, { coercionType: Office.CoercionType.Text }, (asyncResult) => {
-                        resolve({ success: asyncResult.status === Office.AsyncResultStatus.Succeeded });
-                    });
-                });
             }
+            return { success: false, error: '未檢測到有效之 Office 寫入環境' };
         } catch (err) {
             console.error('[OfficeBridge insertText Error]', err);
             return { success: false, error: err.message };
