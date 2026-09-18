@@ -1,0 +1,2026 @@
+<!DOCTYPE html>
+<html lang="zh-TW" class="dark">
+<head>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Webcom for Office</title>
+    <!-- 相容 IE11 (Trident / Office 2019) 與現代 Chromium 之精簡深色樣式 -->
+    <style>
+        * { -webkit-box-sizing: border-box; -moz-box-sizing: border-box; box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Microsoft JhengHei", "微軟正黑體", sans-serif;
+            background-color: #0b0f19;
+            color: #f3f4f6;
+            height: 100vh;
+            display: -webkit-box;
+            display: -ms-flexbox;
+            display: flex;
+            -webkit-box-orient: vertical;
+            -webkit-box-direction: normal;
+            -ms-flex-direction: column;
+            flex-direction: column;
+            overflow: hidden;
+            font-size: 11px;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+        /* 頂部工具列 Header */
+        header {
+            background-color: #111827;
+            border-bottom: 1px solid #1f2937;
+            padding: 5px 8px;
+            display: -webkit-box;
+            display: -ms-flexbox;
+            display: flex;
+            -webkit-box-align: center;
+            -ms-flex-align: center;
+            align-items: center;
+            -webkit-box-pack: justify;
+            -ms-flex-pack: justify;
+            justify-content: space-between;
+            flex-shrink: 0;
+            z-index: 10;
+            height: 36px;
+        }
+        .logo-group {
+            display: -webkit-box;
+            display: -ms-flexbox;
+            display: flex;
+            -webkit-box-align: center;
+            -ms-flex-align: center;
+            align-items: center;
+            white-space: nowrap;
+        }
+        .logo-icon {
+            width: 20px; height: 20px; border-radius: 5px;
+            background: #7c3aed;
+            display: -webkit-box; display: -ms-flexbox; display: flex;
+            -webkit-box-align: center; -ms-flex-align: center; align-items: center;
+            -webkit-box-pack: center; -ms-flex-pack: center; justify-content: center;
+            font-weight: bold; font-size: 11px; color: #fff;
+            margin-right: 5px;
+        }
+        .logo-title { font-weight: bold; font-size: 11px; color: #fff; margin-right: 5px; }
+        .badge {
+            font-size: 9px; font-weight: bold; padding: 1px 4px; border-radius: 4px;
+            background: #1f2937; color: #94a3b8; border: 1px solid #374151;
+            white-space: nowrap; display: inline-block;
+        }
+        .badge.word { background: #1e3a8a; color: #93c5fd; border-color: #3b82f6; }
+        .badge.excel { background: #064e3b; color: #6ee7b7; border-color: #10b981; }
+        .badge.ppt { background: #7c2d12; color: #fdba74; border-color: #f97316; }
+        .badge.wps { background: #7f1d1d; color: #fca5a5; border-color: #ef4444; }
+        .badge.wps.excel { background: #064e3b; color: #6ee7b7; border-color: #10b981; }
+        .badge.wps.ppt { background: #7c2d12; color: #fdba74; border-color: #f97316; }
+
+        .toolbar-right {
+            display: -webkit-box;
+            display: -ms-flexbox;
+            display: flex;
+            -webkit-box-align: center;
+            -ms-flex-align: center;
+            align-items: center;
+            white-space: nowrap;
+        }
+        .btn-toolbar {
+            background: #1f2937; border: 1px solid #374151; color: #d1d5db;
+            padding: 2px 5px; border-radius: 5px; font-size: 10px; font-weight: bold;
+            display: inline-block; cursor: pointer; white-space: nowrap;
+            margin-left: 3px; outline: none; vertical-align: middle;
+        }
+        .btn-toolbar:hover { background: #374151; color: #fff; }
+        .btn-toolbar:active { background: #4b5563; }
+        .btn-icon { padding: 3px 4px; color: #9ca3af; line-height: 1; }
+        .btn-icon svg { display: inline-block; vertical-align: middle; width: 12px; height: 12px; }
+        .btn-icon:hover { color: #818cf8; background: #374151; }
+        .btn-icon.btn-danger:hover { color: #f87171; background: #7f1d1d; }
+
+        /* 設定面板 (下拉抽屜) */
+        #settings-panel {
+            background: #030712; border-bottom: 1px solid #1f2937;
+            padding: 8px 10px; font-size: 10px;
+            flex-shrink: 0;
+        }
+        .hidden { display: none !important; }
+        #settings-panel.hidden { display: none !important; }
+        .input-label { font-size: 9px; font-weight: bold; color: #9ca3af; margin-bottom: 2px; display: block; }
+        .text-input {
+            width: 100%; background: #111827; border: 1px solid #374151; border-radius: 5px;
+            padding: 4px 6px; color: #fff; font-size: 10px; font-family: Consolas, monospace; outline: none;
+            margin-bottom: 5px;
+        }
+        .text-input:focus { border-color: #6366f1; }
+        .preset-row {
+            display: -webkit-box; display: -ms-flexbox; display: flex;
+            -ms-flex-wrap: wrap; flex-wrap: wrap;
+            margin-bottom: 4px;
+        }
+        .btn-preset {
+            background: #1e1b4b; border: 1px solid #4338ca; color: #c7d2fe;
+            padding: 2px 6px; border-radius: 4px; font-size: 9px; font-weight: bold;
+            cursor: pointer; margin-right: 3px; margin-bottom: 3px; white-space: nowrap; outline: none;
+        }
+        .btn-preset:hover { background: #312e81; color: #fff; border-color: #6366f1; }
+        .model-chip {
+            background: #1f2937; border: 1px solid #374151; color: #9ca3af;
+            padding: 1px 5px; border-radius: 4px; font-size: 8px; cursor: pointer;
+            margin-right: 3px; margin-bottom: 2px; outline: none; display: inline-block;
+        }
+        .model-chip:hover { background: #374151; color: #38bdf8; border-color: #38bdf8; }
+        .btn-primary {
+            background: #4f46e5; color: #fff; border: none; padding: 4px 10px; border-radius: 5px;
+            font-size: 10px; font-weight: bold; cursor: pointer; outline: none;
+        }
+        .btn-primary:hover { background: #4338ca; }
+
+        /* 對話主區域 */
+        main {
+            -webkit-box-flex: 1; -ms-flex: 1; flex: 1;
+            overflow-y: auto; padding: 8px;
+            display: -webkit-box; display: -ms-flexbox; display: flex;
+            -webkit-box-orient: vertical; -webkit-box-direction: normal; -ms-flex-direction: column; flex-direction: column;
+        }
+        /* 歡迎卡片 */
+        .card-welcome {
+            background: #111827; border: 1px solid #1f2937;
+            border-radius: 10px; padding: 10px; margin-bottom: 8px;
+        }
+        .card-title {
+            font-size: 11px; font-weight: bold; color: #a5b4fc; margin-bottom: 4px;
+            display: -webkit-box; display: -ms-flexbox; display: flex;
+            -webkit-box-align: center; -ms-flex-align: center; align-items: center;
+        }
+        .card-desc { font-size: 10px; color: #9ca3af; line-height: 1.4; margin-bottom: 8px; }
+        
+        /* 2 列快捷標籤 (完美相容 IE11 彈性佈局) */
+        .chip-grid {
+            display: -webkit-box; display: -ms-flexbox; display: flex;
+            -ms-flex-wrap: wrap; flex-wrap: wrap;
+            margin-left: -2px; margin-right: -2px;
+        }
+        .chip-item {
+            width: 50%;
+            padding: 2px;
+            -webkit-box-sizing: border-box; -moz-box-sizing: border-box; box-sizing: border-box;
+        }
+        .chip-btn {
+            background: #030712; border: 1px solid #1f2937; border-radius: 6px;
+            padding: 5px 6px; text-align: left; cursor: pointer; width: 100%; display: block;
+            outline: none; color: #e5e7eb;
+        }
+        .chip-btn:hover { background: #1f2937; border-color: #6366f1; }
+        .chip-title { font-size: 10px; font-weight: bold; display: block; }
+        .chip-sub { font-size: 8px; color: #6b7280; display: block; margin-top: 1px; }
+
+        /* 對話氣泡 */
+        .msg-bubble {
+            padding: 8px 10px; border-radius: 10px; font-size: 11px; line-height: 1.5;
+            max-width: 95%; word-break: break-all; word-wrap: break-word;
+            margin-bottom: 8px;
+        }
+        .msg-user {
+            -ms-flex-item-align: end; align-self: flex-end;
+            background: #3b0764; border: 1px solid #7e22ce; color: #f3e8ff;
+        }
+        .msg-assistant {
+            -ms-flex-item-align: start; align-self: flex-start;
+            background: #111827; border: 1px solid #1f2937; color: #f3f4f6;
+        }
+        .msg-meta {
+            font-size: 8px; font-weight: bold; color: #6b7280; margin-bottom: 3px;
+            display: -webkit-box; display: -ms-flexbox; display: flex;
+            -webkit-box-pack: justify; -ms-flex-pack: justify; justify-content: space-between;
+        }
+
+        /* 底部輸入列 (增高優化，便於檢閱與多行輸入) */
+        footer {
+            background: #111827; border-top: 1px solid #1f2937;
+            padding: 6px 8px 8px 8px; flex-shrink: 0;
+        }
+        .input-capsule {
+            background: #030712; border: 1px solid #374151; border-radius: 8px;
+            padding: 4px 6px;
+            display: -webkit-box; display: -ms-flexbox; display: flex;
+            -webkit-box-align: end; -ms-flex-align: end; align-items: flex-end;
+        }
+        .input-capsule:focus-within { border-color: #6366f1; }
+        #input-user-msg {
+            -webkit-box-flex: 1; -ms-flex: 1; flex: 1;
+            background: transparent; border: none; color: #fff; font-size: 11px;
+            font-family: inherit; line-height: 1.45; resize: none; outline: none; padding: 3px 2px;
+            min-height: 52px; height: 52px; max-height: 130px;
+        }
+        .btn-send {
+            width: 30px; height: 30px; border-radius: 6px; border: none;
+            background: #7c3aed; color: #fff;
+            display: -webkit-box; display: -ms-flexbox; display: flex;
+            -webkit-box-align: center; -ms-flex-align: center; align-items: center;
+            -webkit-box-pack: center; -ms-flex-pack: center; justify-content: center;
+            cursor: pointer; flex-shrink: 0; margin-left: 6px; margin-bottom: 2px;
+        }
+        .btn-send:hover { background: #6d28d9; }
+        .btn-send:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        /* 浮動操作列 */
+        .action-strip { margin-top: 6px; padding-top: 4px; border-top: 1px solid #1f2937; }
+        .action-btn {
+            background: #1f2937; border: 1px solid #374151; color: #a5b4fc;
+            padding: 2px 6px; border-radius: 4px; font-size: 9px; font-weight: bold;
+            cursor: pointer; margin-right: 4px; outline: none;
+        }
+        .action-btn:hover { background: #374151; color: #fff; }
+        .action-btn.replace { color: #fcd34d; border-color: #d97706; }
+        .action-btn.speaking { background: #7f1d1d !important; border-color: #ef4444 !important; color: #fee2e2 !important; }
+
+        /* Toast 提示 */
+        #addin-toast {
+            position: fixed; bottom: 50px; left: 50%;
+            background: #1e1b4b; border: 1px solid #6366f1; color: #e0e7ff;
+            padding: 4px 10px; border-radius: 8px; font-size: 10px; font-weight: bold;
+            z-index: 99; text-align: center;
+            margin-left: -100px; width: 200px;
+        }
+        #addin-toast.error { background: #7f1d1d; border-color: #ef4444; color: #fee2e2; }
+
+        pre { background: #030712; padding: 6px; border-radius: 5px; overflow-x: auto; margin: 4px 0; border: 1px solid #1f2937; }
+        code { font-family: Consolas, monospace; color: #38bdf8; font-size: 10px; }
+        p { margin-bottom: 4px; }
+    </style>
+    <!-- 微軟 Office.js 官方標準函式庫 (同步載入，確保 Office.initialize / Office.onReady 即時就緒) -->
+    <script src="https://appsforoffice.microsoft.com/lib/1/hosted/office.js"></script>
+</head>
+<body>
+
+    <!-- 頂部精簡工具列 (緊湊單行，保證在 240px 狹窄側邊欄絕不折字) -->
+    <header>
+        <div class="logo-group">
+            <div class="logo-icon">W</div>
+            <span class="logo-title">Webcom</span>
+            <span id="host-badge" class="badge">Word</span>
+        </div>
+        <div class="toolbar-right">
+            <!-- 停止朗讀按鈕 (朗讀進行中時自動顯示) -->
+            <button id="btn-stop-tts" onclick="window.stopTts()" type="button" class="btn-toolbar hidden" style="color:#f87171; border-color:#dc2626; background:#450a0a; padding:1px 6px; cursor:pointer;" title="停止目前語音朗讀">
+                <span>⏹️ 停讀</span>
+            </button>
+            <!-- 讀取 Word 選取或全文 -->
+            <button id="btn-read-selection" onclick="window.readDocumentSelection(false)" type="button" class="btn-toolbar" title="從左側 Word 讀取選取或全文內容">
+                <span>📤 讀取</span>
+            </button>
+            <!-- 直接將下方輸入文字帶入至 Word -->
+            <button id="btn-insert-doc" onclick="window.insertCurrentInputToDoc()" type="button" class="btn-toolbar" style="color:#38bdf8; border-color:#0284c7;" title="將下方輸入文字直接帶入/寫入左側 Word 游標處">
+                <span>📥 帶入</span>
+            </button>
+            <!-- 匯入紀錄 -->
+            <button id="btn-import-chat" onclick="window.triggerChatImport()" type="button" class="btn-toolbar btn-icon" title="自 Webcom 匯入紀錄 (.json)">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>
+            </button>
+            <input type="file" id="file-import-chat" style="display:none;" accept=".json" onchange="window.handleChatFileSelected(event)">
+            <!-- 匯出紀錄 -->
+            <button id="btn-export-chat" onclick="window.exportChatForWebcom()" type="button" class="btn-toolbar btn-icon" title="匯出對話紀錄給 Webcom">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+            </button>
+            <!-- 設定面板開關 -->
+            <button id="btn-toggle-settings" onclick="window.toggleSettingsPanel()" type="button" class="btn-toolbar btn-icon" title="端點與模型設定">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+            </button>
+            <!-- 清空對話 -->
+            <button id="btn-clear-chat" onclick="window.clearChatHistory()" type="button" class="btn-toolbar btn-icon btn-danger" title="清空對話">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+            </button>
+        </div>
+    </header>
+
+    <!-- 設定面板 (抽屜) -->
+    <div id="settings-panel" class="hidden">
+        <div style="margin-bottom:4px;">
+            <div style="display:-webkit-box; display:-ms-flexbox; display:flex; -webkit-box-pack:justify; -ms-flex-pack:justify; justify-content:space-between; -webkit-box-align:center; -ms-flex-align:center; align-items:center; margin-bottom:3px;">
+                <span class="input-label" style="margin:0;">⚡ 快速預設：</span>
+                <button type="button" onclick="window.openInEdge('https://top.yia.app/token')" class="btn-preset" style="color:#a5b4fc; border-color:#6366f1; padding:1px 5px; font-size:8px; background:transparent; cursor:pointer;" title="在微軟 Edge 或預設瀏覽器開啟申請頁面">🔑 申請 Key (Edge) ↗</button>
+            </div>
+            <div class="preset-row">
+                <button type="button" onclick="window.applyPreset('tokentable')" class="btn-preset">✨ TokenTable (推薦)</button>
+                <button type="button" onclick="window.applyPreset('daemon')" class="btn-preset" style="background:#1f2937; border-color:#4b5563; color:#d1d5db;">💻 Webcom (8001)</button>
+                <button type="button" onclick="window.applyPreset('lmstudio')" class="btn-preset" style="background:#1f2937; border-color:#4b5563; color:#d1d5db;">🖥️ LM Studio</button>
+                <button type="button" onclick="window.applyPreset('azure')" class="btn-preset" style="background:#1e3a8a; border-color:#2563eb; color:#bfdbfe;">🏢 Azure</button>
+            </div>
+        </div>
+
+        <div>
+            <label class="input-label">API 端點 (Base URL 或完整 URL)</label>
+            <input type="text" id="input-endpoint" class="text-input" placeholder="https://tokentable.asia/v1">
+        </div>
+        <div style="display:-webkit-box; display:-ms-flexbox; display:flex;">
+            <div style="-webkit-box-flex:1; -ms-flex:1; flex:1; margin-right:4px;">
+                <label class="input-label">API 金鑰</label>
+                <input type="password" id="input-key" class="text-input" placeholder="填入 API Key">
+            </div>
+            <div style="-webkit-box-flex:1; -ms-flex:1; flex:1;">
+                <label class="input-label">模型名稱</label>
+                <input type="text" id="input-model" class="text-input" placeholder="qwen3.8-flash">
+            </div>
+        </div>
+        <div style="display:-webkit-box; display:-ms-flexbox; display:flex; -webkit-box-pack:justify; -ms-flex-pack:justify; justify-content:space-between; -webkit-box-align:center; -ms-flex-align:center; align-items:center; margin-top:4px;">
+            <div style="display:inline-block;">
+                <span style="font-size:8px; color:#6b7280;">推薦：</span>
+                <button type="button" onclick="window.selectModel('qwen3.8-flash')" class="model-chip">qwen3.8</button>
+                <button type="button" onclick="window.selectModel('gpt-4o')" class="model-chip" style="color:#34d399;">gpt-4o</button>
+            </div>
+            <div style="display:-webkit-box; display:-ms-flexbox; display:flex; -webkit-box-align:center; -ms-flex-align:center; align-items:center;">
+                <button type="button" onclick="window.testConnection()" class="btn-preset" style="color:#38bdf8; border-color:#0284c7; margin-right:3px;" title="測試目前端點與金鑰是否暢通">🔍 測試</button>
+                <button type="button" onclick="window.syncFromWebcom()" class="btn-preset" style="color:#a78bfa; border-color:#7c3aed; margin-right:3px;" title="自 Webcom 讀取最新設定">🔄 同步</button>
+                <button type="button" onclick="window.saveSettings()" class="btn-primary">儲存</button>
+            </div>
+        </div>
+
+        <!-- 🔊 語音朗讀模式設定 (速度預設 1.15x，最快 2.0x) -->
+        <div style="margin-top:6px; border-top:1px solid #374151; padding-top:6px;">
+            <div style="display:-webkit-box; display:-ms-flexbox; display:flex; -webkit-box-pack:justify; -ms-flex-pack:justify; justify-content:space-between; -webkit-box-align:center; -ms-flex-align:center; align-items:center; margin-bottom:3px;">
+                <span class="input-label" style="margin:0;">🔊 語音朗讀速度 (預設 1.15x，最快 2.0x)：</span>
+                <span id="label-tts-speed" style="font-size:9px; color:#38bdf8; font-weight:bold;">1.15x</span>
+            </div>
+            <div style="display:-webkit-box; display:-ms-flexbox; display:flex; -webkit-box-align:center; -ms-flex-align:center; align-items:center;">
+                <input type="range" id="range-tts-speed" min="0.8" max="2.0" step="0.05" value="1.15" onchange="window.handleTtsSpeedChange(this.value)" oninput="window.handleTtsSpeedInput(this.value)" style="width:100%; cursor:pointer;">
+            </div>
+            <div style="display:-webkit-box; display:-ms-flexbox; display:flex; -webkit-box-pack:justify; -ms-flex-pack:justify; justify-content:space-between; margin-top:3px;">
+                <button type="button" onclick="window.setQuickTtsSpeed(1.0)" class="model-chip">1.0x</button>
+                <button type="button" onclick="window.setQuickTtsSpeed(1.15)" class="model-chip" style="color:#fbbf24; border-color:#d97706;">1.15x (預設)</button>
+                <button type="button" onclick="window.setQuickTtsSpeed(1.3)" class="model-chip">1.3x</button>
+                <button type="button" onclick="window.setQuickTtsSpeed(1.5)" class="model-chip">1.5x</button>
+                <button type="button" onclick="window.setQuickTtsSpeed(2.0)" class="model-chip" style="color:#ef4444; border-color:#dc2626;">2.0x (最快)</button>
+            </div>
+            <div style="margin-top:5px; display:-webkit-box; display:-ms-flexbox; display:flex; -webkit-box-pack:justify; -ms-flex-pack:justify; justify-content:space-between; -webkit-box-align:center; -ms-flex-align:center; align-items:center;">
+                <label style="cursor:pointer; display:-webkit-box; display:-ms-flexbox; display:flex; -webkit-box-align:center; -ms-flex-align:center; align-items:center; font-size:9px; color:#d1d5db;">
+                    <input type="checkbox" id="chk-auto-tts" onchange="window.handleAutoTtsChange(this.checked)" style="margin-right:4px;">
+                    <span>生成完畢自動朗讀</span>
+                </label>
+                <button type="button" onclick="window.testTts()" class="btn-preset" style="padding:1px 6px; font-size:8px;">試聽朗讀</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 對話訊息主區域 -->
+    <main id="chat-container">
+        <!-- 歡迎引導卡片 -->
+        <div id="welcome-card" class="card-welcome">
+            <div class="card-title">
+                <span style="color:#f59e0b; margin-right:4px;">✨</span>
+                <span>Webcom Office 智慧助理</span>
+            </div>
+            <p class="card-desc">
+                在下方輸入指令，或點上方 <strong>[📑 帶入]</strong> 由 AI 潤飾 Word / WPS / Excel 文件。
+            </p>
+            <div class="chip-grid">
+                <div class="chip-item">
+                    <button type="button" onclick="window.quickPrompt('請幫我分析並潤飾我選取的文字內容，使其具備清晰專業的商業風格。')" class="chip-btn">
+                        <span class="chip-title" style="color:#60a5fa;">✍️ 潤飾排版</span>
+                        <span class="chip-sub">改善修辭</span>
+                    </button>
+                </div>
+                <div class="chip-item">
+                    <button type="button" onclick="window.quickPrompt('請幫我繪製一幅圖表展示營運趨勢，使用 chart JSON 區塊輸出圖表定義。')" class="chip-btn">
+                        <span class="chip-title" style="color:#34d399;">📊 智能繪圖</span>
+                        <span class="chip-sub">繪製圖表</span>
+                    </button>
+                </div>
+                <div class="chip-item">
+                    <button type="button" onclick="window.quickPrompt('請幫我將這份資料整理成結構化的 Markdown 表格。')" class="chip-btn">
+                        <span class="chip-title" style="color:#fbbf24;">📋 結構表格</span>
+                        <span class="chip-sub">試算表整理</span>
+                    </button>
+                </div>
+                <div class="chip-item">
+                    <button type="button" onclick="window.readDocumentSelection()" class="chip-btn">
+                        <span class="chip-title" style="color:#c084fc;">📑 帶入選取</span>
+                        <span class="chip-sub">讀取游標內容</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- 底部輸入區域 (增高欄位 + 自動關聯左側 Office/WPS 文件開關) -->
+    <footer>
+        <div style="display:-webkit-box; display:-ms-flexbox; display:flex; -webkit-box-pack:justify; -ms-flex-pack:justify; justify-content:space-between; -webkit-box-align:center; -ms-flex-align:center; align-items:center; margin-bottom:4px; font-size:9px;">
+            <label style="cursor:pointer; display:-webkit-box; display:-ms-flexbox; display:flex; -webkit-box-align:center; -ms-flex-align:center; align-items:center; color:#c7d2fe;">
+                <input type="checkbox" id="chk-auto-doc" checked style="margin-right:4px; cursor:pointer;">
+                <span style="font-weight:bold;">👁️ 自動讀取左側文件</span>
+            </label>
+            <div>
+                <button type="button" id="btn-footer-read" onclick="window.readDocumentSelection(false)" class="btn-preset" style="padding:2px 5px; font-size:8px; margin:0 2px;" title="從左側文件讀取選取或全文文字至下方輸入框">📤 讀取文件</button>
+                <button type="button" id="btn-footer-insert" onclick="window.insertCurrentInputToDoc()" class="btn-preset" style="padding:2px 5px; font-size:8px; margin:0 2px; background:#4338ca; border-color:#6366f1; color:#fff;" title="將下方輸入框中的文字直接帶入/寫入至左側文件游標處">📥 帶入文件</button>
+            </div>
+        </div>
+        <div class="input-capsule">
+            <textarea id="input-user-msg" rows="2"
+                onkeydown="if(event.keyCode===13 && !event.shiftKey){if(event.preventDefault){event.preventDefault();}window.handleSendMessage();return false;}"
+                placeholder="輸入指令 (Enter 發送，Shift+Enter 換行)..."></textarea>
+            <button id="btn-send" onclick="window.handleSendMessage()" type="button" class="btn-send" title="發送指令">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
+            </button>
+        </div>
+    </footer>
+
+    <!-- 
+      純 ES5 業務邏輯 (Strict ES5: 零 ES6 語法、全面相容 IE11 Trident / Office 2019 / 現代瀏覽器)
+    -->
+    <script>
+    // ── 0. 防禦性 Storage 封裝 (防禦 file:/// 與 IE11 沙箱限制) ──
+    var memoryStore = {};
+    function safeGetStorage(key, fallback) {
+        if (fallback === undefined) fallback = '';
+        try {
+            if (typeof window !== 'undefined' && window.localStorage) {
+                var val = window.localStorage.getItem(key);
+                return (val !== null && val !== undefined) ? val : fallback;
+            }
+        } catch (e) {}
+        return memoryStore.hasOwnProperty(key) ? memoryStore[key] : fallback;
+    }
+    function safeSetStorage(key, val) {
+        try {
+            if (typeof window !== 'undefined' && window.localStorage) {
+                window.localStorage.setItem(key, val);
+            }
+        } catch (e) {}
+        memoryStore[key] = val;
+    }
+
+    // ── 0.5 自動探測後端常駐服務 API 基底網址 (同源優先，100% 杜絕 HTTPS 到 HTTP 的 Mixed Content 阻擋) ──
+    function getDaemonApiUrl(path) {
+        if (!path) path = '';
+        if (path.charAt(0) !== '/') path = '/' + path;
+
+        // 1. 若當前 Taskpane 本身就是由 daemon 提供 (如 8002, 2096, 8001, view.yia.app)
+        if (typeof window !== 'undefined' && window.location && window.location.origin && window.location.origin.indexOf('http') === 0) {
+            return window.location.origin + path;
+        }
+        // 2. 若以 file:/// 或其它特殊協議開啟，依據安全策略配對同等安全協議
+        if (typeof window !== 'undefined' && window.location && window.location.protocol === 'https:') {
+            return 'https://127.0.0.1:8002' + path;
+        }
+        return 'http://127.0.0.1:8001' + path;
+    }
+
+    // ── 1. 全域配置與狀態 ──
+    var chatHistory = [];
+    var isGenerating = false;
+
+    var defaultEndpoint = safeGetStorage('webcom_addin_endpoint', 'https://tokentable.asia/v1');
+    var defaultModel = safeGetStorage('webcom_addin_model', 'qwen3.8-flash');
+
+    var addinConfig = {
+        apiEndpoint: defaultEndpoint,
+        apiKey: safeGetStorage('webcom_addin_key', ''),
+        model: defaultModel,
+        systemPrompt: "你是一個專業的微軟 Office 智慧協作助理 (Webcom for Office)。可以直接協助使用者潤飾、撰寫、分析 Word 文件、Excel 試算表或 PowerPoint 簡報。\n【極為重要之輸出規範】：\n1. 請直接輸出正文成果（文章正文、潤飾段落、結構表格），供使用者直接插入左側 Word 文件。\n2. 嚴禁在開頭輸出自我介紹、模型提供商說明（例如『我的模型提供商是...』）或客套廢話（例如『好的，以下為您整理...』）。輸出內容需直接可用於 Word 文件。"
+    };
+
+    // ── 2. 泛用 HTTP 傳輸 (標準 XMLHttpRequest，全面相容 IE10/IE11/Office 2019/現代瀏覽器) ──
+    function httpPostJson(url, headers, payload, callback) {
+        try {
+            var xhr = new XMLHttpRequest();
+            xhr.open('POST', url, true);
+            xhr.setRequestHeader('Content-Type', 'application/json');
+            if (headers) {
+                for (var k in headers) {
+                    if (headers.hasOwnProperty(k)) {
+                        xhr.setRequestHeader(k, headers[k]);
+                    }
+                }
+            }
+            xhr.timeout = 120000;
+            xhr.onreadystatechange = function() {
+                if (xhr.readyState === 4) {
+                    if (xhr.status >= 200 && xhr.status < 300) {
+                        try {
+                            var data = JSON.parse(xhr.responseText);
+                            callback(null, data);
+                        } catch(err) {
+                            callback(new Error("解析 JSON 回應失敗: " + xhr.responseText));
+                        }
+                    } else {
+                        var errMsg = "HTTP " + xhr.status;
+                        try {
+                            var errJson = JSON.parse(xhr.responseText);
+                            if (errJson && errJson.error && errJson.error.message) {
+                                errMsg = errMsg + ": " + errJson.error.message;
+                            } else if (xhr.responseText) {
+                                errMsg = errMsg + ": " + xhr.responseText;
+                            }
+                        } catch(pe) {
+                            if (xhr.responseText) errMsg = errMsg + ": " + xhr.responseText;
+                        }
+                        callback(new Error(errMsg));
+                    }
+                }
+            };
+            xhr.onerror = function() {
+                callback(new Error("連線失敗，請確認網路連線或本機常駐程式狀態"));
+            };
+            xhr.ontimeout = function() {
+                callback(new Error("連線請求逾時 (Timeout)"));
+            };
+            xhr.send(JSON.stringify(payload));
+        } catch(ex) {
+            callback(ex);
+        }
+    }
+
+    // ── 2.4 正文內容過濾器 (自動剝離模型導讀、自我介紹與前綴廢話，保證純淨正文寫入 Word 或朗讀) ──
+    function cleanSubstantiveContent(raw) {
+        if (!raw) return '';
+        var text = String(raw).replace(/\r\n/g, '\n').replace(/\r/g, '\n').replace(/^\s+|\s+$/g, '');
+
+        // 模式 1: 具有 --- 或 *** 或 ___ 分隔線 (前段為模型自我介紹/提示，後段為文章正文)
+        var hrMatch = text.match(/^([\s\S]*?)\n\s*(?:---+|\*\*\*+|___+)\s*\n([\s\S]*)$/);
+        if (hrMatch) {
+            var preamble = hrMatch[1].replace(/^\s+|\s+$/g, '');
+            var mainBody = hrMatch[2].replace(/^\s+|\s+$/g, '');
+            if (/模型|tokentable|openai|gpt|claude|qwen|deepseek|提供商|助理|好的|以下|整理|為您/i.test(preamble)) {
+                if (mainBody.length > 0) {
+                    return mainBody;
+                }
+            }
+        }
+
+        // 模式 2: 開頭無分隔線，但前幾行包含模型導讀或客套問候語
+        var lines = text.split('\n');
+        while (lines.length > 0) {
+            var firstLine = lines[0].replace(/^\s+|\s+$/g, '');
+            if (/^(?:[\*\-_#>\s]*(?:我的模型提供商|我是|我是一個|由\s*TokenTable|好的[，,、]|當然[，,、]|以下[是為]|已為您[整理潤飾]))/i.test(firstLine)) {
+                lines.shift();
+                while (lines.length > 0 && lines[0].replace(/^\s+|\s+$/g, '').length === 0) {
+                    lines.shift();
+                }
+            } else {
+                break;
+            }
+        }
+
+        var result = lines.join('\n').replace(/^\s+|\s+$/g, '');
+        return result.length > 0 ? result : text;
+    }
+
+    // ── 2.5 Markdown 轉微軟 Word 原生富文字 HTML 轉換器 (Strict ES5) ──
+    function formatInlineWord(str) {
+        if (!str) return '';
+        // bold: **text**
+        str = str.replace(/\*\*(.+?)\*\*/g, '<b>$1</b>');
+        // italic: *text*
+        str = str.replace(/\*([^\*]+?)\*/g, '<i>$1</i>');
+        // inline code
+        str = str.replace(/\x60([^\x60]+?)\x60/g, '<code style="background:#f1f5f9; padding:1px 4px; border-radius:3px; font-family:Consolas,monospace; font-size:10pt;">$1</code>');
+        return str;
+    }
+
+    function markdownToWordHtml(md) {
+        if (!md) return '';
+        var lines = md.split('\n');
+        var inTable = false;
+        var inList = false;
+        var html = [];
+
+        for (var i = 0; i < lines.length; i++) {
+            var raw = lines[i];
+            var trimmed = raw.replace(/^\s+|\s+$/g, '');
+
+            // Markdown 表格檢測 (| a | b |)
+            if (trimmed.charAt(0) === '|' && trimmed.charAt(trimmed.length - 1) === '|') {
+                // 分隔行 (例如 |---|---|) 跳過
+                if (trimmed.replace(/[\s\|\-\:]/g, '').length === 0) {
+                    continue;
+                }
+                if (!inTable) {
+                    if (inList) { html.push('</ul>'); inList = false; }
+                    inTable = true;
+                    html.push('<table border="1" cellpadding="6" cellspacing="0" style="border-collapse:collapse; width:100%; margin:8px 0; border:1px solid #cbd5e1; font-family:Calibri,sans-serif; font-size:11pt;">');
+                }
+                var rawCells = trimmed.slice(1, -1).split('|');
+                var isHeader = (i + 1 < lines.length && lines[i+1].replace(/^\s+|\s+$/g, '').replace(/[\s\|\-\:]/g, '').length === 0);
+                html.push('<tr>');
+                for (var c = 0; c < rawCells.length; c++) {
+                    var cellContent = formatInlineWord(escapeHtml(rawCells[c].replace(/^\s+|\s+$/g, '')));
+                    if (isHeader) {
+                        html.push('<th style="background:#f1f5f9; font-weight:bold; text-align:left; padding:6px; border:1px solid #cbd5e1;">' + cellContent + '</th>');
+                    } else {
+                        html.push('<td style="padding:6px; border:1px solid #cbd5e1;">' + cellContent + '</td>');
+                    }
+                }
+                html.push('</tr>');
+                continue;
+            } else if (inTable) {
+                html.push('</table>');
+                inTable = false;
+            }
+
+            // 清單項目 (- 或 *)
+            if (/^[\*\-]\s+/.test(trimmed)) {
+                if (!inList) {
+                    inList = true;
+                    html.push('<ul style="margin:4px 0 4px 20px; font-family:Calibri,sans-serif; font-size:11pt;">');
+                }
+                var itemText = formatInlineWord(escapeHtml(trimmed.replace(/^[\*\-]\s+/, '')));
+                html.push('<li>' + itemText + '</li>');
+                continue;
+            } else if (inList) {
+                html.push('</ul>');
+                inList = false;
+            }
+
+            // 標題 (###, ##, #)
+            if (/^###\s+/.test(trimmed)) {
+                html.push('<h3 style="font-family:Calibri,sans-serif; color:#1e40af; margin:10px 0 4px 0;">' + formatInlineWord(escapeHtml(trimmed.slice(4))) + '</h3>');
+            } else if (/^##\s+/.test(trimmed)) {
+                html.push('<h2 style="font-family:Calibri,sans-serif; color:#1e3a8a; margin:12px 0 4px 0;">' + formatInlineWord(escapeHtml(trimmed.slice(3))) + '</h2>');
+            } else if (/^#\s+/.test(trimmed)) {
+                html.push('<h1 style="font-family:Calibri,sans-serif; color:#0f172a; margin:14px 0 6px 0;">' + formatInlineWord(escapeHtml(trimmed.slice(2))) + '</h1>');
+            } else if (trimmed.length > 0) {
+                html.push('<p style="font-family:Calibri,sans-serif; font-size:11pt; line-height:1.45; margin:4px 0;">' + formatInlineWord(escapeHtml(trimmed)) + '</p>');
+            }
+        }
+        if (inTable) html.push('</table>');
+        if (inList) html.push('</ul>');
+
+        return html.join('');
+    }
+
+    // ── 2.6 語音朗讀管理員 (雙核心：Edge/Chrome 原生 SpeechSynthesis + Office 2019/IE11 Windows SAPI 8001 備援) ──
+    window.ttsManager = {
+        currentSpeed: 1.15,
+        autoRead: false,
+        isSpeaking: false,
+        currentBtn: null,
+        _activeUtterance: null,
+        _sapiTimer: null,
+
+        init: function() {
+            var savedSpeed = safeGetStorage('webcom_tts_speed', '1.15');
+            var parsedSpeed = parseFloat(savedSpeed);
+            if (!isNaN(parsedSpeed) && parsedSpeed >= 0.8 && parsedSpeed <= 2.0) {
+                this.currentSpeed = parsedSpeed;
+            } else {
+                this.currentSpeed = 1.15;
+            }
+            this.autoRead = (safeGetStorage('webcom_tts_auto', 'false') === 'true');
+        },
+
+        setSpeed: function(speed) {
+            var val = parseFloat(speed);
+            if (isNaN(val)) val = 1.15;
+            val = Math.max(0.8, Math.min(2.0, Math.round(val * 100) / 100));
+            this.currentSpeed = val;
+            safeSetStorage('webcom_tts_speed', String(val));
+
+            var rangeEl = document.getElementById('range-tts-speed');
+            var labelEl = document.getElementById('label-tts-speed');
+            if (rangeEl) rangeEl.value = val;
+            if (labelEl) labelEl.innerHTML = val + 'x';
+            showToast('語音朗讀速度已設為 ' + val + 'x');
+        },
+
+        setAutoRead: function(enabled) {
+            this.autoRead = !!enabled;
+            safeSetStorage('webcom_tts_auto', this.autoRead ? 'true' : 'false');
+            var chkEl = document.getElementById('chk-auto-tts');
+            if (chkEl) chkEl.checked = this.autoRead;
+            showToast(this.autoRead ? '已開啟生成完畢自動朗讀' : '已關閉生成完畢自動朗讀');
+        },
+
+        speak: function(rawText, btnElement) {
+            var self = this;
+            if (!rawText) return;
+
+            // 核心：剝離模型自我介紹與導讀前綴，只朗讀正文
+            var cleanText = cleanSubstantiveContent(rawText);
+            if (!cleanText) cleanText = rawText;
+
+            // 清除 Markdown 符號與網址，讓發音自然順暢 (使用 \x60 代替反引號)
+            cleanText = cleanText.replace(/[\x60#\*_\[\]\(\)\|]/g, ' ')
+                                 .replace(/https?:\/\/\S+/g, ' ')
+                                 .replace(/\s+/g, ' ')
+                                 .replace(/^\s+|\s+$/g, '');
+            if (!cleanText) return;
+
+            // 先停止先前之朗讀
+            self.stop();
+
+            self.isSpeaking = true;
+            self.currentBtn = btnElement || null;
+            self._updateUiState(true);
+
+            // 途徑 1：現代瀏覽器 / Edge WebView2 原生 SpeechSynthesis
+            if (typeof window !== 'undefined' && 'speechSynthesis' in window && typeof SpeechSynthesisUtterance !== 'undefined') {
+                try {
+                    window.speechSynthesis.cancel();
+                    var utter = new SpeechSynthesisUtterance(cleanText);
+                    utter.rate = self.currentSpeed;
+                    utter.lang = 'zh-TW';
+
+                    utter.onend = function() {
+                        self._handleSpeechEnd();
+                    };
+                    utter.onerror = function(e) {
+                        self._fallbackSapiSpeak(cleanText);
+                    };
+
+                    self._activeUtterance = utter;
+                    window.speechSynthesis.speak(utter);
+                    return;
+                } catch(sErr) {
+                    // 若引發異常，降級至本機 SAPI
+                }
+            }
+
+            // 途徑 2：Office 2019 / Trident (IE11) Windows 本機 SAPI COM 朗讀
+            self._fallbackSapiSpeak(cleanText);
+        },
+
+        _fallbackSapiSpeak: function(cleanText) {
+            var self = this;
+            try {
+                var xhr = new XMLHttpRequest();
+                var speakUrl = getDaemonApiUrl('/api/tts/speak');
+                xhr.open('POST', speakUrl, true);
+                xhr.setRequestHeader('Content-Type', 'application/json');
+                xhr.timeout = 10000;
+                xhr.onreadystatechange = function() {
+                    if (xhr.readyState === 4) {
+                        if (xhr.status === 200) {
+                            var words = cleanText.length;
+                            var estimatedSec = Math.max(3, Math.min(120, Math.round(words / (4.5 * self.currentSpeed))));
+                            if (self._sapiTimer) clearTimeout(self._sapiTimer);
+                            self._sapiTimer = setTimeout(function() {
+                                self._handleSpeechEnd();
+                            }, estimatedSec * 1000);
+                        } else {
+                            self._handleSpeechEnd();
+                            showToast('無法調用本機語音服務 (HTTP ' + xhr.status + ')', true);
+                        }
+                    }
+                };
+                xhr.onerror = function() {
+                    self._handleSpeechEnd();
+                    showToast('本機語音服務未回應，請確認常駐後端運行中', true);
+                };
+                xhr.send(JSON.stringify({
+                    text: cleanText,
+                    rate: self.currentSpeed
+                }));
+            } catch(ex) {
+                self._handleSpeechEnd();
+            }
+        },
+
+        stop: function() {
+            var self = this;
+            if (self._sapiTimer) {
+                clearTimeout(self._sapiTimer);
+                self._sapiTimer = null;
+            }
+
+            // 1. 停止瀏覽器原生 SpeechSynthesis
+            if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+                try {
+                    window.speechSynthesis.cancel();
+                } catch(e) {}
+            }
+
+            // 2. 停止本機 SAPI (使用 getDaemonApiUrl 杜絕 Mixed Content 阻擋)
+            try {
+                var xhr = new XMLHttpRequest();
+                var stopUrl = getDaemonApiUrl('/api/tts/stop');
+                xhr.open('POST', stopUrl, true);
+                xhr.timeout = 1500;
+                xhr.send(null);
+            } catch(ex) {}
+
+            self._handleSpeechEnd();
+            showToast('已停止語音朗讀');
+        },
+
+        _handleSpeechEnd: function() {
+            this.isSpeaking = false;
+            this._activeUtterance = null;
+            this._updateUiState(false);
+            this.currentBtn = null;
+        },
+
+        _updateUiState: function(speaking) {
+            var stopBtn = document.getElementById('btn-stop-tts');
+            if (stopBtn) {
+                if (speaking) {
+                    stopBtn.className = stopBtn.className.replace('hidden', '').replace(/^\s+|\s+$/g, '');
+                } else {
+                    if (stopBtn.className.indexOf('hidden') === -1) {
+                        stopBtn.className = stopBtn.className + ' hidden';
+                    }
+                }
+            }
+
+            if (this.currentBtn) {
+                if (speaking) {
+                    if (this.currentBtn.className.indexOf('speaking') === -1) {
+                        this.currentBtn.className = this.currentBtn.className + ' speaking';
+                    }
+                    this.currentBtn.innerHTML = '⏹️ 停止';
+                } else {
+                    this.currentBtn.className = this.currentBtn.className.replace('speaking', '').replace(/^\s+|\s+$/g, '');
+                    this.currentBtn.innerHTML = '🔊 朗讀';
+                }
+            }
+        }
+    };
+    window.ttsManager.init();
+
+    // ── 3. 內嵌微軟 Office / 金山 WPS Office 雙引擎多軌橋接器 ──
+    // 深度支援：WPS 文字/表格/演示 (JSA API wps.WpsApplication / wps.EtApplication / wps.WppApplication)
+    //         + 微軟 Office Universal Common API (getSelectedDataAsync / setSelectedDataAsync)
+    //         + Word.run / Excel.run 原生承載
+    window.OfficeBridge = {
+        _hostType: 'Word', // 預設初始標靶
+        _isOfficeReady: false,
+        _readyCallbacks: [],
+
+        _getWps: function() {
+            try {
+                if (typeof wps !== 'undefined' && wps) return wps;
+                if (typeof window !== 'undefined' && window.wps) return window.wps;
+            } catch(e) {}
+            return null;
+        },
+
+        _isWpsEnvironment: function() {
+            if (this._getWps() !== null) return true;
+            var ua = (typeof navigator !== 'undefined' && navigator.userAgent) ? navigator.userAgent.toLowerCase() : '';
+            return (ua.indexOf('wps') !== -1 || ua.indexOf('kso') !== -1);
+        },
+
+        _detectHostName: function(rawHost) {
+            var wObj = this._getWps();
+            var ua = (typeof navigator !== 'undefined' && navigator.userAgent) ? navigator.userAgent.toLowerCase() : '';
+            var isWps = (wObj !== null) || (ua.indexOf('wps') !== -1) || (ua.indexOf('kso') !== -1);
+
+            if (wObj) {
+                try {
+                    if (wObj.WpsApplication) return 'WPS 文字';
+                    if (wObj.EtApplication) return 'WPS 表格';
+                    if (wObj.WppApplication) return 'WPS 演示';
+                    if (wObj.Application) {
+                        var appName = String(wObj.Application.Name || '').toLowerCase();
+                        if (appName.indexOf('spread') !== -1 || appName.indexOf('et') !== -1 || appName.indexOf('excel') !== -1) return 'WPS 表格';
+                        if (appName.indexOf('present') !== -1 || appName.indexOf('wpp') !== -1 || appName.indexOf('powerpoint') !== -1) return 'WPS 演示';
+                        return 'WPS 文字';
+                    }
+                } catch(eWpsD) {}
+                return 'WPS';
+            }
+
+            var targetHost = rawHost;
+            if (!targetHost && typeof Office !== 'undefined' && Office.context && Office.context.host) {
+                targetHost = Office.context.host;
+            }
+            if (targetHost) {
+                var strH = String(targetHost).toLowerCase();
+                if (strH.indexOf('excel') !== -1 || strH === 'et') return isWps ? 'WPS 表格' : 'Excel';
+                if (strH.indexOf('powerpoint') !== -1 || strH === 'wpp') return isWps ? 'WPS 演示' : 'PowerPoint';
+                if (strH.indexOf('word') !== -1 || strH === 'wps') return isWps ? 'WPS 文字' : 'Word';
+                return isWps ? ('WPS ' + targetHost) : String(targetHost);
+            }
+
+            if (typeof Word !== 'undefined' && Word.run) return isWps ? 'WPS 文字' : 'Word';
+            if (typeof Excel !== 'undefined' && Excel.run) return isWps ? 'WPS 表格' : 'Excel';
+
+            return isWps ? 'WPS' : 'Word';
+        },
+
+        init: function(onHostChange) {
+            var self = this;
+            if (typeof onHostChange === 'function') {
+                self._readyCallbacks.push(onHostChange);
+            }
+
+            function triggerReady(rawHost) {
+                self._isOfficeReady = true;
+                var h = self._detectHostName(rawHost);
+                self._hostType = h;
+                for (var i = 0; i < self._readyCallbacks.length; i++) {
+                    try { self._readyCallbacks[i](h); } catch(e) {}
+                }
+            }
+
+            // 1. WPS 原生環境優先即時標記就緒 (零延遲同步激活)
+            if (self._getWps() !== null) {
+                triggerReady();
+                return;
+            }
+
+            // 2. 雙軌微軟/WPS Office.js 偵測：Office.initialize 與 Office.onReady
+            try {
+                if (typeof Office !== 'undefined') {
+                    Office.initialize = function(reason) {
+                        triggerReady(Office.context ? Office.context.host : '');
+                    };
+                    if (Office.onReady) {
+                        Office.onReady(function(info) {
+                            triggerReady(info ? info.host : (Office.context ? Office.context.host : ''));
+                        })['catch'](function() {});
+                    }
+                }
+            } catch(e) {}
+
+            // 若執行環境已具有 Office 物件，立即標記就緒
+            if (typeof Office !== 'undefined' && Office.context && Office.context.document) {
+                triggerReady(Office.context.host);
+            }
+
+            // 3. 超時保護：若 2 秒後仍無 Office 回調，檢測 WPS 核心或降級為 Web 模式
+            setTimeout(function() {
+                if (!self._isOfficeReady) {
+                    if (self._getWps() !== null) {
+                        triggerReady();
+                    } else if (typeof Office !== 'undefined' && Office.context && Office.context.document) {
+                        triggerReady(Office.context.host);
+                    } else {
+                        var isWpsUa = self._isWpsEnvironment();
+                        self._hostType = isWpsUa ? 'WPS' : 'Web';
+                        for (var i = 0; i < self._readyCallbacks.length; i++) {
+                            try { self._readyCallbacks[i](self._hostType); } catch(e) {}
+                        }
+                    }
+                }
+            }, 2000);
+        },
+
+        // 讀取左側文件內容 (支援 WPS 文字/表格/演示 + 微軟 Office Word/Excel)
+        getDocumentContent: function(preferWholeDoc, callback) {
+            var self = this;
+            if (!callback) callback = function() {};
+
+            // ── 途徑 0：WPS 原生 JSA 模式 (超快速同步讀取) ──
+            var wObj = self._getWps();
+            if (wObj) {
+                try {
+                    // A. WPS 文字 (Writer)
+                    var wpsApp = null;
+                    try {
+                        if (typeof wObj.WpsApplication === 'function') wpsApp = wObj.WpsApplication();
+                        else if (wObj.Application) wpsApp = wObj.Application;
+                    } catch(eWp1) {}
+
+                    if (wpsApp) {
+                        if (!preferWholeDoc && wpsApp.Selection && wpsApp.Selection.Text) {
+                            var wSel = String(wpsApp.Selection.Text).replace(/^\s+|\s+$/g, '');
+                            if (wSel.length > 0 && wSel !== '\r' && wSel !== '\n') {
+                                callback({ text: wSel, source: 'selection', length: wSel.length, host: self._hostType });
+                                return;
+                            }
+                        }
+                        if (wpsApp.ActiveDocument && wpsApp.ActiveDocument.Content && wpsApp.ActiveDocument.Content.Text) {
+                            var wFull = String(wpsApp.ActiveDocument.Content.Text).replace(/^\s+|\s+$/g, '');
+                            if (wFull.length > 0) {
+                                var maxLen = 4000;
+                                var trimmedW = (wFull.length > maxLen) ? (wFull.slice(0, maxLen) + '\n...(後續字元因長度限制已截斷)...') : wFull;
+                                callback({ text: trimmedW, source: 'body', length: wFull.length, host: self._hostType });
+                                return;
+                            }
+                        }
+                    }
+
+                    // B. WPS 表格 (Spreadsheets)
+                    var etApp = null;
+                    try {
+                        if (typeof wObj.EtApplication === 'function') etApp = wObj.EtApplication();
+                        else if (wObj.Application) etApp = wObj.Application;
+                    } catch(eEt1) {}
+
+                    if (etApp && etApp.Selection) {
+                        var val = (etApp.Selection.Value2 !== undefined) ? etApp.Selection.Value2 : etApp.Selection.Value;
+                        if (val !== null && val !== undefined) {
+                            var sText = '';
+                            if (val instanceof Array || Object.prototype.toString.call(val) === '[object Array]') {
+                                var lines = [];
+                                var maxRows = Math.min(val.length, 120);
+                                for (var r = 0; r < maxRows; r++) {
+                                    var row = val[r];
+                                    if (row instanceof Array || Object.prototype.toString.call(row) === '[object Array]') {
+                                        lines.push(row.join('\t'));
+                                    } else {
+                                        lines.push(String(row));
+                                    }
+                                }
+                                sText = lines.join('\n');
+                            } else {
+                                sText = String(val);
+                            }
+                            sText = sText.replace(/^\s+|\s+$/g, '');
+                            if (sText.length > 0) {
+                                callback({ text: sText, source: 'sheet', length: sText.length, host: self._hostType });
+                                return;
+                            }
+                        }
+                    }
+
+                    // C. WPS 演示 (Presentation)
+                    var wppApp = null;
+                    try {
+                        if (typeof wObj.WppApplication === 'function') wppApp = wObj.WppApplication();
+                        else if (wObj.Application) wppApp = wObj.Application;
+                    } catch(eWp2) {}
+
+                    if (wppApp && wppApp.ActiveWindow && wppApp.ActiveWindow.Selection) {
+                        var pSel = wppApp.ActiveWindow.Selection;
+                        if (pSel.TextRange && pSel.TextRange.Text) {
+                            var pTxt = String(pSel.TextRange.Text).replace(/^\s+|\s+$/g, '');
+                            if (pTxt.length > 0) {
+                                callback({ text: pTxt, source: 'selection', length: pTxt.length, host: self._hostType });
+                                return;
+                            }
+                        }
+                    }
+                } catch(eWpsRead) {}
+            }
+
+            // ── 途徑 1：微軟/WPS 通用 Common API (Office.context.document.getSelectedDataAsync) ──
+            if (typeof Office !== 'undefined' && Office.context && Office.context.document && Office.context.document.getSelectedDataAsync && !preferWholeDoc) {
+                try {
+                    Office.context.document.getSelectedDataAsync(Office.CoercionType.Text, function(asyncResult) {
+                        if (asyncResult.status === Office.AsyncResultStatus.Succeeded && asyncResult.value) {
+                            var cleanSel = String(asyncResult.value).replace(/^\s+|\s+$/g, '');
+                            if (cleanSel.length > 0) {
+                                callback({ text: cleanSel, source: 'selection', length: cleanSel.length, host: self._hostType });
+                                return;
+                            }
+                        }
+                        self._readFullBodyFallback(callback);
+                    });
+                    return;
+                } catch(e) {
+                    self._readFullBodyFallback(callback);
+                    return;
+                }
+            }
+            self._readFullBodyFallback(callback);
+        },
+
+        _readFullBodyFallback: function(callback) {
+            var self = this;
+            try {
+                if (typeof Word !== 'undefined' && Word.run) {
+                    Word.run(function(context) {
+                        var body = context.document.body;
+                        body.load('text');
+                        return context.sync().then(function() {
+                            var bodyText = body.text ? body.text.replace(/^\s+|\s+$/g, '') : '';
+                            if (bodyText) {
+                                var maxLen = 4000;
+                                var trimmed = (bodyText.length > maxLen) ? (bodyText.slice(0, maxLen) + '\n...(後續字元因長度限制已截斷)...') : bodyText;
+                                callback({ text: trimmed, source: 'body', length: bodyText.length, host: self._hostType });
+                            } else {
+                                callback(null);
+                            }
+                        });
+                    })['catch'](function(err) {
+                        callback(self._isOfficeReady ? null : { text: "【預覽模式】未連接 Office / WPS 主機，此為模擬文件文字。", source: "mock", length: 30 });
+                    });
+                    return;
+                } else if (typeof Excel !== 'undefined' && Excel.run) {
+                    Excel.run(function(context) {
+                        var sheet = context.workbook.worksheets.getActiveWorksheet();
+                        var usedRange = sheet.getUsedRange();
+                        usedRange.load(['values', 'rowCount', 'columnCount']);
+                        return context.sync().then(function() {
+                            var targetVals = usedRange.values || [];
+                            var lines = [];
+                            var maxRows = Math.min(targetVals.length, 120);
+                            for (var r = 0; r < maxRows; r++) {
+                                lines.push(targetVals[r].join('\t'));
+                            }
+                            var resText = lines.join('\n');
+                            callback({ text: resText, source: 'sheet', length: resText.length, host: self._hostType });
+                        });
+                    })['catch'](function() {
+                        callback(null);
+                    });
+                    return;
+                }
+            } catch(ex) {
+                callback(null);
+                return;
+            }
+            callback(self._isOfficeReady ? null : { text: "【預覽模式】未連接 Office / WPS 主機，此為模擬文件文字。", source: "mock", length: 30 });
+        },
+
+        // 帶入/寫入文字至左側 WPS 或 Word/Excel 文件
+        insertText: function(text, replace, callback) {
+            if (!callback) callback = function() {};
+            var self = this;
+
+            var wObj = self._getWps();
+            var hasOfficeDoc = (typeof Office !== 'undefined' && Office.context && Office.context.document);
+            var hasWordRun = (typeof Word !== 'undefined' && Word.run);
+            var hasExcelRun = (typeof Excel !== 'undefined' && Excel.run);
+
+            // 若完全不在 Office / WPS 宿主內 (例如在純 Chrome/Edge 獨立開啟預覽)
+            if (!wObj && !hasOfficeDoc && !hasWordRun && !hasExcelRun && !self._isOfficeReady) {
+                callback({ success: true, mocked: true, host: 'Web' });
+                return;
+            }
+
+            // ── 途徑 0：WPS 原生 JSA 模式 ──
+            if (wObj) {
+                try {
+                    // A. WPS 文字 (Writer)
+                    var wpsApp = null;
+                    try {
+                        if (typeof wObj.WpsApplication === 'function') wpsApp = wObj.WpsApplication();
+                        else if (wObj.Application) wpsApp = wObj.Application;
+                    } catch(eWp1) {}
+
+                    if (wpsApp && wpsApp.Selection) {
+                        if (replace) {
+                            if (wpsApp.Selection.Range) {
+                                wpsApp.Selection.Range.Text = text;
+                            } else {
+                                wpsApp.Selection.Text = text;
+                            }
+                        } else {
+                            var hasExistingSel = (wpsApp.Selection.Text && String(wpsApp.Selection.Text).replace(/^\s+|\s+$/g, '').length > 0);
+                            if (typeof wpsApp.Selection.TypeText === 'function') {
+                                wpsApp.Selection.TypeText((hasExistingSel ? '\n' : '') + text);
+                            } else if (typeof wpsApp.Selection.InsertAfter === 'function') {
+                                wpsApp.Selection.InsertAfter('\n' + text);
+                            } else if (wpsApp.Selection.Range) {
+                                wpsApp.Selection.Range.Text = text;
+                            } else {
+                                wpsApp.Selection.Text = text;
+                            }
+                        }
+                        callback({ success: true, method: 'wps.WpsApplication', host: self._hostType });
+                        return;
+                    }
+
+                    // B. WPS 表格 (Spreadsheets)
+                    var etApp = null;
+                    try {
+                        if (typeof wObj.EtApplication === 'function') etApp = wObj.EtApplication();
+                        else if (wObj.Application) etApp = wObj.Application;
+                    } catch(eEt1) {}
+
+                    if (etApp && etApp.Selection) {
+                        etApp.Selection.Value2 = text;
+                        callback({ success: true, method: 'wps.EtApplication', host: self._hostType });
+                        return;
+                    }
+
+                    // C. WPS 演示 (Presentation)
+                    var wppApp = null;
+                    try {
+                        if (typeof wObj.WppApplication === 'function') wppApp = wObj.WppApplication();
+                        else if (wObj.Application) wppApp = wObj.Application;
+                    } catch(eWp2) {}
+
+                    if (wppApp && wppApp.ActiveWindow && wppApp.ActiveWindow.Selection && wppApp.ActiveWindow.Selection.TextRange) {
+                        wppApp.ActiveWindow.Selection.TextRange.Text = text;
+                        callback({ success: true, method: 'wps.WppApplication', host: self._hostType });
+                        return;
+                    }
+                } catch(eWpsIns) {}
+            }
+
+            // ── 途徑 1：微軟/WPS 官方 Universal Common API (Office.context.document.setSelectedDataAsync) ──
+            if (hasOfficeDoc && Office.context.document.setSelectedDataAsync) {
+                var wordHtml = markdownToWordHtml(text);
+                try {
+                    Office.context.document.setSelectedDataAsync(
+                        wordHtml,
+                        { coercionType: Office.CoercionType.Html },
+                        function(asyncResult) {
+                            if (asyncResult.status === Office.AsyncResultStatus.Succeeded) {
+                                callback({ success: true, method: 'setSelectedDataAsync (HTML)', host: self._hostType });
+                            } else {
+                                Office.context.document.setSelectedDataAsync(
+                                    text,
+                                    { coercionType: Office.CoercionType.Text },
+                                    function(textResult) {
+                                        if (textResult.status === Office.AsyncResultStatus.Succeeded) {
+                                            callback({ success: true, method: 'setSelectedDataAsync (Text)', host: self._hostType });
+                                        } else {
+                                            self._fallbackWordRunInsert(text, replace, callback);
+                                        }
+                                    }
+                                );
+                            }
+                        }
+                    );
+                    return;
+                } catch(eHtml) {
+                    self._fallbackWordRunInsert(text, replace, callback);
+                    return;
+                }
+            }
+
+            self._fallbackWordRunInsert(text, replace, callback);
+        },
+
+        _fallbackWordRunInsert: function(text, replace, callback) {
+            var self = this;
+            // 途徑 2：Word.run API (使用嚴格字串常數 'Replace' 與 'After'，杜絕 undefined 枚舉錯誤)
+            if (typeof Word !== 'undefined' && Word.run) {
+                Word.run(function(context) {
+                    var sel = context.document.getSelection();
+                    var location = replace ? 'Replace' : 'After';
+                    sel.insertText(replace ? text : ('\n' + text), location);
+                    return context.sync().then(function() {
+                        callback({ success: true, method: 'Word.run', host: self._hostType });
+                    });
+                })['catch'](function(err) {
+                    try {
+                        Word.run(function(context) {
+                            context.document.body.insertText('\n' + text, 'End');
+                            return context.sync().then(function() {
+                                callback({ success: true, method: 'Word.body.insertText', host: self._hostType });
+                            });
+                        })['catch'](function(bErr) {
+                            callback({ success: false, error: err.message || String(err) });
+                        });
+                    } catch(ex) {
+                        callback({ success: false, error: err.message || String(err) });
+                    }
+                });
+                return;
+            }
+
+            // 途徑 3：Excel 試算表寫入
+            if (typeof Excel !== 'undefined' && Excel.run) {
+                Excel.run(function(context) {
+                    var range = context.workbook.getSelectedRange();
+                    range.values = [[text]];
+                    return context.sync().then(function() {
+                        callback({ success: true, method: 'Excel.run', host: self._hostType });
+                    });
+                })['catch'](function(err) {
+                    callback({ success: false, error: err.message || String(err) });
+                });
+                return;
+            }
+
+            callback({ success: false, error: '未檢測到 Office 或 WPS 宿主環境' });
+        }
+    };
+
+    // ── 4. URL 標準化函式 (相容 TokenTable、Azure OpenAI、LM Studio、Webcom Daemon 等) ──
+    function normalizeApiUrl(base) {
+        if (!base) return '';
+        var clean = base.replace(/^\s+|\s+$/g, '');
+        if (clean.indexOf('openai.azure.com') !== -1) {
+            return clean;
+        }
+        // 若結尾帶有 /chat/completions，先剝離以利統一檢查 /v1 版本路徑
+        if (clean.slice(-17) === '/chat/completions') {
+            clean = clean.slice(0, -17);
+        }
+        if (clean.charAt(clean.length - 1) === '/') {
+            clean = clean.slice(0, -1);
+        }
+        // 確保具有 /v1 (TokenTable 與本機 Daemon 規範需帶 /v1，否則會發生 404)
+        if (clean.slice(-3) !== '/v1' && clean.indexOf('/v1/') === -1) {
+            clean = clean + '/v1';
+        }
+        return clean + '/chat/completions';
+    }
+
+    // ── 5. 全域操作函式 (掛載至 window 供 HTML 原生 onclick 即點即應) ──
+
+    // 發送訊息 (支援自動附帶 Word/Excel 左側文件上下文)
+    window.handleSendMessage = function() {
+        var input = document.getElementById('input-user-msg');
+        if (!input) return;
+        var text = input.value.replace(/^\s+|\s+$/g, '');
+        if (!text || isGenerating) return;
+
+        input.value = '';
+
+        var chkAutoDoc = document.getElementById('chk-auto-doc');
+        var shouldReadDoc = chkAutoDoc ? chkAutoDoc.checked : true;
+
+        if (shouldReadDoc && window.OfficeBridge._isOfficeReady) {
+            window.OfficeBridge.getDocumentContent(false, function(docInfo) {
+                _executeSendMessage(text, docInfo);
+            });
+        } else {
+            _executeSendMessage(text, null);
+        }
+    };
+
+    function _executeSendMessage(text, docInfo) {
+        var userHtml = escapeHtml(text).replace(/\n/g, '<br>');
+        if (docInfo && docInfo.text) {
+            var srcLabel = (docInfo.source === 'selection') ? '選取內容' : (window.OfficeBridge._hostType + ' 全文');
+            userHtml = userHtml + '<div style="font-size:9px; color:#c084fc; background:#2e1065; border:1px solid #581c87; border-radius:4px; padding:2px 6px; margin-top:4px; display:inline-block;">📎 已附帶 ' + srcLabel + ' (' + docInfo.length + ' 字)</div>';
+        }
+        appendMessage('user', userHtml);
+        chatHistory.push({ role: 'user', content: text, timestamp: new Date().toISOString() });
+
+        isGenerating = true;
+        var btnSend = document.getElementById('btn-send');
+        if (btnSend) btnSend.disabled = true;
+
+        var aiBubble = appendMessage('assistant', '<span style="color:#818cf8;">正在分析與生成中...</span>');
+
+        var msgs = [
+            { role: 'system', content: addinConfig.systemPrompt }
+        ];
+        // 帶入歷史對話 (不含最後一條，因為最後一條要附帶當前文檔上下文)
+        for (var i = 0; i < chatHistory.length - 1; i++) {
+            msgs.push({ role: chatHistory[i].role, content: chatHistory[i].content });
+        }
+        // 當前指令：若有文檔內容，組裝進 prompt 傳給模型
+        if (docInfo && docInfo.text) {
+            var host = window.OfficeBridge._hostType;
+            var docContext = "【當前 " + host + " 文件內容 (" + (docInfo.source === 'selection' ? '選取段落' : '全文') + ")】：\n" + docInfo.text + "\n\n【使用者指示】：\n" + text;
+            msgs.push({ role: 'user', content: docContext });
+        } else {
+            msgs.push({ role: 'user', content: text });
+        }
+
+        var targetUrl = normalizeApiUrl(addinConfig.apiEndpoint);
+        var headers = {};
+        if (addinConfig.apiKey) {
+            headers['Authorization'] = 'Bearer ' + addinConfig.apiKey;
+            headers['api-key'] = addinConfig.apiKey; // 相容 Azure OpenAI
+        }
+
+        var payload = {
+            model: addinConfig.model || 'qwen3.8-flash',
+            messages: msgs,
+            temperature: 0.7
+        };
+
+        httpPostJson(targetUrl, headers, payload, function(err, data) {
+            isGenerating = false;
+            if (btnSend) btnSend.disabled = false;
+
+            if (err) {
+                var errStr = err.message || String(err);
+                aiBubble.innerHTML = '<span style="color:#f87171; font-weight:bold;">⚠️ 連線失敗:</span> ' + escapeHtml(errStr) +
+                    '<br><span style="font-size:9px; color:#9ca3af; margin-top:3px; display:block;">💡 提示：若使用 TokenTable 或雲端模型，請點右上角「⚙️ 設定」輸入 Key。<br><button type="button" onclick="window.openInEdge(\'https://top.yia.app/token\')" style="background:transparent; border:none; color:#818cf8; text-decoration:underline; font-size:9px; cursor:pointer; padding:0;">🔑 申請 Key (在 Edge 開啟)</button></span>';
+            } else {
+                var reply = (data && data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content) ? data.choices[0].message.content : '（無回應）';
+                aiBubble.innerHTML = escapeHtml(reply).replace(/\n/g, '<br>');
+                chatHistory.push({ role: 'assistant', content: reply, timestamp: new Date().toISOString() });
+                attachInsertActions(aiBubble, reply);
+                if (window.ttsManager && window.ttsManager.autoRead) {
+                    window.ttsManager.speak(reply);
+                }
+            }
+            scrollToBottom();
+        });
+    }
+
+    // 快捷提示詞
+    window.quickPrompt = function(promptText) {
+        var input = document.getElementById('input-user-msg');
+        if (!input) return;
+        input.value = promptText;
+        input.focus();
+        showToast('已帶入快捷指令');
+    };
+
+    // 讀取左側 WPS / Word 選取或全文文字至輸入框
+    window.readDocumentSelection = function(preferWholeDoc) {
+        window.OfficeBridge.getDocumentContent(preferWholeDoc, function(res) {
+            var input = document.getElementById('input-user-msg');
+            var hostName = (window.OfficeBridge && window.OfficeBridge._hostType && window.OfficeBridge._hostType !== 'Web') ? window.OfficeBridge._hostType : '文件';
+            if (res && res.text && input) {
+                var label = (res.source === 'selection') ? (hostName + ' 選取段落') : (hostName + ' 全文內容');
+                input.value = "【以下為" + label + "】：\n" + res.text + "\n\n請幫我分析並潤飾以上內容。";
+                input.focus();
+                showToast('✅ 已帶入' + label + '！');
+            } else {
+                showToast('⚠️ 目前左側 ' + hostName + ' 未選取文字且文件為空', true);
+            }
+        });
+    };
+
+    // 將輸入框文字直接帶入/寫入至左側 WPS / Word 游標處
+    window.insertCurrentInputToDoc = function() {
+        var input = document.getElementById('input-user-msg');
+        if (!input) return;
+        var text = input.value.replace(/^\s+|\s+$/g, '');
+        var hostName = (window.OfficeBridge && window.OfficeBridge._hostType && window.OfficeBridge._hostType !== 'Web') ? window.OfficeBridge._hostType : '文件';
+        if (!text) {
+            showToast('⚠️ 請先在下方輸入框輸入欲帶入 ' + hostName + ' 的文字', true);
+            return;
+        }
+        window.OfficeBridge.insertText(text, false, function(res) {
+            if (res.success) {
+                showToast(res.mocked ? ('【預覽模式】已模擬帶入 ' + hostName) : ('✅ 已成功帶入文字至 ' + hostName + '！'));
+            } else {
+                showToast('❌ 帶入 ' + hostName + ' 失敗: ' + (res.error || '未知錯誤'), true);
+            }
+        });
+    };
+
+    // 在 Microsoft Edge 或預設瀏覽器開啟網址
+    window.openInEdge = function(url) {
+        if (!url) url = 'https://top.yia.app/token';
+        // 1. Office 原生外開瀏覽器 API
+        if (typeof Office !== 'undefined' && Office.context && Office.context.ui && Office.context.ui.openBrowserWindow) {
+            try {
+                Office.context.ui.openBrowserWindow(url);
+                showToast('已在系統瀏覽器開啟申請頁面');
+                return;
+            } catch(e) {}
+        }
+        // 2. 透過常駐程式叫起 Windows msedge
+        try {
+            var xhr = new XMLHttpRequest();
+            var openUrl = getDaemonApiUrl('/api/open_browser');
+            xhr.open('POST', openUrl, true);
+            xhr.setRequestHeader('Content-Type', 'application/json');
+            xhr.timeout = 2500;
+            xhr.onreadystatechange = function() {
+                if (xhr.readyState === 4 && xhr.status === 200) {
+                    showToast('已在 Microsoft Edge 開啟申請頁面');
+                }
+            };
+            xhr.send(JSON.stringify({ url: url }));
+        } catch(err) {}
+        // 3. 原生 window.open 備援
+        try {
+            window.open(url, '_blank');
+        } catch(wErr) {}
+    };
+
+    // 設定面板開關
+    window.toggleSettingsPanel = function() {
+        var p = document.getElementById('settings-panel');
+        if (!p) return;
+        if (p.className.indexOf('hidden') !== -1) {
+            p.className = p.className.replace('hidden', '').replace(/^\s+|\s+$/g, '');
+        } else {
+            p.className = p.className + ' hidden';
+        }
+    };
+
+    // 快速套用預設組態
+    window.applyPreset = function(name) {
+        var epEl = document.getElementById('input-endpoint');
+        var modelEl = document.getElementById('input-model');
+        if (!epEl || !modelEl) return;
+        if (name === 'tokentable') {
+            epEl.value = 'https://tokentable.asia/v1';
+            modelEl.value = 'qwen3.8-flash';
+            showToast('已套用 TokenTable 高速推薦配置！');
+        } else if (name === 'daemon') {
+            var daemonApi = getDaemonApiUrl('/v1');
+            epEl.value = daemonApi;
+            modelEl.value = 'qwen3.8-flash';
+            showToast('已套用本機 Webcom 常駐端點');
+        } else if (name === 'lmstudio') {
+            epEl.value = 'http://127.0.0.1:1234/v1';
+            modelEl.value = 'auto';
+            showToast('已套用本機 LM Studio 配置');
+        } else if (name === 'azure') {
+            epEl.value = 'https://{resource}.openai.azure.com/openai/deployments/{deployment}/chat/completions?api-version=2024-08-01-preview';
+            modelEl.value = 'gpt-4o';
+            showToast('已填入 Azure OpenAI / Copilot 企業端點格式');
+        }
+    };
+
+    // 快速選取模型標籤
+    window.selectModel = function(modelName) {
+        var modelEl = document.getElementById('input-model');
+        if (modelEl) {
+            modelEl.value = modelName;
+            showToast('已選取模型：' + modelName);
+        }
+    };
+
+    // 儲存設定
+    window.saveSettings = function() {
+        var epEl = document.getElementById('input-endpoint');
+        var keyEl = document.getElementById('input-key');
+        var modelEl = document.getElementById('input-model');
+        var ep = epEl ? epEl.value.replace(/^\s+|\s+$/g, '') : '';
+        var key = keyEl ? keyEl.value.replace(/^\s+|\s+$/g, '') : '';
+        var model = modelEl ? modelEl.value.replace(/^\s+|\s+$/g, '') : '';
+
+        if (!ep) {
+            ep = 'https://tokentable.asia/v1';
+            if (epEl) epEl.value = ep;
+        }
+        addinConfig.apiEndpoint = ep;
+        safeSetStorage('webcom_addin_endpoint', ep);
+        addinConfig.apiKey = key || '';
+        safeSetStorage('webcom_addin_key', addinConfig.apiKey);
+        addinConfig.model = model || 'qwen3.8-flash';
+        safeSetStorage('webcom_addin_model', addinConfig.model);
+
+        var p = document.getElementById('settings-panel');
+        if (p && p.className.indexOf('hidden') === -1) {
+            p.className = p.className + ' hidden';
+        }
+        showToast('設定已儲存！');
+    };
+
+    // ── 語音朗讀事件處理函式 (預設 1.15x，最快 2.0x) ──
+    window.handleTtsSpeedChange = function(val) {
+        if (window.ttsManager) window.ttsManager.setSpeed(val);
+    };
+    window.handleTtsSpeedInput = function(val) {
+        var label = document.getElementById('label-tts-speed');
+        if (label) label.innerHTML = val + 'x';
+    };
+    window.setQuickTtsSpeed = function(val) {
+        if (window.ttsManager) window.ttsManager.setSpeed(val);
+    };
+    window.handleAutoTtsChange = function(checked) {
+        if (window.ttsManager) window.ttsManager.setAutoRead(checked);
+    };
+    window.testTts = function() {
+        if (window.ttsManager) {
+            window.ttsManager.speak("您好！這是 Webcom 智慧助理語音朗讀測試，目前語速為 " + window.ttsManager.currentSpeed + " 倍速。");
+        }
+    };
+    window.stopTts = function() {
+        if (window.ttsManager) window.ttsManager.stop();
+    };
+
+    // 測試連線 (即時檢測端點與 Key 是否有效)
+    window.testConnection = function() {
+        var epEl = document.getElementById('input-endpoint');
+        var keyEl = document.getElementById('input-key');
+        var modelEl = document.getElementById('input-model');
+        var ep = (epEl ? epEl.value.replace(/^\s+|\s+$/g, '') : '') || 'https://tokentable.asia/v1';
+        var key = (keyEl ? keyEl.value.replace(/^\s+|\s+$/g, '') : '');
+        var model = (modelEl ? modelEl.value.replace(/^\s+|\s+$/g, '') : '') || 'qwen3.8-flash';
+
+        // 若使用遠端 TokenTable 且尚未填入 Key，防呆引導
+        if (!key && ep.indexOf('127.0.0.1') === -1 && ep.indexOf('localhost') === -1) {
+            showToast('⚠️ 請先填入 API 金鑰 (Key)，再進行連線測試！', true);
+            if (keyEl) keyEl.focus();
+            return;
+        }
+
+        // 自動防護：若在 HTTPS 頁面連線本機 HTTP 8001，自動修復為同源 HTTPS 端點，防止 Mixed Content 阻擋
+        if (window.location && window.location.protocol === 'https:' && ep.indexOf('http://127.0.0.1:8001') === 0) {
+            ep = ep.replace('http://127.0.0.1:8001', getDaemonApiUrl(''));
+            if (epEl) epEl.value = ep;
+            addinConfig.apiEndpoint = ep;
+            safeSetStorage('webcom_addin_endpoint', ep);
+        }
+
+        var targetUrl = normalizeApiUrl(ep);
+        showToast('🔍 正在測試連線端點...');
+
+        var headers = {};
+        if (key) {
+            headers['Authorization'] = 'Bearer ' + key;
+            headers['api-key'] = key;
+        }
+
+        var payload = {
+            model: model,
+            messages: [{ role: 'user', content: 'hi' }],
+            max_tokens: 5
+        };
+
+        httpPostJson(targetUrl, headers, payload, function(err, data) {
+            if (err) {
+                var errStr = err.message || String(err);
+                if (errStr.indexOf('401') !== -1) {
+                    showToast('❌ 金鑰無效 (401): API Key 不正確，請重新檢查', true);
+                } else if (errStr.indexOf('400') !== -1) {
+                    showToast('❌ 缺少金鑰 (400): 請在 API 金鑰欄位輸入 Key', true);
+                } else if (errStr.indexOf('404') !== -1) {
+                    showToast('❌ 端點不存在 (404): 請確認網址結尾包含 /v1', true);
+                } else if (errStr.indexOf('連線失敗') !== -1 || errStr.indexOf('Network') !== -1 || errStr.indexOf('Failed') !== -1) {
+                    showToast('❌ 連線失敗: 請確認常駐後端程式或網路狀態', true);
+                } else {
+                    showToast('❌ 連線測試失敗: ' + errStr, true);
+                }
+            } else {
+                showToast('✅ 連線成功！' + model + ' 運作正常');
+            }
+        });
+    };
+
+    // 自 Webcom 同步設定 (向本機常駐後端取得主控台之 TokenTable / 模型配置)
+    window.syncFromWebcom = function() {
+        var url1 = getDaemonApiUrl('/api/settings/llm');
+        showToast('正在向 Webcom 讀取設定...');
+
+        function tryFetch(url, fallback) {
+            var xhr = new XMLHttpRequest();
+            xhr.open('GET', url, true);
+            xhr.timeout = 3500;
+            xhr.onreadystatechange = function() {
+                if (xhr.readyState === 4) {
+                    if (xhr.status === 200) {
+                        try {
+                            var data = JSON.parse(xhr.responseText);
+                            var epEl = document.getElementById('input-endpoint');
+                            var keyEl = document.getElementById('input-key');
+                            var modelEl = document.getElementById('input-model');
+                            if (data.endpoint && epEl) epEl.value = data.endpoint;
+                            if (data.key !== undefined && keyEl) keyEl.value = data.key;
+                            if (data.model && modelEl) modelEl.value = data.model;
+                            window.saveSettings();
+                            showToast('✅ 成功自 Webcom 同步設定！');
+                        } catch(e) {
+                            showToast('解析 Webcom 設定失敗', true);
+                        }
+                    } else if (fallback) {
+                        fallback();
+                    } else {
+                        showToast('無法連線至 Webcom (HTTP ' + xhr.status + ')', true);
+                    }
+                }
+            };
+            xhr.onerror = function() {
+                if (fallback) fallback();
+                else showToast('Webcom 常駐程式未回應 (請確認常駐後端運行中)', true);
+            };
+            xhr.send(null);
+        }
+
+        tryFetch(url1, function() {
+            var altUrl = (url1.indexOf('https:') === 0) ? 'http://127.0.0.1:8001/api/settings/llm' : 'https://127.0.0.1:8002/api/settings/llm';
+            tryFetch(altUrl, null);
+        });
+    };
+
+    // 清空對話
+    window.clearChatHistory = function() {
+        chatHistory = [];
+        var c = document.getElementById('chat-container');
+        if (c) {
+            c.innerHTML = '<div class="card-welcome" style="text-align:center; padding:15px; font-size:10px; color:#9ca3af;"><span>💬 對話已清空，請隨時在下方輸入新的指令。</span></div>';
+        }
+        showToast('對話紀錄已清空');
+    };
+
+    // 匯出對話紀錄 (完全相容 Webcom 主控台)
+    window.exportChatForWebcom = function() {
+        if (chatHistory.length === 0) {
+            showToast('目前無對話紀錄可匯出', true);
+            return;
+        }
+        var now = new Date();
+        var pad = function(n) { return (n < 10 ? '0' : '') + n; };
+        var ts = '' + now.getFullYear() + pad(now.getMonth() + 1) + pad(now.getDate()) + '_' + pad(now.getHours()) + pad(now.getMinutes()) + pad(now.getSeconds());
+
+        var data = {
+            app: "Webcom Dual-Engine Console",
+            source: "Webcom Office Add-in (IE11/Edge 相容版)",
+            exportTimestamp: now.toISOString ? now.toISOString() : now.toString(),
+            messages: chatHistory
+        };
+        var jsonStr = JSON.stringify(data, null, 2);
+
+        // 相容 IE11 msSaveBlob 檔案下載
+        if (window.navigator && window.navigator.msSaveBlob) {
+            var blob = new Blob([jsonStr], { type: 'application/json' });
+            window.navigator.msSaveBlob(blob, 'chat_history_office_' + ts + '.json');
+            showToast('📁 已透過 IE11 下載對話紀錄！');
+            return;
+        }
+
+        var blob = new Blob([jsonStr], { type: 'application/json' });
+        var a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = 'chat_history_office_' + ts + '.json';
+        document.body.appendChild(a);
+        a.click();
+        setTimeout(function() {
+            a.parentNode.removeChild(a);
+            if (URL.revokeObjectURL) URL.revokeObjectURL(a.href);
+        }, 1500);
+        showToast('📁 已匯出對話紀錄！');
+    };
+
+    // 匯入紀錄
+    window.triggerChatImport = function() {
+        var f = document.getElementById('file-import-chat');
+        if (f) f.click();
+    };
+    window.handleChatFileSelected = function(e) {
+        var files = e.target.files;
+        if (files && files[0]) {
+            var r = new FileReader();
+            r.onload = function(evt) {
+                try {
+                    var parsed = JSON.parse(evt.target.result);
+                    var msgs = (parsed instanceof Array) ? parsed : (parsed.messages || []);
+                    if (msgs.length === 0) throw new Error('檔案無訊息');
+                    chatHistory = [];
+                    var c = document.getElementById('chat-container');
+                    if (c) c.innerHTML = '';
+                    for (var m = 0; m < msgs.length; m++) {
+                        var item = msgs[m];
+                        chatHistory.push(item);
+                        appendMessage(item.role || 'user', escapeHtml(item.content || '').replace(/\n/g, '<br>'));
+                    }
+                    showToast('✅ 成功匯入 ' + msgs.length + ' 則對話！');
+                } catch(err) {
+                    showToast('❌ 匯入失敗: ' + err.message, true);
+                }
+            };
+            r.readAsText(files[0]);
+            e.target.value = '';
+        }
+    };
+
+    // ── 6. 輔助渲染函式 ──
+    function appendMessage(role, contentHtml) {
+        var c = document.getElementById('chat-container');
+        if (!c) return null;
+        var w = document.getElementById('welcome-card');
+        if (w && w.parentNode) w.parentNode.removeChild(w);
+
+        var wrap = document.createElement('div');
+        wrap.className = 'msg-bubble ' + (role === 'user' ? 'msg-user' : 'msg-assistant');
+
+        var meta = document.createElement('div');
+        meta.className = 'msg-meta';
+        meta.innerHTML = '<span>' + (role === 'user' ? '👤 閣下' : '🤖 Webcom') + '</span><span>' + (new Date().toLocaleTimeString()) + '</span>';
+
+        var body = document.createElement('div');
+        body.innerHTML = contentHtml;
+
+        wrap.appendChild(meta);
+        wrap.appendChild(body);
+        c.appendChild(wrap);
+        scrollToBottom();
+        return body;
+    }
+
+    function attachInsertActions(bubbleEl, rawText) {
+        var strip = document.createElement('div');
+        strip.className = 'action-strip';
+
+        var curHost = (window.OfficeBridge && window.OfficeBridge._hostType && window.OfficeBridge._hostType !== 'Web') ? window.OfficeBridge._hostType : '文件';
+
+        var btnIns = document.createElement('button');
+        btnIns.className = 'action-btn';
+        btnIns.innerHTML = '📥 帶入 ' + curHost;
+        btnIns.title = '在左側 ' + curHost + ' 游標處插入此文字 (自動排版與繪製表格，已自動濾除模型自我介紹)';
+        btnIns.onclick = function() {
+            var cleanText = cleanSubstantiveContent(rawText);
+            window.OfficeBridge.insertText(cleanText, false, function(res) {
+                var hName = (window.OfficeBridge && window.OfficeBridge._hostType && window.OfficeBridge._hostType !== 'Web') ? window.OfficeBridge._hostType : '文件';
+                if (res.success) {
+                    showToast(res.mocked ? ('【預覽模式】已模擬帶入 ' + hName) : ('✅ 已成功帶入文字至 ' + hName + '！'));
+                } else {
+                    showToast('帶入 ' + hName + ' 失敗: ' + (res.error || '未知錯誤'), true);
+                }
+            });
+        };
+
+        var btnRep = document.createElement('button');
+        btnRep.className = 'action-btn replace';
+        btnRep.innerHTML = '🔄 取代選取';
+        btnRep.title = '用此內容直接取代左側 ' + curHost + ' 目前選取的文字 (已自動濾除模型自我介紹)';
+        btnRep.onclick = function() {
+            var cleanText = cleanSubstantiveContent(rawText);
+            window.OfficeBridge.insertText(cleanText, true, function(res) {
+                var hName = (window.OfficeBridge && window.OfficeBridge._hostType && window.OfficeBridge._hostType !== 'Web') ? window.OfficeBridge._hostType : '文件';
+                if (res.success) {
+                    showToast(res.mocked ? '【預覽模式】已模擬取代選取' : ('✅ 已成功取代 ' + hName + ' 選取文字！'));
+                } else {
+                    showToast('取代失敗: ' + (res.error || '未知錯誤'), true);
+                }
+            });
+        };
+
+        var btnCopy = document.createElement('button');
+        btnCopy.className = 'action-btn';
+        btnCopy.innerHTML = '📋 複製';
+        btnCopy.title = '複製純淨正文至剪貼簿';
+        btnCopy.onclick = function() {
+            var cleanText = cleanSubstantiveContent(rawText);
+            try {
+                if (window.clipboardData && window.clipboardData.setData) {
+                    window.clipboardData.setData('Text', cleanText);
+                    showToast('已複製正文至剪貼簿！');
+                    return;
+                }
+                var ta = document.createElement('textarea');
+                ta.value = cleanText;
+                ta.style.position = 'fixed';
+                ta.style.opacity = '0';
+                document.body.appendChild(ta);
+                ta.select();
+                document.execCommand('copy');
+                document.body.removeChild(ta);
+                showToast('已複製正文至剪貼簿！');
+            } catch(e) {
+                showToast('複製失敗', true);
+            }
+        };
+
+        var btnTts = document.createElement('button');
+        btnTts.className = 'action-btn';
+        btnTts.innerHTML = '🔊 朗讀';
+        btnTts.title = '語音朗讀此段回答正文 (預設 1.15 倍速)';
+        btnTts.onclick = function() {
+            if (window.ttsManager.isSpeaking && window.ttsManager.currentBtn === btnTts) {
+                window.ttsManager.stop();
+            } else {
+                window.ttsManager.speak(rawText, btnTts);
+            }
+        };
+
+        strip.appendChild(btnIns);
+        strip.appendChild(btnRep);
+        strip.appendChild(btnCopy);
+        strip.appendChild(btnTts);
+        bubbleEl.appendChild(strip);
+    }
+
+    function scrollToBottom() {
+        var c = document.getElementById('chat-container');
+        if (c) c.scrollTop = c.scrollHeight;
+    }
+
+    function escapeHtml(str) {
+        if (!str) return '';
+        var d = document.createElement('div');
+        d.textContent = str;
+        return d.innerHTML;
+    }
+
+    window.showToast = function(msg, isErr) {
+        var old = document.getElementById('addin-toast');
+        if (old && old.parentNode) old.parentNode.removeChild(old);
+        var t = document.createElement('div');
+        t.id = 'addin-toast';
+        if (isErr) t.className = 'error';
+        t.innerHTML = escapeHtml(msg);
+        document.body.appendChild(t);
+        setTimeout(function() {
+            if (t && t.parentNode) t.parentNode.removeChild(t);
+        }, 2200);
+    };
+
+    // ── 7. Webcom ⟷ Office 雙向橋接輪詢器 (嚴格快取破除與唯一指令 ID 去重，徹底杜絕重複貼上) ──
+    var bridgePollTimer = null;
+    var lastProcessedActionId = safeGetStorage('webcom_last_bridge_id', '');
+    var isBridgeProcessing = false;
+
+    function pollOfficeBridge() {
+        if (isBridgeProcessing) return;
+        // 關鍵 1: 使用 getDaemonApiUrl 配合當前頁面協議，並附加時間戳破除 IE11 快取
+        var bridgeUrl = getDaemonApiUrl('/api/office/bridge?_t=' + (new Date().getTime()));
+        try {
+            var xhr = new XMLHttpRequest();
+            xhr.open('GET', bridgeUrl, true);
+            try {
+                xhr.setRequestHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+                xhr.setRequestHeader('Pragma', 'no-cache');
+            } catch(hErr) {}
+            xhr.timeout = 2500;
+            xhr.onreadystatechange = function() {
+                if (xhr.readyState === 4 && xhr.status === 200) {
+                    try {
+                        var res = JSON.parse(xhr.responseText);
+                        if (res && res.hasAction && res.action && res.action.text) {
+                            var act = res.action;
+                            var actionId = act.id || (act.text.slice(0, 30) + '_' + (act.timestamp || ''));
+                            // 關鍵 2: 唯一 ID 去重檢驗，已執行過之指令堅決不重複貼上
+                            if (actionId === lastProcessedActionId) {
+                                return;
+                            }
+                            lastProcessedActionId = actionId;
+                            safeSetStorage('webcom_last_bridge_id', actionId);
+                            isBridgeProcessing = true;
+
+                            var isReplace = !!act.replace;
+                            window.OfficeBridge.insertText(act.text, isReplace, function(insRes) {
+                                isBridgeProcessing = false;
+                                if (insRes.success) {
+                                    showToast('📥 已接收 Webcom 主控台寫入指令！');
+                                    var bubble = appendMessage('assistant', '<span style="color:#a78bfa; font-weight:bold;">[來自 Webcom 網頁主控台寫入]</span><br>' + escapeHtml(act.text).replace(/\n/g, '<br>'));
+                                    attachInsertActions(bubble, act.text);
+                                }
+                            });
+                        }
+                    } catch(e) {
+                        isBridgeProcessing = false;
+                    }
+                }
+            };
+            xhr.send(null);
+        } catch(ex) {
+            isBridgeProcessing = false;
+        }
+    }
+    bridgePollTimer = setInterval(pollOfficeBridge, 4000);
+
+    // ── 8. 初始化執行 (自我修復舊端點、超時 800ms 切換主機狀態標籤、自 Webcom 預載配置) ──
+    (function initUI() {
+        // 自我修復舊版遺留的不帶 /v1 之錯誤端點與在 HTTPS 增益集內將 HTTP 8001 自動升級同源端點
+        if (addinConfig.apiEndpoint === 'https://tokentable.asia/chat/completions' || addinConfig.apiEndpoint === 'https://tokentable.asia') {
+            addinConfig.apiEndpoint = 'https://tokentable.asia/v1';
+            safeSetStorage('webcom_addin_endpoint', addinConfig.apiEndpoint);
+        } else if (addinConfig.apiEndpoint.indexOf('127.0.0.1:8001') !== -1 && window.location && window.location.protocol === 'https:') {
+            addinConfig.apiEndpoint = getDaemonApiUrl('/v1');
+            safeSetStorage('webcom_addin_endpoint', addinConfig.apiEndpoint);
+        } else if (addinConfig.apiEndpoint === 'http://127.0.0.1:8001/chat/completions' || addinConfig.apiEndpoint === 'https://127.0.0.1:8002/v1') {
+            addinConfig.apiEndpoint = getDaemonApiUrl('/v1');
+            safeSetStorage('webcom_addin_endpoint', addinConfig.apiEndpoint);
+        }
+
+        var epEl = document.getElementById('input-endpoint');
+        var keyEl = document.getElementById('input-key');
+        var modelEl = document.getElementById('input-model');
+        if (epEl) epEl.value = addinConfig.apiEndpoint;
+        if (keyEl) keyEl.value = addinConfig.apiKey;
+        if (modelEl) modelEl.value = addinConfig.model;
+
+        // 初始化語音朗讀設定元件
+        if (window.ttsManager) {
+            var speedRange = document.getElementById('range-tts-speed');
+            var speedLabel = document.getElementById('label-tts-speed');
+            var autoChk = document.getElementById('chk-auto-tts');
+            if (speedRange) speedRange.value = window.ttsManager.currentSpeed;
+            if (speedLabel) speedLabel.innerHTML = window.ttsManager.currentSpeed + 'x';
+            if (autoChk) autoChk.checked = window.ttsManager.autoRead;
+        }
+
+        window.OfficeBridge.init(function(host) {
+            var b = document.getElementById('host-badge');
+            if (b) {
+                b.className = 'badge';
+                if (host.indexOf('WPS') !== -1) {
+                    b.innerHTML = host;
+                    if (host.indexOf('表格') !== -1 || host.indexOf('Excel') !== -1) {
+                        b.className = 'badge wps excel';
+                    } else if (host.indexOf('演示') !== -1 || host.indexOf('PPT') !== -1) {
+                        b.className = 'badge wps ppt';
+                    } else {
+                        b.className = 'badge wps';
+                    }
+                } else if (host === 'Word') {
+                    b.innerHTML = 'Word';
+                    b.className = 'badge word';
+                } else if (host === 'Excel') {
+                    b.innerHTML = 'Excel';
+                    b.className = 'badge excel';
+                } else if (host === 'PowerPoint') {
+                    b.innerHTML = 'PPT';
+                    b.className = 'badge ppt';
+                } else {
+                    b.innerHTML = 'Web';
+                }
+            }
+
+            var shortHost = (host === 'Web') ? '文件' : host;
+            var readBtn = document.getElementById('btn-footer-read');
+            var insBtn = document.getElementById('btn-footer-insert');
+            if (readBtn) readBtn.innerHTML = '📤 讀取 ' + shortHost;
+            if (insBtn) insBtn.innerHTML = '📥 帶入 ' + shortHost;
+        });
+
+        // 若使用者尚未在本機輸入過 Key，背景嘗試向本機常駐後端自動預載設定
+        if (!addinConfig.apiKey) {
+            setTimeout(function() {
+                try {
+                    var sUrl = getDaemonApiUrl('/api/settings/llm');
+                    var sxhr = new XMLHttpRequest();
+                    sxhr.open('GET', sUrl, true);
+                    sxhr.timeout = 2000;
+                    sxhr.onreadystatechange = function() {
+                        if (sxhr.readyState === 4 && sxhr.status === 200) {
+                            try {
+                                var sData = JSON.parse(sxhr.responseText);
+                                if (sData && sData.key && !addinConfig.apiKey) {
+                                    addinConfig.apiKey = sData.key;
+                                    safeSetStorage('webcom_addin_key', sData.key);
+                                    if (keyEl) keyEl.value = sData.key;
+                                    if (sData.endpoint) {
+                                        addinConfig.apiEndpoint = sData.endpoint;
+                                        safeSetStorage('webcom_addin_endpoint', sData.endpoint);
+                                        if (epEl) epEl.value = sData.endpoint;
+                                    }
+                                    if (sData.model) {
+                                        addinConfig.model = sData.model;
+                                        safeSetStorage('webcom_addin_model', sData.model);
+                                        if (modelEl) modelEl.value = sData.model;
+                                    }
+                                    showToast('⚡ 已自動繼承 Webcom 主控台 Key 與模型');
+                                }
+                            } catch(pe) {}
+                        }
+                    };
+                    sxhr.send(null);
+                } catch(e) {}
+            }, 800);
+        }
+    })();
+    </script>
+</body>
+</html>

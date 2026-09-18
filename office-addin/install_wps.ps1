@@ -43,13 +43,12 @@ foreach ($dir in $targetDirs) {
         $pubFile = Join-Path $dir "publish.xml"
         [System.IO.File]::WriteAllText($pubFile, $publishXmlContent, [System.Text.Encoding]::UTF8)
         
-        # 部署離線包目錄 WebcomAI_1.0.0
+        # 部署離線包目錄 WebcomAI_1.0.0 (含 ribbon.xml, index.html, main.js, taskpane.html, manifest.xml)
         $offlineDir = Join-Path $dir "WebcomAI_1.0.0"
         if (-not (Test-Path $offlineDir)) {
             New-Item -ItemType Directory -Force -Path $offlineDir | Out-Null
         }
-        Copy-Item -Path $ribbonSrc -Destination (Join-Path $offlineDir "ribbon.xml") -Force
-        Copy-Item -Path $indexSrc -Destination (Join-Path $offlineDir "index.html") -Force
+        Copy-Item -Path (Join-Path $wpsSrcDir "*") -Destination $offlineDir -Recurse -Force
         
         Write-Host "  [OK] 已成功註冊至: $dir" -ForegroundColor Green
         $installedCount++
