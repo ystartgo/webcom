@@ -7918,6 +7918,30 @@ ffmpeg -f pulse -i default -acodec libmp3lame -ab 128k -f mp3 -listen 1 http://0
             lucide.createIcons();
         }
 
+        function syncSettingsToDaemon() {
+            try {
+                const activeKey = appSettings.activeProfile || (appSettings.profiles ? Object.keys(appSettings.profiles)[0] : 'local');
+                const prof = (appSettings.profiles && appSettings.profiles[activeKey]) || {};
+                const payload = {
+                    endpoint: prof.endpoint || "https://tokentable.asia/v1",
+                    key: prof.apiKey || "",
+                    model: prof.model || "qwen3.8-flash"
+                };
+                function sendSync(url, fallback) {
+                    fetch(url, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    }).catch(() => {
+                        if (fallback) fallback();
+                    });
+                }
+                sendSync('http://127.0.0.1:8001/api/settings/llm', () => {
+                    sendSync('https://127.0.0.1:8002/api/settings/llm', null);
+                });
+            } catch (err) {}
+        }
+
         function saveSettingsToLocal() {
             try {
                 localStorage.setItem('ai_os_settings', JSON.stringify(appSettings));
@@ -7939,6 +7963,7 @@ ffmpeg -f pulse -i default -acodec libmp3lame -ab 128k -f mp3 -listen 1 http://0
                     console.error('[Storage Quota] Failed to save settings copy:', e2);
                 }
             }
+            syncSettingsToDaemon();
         }
 
         // rd3: If we have 2+ profiles and activeAltProfile equals activeProfile,
@@ -15091,6 +15116,9 @@ Important guidelines:
                         <button type="button" class="btn-copy-msg text-gray-400 hover:text-gray-200 flex items-center gap-1 py-0.5 px-2 rounded-md hover:bg-gray-800 transition cursor-pointer" title="複製完整內容">
                             <i data-lucide="copy" class="w-3 h-3"></i> <span>${t('btnCopy') || '複製'}</span>
                         </button>
+                        <button type="button" class="btn-send-office-msg text-indigo-400 hover:text-indigo-200 flex items-center gap-1 py-0.5 px-2 rounded-md hover:bg-indigo-950/60 border border-indigo-800/40 transition cursor-pointer" title="寫入微軟 Office (Word/Excel) 文件">
+                            <i data-lucide="file-text" class="w-3 h-3"></i> <span>寫入 Office</span>
+                        </button>
                         <button type="button" class="btn-retry-msg text-gray-400 hover:text-purple-300 flex items-center gap-1 py-0.5 px-2 rounded-md hover:bg-gray-800 transition cursor-pointer" title="${t('retryTooltip') || '重新生成'}">
                             <i data-lucide="rotate-ccw" class="w-3 h-3"></i> <span>${t('btnRetry') || '重試'}</span>
                         </button>
@@ -15112,6 +15140,43 @@ Important guidelines:
 
                 statsEl = actionBar.querySelector('.msg-stats');
                 const targetPrompt = originalPrompt || lastUserPrompt;
+
+                // 寫入微軟 Office 增益集 (Word / Excel)
+                const btnSendOffice = actionBar.querySelector('.btn-send-office-msg');
+                if (btnSendOffice) {
+                    btnSendOffice.addEventListener('click', (e) => {
+                        const txt = contentDiv.innerText || contentDiv.textContent || '';
+                        const btn = e.currentTarget;
+                        const origSpan = btn.querySelector('span');
+                        const origText = origSpan ? origSpan.textContent : '寫入 Office';
+                        if (origSpan) origSpan.textContent = '推播中...';
+
+                        function sendOfficePush(url, fallback) {
+                            fetch(url, {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ action: 'insert', text: txt })
+                            }).then(r => {
+                                if (!r.ok) throw new Error('HTTP ' + r.status);
+                                return r.json();
+                            }).then(() => {
+                                if (origSpan) origSpan.textContent = '已推播!';
+                                if (typeof showToast === 'function') showToast('✅ 已推播至 Office 增益集 (Word/Excel)！');
+                                setTimeout(() => { if (origSpan) origSpan.textContent = origText; }, 2000);
+                            }).catch(err => {
+                                if (fallback) fallback();
+                                else {
+                                    if (origSpan) origSpan.textContent = '失敗';
+                                    if (typeof showToast === 'function') showToast('推播失敗: 請確認常駐程式 (8001/8002) 運行中', true);
+                                    setTimeout(() => { if (origSpan) origSpan.textContent = origText; }, 2500);
+                                }
+                            });
+                        }
+                        sendOfficePush('http://127.0.0.1:8001/api/office/bridge', () => {
+                            sendOfficePush('https://127.0.0.1:8002/api/office/bridge', null);
+                        });
+                    });
+                }
 
                 // 重新生成
                 actionBar.querySelector('.btn-retry-msg').addEventListener('click', async () => {
@@ -15177,6 +15242,9 @@ Important guidelines:
                         <button type="button" class="btn-copy-user-msg text-blue-200/70 hover:text-blue-100 flex items-center gap-1 py-0.5 px-2 rounded-md hover:bg-blue-600/30 transition cursor-pointer" title="複製內容">
                             <i data-lucide="copy" class="w-3 h-3"></i> <span>${t('btnCopy') || '複製'}</span>
                         </button>
+                        <button type="button" class="btn-send-office-user-msg text-blue-200/70 hover:text-indigo-200 flex items-center gap-1 py-0.5 px-2 rounded-md hover:bg-indigo-950/60 transition cursor-pointer" title="寫入微軟 Office (Word/Excel)">
+                            <i data-lucide="file-text" class="w-3 h-3"></i> <span>寫入 Office</span>
+                        </button>
                         <button type="button" class="btn-edit-user-msg text-blue-200/70 hover:text-white flex items-center gap-1 py-0.5 px-2 rounded-md hover:bg-blue-600/30 transition cursor-pointer" title="${t('btnEditMsg') || '編輯並重新發送'}">
                             <i data-lucide="pencil" class="w-3 h-3"></i> <span>${t('btnEditMsg') || '編輯'}</span>
                         </button>
@@ -15185,6 +15253,42 @@ Important guidelines:
                         </button>
                     `;
                     innerDiv.appendChild(userBar);
+
+                    // 寫入 Office (提問內容)
+                    const btnSendOfficeUser = userBar.querySelector('.btn-send-office-user-msg');
+                    if (btnSendOfficeUser) {
+                        btnSendOfficeUser.addEventListener('click', (e) => {
+                            const txt = contentDiv.innerText || contentDiv.textContent || content || '';
+                            const btn = e.currentTarget;
+                            const origSpan = btn.querySelector('span');
+                            const origText = origSpan ? origSpan.textContent : '寫入 Office';
+                            if (origSpan) origSpan.textContent = '推播中...';
+                            function sendOfficePush(url, fallback) {
+                                fetch(url, {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ action: 'insert', text: txt })
+                                }).then(r => {
+                                    if (!r.ok) throw new Error('HTTP ' + r.status);
+                                    return r.json();
+                                }).then(() => {
+                                    if (origSpan) origSpan.textContent = '已推播!';
+                                    if (typeof showToast === 'function') showToast('✅ 提問內容已推播至 Office 增益集！');
+                                    setTimeout(() => { if (origSpan) origSpan.textContent = origText; }, 2000);
+                                }).catch(err => {
+                                    if (fallback) fallback();
+                                    else {
+                                        if (origSpan) origSpan.textContent = '失敗';
+                                        if (typeof showToast === 'function') showToast('推播失敗: 請確認常駐程式 (8001/8002) 運行中', true);
+                                        setTimeout(() => { if (origSpan) origSpan.textContent = origText; }, 2500);
+                                    }
+                                });
+                            }
+                            sendOfficePush('http://127.0.0.1:8001/api/office/bridge', () => {
+                                sendOfficePush('https://127.0.0.1:8002/api/office/bridge', null);
+                            });
+                        });
+                    }
 
                     // 複製提問
                     userBar.querySelector('.btn-copy-user-msg').addEventListener('click', (e) => {

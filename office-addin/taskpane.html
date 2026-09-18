@@ -309,14 +309,17 @@
                 <input type="text" id="input-model" class="text-input" placeholder="qwen3.8-flash">
             </div>
         </div>
-        <div style="display:-webkit-box; display:-ms-flexbox; display:flex; -webkit-box-pack:justify; -ms-flex-pack:justify; justify-content:space-between; -webkit-box-align:center; -ms-flex-align:center; align-items:center; margin-top:2px;">
+        <div style="display:-webkit-box; display:-ms-flexbox; display:flex; -webkit-box-pack:justify; -ms-flex-pack:justify; justify-content:space-between; -webkit-box-align:center; -ms-flex-align:center; align-items:center; margin-top:4px;">
             <div style="display:inline-block;">
                 <span style="font-size:8px; color:#6b7280;">推薦：</span>
-                <button type="button" onclick="window.selectModel('qwen3.8-flash')" class="model-chip">qwen3.8-flash</button>
+                <button type="button" onclick="window.selectModel('qwen3.8-flash')" class="model-chip">qwen3.8</button>
                 <button type="button" onclick="window.selectModel('gpt-4o')" class="model-chip" style="color:#34d399;">gpt-4o</button>
-                <button type="button" onclick="window.selectModel('claude-3-5-sonnet')" class="model-chip">claude-3.5</button>
             </div>
-            <button type="button" onclick="window.saveSettings()" class="btn-primary">儲存</button>
+            <div style="display:-webkit-box; display:-ms-flexbox; display:flex; -webkit-box-align:center; -ms-flex-align:center; align-items:center;">
+                <button type="button" onclick="window.testConnection()" class="btn-preset" style="color:#38bdf8; border-color:#0284c7; margin-right:3px;" title="測試目前端點與金鑰是否暢通">🔍 測試</button>
+                <button type="button" onclick="window.syncFromWebcom()" class="btn-preset" style="color:#a78bfa; border-color:#7c3aed; margin-right:3px;" title="自 Webcom 讀取最新設定">🔄 同步</button>
+                <button type="button" onclick="window.saveSettings()" class="btn-primary">儲存</button>
+            </div>
         </div>
     </div>
 
@@ -593,19 +596,21 @@
         }
     };
 
-    // ── 4. URL 標準化函式 (相容 TokenTable、Azure OpenAI、LM Studio 等) ──
+    // ── 4. URL 標準化函式 (相容 TokenTable、Azure OpenAI、LM Studio、Webcom Daemon 等) ──
     function normalizeApiUrl(base) {
         if (!base) return '';
         var clean = base.replace(/^\s+|\s+$/g, '');
         if (clean.indexOf('openai.azure.com') !== -1) {
             return clean;
         }
+        // 若結尾帶有 /chat/completions，先剝離以利統一檢查 /v1 版本路徑
         if (clean.slice(-17) === '/chat/completions') {
-            return clean;
+            clean = clean.slice(0, -17);
         }
         if (clean.charAt(clean.length - 1) === '/') {
             clean = clean.slice(0, -1);
         }
+        // 確保具有 /v1 (TokenTable 與本機 Daemon 規範需帶 /v1，否則會發生 404)
         if (clean.slice(-3) !== '/v1' && clean.indexOf('/v1/') === -1) {
             clean = clean + '/v1';
         }
@@ -749,10 +754,12 @@
         var key = keyEl ? keyEl.value.replace(/^\s+|\s+$/g, '') : '';
         var model = modelEl ? modelEl.value.replace(/^\s+|\s+$/g, '') : '';
 
-        if (ep) {
-            addinConfig.apiEndpoint = ep;
-            safeSetStorage('webcom_addin_endpoint', ep);
+        if (!ep) {
+            ep = 'https://tokentable.asia/v1';
+            if (epEl) epEl.value = ep;
         }
+        addinConfig.apiEndpoint = ep;
+        safeSetStorage('webcom_addin_endpoint', ep);
         addinConfig.apiKey = key || '';
         safeSetStorage('webcom_addin_key', addinConfig.apiKey);
         addinConfig.model = model || 'qwen3.8-flash';
@@ -763,6 +770,91 @@
             p.className = p.className + ' hidden';
         }
         showToast('設定已儲存！');
+    };
+
+    // 測試連線 (即時檢測端點與 Key 是否有效)
+    window.testConnection = function() {
+        var epEl = document.getElementById('input-endpoint');
+        var keyEl = document.getElementById('input-key');
+        var modelEl = document.getElementById('input-model');
+        var ep = (epEl ? epEl.value.replace(/^\s+|\s+$/g, '') : '') || 'https://tokentable.asia/v1';
+        var key = (keyEl ? keyEl.value.replace(/^\s+|\s+$/g, '') : '');
+        var model = (modelEl ? modelEl.value.replace(/^\s+|\s+$/g, '') : '') || 'qwen3.8-flash';
+
+        var targetUrl = normalizeApiUrl(ep);
+        showToast('🔍 正在測試連線端點...');
+
+        var headers = {};
+        if (key) {
+            headers['Authorization'] = 'Bearer ' + key;
+            headers['api-key'] = key;
+        }
+
+        var payload = {
+            model: model,
+            messages: [{ role: 'user', content: 'hi' }],
+            max_tokens: 5
+        };
+
+        httpPostJson(targetUrl, headers, payload, function(err, data) {
+            if (err) {
+                var errStr = err.message || String(err);
+                if (errStr.indexOf('401') !== -1) {
+                    showToast('❌ 驗證失敗 (401): API Key 不正確', true);
+                } else if (errStr.indexOf('404') !== -1) {
+                    showToast('❌ 端點不存在 (404): 請確認網址結尾包含 /v1', true);
+                } else {
+                    showToast('❌ 連線測試失敗: ' + errStr, true);
+                }
+            } else {
+                showToast('✅ 連線成功！' + model + ' 回應正常');
+            }
+        });
+    };
+
+    // 自 Webcom 同步設定 (向 8001 / 8002 取得主控台之 TokenTable / 模型配置)
+    window.syncFromWebcom = function() {
+        var url1 = (window.location.protocol.indexOf('https') === 0) ? 'https://127.0.0.1:8002/api/settings/llm' : 'http://127.0.0.1:8001/api/settings/llm';
+        showToast('正在向 Webcom 讀取設定...');
+
+        function tryFetch(url, fallback) {
+            var xhr = new XMLHttpRequest();
+            xhr.open('GET', url, true);
+            xhr.timeout = 4000;
+            xhr.onreadystatechange = function() {
+                if (xhr.readyState === 4) {
+                    if (xhr.status === 200) {
+                        try {
+                            var data = JSON.parse(xhr.responseText);
+                            var epEl = document.getElementById('input-endpoint');
+                            var keyEl = document.getElementById('input-key');
+                            var modelEl = document.getElementById('input-model');
+                            if (data.endpoint && epEl) epEl.value = data.endpoint;
+                            if (data.key !== undefined && keyEl) keyEl.value = data.key;
+                            if (data.model && modelEl) modelEl.value = data.model;
+                            window.saveSettings();
+                            showToast('✅ 成功自 Webcom 同步設定！');
+                        } catch(e) {
+                            showToast('解析 Webcom 設定失敗', true);
+                        }
+                    } else if (fallback) {
+                        fallback();
+                    } else {
+                        showToast('無法連線至 Webcom (HTTP ' + xhr.status + ')', true);
+                    }
+                }
+            };
+            xhr.onerror = function() {
+                if (fallback) fallback();
+                else showToast('Webcom 常駐程式未回應 (請確認 8001/8002 埠運行中)', true);
+            };
+            xhr.send(null);
+        }
+
+        tryFetch(url1, function() {
+            var altUrl = (url1.indexOf('8002') !== -1) ? 'http://127.0.0.1:8001/api/settings/llm' : 'https://127.0.0.1:8002/api/settings/llm';
+            tryFetch(altUrl, null);
+        });
     };
 
     // 清空對話
@@ -930,8 +1022,47 @@
         }, 2200);
     };
 
-    // ── 7. 初始化執行 (超時 800ms 自動切換主機狀態標籤) ──
+    // ── 7. Webcom ⟷ Office 雙向橋接輪詢器 (讓 Webcom 主控台一鍵寫入 Word/Excel) ──
+    var bridgePollTimer = null;
+    function pollOfficeBridge() {
+        var bridgeUrl = (window.location.protocol.indexOf('https') === 0) ? 'https://127.0.0.1:8002/api/office/bridge' : 'http://127.0.0.1:8001/api/office/bridge';
+        try {
+            var xhr = new XMLHttpRequest();
+            xhr.open('GET', bridgeUrl, true);
+            xhr.timeout = 2500;
+            xhr.onreadystatechange = function() {
+                if (xhr.readyState === 4 && xhr.status === 200) {
+                    try {
+                        var res = JSON.parse(xhr.responseText);
+                        if (res && res.hasAction && res.action && res.action.text) {
+                            var isReplace = !!res.action.replace;
+                            window.OfficeBridge.insertText(res.action.text, isReplace, function(insRes) {
+                                if (insRes.success) {
+                                    showToast('📥 已接收 Webcom 寫入指令！');
+                                    var bubble = appendMessage('assistant', '<span style="color:#a78bfa; font-weight:bold;">[來自 Webcom 網頁主控台寫入]</span><br>' + escapeHtml(res.action.text).replace(/\n/g, '<br>'));
+                                    attachInsertActions(bubble, res.action.text);
+                                }
+                            });
+                        }
+                    } catch(e) {}
+                }
+            };
+            xhr.send(null);
+        } catch(ex) {}
+    }
+    bridgePollTimer = setInterval(pollOfficeBridge, 2500);
+
+    // ── 8. 初始化執行 (自我修復舊端點、超時 800ms 切換主機狀態標籤、自 Webcom 預載配置) ──
     (function initUI() {
+        // 自我修復舊版遺留的不帶 /v1 之錯誤端點
+        if (addinConfig.apiEndpoint === 'https://tokentable.asia/chat/completions' || addinConfig.apiEndpoint === 'https://tokentable.asia') {
+            addinConfig.apiEndpoint = 'https://tokentable.asia/v1';
+            safeSetStorage('webcom_addin_endpoint', addinConfig.apiEndpoint);
+        } else if (addinConfig.apiEndpoint === 'http://127.0.0.1:8001/chat/completions') {
+            addinConfig.apiEndpoint = 'http://127.0.0.1:8001/v1';
+            safeSetStorage('webcom_addin_endpoint', addinConfig.apiEndpoint);
+        }
+
         var epEl = document.getElementById('input-endpoint');
         var keyEl = document.getElementById('input-key');
         var modelEl = document.getElementById('input-model');
@@ -948,6 +1079,42 @@
             else if (host === 'PowerPoint') { b.innerHTML = 'PPT'; b.className = 'badge ppt'; }
             else { b.innerHTML = 'Web'; }
         });
+
+        // 若使用者尚未在本機輸入過 Key，背景嘗試向 Webcom 8001/8002 自動預載設定
+        if (!addinConfig.apiKey) {
+            setTimeout(function() {
+                try {
+                    var sUrl = (window.location.protocol.indexOf('https') === 0) ? 'https://127.0.0.1:8002/api/settings/llm' : 'http://127.0.0.1:8001/api/settings/llm';
+                    var sxhr = new XMLHttpRequest();
+                    sxhr.open('GET', sUrl, true);
+                    sxhr.timeout = 2000;
+                    sxhr.onreadystatechange = function() {
+                        if (sxhr.readyState === 4 && sxhr.status === 200) {
+                            try {
+                                var sData = JSON.parse(sxhr.responseText);
+                                if (sData && sData.key && !addinConfig.apiKey) {
+                                    addinConfig.apiKey = sData.key;
+                                    safeSetStorage('webcom_addin_key', sData.key);
+                                    if (keyEl) keyEl.value = sData.key;
+                                    if (sData.endpoint) {
+                                        addinConfig.apiEndpoint = sData.endpoint;
+                                        safeSetStorage('webcom_addin_endpoint', sData.endpoint);
+                                        if (epEl) epEl.value = sData.endpoint;
+                                    }
+                                    if (sData.model) {
+                                        addinConfig.model = sData.model;
+                                        safeSetStorage('webcom_addin_model', sData.model);
+                                        if (modelEl) modelEl.value = sData.model;
+                                    }
+                                    showToast('⚡ 已自動繼承 Webcom 主控台 Key 與模型');
+                                }
+                            } catch(pe) {}
+                        }
+                    };
+                    sxhr.send(null);
+                } catch(e) {}
+            }, 800);
+        }
     })();
     </script>
 </body>

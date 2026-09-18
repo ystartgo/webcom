@@ -2634,6 +2634,66 @@ async def list_models():
     }
 
 
+# ── Webcom ⟷ Office 增益集 雙向設定同步與調用橋接器 ──
+LLM_SETTINGS_FILE = os.path.join(webcom_dir, "config", "llm_settings.json")
+_office_bridge_queue = []
+
+@app.get("/api/settings/llm")
+def get_llm_settings():
+    """提供 Webcom 主控台與 Office Add-in 共享之當前 LLM 設定"""
+    import json
+    if os.path.exists(LLM_SETTINGS_FILE):
+        try:
+            with open(LLM_SETTINGS_FILE, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except Exception:
+            pass
+    return {
+        "endpoint": "https://tokentable.asia/v1",
+        "key": os.environ.get("TOKENTABLE_API_KEY", ""),
+        "model": "qwen3.8-flash"
+    }
+
+@app.post("/api/settings/llm")
+async def save_llm_settings(request: Request):
+    """保存 Webcom 主控台配置的 LLM 設定，使 Office 增益集自動繼承"""
+    import json
+    try:
+        data = await request.json()
+        os.makedirs(os.path.dirname(LLM_SETTINGS_FILE), exist_ok=True)
+        with open(LLM_SETTINGS_FILE, "w", encoding="utf-8") as f:
+            json.dump(data, f, ensure_ascii=False, indent=2)
+        return {"status": "ok", "saved": data}
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+@app.post("/api/office/bridge")
+async def push_office_bridge_action(request: Request):
+    """讓 Webcom index.html 右側對話直接推送內容寫入微軟 Word / Excel 文件"""
+    import time
+    try:
+        data = await request.json()
+        _office_bridge_queue.append({
+            "action": data.get("action", "insert"),
+            "text": data.get("text", ""),
+            "replace": data.get("replace", False),
+            "timestamp": time.time()
+        })
+        if len(_office_bridge_queue) > 20:
+            _office_bridge_queue.pop(0)
+        return {"status": "ok", "queued": len(_office_bridge_queue)}
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+@app.get("/api/office/bridge")
+def pop_office_bridge_action():
+    """供 Office taskpane.html 輪詢取得由 Webcom 主畫面發出的寫入指令"""
+    if _office_bridge_queue:
+        action = _office_bridge_queue.pop(0)
+        return {"hasAction": True, "action": action}
+    return {"hasAction": False}
+
+
 if __name__ == "__main__":
     import time
     try:
