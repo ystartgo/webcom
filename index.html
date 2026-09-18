@@ -7679,10 +7679,9 @@ ffmpeg -f pulse -i default -acodec libmp3lame -ab 128k -f mp3 -listen 1 http://0
 
             // ── App Library Grid 雙語即時重新渲染 ──
             if (typeof renderAppLibraryGrid === 'function') {
-                renderAppLibraryGrid();
+                try { renderAppLibraryGrid(); } catch(e) {}
             }
 
-            // ── WebGPU Model Select Options 翻譯 ──
             // ── WebGPU Model Select Options 翻譯 ──
             const wgpuSel = document.getElementById('webgpu-model-select');
             if (wgpuSel && wgpuSel.options.length >= 5) {
@@ -18662,6 +18661,174 @@ Important guidelines:
         }
 
 
+        // ════════════════════════════════════════════════════════════════
+        // Jev ↔ LLM 雙向智慧路由橋接 (方案 B：Cross-Encoder 自評路由)
+        // ════════════════════════════════════════════════════════════════
+
+        // 調整閾值：低於此信心% 時 Jev 自動移交 LLM
+        var JEV_ROUTE_CONFIDENCE_THRESHOLD = 55;
+
+        /**
+         * jevPreRoute — 在 handleSend() 送出前預判斷是否為決策型問題
+         * 若符合，自動開 Jev 沙盒並注入 query；回傳 true 表示已接管
+         */
+        function jevPreRoute(prompt) {
+            if (!prompt || prompt.length < 5) return false;
+            // 若已在生成中，不重複路由
+            if (isGenerating) return false;
+
+            // 決策型 Prompt 特徵正則
+            var DECISION_PATTERNS = [
+                /(.{2,20})(還是|或者|\bvs\.?\b|versus)(.{2,20})/i,
+                /(哪個|哪一個|哪種|哪項).{0,10}(比較|更|最|好|優|快|好用|合適|推薦|強)/,
+                /(比較|對比|比對).{2,25}(差異|優劣|好壞|優缺點)/,
+                /(應該|要|需要|得).{1,8}(選|用|買|挑|決定|採用).{0,10}(哪|什麼)/,
+                /(排序|優先順序|哪個優先|先做哪|哪個先)/,
+                /^[\uFF21-\uFF44A-D\d][.、\)]\s.+[\uFF21-\uFF44A-D\d][.、\)]\s/m, // 選擇題格式
+                /which (one|option|is better|should|do you recommend)/i,
+                /(compare|comparison|vs\.?|versus).{3,30}(vs\.?|versus|or)/i
+            ];
+
+            if (!DECISION_PATTERNS.some(function(p) { return p.test(prompt); })) return false;
+
+            // ── 已判定為決策型 → 路由到 Jev ──
+            var lang = (typeof currentLang !== 'undefined') ? currentLang : 'zh-TW';
+
+            // 清空輸入框（handleSend 尚未清），顯示用戶訊息
+            if (typeof userInput !== 'undefined' && userInput) {
+                userInput.value = '';
+                userInput.style.height = 'auto';
+            }
+            var welcome = document.querySelector('#chat-welcome-container') ||
+                          document.querySelector('.text-center.py-12');
+            if (welcome) welcome.remove();
+
+            if (typeof appendMessage === 'function') {
+                appendMessage('user', prompt, false, false, '', []);
+            }
+
+            var routeMsg = lang === 'en'
+                ? '⚡ **Jev Auto-Routing** — Decision-type query detected. Launching Cross-Encoder analysis (~15ms)...\n\n' +
+                  '<span class="text-xs text-gray-400 font-mono">↳ If Jev confidence &lt; ' + JEV_ROUTE_CONFIDENCE_THRESHOLD + '%, LLM will take over automatically.</span>'
+                : '⚡ **Jev 自動路由** — 偵測到決策型問題，啟動 Cross-Encoder 分析 (~15ms)...\n\n' +
+                  '<span class="text-xs text-gray-400 font-mono">↳ 若信心度低於 ' + JEV_ROUTE_CONFIDENCE_THRESHOLD + '%，將自動移交 LLM 深度分析。</span>';
+
+            if (typeof appendMessage === 'function') {
+                appendMessage('assistant', routeMsg, false, false);
+            }
+
+            // ── 智慧注入：支援「沙盒已開啟重用」與「冷啟動等 READY 握手」──
+            if (typeof openJevPlayground === 'function') {
+                // 取得目前沙盒 iframe（若已開啟）
+                var existingIframe = document.querySelector('#artifact-drawer-modal iframe');
+                var modal = document.getElementById('artifact-drawer-modal');
+                var sandboxAlreadyOpen = !!(modal && modal.style.display === 'flex' && existingIframe);
+
+                var injectPayload = { type: 'JEV_INJECT_QUERY', query: prompt, options: [] };
+
+                if (sandboxAlreadyOpen && existingIframe.contentWindow) {
+                    // 沙盒已就緒，直接 postMessage
+                    existingIframe.contentWindow.postMessage(injectPayload, '*');
+                } else {
+                    // 冷啟動：開啟 Jev 沙盒後等 JEV_SANDBOX_READY 再注入
+                    // 設定一次性 READY 監聽（含 8s 超時保護）
+                    var _readyHandled = false;
+                    var _readyTimer = null;
+
+                    function _onJevReady(evt) {
+                        if (_readyHandled) return;
+                        if (!evt.data || evt.data.type !== 'JEV_SANDBOX_READY') return;
+                        _readyHandled = true;
+                        clearTimeout(_readyTimer);
+                        window.removeEventListener('message', _onJevReady);
+
+                        var iframe = document.querySelector('#artifact-drawer-modal iframe');
+                        if (iframe && iframe.contentWindow) {
+                            iframe.contentWindow.postMessage(injectPayload, '*');
+                        }
+                    }
+
+                    // 超時保護：若 8 秒內沙盒未回報 READY，仍強制注入一次
+                    _readyTimer = setTimeout(function() {
+                        if (_readyHandled) return;
+                        _readyHandled = true;
+                        window.removeEventListener('message', _onJevReady);
+                        var iframe = document.querySelector('#artifact-drawer-modal iframe');
+                        if (iframe && iframe.contentWindow) {
+                            iframe.contentWindow.postMessage(injectPayload, '*');
+                        }
+                    }, 8000);
+
+                    window.addEventListener('message', _onJevReady);
+                    openJevPlayground().catch(function() {});
+                }
+            }
+
+            return true; // 已接管，不送 LLM
+        }
+
+        /**
+         * 主視窗監聽 Jev sandbox 的 postMessage 回傳
+         * - JEV_FALLBACK_TO_LLM：Jev 信心不足，接手送 LLM
+         * - JEV_DECISION_COMPLETE：Jev 決策完成，在聊天中留下摘要卡片
+         */
+        (function initJevMessageBridge() {
+            window.addEventListener('message', function(ev) {
+                if (!ev.data || !ev.data.type) return;
+
+                // ── Jev 信心不足 → LLM 接手 ──
+                if (ev.data.type === 'JEV_FALLBACK_TO_LLM') {
+                    var d = ev.data;
+                    var lang = d.lang || (typeof currentLang !== 'undefined' ? currentLang : 'zh-TW');
+                    var prefix = lang === 'en'
+                        ? '🔄 **Jev → LLM Handoff** — Jev confidence was only **' + d.jevConfidence + '%** (below threshold).\n' +
+                          (d.jevBestOption ? 'Jev preliminary lean: *' + d.jevBestOption + '*\n' : '') +
+                          'Sending to LLM for in-depth analysis...\n\n---\n'
+                        : '🔄 **Jev → LLM 移交** — Jev 信心度僅 **' + d.jevConfidence + '%**（低於閾值）。\n' +
+                          (d.jevBestOption ? 'Jev 初步傾向：*' + d.jevBestOption + '*\n' : '') +
+                          '移交 LLM 深度分析中...\n\n---\n';
+
+                    if (typeof appendMessage === 'function') {
+                        appendMessage('assistant', prefix, false, false);
+                    }
+                    if (!isGenerating && typeof streamAgentLoop === 'function' && d.query) {
+                        isGenerating = true;
+                        if (typeof setGeneratingState === 'function') setGeneratingState(true);
+                        streamAgentLoop(d.query).finally(function() {
+                            if (typeof setGeneratingState === 'function') setGeneratingState(false);
+                        });
+                    }
+                }
+
+                // ── Jev 決策完成 → 聊天摘要卡片 ──
+                if (ev.data.type === 'JEV_DECISION_COMPLETE') {
+                    var d = ev.data;
+                    var lang = d.lang || (typeof currentLang !== 'undefined' ? currentLang : 'zh-TW');
+                    var confColor = d.jevConfidence >= 80 ? '#34d399' : d.jevConfidence >= 60 ? '#fbbf24' : '#f87171';
+                    var summary = lang === 'en'
+                        ? '<div class="p-3 rounded-xl border border-emerald-500/30 bg-emerald-950/20 text-xs my-1">' +
+                          '<div class="flex items-center gap-2 mb-1"><span class="font-bold text-emerald-300">⚡ Jev Decision Complete</span>' +
+                          '<span class="font-mono px-2 py-0.5 rounded-full text-white text-[10px]" style="background:' + confColor + '33;border:1px solid ' + confColor + '55">' + d.jevConfidence + '% confidence</span></div>' +
+                          '<div class="text-white font-semibold">✅ ' + (d.jevBestOption || 'N/A') + '</div>' +
+                          '<div class="text-gray-400 text-[10px] mt-1">Result shown in Jev sandbox →</div></div>'
+                        : '<div class="p-3 rounded-xl border border-emerald-500/30 bg-emerald-950/20 text-xs my-1">' +
+                          '<div class="flex items-center gap-2 mb-1"><span class="font-bold text-emerald-300">⚡ Jev 決策完成</span>' +
+                          '<span class="font-mono px-2 py-0.5 rounded-full text-white text-[10px]" style="background:' + confColor + '33;border:1px solid ' + confColor + '55">' + d.jevConfidence + '% 信心度</span></div>' +
+                          '<div class="text-white font-semibold">✅ ' + (d.jevBestOption || '無明確結果') + '</div>' +
+                          '<div class="text-gray-400 text-[10px] mt-1">詳細機率分佈見右側 Jev 沙盒 →</div></div>';
+
+                    if (typeof appendMessage === 'function') {
+                        appendMessage('assistant', summary, false, false);
+                        if (window.lucide && typeof lucide.createIcons === 'function') {
+                            try { lucide.createIcons(); } catch(e) {}
+                        }
+                    }
+                }
+            });
+        })();
+
+        // ════════════════════════════════════════════════════════════════
+
         async function handleSend() {
             const text = userInput.value.trim();
             if (!text && attachedImages.length === 0 && attachedDocs.length === 0) return;
@@ -18749,6 +18916,9 @@ Important guidelines:
             if (isContinuationPrompt) {
                 compressChatHistory(chatHistory, true);
             }
+
+            // ── Jev 預路由：決策型問題交 Jev，其他送 LLM ──
+            if (jevPreRoute(effectivePrompt)) return;
 
             setGeneratingState(true);
             try {
@@ -21674,9 +21844,9 @@ Important guidelines:
         // ══════════════════════════════════════════════════════════════════
         // ── Custom App Library Engine (用戶自建應用程式庫) ──
         // ══════════════════════════════════════════════════════════════════
-        const APP_LIB_STORAGE_KEY = 'webcom_custom_apps';
-        let currentAppLibFilter = 'all';
-        let customAppList = [];
+        var APP_LIB_STORAGE_KEY = 'webcom_custom_apps';
+        var currentAppLibFilter = 'all';
+        var customAppList = [];
 
         function getSampleCustomApps() {
             return [
@@ -22419,14 +22589,20 @@ if __name__ == "__main__":
 
         function loadCustomAppsFromStorage() {
             try {
-                const raw = localStorage.getItem(APP_LIB_STORAGE_KEY);
+                const storageKey = (typeof APP_LIB_STORAGE_KEY !== 'undefined' && APP_LIB_STORAGE_KEY) ? APP_LIB_STORAGE_KEY : 'webcom_custom_apps';
+                const raw = localStorage.getItem(storageKey);
                 if (raw) {
-                    customAppList = JSON.parse(raw);
+                    const parsed = JSON.parse(raw);
+                    if (Array.isArray(parsed)) {
+                        customAppList = parsed;
+                    } else {
+                        customAppList = getSampleCustomApps();
+                    }
                     // 升級或補齊預設範例應用（確保如 net_ping_diag 獲得最新之 Pyodide 跨平台適配程式碼）
                     let updated = false;
                     const sampleApps = getSampleCustomApps();
                     sampleApps.forEach(sApp => {
-                        const idx = customAppList.findIndex(a => a.id === sApp.id);
+                        const idx = customAppList.findIndex(a => a && a.id === sApp.id);
                         if (idx >= 0) {
                             if (sApp.version !== customAppList[idx].version) {
                                 customAppList[idx].code = sApp.code;
@@ -22451,13 +22627,14 @@ if __name__ == "__main__":
 
         function saveCustomAppsToStorage() {
             try {
-                localStorage.setItem(APP_LIB_STORAGE_KEY, JSON.stringify(customAppList));
+                const storageKey = (typeof APP_LIB_STORAGE_KEY !== 'undefined' && APP_LIB_STORAGE_KEY) ? APP_LIB_STORAGE_KEY : 'webcom_custom_apps';
+                localStorage.setItem(storageKey, JSON.stringify(customAppList));
             } catch (e) {
                 console.warn('[App Library] localStorage quota error while saving apps:', e);
             }
         }
 
-        const SAMPLE_APP_BILINGUAL = {
+        var SAMPLE_APP_BILINGUAL = {
             'pomodoro_timer': {
                 name_zh: '番茄鐘高效專注計時器',
                 name_en: 'Pomodoro Focus Timer',
@@ -22486,7 +22663,20 @@ if __name__ == "__main__":
 
             if (!grid) return;
 
+            if (!Array.isArray(customAppList) || customAppList.length === 0) {
+                try { loadCustomAppsFromStorage(); } catch(e) {}
+            }
+            if (!Array.isArray(customAppList)) {
+                customAppList = [];
+            }
+
+            const safeEscape = (typeof escapeHtml === 'function')
+                ? escapeHtml
+                : (s) => String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+            const safeT = (k, fb) => (typeof t === 'function' ? t(k) : (fb || k));
+
             let filtered = customAppList.filter(app => {
+                if (!app) return false;
                 if (currentAppLibFilter !== 'all' && app.category !== currentAppLibFilter) return false;
                 if (searchVal) {
                     const matchName = (app.name || '').toLowerCase().includes(searchVal);
@@ -22518,7 +22708,7 @@ if __name__ == "__main__":
             };
 
             grid.innerHTML = filtered.map(app => {
-                const catInfo = catBadges[app.category] || { label: app.category.toUpperCase(), cls: 'text-gray-300 bg-gray-800 border-gray-700' };
+                const catInfo = catBadges[app.category] || { label: (app.category || 'APP').toUpperCase(), cls: 'text-gray-300 bg-gray-800 border-gray-700' };
                 const lineCount = (app.code || '').split('\n').length;
                 const charCount = (app.code || '').length;
                 const updatedTimeStr = new Date(app.updatedAt || Date.now()).toLocaleDateString([], { month: '2-digit', day: '2-digit' });
@@ -22526,7 +22716,7 @@ if __name__ == "__main__":
                 // 雙語名稱與說明呈現 (Bilingual Name & Description Display)
                 let finalName = app.name || '';
                 let finalDesc = app.desc || '';
-                if (SAMPLE_APP_BILINGUAL[app.id]) {
+                if (typeof SAMPLE_APP_BILINGUAL !== 'undefined' && SAMPLE_APP_BILINGUAL[app.id]) {
                     const sample = SAMPLE_APP_BILINGUAL[app.id];
                     if (currentLang === 'en') {
                         finalName = `${sample.name_en} (${sample.name_zh})`;
@@ -22554,16 +22744,16 @@ if __name__ == "__main__":
                             <div class="flex items-center gap-2.5 min-w-0">
                                 <span class="text-2xl shrink-0 select-none">${app.icon || '📦'}</span>
                                 <div class="min-w-0">
-                                    <h4 class="text-sm font-bold text-white group-hover:text-violet-300 transition truncate">${escapeHtml(finalName)}</h4>
-                                    <span class="text-[10px] font-mono text-gray-500 truncate block">ID: ${escapeHtml(app.id)}</span>
+                                    <h4 class="text-sm font-bold text-white group-hover:text-violet-300 transition truncate">${safeEscape(finalName)}</h4>
+                                    <span class="text-[10px] font-mono text-gray-500 truncate block">ID: ${safeEscape(app.id)}</span>
                                 </div>
                             </div>
                             <div class="flex items-center gap-1.5 shrink-0">
                                 <span class="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded border ${catInfo.cls}">${catInfo.label}</span>
-                                <span class="text-[10px] font-mono text-gray-400 bg-gray-800/80 px-1 py-0.5 rounded">${escapeHtml(app.version || 'v1.0')}</span>
+                                <span class="text-[10px] font-mono text-gray-400 bg-gray-800/80 px-1 py-0.5 rounded">${safeEscape(app.version || 'v1.0')}</span>
                             </div>
                         </div>
-                        <p class="text-xs text-gray-400 line-clamp-2 leading-relaxed mb-3">${escapeHtml(finalDesc || (currentLang === 'en' ? 'No description (無描述說明)' : '無描述說明 (No description)'))}</p>
+                        <p class="text-xs text-gray-400 line-clamp-2 leading-relaxed mb-3">${safeEscape(finalDesc || (currentLang === 'en' ? 'No description (無描述說明)' : '無描述說明 (No description)'))}</p>
                     </div>
 
                     <div>
@@ -22574,23 +22764,23 @@ if __name__ == "__main__":
                         <div class="flex items-center justify-between gap-1.5">
                             <div class="flex items-center gap-1.5">
                                 <button type="button" class="px-2.5 py-1 rounded-lg bg-cyan-950/70 hover:bg-cyan-900 text-cyan-300 border border-cyan-700/50 hover:text-white transition flex items-center gap-1 font-semibold text-xs" onclick="runCustomAppInSandbox('${app.id}')">
-                                    <i data-lucide="play" class="w-3 h-3"></i> <span>${t('appLibRunBtn')}</span>
+                                    <i data-lucide="play" class="w-3 h-3"></i> <span>${safeT('appLibRunBtn', '執行')}</span>
                                 </button>
                                 <button type="button" class="px-2.5 py-1 rounded-lg bg-violet-950/80 hover:bg-violet-900 text-violet-300 border border-violet-700/50 hover:text-white transition flex items-center gap-1 font-semibold text-xs" onclick="invokeCustomAppWithLlm('${app.id}')">
-                                    <i data-lucide="bot" class="w-3 h-3"></i> <span>${t('appLibInvokeBtn')}</span>
+                                    <i data-lucide="bot" class="w-3 h-3"></i> <span>${safeT('appLibInvokeBtn', 'LLM 調用')}</span>
                                 </button>
                             </div>
                             <div class="flex items-center gap-1">
-                                <button type="button" class="p-1 text-gray-400 hover:text-emerald-400 rounded hover:bg-gray-800 transition" title="${t('appLibCopyCodeBtn')}" onclick="copyCustomAppCode('${app.id}', this)">
+                                <button type="button" class="p-1 text-gray-400 hover:text-emerald-400 rounded hover:bg-gray-800 transition" title="${safeT('appLibCopyCodeBtn', '複製程式碼')}" onclick="copyCustomAppCode('${app.id}', this)">
                                     <i data-lucide="copy" class="w-3.5 h-3.5"></i>
                                 </button>
-                                <button type="button" class="p-1 text-gray-400 hover:text-violet-400 rounded hover:bg-gray-800 transition" title="${t('appLibDuplicateBtn')}" onclick="duplicateCustomApp('${app.id}')">
+                                <button type="button" class="p-1 text-gray-400 hover:text-violet-400 rounded hover:bg-gray-800 transition" title="${safeT('appLibDuplicateBtn', '建立副本')}" onclick="duplicateCustomApp('${app.id}')">
                                     <i data-lucide="copy-plus" class="w-3.5 h-3.5"></i>
                                 </button>
-                                <button type="button" class="p-1 text-gray-400 hover:text-white rounded hover:bg-gray-800 transition" title="${t('appLibEditBtn')}" onclick="openEditCustomAppModal('${app.id}')">
+                                <button type="button" class="p-1 text-gray-400 hover:text-white rounded hover:bg-gray-800 transition" title="${safeT('appLibEditBtn', '編輯')}" onclick="openEditCustomAppModal('${app.id}')">
                                     <i data-lucide="edit" class="w-3.5 h-3.5"></i>
                                 </button>
-                                <button type="button" class="p-1 text-gray-400 hover:text-rose-400 rounded hover:bg-gray-800 transition" title="${t('appLibDeleteBtn')}" onclick="deleteCustomApp('${app.id}', event)">
+                                <button type="button" class="p-1 text-gray-400 hover:text-rose-400 rounded hover:bg-gray-800 transition" title="${safeT('appLibDeleteBtn', '刪除')}" onclick="deleteCustomApp('${app.id}', event)">
                                     <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
                                 </button>
                             </div>
@@ -22599,7 +22789,9 @@ if __name__ == "__main__":
                 </div>`;
             }).join('');
 
-            if (window.lucide && typeof lucide.createIcons === "function") { try { lucide.createIcons(); } catch(e) {} }
+            if (window.lucide && typeof lucide.createIcons === "function") {
+                try { lucide.createIcons({ root: grid }); } catch(e) {}
+            }
         }
         window.runCustomAppInSandbox = function(appId) {
             loadCustomAppsFromStorage();
@@ -22843,7 +23035,12 @@ if __name__ == "__main__":
         }
 
         // ── App Library Window Global Functions ──
+        let isAppLibModalToggling = false;
         window.openAppLibraryModal = function() {
+            if (isAppLibModalToggling) return;
+            isAppLibModalToggling = true;
+            setTimeout(() => { isAppLibModalToggling = false; }, 200);
+
             try { loadCustomAppsFromStorage(); } catch(e) { console.warn(e); }
             const modal = document.getElementById('app-library-modal');
             if (modal) {
@@ -22852,7 +23049,13 @@ if __name__ == "__main__":
             }
             try { renderAppLibraryGrid(); } catch(e) { console.warn('[App Library] Grid render warning:', e); }
             if (window.lucide && typeof lucide.createIcons === 'function') {
-                try { lucide.createIcons(); } catch(e) {}
+                try {
+                    if (modal) {
+                        lucide.createIcons({ root: modal });
+                    } else {
+                        lucide.createIcons();
+                    }
+                } catch(e) {}
             }
         };
 
@@ -22918,15 +23121,22 @@ if __name__ == "__main__":
             try {
                 loadCustomAppsFromStorage();
                 const jsonStr = JSON.stringify(customAppList, null, 2);
-                const blob = new Blob([jsonStr], { type: 'application/json' });
+                const blob = new Blob(['\uFEFF', jsonStr], { type: 'application/json;charset=utf-8' });
+                const fileName = `Webcom_AppLibrary_Backup_${new Date().toISOString().slice(0, 10)}.json`;
                 const url = URL.createObjectURL(blob);
                 const a = document.createElement('a');
+                a.style.display = 'none';
                 a.href = url;
-                a.download = `webcom_custom_apps_${new Date().toISOString().slice(0, 10)}.json`;
+                a.download = fileName;
+                a.setAttribute('download', fileName);
                 document.body.appendChild(a);
                 a.click();
-                document.body.removeChild(a);
-                URL.revokeObjectURL(url);
+                setTimeout(() => {
+                    try {
+                        if (a.parentNode) a.parentNode.removeChild(a);
+                        URL.revokeObjectURL(url);
+                    } catch (e) {}
+                }, 5000);
                 if (typeof showNotificationToast === 'function') {
                     showNotificationToast(typeof t === 'function' ? t('appLibExportedSuccess') : '應用庫已成功匯出！');
                 }
@@ -22980,8 +23190,8 @@ if __name__ == "__main__":
         };
 
         window.previewCustomAppFromModal = function() {
-            const name = document.getElementById('app-edit-name')?.value.trim() || '自建預覽應用';
-            const id = document.getElementById('app-edit-id')?.value.trim() || 'preview_app';
+            const name = document.getElementById('app-edit-name')?.value.trim() || (typeof currentLang !== 'undefined' && currentLang === 'en' ? 'Custom Preview App' : '自建預覽應用');
+            const id = document.getElementById('app-edit-id')?.value.trim() || ('preview_' + Date.now().toString(36));
             const category = document.getElementById('app-edit-category')?.value || 'html';
             const code = document.getElementById('app-edit-code')?.value || '';
 
@@ -22991,10 +23201,11 @@ if __name__ == "__main__":
             }
 
             const isHtml = category === 'html' || code.includes('<!DOCTYPE') || code.includes('<html');
+            const isScript = category === 'py' || category === 'python' || category === 'sh' || category === 'bash';
             const previewArt = {
                 id: id,
                 title: name,
-                type: isHtml ? 'html' : (category === 'json' ? 'json' : 'script'),
+                type: isHtml ? 'html' : (category === 'json' ? 'json' : (isScript ? 'script' : 'code')),
                 language: category,
                 fullContent: code,
                 originalContent: code,
@@ -23005,14 +23216,16 @@ if __name__ == "__main__":
                     content: code,
                     author: 'preview',
                     actionType: 'preview',
-                    summary: '即時預覽',
+                    summary: typeof currentLang !== 'undefined' && currentLang === 'en' ? 'Live Preview' : '即時預覽',
                     timestamp: Date.now(),
                     lines: code.split('\n').length,
                     chars: code.length
                 }],
                 activeVersion: 1,
                 isStreaming: false,
-                status: 'complete'
+                createdAt: Date.now(),
+                updatedAt: Date.now(),
+                activeTab: isHtml ? 'preview' : 'code'
             };
 
             if (typeof globalArtifactStore !== 'undefined') {
@@ -23023,56 +23236,33 @@ if __name__ == "__main__":
             window.closeAppLibraryModal();
             if (typeof openArtifactDrawer === 'function') {
                 openArtifactDrawer(id);
+                if (typeof setDrawerLayoutMode === 'function') {
+                    setDrawerLayoutMode('preview');
+                }
+                if (isScript && typeof executeScriptInDrawer === 'function') {
+                    executeScriptInDrawer(previewArt);
+                }
             }
         };
 
         // App Library DOM Event Listeners initialization
         function initAppLibraryEvents() {
             try { loadCustomAppsFromStorage(); } catch(e) {}
-            // Bind header button
-            document.getElementById('btn-open-app-lib')?.addEventListener('click', window.openAppLibraryModal);
-            document.getElementById('btn-close-app-lib')?.addEventListener('click', window.closeAppLibraryModal);
-            document.getElementById('btn-close-app-lib-footer')?.addEventListener('click', window.closeAppLibraryModal);
 
-            // Category filter clicks
-            document.querySelectorAll('.app-lib-filter-btn').forEach(btn => {
-                btn.addEventListener('click', (e) => {
-                    document.querySelectorAll('.app-lib-filter-btn').forEach(b => {
-                        b.classList.remove('bg-violet-600', 'text-white');
-                        b.classList.add('text-gray-400');
-                    });
-                    const target = e.currentTarget;
-                    target.classList.add('bg-violet-600', 'text-white');
-                    target.classList.remove('text-gray-400');
-                    currentAppLibFilter = target.getAttribute('data-cat') || 'all';
-                    renderAppLibraryGrid();
-                });
-            });
-
-            // Search input live filtering
+            // Live search input filtering
             document.getElementById('app-lib-search-input')?.addEventListener('input', () => {
                 renderAppLibraryGrid();
             });
 
-            // Load sample apps button
-            document.getElementById('btn-load-sample-apps')?.addEventListener('click', () => {
-                customAppList = getSampleCustomApps();
-                saveCustomAppsToStorage();
-                renderAppLibraryGrid();
-                showNotificationToast(t('appLibLoadedSampleSuccess'));
+            // Modal Backdrop Clicks (Click outside dialog to close)
+            document.getElementById('app-library-modal')?.addEventListener('click', (e) => {
+                if (e.target.id === 'app-library-modal') window.closeAppLibraryModal();
             });
-
-            // New Custom App button
-            document.getElementById('btn-new-custom-app')?.addEventListener('click', () => {
-                openEditCustomAppModal(null);
+            document.getElementById('app-edit-modal')?.addEventListener('click', (e) => {
+                if (e.target.id === 'app-edit-modal') window.closeAppEditModal();
             });
-
-            // Close Edit Modal
-            document.getElementById('btn-close-app-edit')?.addEventListener('click', () => {
-                document.getElementById('app-edit-modal')?.classList.add('hidden');
-            });
-            document.getElementById('btn-cancel-custom-app')?.addEventListener('click', () => {
-                document.getElementById('app-edit-modal')?.classList.add('hidden');
+            document.getElementById('app-delete-modal')?.addEventListener('click', (e) => {
+                if (e.target.id === 'app-delete-modal') window.closeAppDeleteModal();
             });
 
             // Code textarea stats & Tab indent support
@@ -23081,7 +23271,11 @@ if __name__ == "__main__":
             if (editCodeTa) {
                 editCodeTa.addEventListener('input', () => {
                     const val = editCodeTa.value;
-                    if (codeStatsEl) codeStatsEl.textContent = currentLang === 'en' ? `${val.split('\n').length} lines (行) · ${val.length} chars (字)` : `${val.split('\n').length} 行 (lines) · ${val.length} 字 (chars)`;
+                    if (codeStatsEl) {
+                        codeStatsEl.textContent = (typeof currentLang !== 'undefined' && currentLang === 'en')
+                            ? `${val.split('\n').length} lines (行) · ${val.length} chars (字)`
+                            : `${val.split('\n').length} 行 (lines) · ${val.length} 字 (chars)`;
+                    }
                 });
                 editCodeTa.addEventListener('keydown', (e) => {
                     if (e.key === 'Tab') {
@@ -23093,44 +23287,6 @@ if __name__ == "__main__":
                     }
                 });
             }
-
-            // Copy code inside Edit modal
-            document.getElementById('btn-app-edit-copy-code')?.addEventListener('click', (e) => {
-                const code = document.getElementById('app-edit-code')?.value || '';
-                if (!code) return;
-                const btn = e.currentTarget;
-                const origText = btn.textContent;
-                const copySuccessMsg = currentLang === 'en' ? '✅ Code copied to clipboard!' : '✅ 程式碼已複製到剪貼簿！';
-                
-                const done = () => {
-                    showNotificationToast(copySuccessMsg);
-                    btn.textContent = currentLang === 'en' ? 'Copied!' : '已複製！';
-                    btn.classList.add('text-emerald-400');
-                    setTimeout(() => {
-                        btn.textContent = origText;
-                        btn.classList.remove('text-emerald-400');
-                    }, 1500);
-                };
-
-                if (navigator.clipboard && navigator.clipboard.writeText) {
-                    navigator.clipboard.writeText(code).then(done).catch(() => fallbackCopyText(code, done));
-                } else {
-                    fallbackCopyText(code, done);
-                }
-            });
-
-            // Cancel delete modal
-            document.getElementById('btn-cancel-app-delete')?.addEventListener('click', closeAppDeleteModal);
-            document.getElementById('app-delete-modal')?.addEventListener('click', (e) => {
-                if (e.target.id === 'app-delete-modal') closeAppDeleteModal();
-            });
-
-            // Confirm delete button
-            document.getElementById('btn-confirm-app-delete')?.addEventListener('click', () => {
-                if (pendingDeleteAppId) {
-                    executeDeleteApp(pendingDeleteAppId);
-                }
-            });
 
             // Fill sample code button in edit modal
             document.getElementById('btn-app-edit-sample-code')?.addEventListener('click', () => {
@@ -23149,98 +23305,43 @@ if __name__ == "__main__":
                 }
                 if (editCodeTa) {
                     editCodeTa.value = sample;
-                    if (codeStatsEl) codeStatsEl.textContent = currentLang === 'en' ? `${sample.split('\n').length} lines (行) · ${sample.length} chars (字)` : `${sample.split('\n').length} 行 (lines) · ${sample.length} 字 (chars)`;
+                    if (codeStatsEl) {
+                        codeStatsEl.textContent = (typeof currentLang !== 'undefined' && currentLang === 'en')
+                            ? `${sample.split('\n').length} lines (行) · ${sample.length} chars (字)`
+                            : `${sample.split('\n').length} 行 (lines) · ${sample.length} 字 (chars)`;
+                    }
                 }
             });
 
-            // Save Custom App
-            document.getElementById('btn-save-custom-app')?.addEventListener('click', () => {
-                const name = document.getElementById('app-edit-name')?.value.trim();
-                const id = document.getElementById('app-edit-id')?.value.trim();
-                const category = document.getElementById('app-edit-category')?.value || 'html';
-                const icon = document.getElementById('app-edit-icon')?.value.trim() || '⚡';
-                const version = document.getElementById('app-edit-version')?.value.trim() || 'v1.0';
-                const desc = document.getElementById('app-edit-desc')?.value.trim() || '';
-                const prompt = document.getElementById('app-edit-prompt')?.value.trim() || '';
+            // Copy code inside Edit modal
+            document.getElementById('btn-app-edit-copy-code')?.addEventListener('click', (e) => {
                 const code = document.getElementById('app-edit-code')?.value || '';
-                const internalId = document.getElementById('app-edit-internal-id')?.value;
-
-                if (!name || !id || !code) {
-                    alert(currentLang === 'en' ? 'Please fill in Name, ID, and Code!' : '請完整填寫應用名稱、識別碼與程式碼內容！');
-                    return;
-                }
-
-                const existingIdx = customAppList.findIndex(a => a.id === (internalId || id));
-                const appData = {
-                    id: internalId || id,
-                    name: name,
-                    category: category,
-                    icon: icon,
-                    version: version,
-                    desc: desc,
-                    prompt: prompt,
-                    code: code,
-                    createdAt: existingIdx >= 0 ? customAppList[existingIdx].createdAt : Date.now(),
-                    updatedAt: Date.now()
+                if (!code) return;
+                const btn = e.currentTarget;
+                const origText = btn.textContent;
+                const copySuccessMsg = (typeof currentLang !== 'undefined' && currentLang === 'en') ? '✅ Code copied to clipboard!' : '✅ 程式碼已複製到剪貼簿！';
+                
+                const done = () => {
+                    if (typeof showNotificationToast === 'function') showNotificationToast(copySuccessMsg);
+                    btn.textContent = (typeof currentLang !== 'undefined' && currentLang === 'en') ? 'Copied!' : '已複製！';
+                    btn.classList.add('text-emerald-400');
+                    setTimeout(() => {
+                        btn.textContent = origText;
+                        btn.classList.remove('text-emerald-400');
+                    }, 1500);
                 };
 
-                if (existingIdx >= 0) {
-                    customAppList[existingIdx] = appData;
+                if (navigator.clipboard && navigator.clipboard.writeText) {
+                    navigator.clipboard.writeText(code).then(done).catch(() => fallbackCopyText(code, done));
                 } else {
-                    customAppList.unshift(appData);
-                }
-
-                saveCustomAppsToStorage();
-                renderAppLibraryGrid();
-                document.getElementById('app-edit-modal')?.classList.add('hidden');
-                showNotificationToast(t('appLibSavedSuccess').replace('{name}', name));
-            });
-
-            // Preview in Sandbox from Edit modal
-            document.getElementById('btn-preview-custom-app')?.addEventListener('click', () => {
-                const name = document.getElementById('app-edit-name')?.value.trim() || '自建預覽應用';
-                const id = document.getElementById('app-edit-id')?.value.trim() || 'preview_app';
-                const category = document.getElementById('app-edit-category')?.value || 'html';
-                const code = document.getElementById('app-edit-code')?.value || '';
-
-                if (!code) {
-                    alert(currentLang === 'en' ? 'Please input code to preview!' : '請先輸入程式碼後再進行預覽！');
-                    return;
-                }
-
-                const art = {
-                    id: id,
-                    title: name,
-                    type: category === 'html' ? 'html' : (category === 'json' ? 'json' : 'code'),
-                    language: category,
-                    fullContent: code,
-                    originalContent: code,
-                    userEdited: false,
-                    parts: [{ content: code, timestamp: Date.now(), addedLines: code.split('\n').length }],
-                    versions: [{ version: 1, content: code, author: 'user-app', actionType: 'init', summary: '編輯預覽', timestamp: Date.now(), lines: code.split('\n').length, chars: code.length }],
-                    activeVersion: 1,
-                    isStreaming: false,
-                    createdAt: Date.now(),
-                    updatedAt: Date.now(),
-                    activeTab: category === 'html' ? 'preview' : 'code'
-                };
-
-                globalArtifactStore.set(id, art);
-                lastActiveArtifactId = id;
-                document.getElementById('app-edit-modal')?.classList.add('hidden');
-                document.getElementById('app-library-modal')?.classList.add('hidden');
-                openArtifactDrawer(id);
-                setDrawerLayoutMode('preview');
-                const isScript = category === 'py' || category === 'python' || category === 'sh' || category === 'bash';
-                if (isScript) {
-                    executeScriptInDrawer(art);
+                    fallbackCopyText(code, done);
                 }
             });
 
             // Bookmark / Save from Artifact Drawer into App Library
             document.getElementById('drawer-btn-save-to-lib')?.addEventListener('click', () => {
                 const activeId = artifactDrawerModal?.getAttribute('data-active-id');
-                const art = globalArtifactStore.get(activeId);
+                const art = globalArtifactStore?.get(activeId);
                 if (!art) return;
 
                 const editTa = document.getElementById('drawer-code-textarea');
@@ -23249,46 +23350,23 @@ if __name__ == "__main__":
                 loadCustomAppsFromStorage();
                 openEditCustomAppModal(null);
 
-                document.getElementById('app-edit-name').value = art.title || '我的自訂應用';
+                document.getElementById('app-edit-name').value = art.title || ((typeof currentLang !== 'undefined' && currentLang === 'en') ? 'My Custom App' : '我的自訂應用');
                 document.getElementById('app-edit-id').value = (art.id || 'app_' + Date.now().toString(36)).replace(/[^\w-]/g, '_');
                 document.getElementById('app-edit-category').value = (art.language === 'py' || art.type === 'py') ? 'py' : ((art.language === 'sh' || art.type === 'sh') ? 'sh' : (art.type === 'json' ? 'json' : 'html'));
                 document.getElementById('app-edit-icon').value = '⭐';
-                document.getElementById('app-edit-desc').value = currentLang === 'en' ? `Created via LLM Artifact Workbench (${art.versions?.length || 1} versions)` : `由 LLM 協同產出並收藏之 Artifact 應用 (共 ${art.versions?.length || 1} 版)`;
-                document.getElementById('app-edit-prompt').value = currentLang === 'en' ? `This app was generated via Artifact Workbench. Continue assisting user based on this code.` : `此應用由 LLM 協同生成，請基於現有程式碼進一步擴充或解答。`;
+                document.getElementById('app-edit-desc').value = (typeof currentLang !== 'undefined' && currentLang === 'en') ? `Created via LLM Artifact Workbench (${art.versions?.length || 1} versions)` : `由 LLM 協同產出並收藏之 Artifact 應用 (共 ${art.versions?.length || 1} 版)`;
+                document.getElementById('app-edit-prompt').value = (typeof currentLang !== 'undefined' && currentLang === 'en') ? `This app was generated via Artifact Workbench. Continue assisting user based on this code.` : `此應用由 LLM 協同生成，請基於現有程式碼進一步擴充或解答。`;
                 document.getElementById('app-edit-code').value = currentCode;
 
-                const codeStatsEl = document.getElementById('app-edit-code-stats');
-                if (codeStatsEl) codeStatsEl.textContent = currentLang === 'en' ? `${currentCode.split('\n').length} lines (行) · ${currentCode.length} chars (字)` : `${currentCode.split('\n').length} 行 (lines) · ${currentCode.length} 字 (chars)`;
+                const statsEl = document.getElementById('app-edit-code-stats');
+                if (statsEl) {
+                    statsEl.textContent = (typeof currentLang !== 'undefined' && currentLang === 'en')
+                        ? `${currentCode.split('\n').length} lines (行) · ${currentCode.length} chars (字)`
+                        : `${currentCode.split('\n').length} 行 (lines) · ${currentCode.length} 字 (chars)`;
+                }
             });
 
-            // Backup & Export App Library
-            document.getElementById('btn-export-apps')?.addEventListener('click', () => {
-                loadCustomAppsFromStorage();
-                const jsonStr = JSON.stringify(customAppList, null, 2);
-                const blob = new Blob(['\uFEFF', jsonStr], { type: 'application/json;charset=utf-8' });
-                const fileName = `Webcom_AppLibrary_Backup_${new Date().toISOString().replace(/[:.]/g, '-')}.json`;
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.style.display = 'none';
-                a.href = url;
-                a.download = fileName;
-                a.setAttribute('download', fileName);
-                document.body.appendChild(a);
-                a.click();
-                setTimeout(() => {
-                    try {
-                        if (a.parentNode) a.parentNode.removeChild(a);
-                        URL.revokeObjectURL(url);
-                    } catch (e) {}
-                }, 5000);
-                showNotificationToast(t('appLibExportedSuccess'));
-            });
-
-            // Import App Library from JSON backup
-            document.getElementById('btn-import-apps')?.addEventListener('click', () => {
-                document.getElementById('file-import-apps')?.click();
-            });
-
+            // File input for import backup
             document.getElementById('file-import-apps')?.addEventListener('change', (e) => {
                 const file = e.target.files?.[0];
                 if (!file) return;
@@ -23312,12 +23390,14 @@ if __name__ == "__main__":
                             });
                             saveCustomAppsToStorage();
                             renderAppLibraryGrid();
-                            showNotificationToast(t('appLibImportedSuccess').replace('{count}', added));
+                            if (typeof showNotificationToast === 'function') {
+                                showNotificationToast(typeof t === 'function' ? t('appLibImportedSuccess').replace('{count}', added) : `成功匯入 ${added} 個應用程式！`);
+                            }
                         } else {
-                            alert(currentLang === 'en' ? 'Invalid format! Must be JSON array.' : '匯入檔案格式錯誤，必須為 JSON 陣列！');
+                            alert(typeof currentLang !== 'undefined' && currentLang === 'en' ? 'Invalid format! Must be JSON array.' : '匯入檔案格式錯誤，必須為 JSON 陣列！');
                         }
                     } catch (err) {
-                        alert((currentLang === 'en' ? 'JSON parse error: ' : 'JSON 解析失敗: ') + err.message);
+                        alert((typeof currentLang !== 'undefined' && currentLang === 'en' ? 'JSON parse error: ' : 'JSON 解析失敗: ') + err.message);
                     }
                     e.target.value = '';
                 };

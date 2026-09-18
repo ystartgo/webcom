@@ -728,6 +728,7 @@
             }
 
             renderDecisionResults(resultData);
+            tryJevAutoRoute(resultData, state);
         }
 
         function renderDecisionResults(data) {
@@ -773,6 +774,97 @@
             safeCreateIcons();
         }
 
+        // ── Jev → LLM 自評路由橋接 ──────────────────────────────────────
+        // 當 Jev 信心度低於閾值時自動透過 postMessage 移交 LLM 處理
+        var JEV_CONFIDENCE_THRESHOLD = 55; // 低於此值 → 交 LLM (0~100)
+        var JEV_AUTO_ROUTE_ENABLED   = true;
+
+        function tryJevAutoRoute(data, query) {
+            if (!JEV_AUTO_ROUTE_ENABLED) return;
+            if (!data || typeof data.confidence !== 'number') return;
+            if (!query || !query.trim()) return;
+
+            if (data.confidence < JEV_CONFIDENCE_THRESHOLD) {
+                // 信心不足：顯示提示橫幅，延遲後 postMessage 給主視窗
+                showJevFallbackBanner(data.confidence, data.best_option);
+                setTimeout(function() {
+                    try {
+                        var target = (window.parent && window.parent !== window) ? window.parent : window.opener;
+                        if (target) {
+                            target.postMessage({
+                                type: 'JEV_FALLBACK_TO_LLM',
+                                query: query,
+                                jevConfidence: data.confidence,
+                                jevBestOption: data.best_option,
+                                jevDecisions: data.decisions,
+                                lang: currentLang
+                            }, '*');
+                        }
+                    } catch (e) {
+                        console.warn('[Jev Router] postMessage failed:', e);
+                    }
+                }, 900);
+            } else {
+                // 信心充足：通知主視窗留下決策摘要卡片
+                try {
+                    var target = (window.parent && window.parent !== window) ? window.parent : window.opener;
+                    if (target) {
+                        target.postMessage({
+                            type: 'JEV_DECISION_COMPLETE',
+                            query: query,
+                            jevConfidence: data.confidence,
+                            jevBestOption: data.best_option,
+                            jevDecisions: data.decisions,
+                            lang: currentLang
+                        }, '*');
+                    }
+                } catch (e) {}
+            }
+        }
+
+        function showJevFallbackBanner(confidence, bestOption) {
+            // 移除舊橫幅
+            var old = document.getElementById('jev-fallback-banner');
+            if (old) old.remove();
+
+            var banner = document.createElement('div');
+            banner.id = 'jev-fallback-banner';
+            banner.style.cssText = [
+                'position:fixed;top:64px;left:50%;transform:translateX(-50%);z-index:9999',
+                'display:flex;align-items:center;gap:10px',
+                'background:linear-gradient(135deg,rgba(234,88,12,0.95),rgba(124,45,18,0.95))',
+                'border:1px solid rgba(251,146,60,0.5);border-radius:12px',
+                'padding:10px 18px;box-shadow:0 8px 32px rgba(0,0,0,0.4)',
+                'font-size:12px;color:#fff;font-family:sans-serif',
+                'animation:fadeIn 0.3s ease',
+                'max-width:90vw;text-align:center'
+            ].join(';');
+
+            var icon = currentLang === 'en' ? '⚠️' : '⚠️';
+            var msg = currentLang === 'en'
+                ? icon + ' Jev confidence only <b>' + confidence + '%</b> — below threshold. Handing off to LLM for deep analysis...'
+                : icon + ' Jev 信心度僅 <b>' + confidence + '%</b>，低於閾值 ' + JEV_CONFIDENCE_THRESHOLD + '%，自動移交 LLM 深度分析...';
+            banner.innerHTML = msg;
+
+            // 加入淡入動畫樣式（若尚未存在）
+            if (!document.getElementById('jev-fallback-style')) {
+                var style = document.createElement('style');
+                style.id = 'jev-fallback-style';
+                style.textContent = '@keyframes fadeIn{from{opacity:0;transform:translateX(-50%) translateY(-8px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}';
+                document.head.appendChild(style);
+            }
+
+            document.body.appendChild(banner);
+
+            // 3 秒後淡出並移除
+            setTimeout(function() {
+                banner.style.transition = 'opacity 0.5s';
+                banner.style.opacity = '0';
+                setTimeout(function() { if (banner.parentNode) banner.parentNode.removeChild(banner); }, 500);
+            }, 3000);
+        }
+        // ─────────────────────────────────────────────────────────────────
+
         function escapeHtml(str) {
             if (!str) return '';
             return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
@@ -796,34 +888,99 @@
             }
         });
 
-        // Listen for language change events from parent window
-        window.addEventListener('message', (e) => {
-            if (e.data && e.data.type === 'SET_LANGUAGE' && e.data.lang) {
+        // Listen for messages from parent window
+        window.addEventListener('message', function(e) {
+            if (!e.data || !e.data.type) return;
+
+            // 語言切換
+            if (e.data.type === 'SET_LANGUAGE' && e.data.lang) {
                 setLanguage(e.data.lang, true);
+            }
+
+            // LLM → Jev：注入 query 並自動執行（支援 ready 前排隊）
+            if (e.data.type === 'JEV_INJECT_QUERY') {
+                if (_jevSandboxReady) {
+                    handleInjectQuery(e.data);
+                } else {
+                    // sandbox 尚未 ready（iframe 仍在載入），暫存等待
+                    _pendingInjectQuery = e.data;
+                }
             }
         });
 
-        window.addEventListener('DOMContentLoaded', () => {
-            const initialLang = detectInitialLanguage();
+        // ── Sandbox 就緒狀態管理 ──────────────────────────────────────────
+        var _jevSandboxReady = false;
+        var _pendingInjectQuery = null; // 在 ready 前收到的 INJECT_QUERY 會暫存於此
+
+        function markSandboxReady() {
+            if (_jevSandboxReady) return;
+            _jevSandboxReady = true;
+
+            // 通知主視窗沙盒已就緒
+            try {
+                var target = (window.parent && window.parent !== window) ? window.parent : window.opener;
+                if (target) {
+                    target.postMessage({ type: 'JEV_SANDBOX_READY' }, '*');
+                }
+            } catch (e) {}
+
+            // 若有排隊中的 query，立即執行
+            if (_pendingInjectQuery) {
+                var pending = _pendingInjectQuery;
+                _pendingInjectQuery = null;
+                setTimeout(function() { handleInjectQuery(pending); }, 50);
+            }
+        }
+
+        function handleInjectQuery(data) {
+            var q = (data.query || '').trim();
+            if (!q) return;
+            var stateEl = document.getElementById('input-state');
+            if (stateEl) {
+                stateEl.value = q;
+                updateCharCount();
+            }
+            if (Array.isArray(data.options) && data.options.length >= 2) {
+                renderOptionRows(data.options);
+            }
+            if (stateEl) {
+                stateEl.style.borderColor = '#a78bfa';
+                setTimeout(function() { stateEl.style.borderColor = ''; }, 1200);
+            }
+
+            // 若模型 / daemon 尚未完成連線檢測，短暫等待後再執行
+            var waitMs = _jevSandboxReady ? 0 : 400;
+            setTimeout(function() { runJevDecision(); }, waitMs);
+        }
+        // ─────────────────────────────────────────────────────────────────
+
+        window.addEventListener('DOMContentLoaded', function() {
+            var initialLang = detectInitialLanguage();
             setLanguage(initialLang, false);
             safeCreateIcons();
             loadPreset('intent');
 
+            // 先標記「UI 就緒」（daemon 連線狀態還在確認中，但已可接受 query）
+            // 模型載入由 daemon 負責（Python 側預熱），不需等待 ONNX 冷啟動
+            markSandboxReady();
+
+            // 非同步確認 daemon 連線（不阻塞 ready 狀態）
             fetch('http://127.0.0.1:8001/api/jev/models')
-                .then(r => r.json())
-                .then(() => {
+                .then(function(r) { return r.json(); })
+                .then(function() {
                     isDaemonConnected = true;
-                    const badge = document.getElementById('daemon-conn-status');
-                    badge.className = "px-2.5 py-1 rounded-lg bg-emerald-500/10 text-emerald-400 border border-emerald-500/25 flex items-center gap-1.5 font-medium";
+                    var badge = document.getElementById('daemon-conn-status');
+                    if (badge) badge.className = 'px-2.5 py-1 rounded-lg bg-emerald-500/10 text-emerald-400 border border-emerald-500/25 flex items-center gap-1.5 font-medium';
                     updateDaemonStatusDisplay();
                 })
-                .catch(() => {
+                .catch(function() {
                     isDaemonConnected = false;
-                    const badge = document.getElementById('daemon-conn-status');
-                    badge.className = "px-2.5 py-1 rounded-lg bg-amber-500/10 text-amber-400 border border-amber-500/25 flex items-center gap-1.5 font-medium";
+                    var badge = document.getElementById('daemon-conn-status');
+                    if (badge) badge.className = 'px-2.5 py-1 rounded-lg bg-amber-500/10 text-amber-400 border border-amber-500/25 flex items-center gap-1.5 font-medium';
                     updateDaemonStatusDisplay();
                 });
         });
+
     </script>
 </body>
 </html>
