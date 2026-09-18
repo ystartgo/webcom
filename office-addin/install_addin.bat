@@ -9,9 +9,10 @@ echo.
 
 set "SCRIPT_DIR=%~dp0"
 set "SCRIPT_DIR=%SCRIPT_DIR:~0,-1%"
+set "ROOT_DIR=%SCRIPT_DIR%\.."
 set "MANIFEST_PATH=%SCRIPT_DIR%\manifest.xml"
 
-echo [1/4] 檢查增益集清單檔案:
+echo [1/5] 檢查增益集清單檔案:
 if not exist "%MANIFEST_PATH%" (
     echo   [錯誤] 找不到 manifest.xml！
     echo   請確認本工具位於 office-addin 資料夾內。
@@ -22,7 +23,7 @@ if not exist "%MANIFEST_PATH%" (
 echo   [OK] 清單檔案就緒: "%MANIFEST_PATH%"
 
 echo.
-echo [2/4] 寫入 Office 開發者直接旁載 (Sideload) 註冊表...
+echo [2/5] 寫入 Office 開發者直接旁載 (Sideload) 註冊表...
 :: 微軟官方推薦之免開網路共用開發者旁載註冊
 reg add "HKCU\Software\Microsoft\Office\16.0\WEF\Developer" /v "%MANIFEST_PATH%" /t REG_SZ /d "%MANIFEST_PATH%" /f >nul 2>&1
 if %ERRORLEVEL% equ 0 (
@@ -32,7 +33,7 @@ if %ERRORLEVEL% equ 0 (
 )
 
 echo.
-echo [3/4] 檢查並設定網路共用目錄 (雙重保障)...
+echo [3/5] 檢查並設定網路共用目錄 (雙重保障)...
 net share WebcomAddin="%SCRIPT_DIR%" /grant:Everyone,READ >nul 2>&1
 if %ERRORLEVEL% equ 0 (
     echo   [OK] 已成功建立 Windows 共用: \\localhost\WebcomAddin
@@ -45,7 +46,7 @@ if %ERRORLEVEL% equ 0 (
 )
 
 echo.
-echo [4/4] 清除 Office 快取以確保立即載入最新清單...
+echo [4/5] 清除 Office 快取以確保立即載入最新清單...
 if exist "%LOCALAPPDATA%\Microsoft\Office\16.0\Wef" (
     del /s /q "%LOCALAPPDATA%\Microsoft\Office\16.0\Wef\*.*" >nul 2>&1
     echo   [OK] 已清除 Office WEF 快取。
@@ -54,28 +55,39 @@ if exist "%LOCALAPPDATA%\Microsoft\Office\16.0\Wef" (
 )
 
 echo.
+echo [5/5] 設定本機開發者 SSL 憑證信任 (解決「連不上」問題)...
+set "CERT_FILE="
+if exist "%USERPROFILE%\.office-addin-dev-certs\ca.crt" (
+    set "CERT_FILE=%USERPROFILE%\.office-addin-dev-certs\ca.crt"
+) else if exist "%ROOT_DIR%\assets\ssl\cert.pem" (
+    set "CERT_FILE=%ROOT_DIR%\assets\ssl\cert.pem"
+)
+
+if defined CERT_FILE (
+    echo   找到本機 SSL 憑證，註冊至 Windows 受信任根授權單位...
+    echo   (若彈出 Windows 警告對話框，請點選【是】以信任本機通訊)
+    certutil -user -addstore Root "%CERT_FILE%" >nul 2>&1
+    echo   [OK] SSL 憑證信任已就緒。
+) else (
+    echo   [提示] 憑證將於首次啟動 python daemon.py 時自動建立。
+)
+
+echo.
 echo ========================================================
 echo  🎉 增益集註冊設定已完成！
 echo ========================================================
 echo.
-echo 【如何立即在 Office 中使用 Webcom】:
+echo 【常見「連不上」解決方法】:
+echo  1. 請確認已啟動常駐後端:
+echo     在終端機執行 python daemon.py，看到 8001 與 8002 啟動訊息。
 echo.
-echo  方法一 (最推薦・自動載入):
-echo    1. 若 Word、Excel 或 PowerPoint 正在執行，請「完全關閉後重新開啟」。
-echo    2. 開啟後，上方功能區 (Ribbon) 會自動出現【Webcom AI】標籤頁！
-echo    3. 點擊【開啟 Webcom 對話】即可展開側邊對話面板。
+echo  2. 若在 Weboffice (網頁版 Word/Excel) 看到連不上:
+echo     請在同一個瀏覽器開啟新分頁前往:
+echo     https://127.0.0.1:8002/office-addin/taskpane.html
+echo     點擊【進階】 -^> 【繼續前往 127.0.0.1 (不安全)】允許信任一次即可！
 echo.
-echo  方法二 (手動上傳・1秒完成，免看快取):
-echo    1. 在 Word 或 Excel 中，點擊上方功能區【插入】 -^> 【我的增益集】。
-echo    2. 點擊右上角的「管理我的增益集」下拉箭頭，選擇【上傳我的增益集】。
-echo    3. 瀏覽並選取此檔案:
-echo       "%MANIFEST_PATH%"
-echo    4. 點擊【上傳】，增益集立即載入！
-echo.
-echo  方法三 (共用資料夾分頁):
-echo    若您在【插入】 -^> 【我的增益集】 -^> 【共用資料夾】分頁中查看，
-echo    請務必點擊右上角的【🔄 重新整理】圖示，Office 即會顯示可用增益集！
-echo.
+echo  3. 若在桌面版 Word/Excel 看到連不上:
+echo     請直接執行本目錄下的 trust_cert.bat 進行憑證授權。
 echo ========================================================
 echo.
 pause
