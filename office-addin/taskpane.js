@@ -29,32 +29,47 @@ const addinConfig = {
 回答請條理清晰、專業並隨時準備協助修改文件內容。`
 };
 
-document.addEventListener('DOMContentLoaded', async () => {
-    // 1. 初始化微軟 Office.js 橋接器
-    const initRes = await window.OfficeBridge.init();
-    updateHostBadge(initRes.host);
+document.addEventListener('DOMContentLoaded', () => {
+    console.log('[Webcom Taskpane] DOMContentLoaded fired. Initializing UI...');
 
-    // 2. 綁定按鈕事件
+    // 1. 立即綁定所有 UI 按鈕事件 (保證所有按鈕 100% 隨時可點擊、不卡死)
     setupEventListeners();
 
-    // 3. 載入儲存的 API 設定
-    document.getElementById('input-endpoint').value = addinConfig.apiEndpoint;
-    document.getElementById('input-key').value = addinConfig.apiKey;
-    document.getElementById('input-model').value = addinConfig.model;
+    // 2. 載入儲存的 API 設定
+    const epEl = document.getElementById('input-endpoint');
+    const keyEl = document.getElementById('input-key');
+    const modelEl = document.getElementById('input-model');
+    if (epEl) epEl.value = addinConfig.apiEndpoint;
+    if (keyEl) keyEl.value = addinConfig.apiKey;
+    if (modelEl) modelEl.value = addinConfig.model;
+
+    // 3. 非同步初始化微軟 Office.js 橋接器 (逾時 1 秒自動降級為 Web 模式，絕不阻塞介面)
+    if (window.OfficeBridge && window.OfficeBridge.init) {
+        window.OfficeBridge.init(updateHostBadge).then((initRes) => {
+            updateHostBadge(initRes.host);
+        }).catch(() => {
+            updateHostBadge('Web');
+        });
+    } else {
+        updateHostBadge('Web');
+    }
 });
 
 function updateHostBadge(host) {
     const badge = document.getElementById('host-badge');
     if (!badge) return;
-    badge.textContent = host;
     if (host === 'Word') {
+        badge.textContent = 'Word';
         badge.className = 'px-2 py-0.5 rounded text-[10px] font-bold bg-blue-900/60 text-blue-300 border border-blue-700/60';
     } else if (host === 'Excel') {
+        badge.textContent = 'Excel';
         badge.className = 'px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-900/60 text-emerald-300 border border-emerald-700/60';
     } else if (host === 'PowerPoint') {
+        badge.textContent = 'PowerPoint';
         badge.className = 'px-2 py-0.5 rounded text-[10px] font-bold bg-orange-900/60 text-orange-300 border border-orange-700/60';
     } else {
-        badge.className = 'px-2 py-0.5 rounded text-[10px] font-bold bg-gray-800 text-gray-400 border border-gray-700';
+        badge.textContent = 'Web 模式';
+        badge.className = 'px-2 py-0.5 rounded text-[10px] font-bold bg-gray-800 text-gray-300 border border-gray-700';
     }
 }
 

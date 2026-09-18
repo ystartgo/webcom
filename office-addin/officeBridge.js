@@ -3,30 +3,77 @@
  * 封裝微軟 Office.js 原生 API，支援 Word, Excel, PowerPoint 自動操作與圖表產生
  */
 window.OfficeBridge = (function() {
-    let _hostType = 'unknown'; // 'Word' | 'Excel' | 'PowerPoint' | 'web-standalone'
+    let _hostType = 'Web'; // 'Word' | 'Excel' | 'PowerPoint' | 'Web'
     let _isOfficeReady = false;
+    let _onHostChangeCallback = null;
 
-    async function init() {
+    async function init(onHostChange) {
+        if (typeof onHostChange === 'function') {
+            _onHostChangeCallback = onHostChange;
+        }
+
         return new Promise((resolve) => {
-            if (typeof Office !== 'undefined') {
-                Office.onReady((info) => {
-                    _isOfficeReady = true;
-                    if (info.host === Office.HostType.Word) {
-                        _hostType = 'Word';
-                    } else if (info.host === Office.HostType.Excel) {
-                        _hostType = 'Excel';
-                    } else if (info.host === Office.HostType.PowerPoint) {
-                        _hostType = 'PowerPoint';
-                    } else {
-                        _hostType = 'Office-Other';
-                    }
-                    console.log(`[OfficeBridge] Initialized in host: ${_hostType}`);
-                    resolve({ isOfficeReady: true, host: _hostType });
-                });
-            } else {
-                _hostType = 'web-standalone';
-                console.log(`[OfficeBridge] Running in standalone web browser mode`);
-                resolve({ isOfficeReady: false, host: _hostType });
+            let settled = false;
+
+            // 超時保護：若 1 秒內 Office.onReady 未回調 (例如在一般瀏覽器預覽)，直接降級為 Web 模式
+            const timer = setTimeout(() => {
+                if (!settled) {
+                    settled = true;
+                    _hostType = 'Web';
+                    console.log('[OfficeBridge] Standalone Web mode active (timeout)');
+                    resolve({ isOfficeReady: false, host: _hostType });
+                }
+            }, 1000);
+
+            try {
+                if (typeof Office !== 'undefined' && Office.onReady) {
+                    Office.onReady((info) => {
+                        if (info && info.host) {
+                            _isOfficeReady = true;
+                            if (info.host === Office.HostType.Word) {
+                                _hostType = 'Word';
+                            } else if (info.host === Office.HostType.Excel) {
+                                _hostType = 'Excel';
+                            } else if (info.host === Office.HostType.PowerPoint) {
+                                _hostType = 'PowerPoint';
+                            } else {
+                                _hostType = 'Office';
+                            }
+                        } else {
+                            _hostType = 'Web';
+                        }
+                        console.log(`[OfficeBridge] Initialized in host: ${_hostType}`);
+
+                        if (_onHostChangeCallback) {
+                            _onHostChangeCallback(_hostType);
+                        }
+
+                        if (!settled) {
+                            settled = true;
+                            clearTimeout(timer);
+                            resolve({ isOfficeReady: _isOfficeReady, host: _hostType });
+                        }
+                    }).catch((err) => {
+                        console.warn('[OfficeBridge onReady Error]', err);
+                        if (!settled) {
+                            settled = true;
+                            clearTimeout(timer);
+                            resolve({ isOfficeReady: false, host: 'Web' });
+                        }
+                    });
+                } else {
+                    settled = true;
+                    clearTimeout(timer);
+                    _hostType = 'Web';
+                    resolve({ isOfficeReady: false, host: _hostType });
+                }
+            } catch (e) {
+                console.warn('[OfficeBridge Exception]', e);
+                if (!settled) {
+                    settled = true;
+                    clearTimeout(timer);
+                    resolve({ isOfficeReady: false, host: 'Web' });
+                }
             }
         });
     }
