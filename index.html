@@ -7924,7 +7924,7 @@ ffmpeg -f pulse -i default -acodec libmp3lame -ab 128k -f mp3 -listen 1 http://0
                 const prof = (appSettings.profiles && appSettings.profiles[activeKey]) || {};
                 const payload = {
                     endpoint: prof.endpoint || "https://tokentable.asia/v1",
-                    key: prof.apiKey || "",
+                    key: prof.key || prof.apiKey || "",
                     model: prof.model || "qwen3.8-flash"
                 };
                 function sendSync(url, fallback) {
@@ -8333,6 +8333,7 @@ ffmpeg -f pulse -i default -acodec libmp3lame -ab 128k -f mp3 -listen 1 http://0
 
         renderMainProfileSelect();
         updateEngineModeUI();
+        try { syncSettingsToDaemon(); } catch (e) {}
 
         function formatWebLLMProgress(rawText) {
             if (!rawText) return currentLang === 'en' ? 'Loading model weights...' : '正在載入模型權重...';

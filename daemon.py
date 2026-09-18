@@ -2523,13 +2523,73 @@ def call_mcp_tool(req: MCPCallRequest):
     return {"isError": True, "content": [{"type": "text", "text": f"未知的 MCP 工具: {tool_name}"}]}
 
 
-# ── 相容 TokenTable / 微軟 Copilot (OpenAI API 規範) 之 LLM 轉發端點 ──
+# ── 相容 TokenTable / 微軟 Copilot / Webcom 之 OpenAI-Compatible LLM 端點 ──
+LLM_SETTINGS_FILE = os.path.join(webcom_dir, "config", "llm_settings.json")
+_office_bridge_queue = []
+
+def _normalize_upstream_chat_url(endpoint: str) -> str:
+    if not endpoint:
+        endpoint = "https://tokentable.asia/v1"
+    clean = endpoint.strip()
+    if clean.endswith("/chat/completions"):
+        return clean
+    clean = clean.rstrip("/")
+    if not clean.endswith("/v1") and "/v1/" not in clean and "openai.azure.com" not in clean:
+        clean = clean + "/v1"
+    return clean + "/chat/completions"
+
+@app.get("/v1")
+@app.get("/v1/")
+def v1_service_status():
+    """提供 /v1 根端點狀態與可用路由資訊，避免瀏覽器或客戶端探測時回傳 404"""
+    saved_cfg = {}
+    if os.path.exists(LLM_SETTINGS_FILE):
+        try:
+            with open(LLM_SETTINGS_FILE, "r", encoding="utf-8") as f:
+                saved_cfg = json.load(f)
+        except Exception:
+            pass
+    active_ep = saved_cfg.get("endpoint") or "https://tokentable.asia/v1"
+    has_key = bool(saved_cfg.get("key") or os.environ.get("TOKENTABLE_API_KEY"))
+    return {
+        "status": "online",
+        "service": "Webcom Multi-Protocol LLM Backend",
+        "version": "v1",
+        "endpoints": {
+            "chat_completions": "http://127.0.0.1:8001/v1/chat/completions",
+            "models": "http://127.0.0.1:8001/v1/models",
+            "office_bridge": "http://127.0.0.1:8001/api/office/bridge",
+            "settings": "http://127.0.0.1:8001/api/settings/llm"
+        },
+        "upstream": {
+            "endpoint": active_ep,
+            "has_key_configured": has_key,
+            "model": saved_cfg.get("model", "qwen3.8-flash")
+        },
+        "message": "Webcom LLM API 服務正常運行中。此端點可直接作為 Office 增益集 (Taskpane) 或第三方客戶端之 Base URL。"
+    }
+
+@app.get("/v1/chat/completions")
+@app.get("/chat/completions")
+def v1_chat_completions_info():
+    """提供 Chat Completions 端點呼叫指南"""
+    return {
+        "status": "ready",
+        "method": "POST",
+        "endpoint": "/v1/chat/completions",
+        "description": "OpenAI 相容 Chat Completions 端點，請使用 POST 方法並傳入 messages 與 model 參數。",
+        "supported_models": ["qwen3.8-flash", "gpt-4o", "auto"]
+    }
+
 @app.post("/v1/chat/completions")
+@app.post("/chat/completions")
+@app.post("/v1")
+@app.post("/v1/")
 async def chat_completions_proxy(request: Request):
     """
     OpenAI-compatible chat completion proxy endpoint.
-    Routes to TokenTable (https://tokentable.asia/v1/chat/completions) by default,
-    or upstream specified via headers / config. Supports streaming and non-streaming.
+    自動繼承 Webcom 主畫面 (index.html) 設定之 Upstream 端點與 Key。
+    支援串流與非串流、TokenTable、LM Studio、Azure OpenAI。
     """
     import json
     import httpx
@@ -2543,7 +2603,16 @@ async def chat_completions_proxy(request: Request):
             content={"error": {"message": "無效的 JSON 請求體", "type": "invalid_request_error"}}
         )
 
-    # 取得 Authorization / API Key
+    # 讀取 Webcom 主控台同步之設定檔案
+    saved_cfg = {}
+    if os.path.exists(LLM_SETTINGS_FILE):
+        try:
+            with open(LLM_SETTINGS_FILE, "r", encoding="utf-8") as f:
+                saved_cfg = json.load(f)
+        except Exception:
+            pass
+
+    # 取得 Authorization / API Key (優先從請求標頭，若無則自動繼承 Webcom 主控台之 Key)
     auth_header = request.headers.get("Authorization", "")
     api_key = ""
     if auth_header.startswith("Bearer "):
@@ -2552,15 +2621,21 @@ async def chat_completions_proxy(request: Request):
         api_key = request.headers["api-key"].strip()
 
     if not api_key:
-        api_key = os.environ.get("TOKENTABLE_API_KEY", "").strip() or os.environ.get("OPENAI_API_KEY", "").strip()
+        api_key = (
+            saved_cfg.get("key", "").strip()
+            or saved_cfg.get("apiKey", "").strip()
+            or os.environ.get("TOKENTABLE_API_KEY", "").strip()
+            or os.environ.get("OPENAI_API_KEY", "").strip()
+        )
 
     # 決定 Upstream 轉發目標
-    # 支援透過 X-Upstream-Endpoint 或 X-Base-URL 自訂，預設為 TokenTable 高速端點
     upstream_url = request.headers.get("X-Upstream-Endpoint", "").strip()
     if not upstream_url:
         custom_base = request.headers.get("X-Base-URL", "").strip()
         if custom_base:
-            upstream_url = custom_base.rstrip("/") + "/chat/completions"
+            upstream_url = _normalize_upstream_chat_url(custom_base)
+        elif saved_cfg.get("endpoint"):
+            upstream_url = _normalize_upstream_chat_url(saved_cfg.get("endpoint"))
         else:
             upstream_url = os.environ.get("LLM_UPSTREAM_ENDPOINT", "https://tokentable.asia/v1/chat/completions").strip()
 
@@ -2569,7 +2644,7 @@ async def chat_completions_proxy(request: Request):
             status_code=401,
             content={
                 "error": {
-                    "message": "尚未提供 API Key。請在請求標頭傳入 Authorization: Bearer <KEY> 或於環境變數設定 TOKENTABLE_API_KEY。可至 https://top.yia.app/token 取得 TokenTable API Key。",
+                    "message": "尚未提供 API Key。請在請求標頭傳入 Authorization: Bearer <KEY>，或在 Webcom 主介面 / Office 增益集設定 Key。可至 https://top.yia.app/token 取得 TokenTable API Key。",
                     "type": "authentication_error",
                     "code": 401
                 }
@@ -2621,13 +2696,13 @@ async def chat_completions_proxy(request: Request):
 
 @app.get("/v1/models")
 async def list_models():
-    """相容 OpenAI /v1/models 模型清單，提供 TokenTable 與微軟 Copilot (GPT-4o) 推薦模型"""
+    """相容 OpenAI /v1/models 模型清單，提供 TokenTable 與推薦模型"""
     return {
         "object": "list",
         "data": [
             {"id": "qwen3.8-flash", "object": "model", "owned_by": "tokentable", "description": "TokenTable 高速推理模型 (推薦首選)"},
-            {"id": "gpt-4o", "object": "model", "owned_by": "openai/copilot", "description": "微軟 Copilot 核心引擎 (GPT-4o 旗艦模型)"},
-            {"id": "gpt-4o-mini", "object": "model", "owned_by": "openai", "description": "微軟輕量高速模型"},
+            {"id": "gpt-4o", "object": "model", "owned_by": "openai", "description": "GPT-4o 旗艦模型"},
+            {"id": "gpt-4o-mini", "object": "model", "owned_by": "openai", "description": "輕量高速模型"},
             {"id": "claude-3-5-sonnet", "object": "model", "owned_by": "anthropic", "description": "Claude 3.5 Sonnet 程式與邏輯模型"},
             {"id": "auto", "object": "model", "owned_by": "webcom", "description": "自動選擇最佳可用模型"}
         ]
@@ -2635,9 +2710,6 @@ async def list_models():
 
 
 # ── Webcom ⟷ Office 增益集 雙向設定同步與調用橋接器 ──
-LLM_SETTINGS_FILE = os.path.join(webcom_dir, "config", "llm_settings.json")
-_office_bridge_queue = []
-
 @app.get("/api/settings/llm")
 def get_llm_settings():
     """提供 Webcom 主控台與 Office Add-in 共享之當前 LLM 設定"""
