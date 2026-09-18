@@ -55,16 +55,17 @@ if exist "%LOCALAPPDATA%\Microsoft\Office\16.0\Wef" (
 )
 
 echo.
-echo [5/5] 設定本機開發者 SSL 憑證信任 (解決「連不上」問題)...
+echo.
+echo [5/6] 設定本機開發者 SSL 憑證信任 (支援 view.yia.app 與 localhost)...
 set "CERT_FILE="
-if exist "%USERPROFILE%\.office-addin-dev-certs\ca.crt" (
-    set "CERT_FILE=%USERPROFILE%\.office-addin-dev-certs\ca.crt"
-) else if exist "%ROOT_DIR%\assets\ssl\cert.pem" (
+if exist "%ROOT_DIR%\assets\ssl\cert.pem" (
     set "CERT_FILE=%ROOT_DIR%\assets\ssl\cert.pem"
+) else if exist "%USERPROFILE%\.office-addin-dev-certs\ca.crt" (
+    set "CERT_FILE=%USERPROFILE%\.office-addin-dev-certs\ca.crt"
 )
 
 if defined CERT_FILE (
-    echo   找到本機 SSL 憑證，註冊至 Windows 受信任根授權單位...
+    echo   找到本機 SSL 憑證 (%CERT_FILE%)，註冊至 Windows 受信任根授權單位...
     echo   (若彈出 Windows 警告對話框，請點選【是】以信任本機通訊)
     certutil -user -addstore Root "%CERT_FILE%" >nul 2>&1
     echo   [OK] SSL 憑證信任已就緒。
@@ -73,21 +74,34 @@ if defined CERT_FILE (
 )
 
 echo.
+echo [6/6] 設定離線網域防丟失 (類似華碩路由 view.yia.app -^> 127.0.0.1)...
+findstr /i "view.yia.app" "%WINDIR%\System32\drivers\etc\hosts" >nul 2>&1
+if %ERRORLEVEL% neq 0 (
+    echo 127.0.0.1 view.yia.app>> "%WINDIR%\System32\drivers\etc\hosts" 2>nul
+    if %ERRORLEVEL% equ 0 (
+        echo   [OK] 已成功寫入本機 hosts！離線時輸入 view.yia.app 保證永遠找得到。
+    ) else (
+        echo   [提示] 若需自動寫入離線 hosts，請以【系統管理員身分執行】本工具。
+    )
+) else (
+    echo   [OK] 本機 hosts 已包含 view.yia.app 離線映射。
+)
+
+echo.
 echo ========================================================
 echo  🎉 增益集註冊設定已完成！
 echo ========================================================
 echo.
-echo 【常見「連不上」解決方法】:
-echo  1. 請確認已啟動常駐後端:
-echo     在終端機執行 python daemon.py，看到 8001 與 8002 啟動訊息。
+echo 【專屬網域與連線說明】:
+echo  1. 已配置專屬網域 view.yia.app:
+echo     - 離線/內網時: 透過 hosts 直接指向 127.0.0.1 (如同華碩路由 router.asus.com)
+echo     - 上線時: Cloudflare 灰雲 A 記錄指向 127.0.0.1
+echo     - 服務支援埠:
+echo       * HTTP  主介面: http://view.yia.app:8001
+echo       * HTTPS 增益集: https://view.yia.app:8002 或 https://view.yia.app:2096
 echo.
-echo  2. 若在 Weboffice (網頁版 Word/Excel) 看到連不上:
-echo     請在同一個瀏覽器開啟新分頁前往:
-echo     https://127.0.0.1:8002/office-addin/taskpane.html
-echo     點擊【進階】 -^> 【繼續前往 127.0.0.1 (不安全)】允許信任一次即可！
-echo.
-echo  3. 若在桌面版 Word/Excel 看到連不上:
-echo     請直接執行本目錄下的 trust_cert.bat 進行憑證授權。
+echo  2. 請確認已啟動常駐後端:
+echo     在終端機執行 python daemon.py，看到 8001、8002 與 2096 啟動訊息。
 echo ========================================================
 echo.
 pause
