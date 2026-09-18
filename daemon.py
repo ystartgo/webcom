@@ -2693,6 +2693,24 @@ def pop_office_bridge_action():
         return {"hasAction": True, "action": action}
     return {"hasAction": False}
 
+@app.post("/api/open_browser")
+async def open_in_system_browser(request: Request):
+    """在使用者 Windows 系統直接調用 Edge 或預設瀏覽器開啟指定網址"""
+    import subprocess
+    import webbrowser
+    try:
+        data = await request.json()
+        url = data.get("url", "").strip()
+        if not url:
+            raise HTTPException(status_code=400, detail="網址不得為空")
+        try:
+            subprocess.Popen(["cmd", "/c", "start", "msedge", url], shell=False)
+        except Exception:
+            webbrowser.open(url)
+        return {"status": "ok", "opened": url}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 
 if __name__ == "__main__":
     import time

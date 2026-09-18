@@ -189,14 +189,14 @@
             -webkit-box-pack: justify; -ms-flex-pack: justify; justify-content: space-between;
         }
 
-        /* 底部輸入列 */
+        /* 底部輸入列 (增高優化，便於檢閱與多行輸入) */
         footer {
             background: #111827; border-top: 1px solid #1f2937;
-            padding: 6px 8px; flex-shrink: 0;
+            padding: 6px 8px 8px 8px; flex-shrink: 0;
         }
         .input-capsule {
             background: #030712; border: 1px solid #374151; border-radius: 8px;
-            padding: 3px 6px;
+            padding: 4px 6px;
             display: -webkit-box; display: -ms-flexbox; display: flex;
             -webkit-box-align: end; -ms-flex-align: end; align-items: flex-end;
         }
@@ -204,16 +204,16 @@
         #input-user-msg {
             -webkit-box-flex: 1; -ms-flex: 1; flex: 1;
             background: transparent; border: none; color: #fff; font-size: 11px;
-            font-family: inherit; line-height: 1.4; resize: none; outline: none; padding: 2px 0;
-            height: 28px; max-height: 70px;
+            font-family: inherit; line-height: 1.45; resize: none; outline: none; padding: 3px 2px;
+            min-height: 52px; height: 52px; max-height: 130px;
         }
         .btn-send {
-            width: 26px; height: 26px; border-radius: 6px; border: none;
+            width: 30px; height: 30px; border-radius: 6px; border: none;
             background: #7c3aed; color: #fff;
             display: -webkit-box; display: -ms-flexbox; display: flex;
             -webkit-box-align: center; -ms-flex-align: center; align-items: center;
             -webkit-box-pack: center; -ms-flex-pack: center; justify-content: center;
-            cursor: pointer; flex-shrink: 0; margin-left: 4px;
+            cursor: pointer; flex-shrink: 0; margin-left: 6px; margin-bottom: 2px;
         }
         .btn-send:hover { background: #6d28d9; }
         .btn-send:disabled { opacity: 0.5; cursor: not-allowed; }
@@ -282,13 +282,12 @@
     <!-- 設定面板 (抽屜) -->
     <div id="settings-panel" class="hidden">
         <div style="margin-bottom:4px;">
-            <div style="display:-webkit-box; display:-ms-flexbox; display:flex; -webkit-box-pack:justify; -ms-flex-pack:justify; justify-content:space-between; margin-bottom:3px;">
+            <div style="display:-webkit-box; display:-ms-flexbox; display:flex; -webkit-box-pack:justify; -ms-flex-pack:justify; justify-content:space-between; -webkit-box-align:center; -ms-flex-align:center; align-items:center; margin-bottom:3px;">
                 <span class="input-label" style="margin:0;">⚡ 快速預設：</span>
-                <a href="https://top.yia.app/token" target="_blank" rel="noopener noreferrer" style="color:#a5b4fc; font-size:9px; text-decoration:none;">🔑 申請 Key ↗</a>
+                <button type="button" onclick="window.openInEdge('https://top.yia.app/token')" class="btn-preset" style="color:#a5b4fc; border-color:#6366f1; padding:1px 5px; font-size:8px; background:transparent; cursor:pointer;" title="在微軟 Edge 或預設瀏覽器開啟申請頁面">🔑 申請 Key (Edge) ↗</button>
             </div>
             <div class="preset-row">
                 <button type="button" onclick="window.applyPreset('tokentable')" class="btn-preset">✨ TokenTable (推薦)</button>
-                <button type="button" onclick="window.applyPreset('copilot')" class="btn-preset" style="background:#064e3b; border-color:#059669; color:#a7f3d0;">🤖 Copilot (GPT-4o)</button>
                 <button type="button" onclick="window.applyPreset('daemon')" class="btn-preset" style="background:#1f2937; border-color:#4b5563; color:#d1d5db;">💻 Webcom (8001)</button>
                 <button type="button" onclick="window.applyPreset('lmstudio')" class="btn-preset" style="background:#1f2937; border-color:#4b5563; color:#d1d5db;">🖥️ LM Studio</button>
                 <button type="button" onclick="window.applyPreset('azure')" class="btn-preset" style="background:#1e3a8a; border-color:#2563eb; color:#bfdbfe;">🏢 Azure</button>
@@ -363,14 +362,21 @@
         </div>
     </main>
 
-    <!-- 底部輸入區域 -->
+    <!-- 底部輸入區域 (增高欄位 + 自動關聯左側 Office 文件開關) -->
     <footer>
+        <div style="display:-webkit-box; display:-ms-flexbox; display:flex; -webkit-box-pack:justify; -ms-flex-pack:justify; justify-content:space-between; -webkit-box-align:center; -ms-flex-align:center; align-items:center; margin-bottom:4px; font-size:9px;">
+            <label style="cursor:pointer; display:-webkit-box; display:-ms-flexbox; display:flex; -webkit-box-align:center; -ms-flex-align:center; align-items:center; color:#c7d2fe;">
+                <input type="checkbox" id="chk-auto-doc" checked style="margin-right:4px; cursor:pointer;">
+                <span style="font-weight:bold;">👁️ 自動讀取左側文件</span>
+            </label>
+            <button type="button" onclick="window.readDocumentSelection(false)" class="btn-preset" style="padding:1px 5px; font-size:8px; margin:0;" title="手動將目前游標選取或全文文字帶入下方輸入框">📑 帶入文字</button>
+        </div>
         <div class="input-capsule">
-            <textarea id="input-user-msg" rows="1"
+            <textarea id="input-user-msg" rows="2"
                 onkeydown="if(event.keyCode===13 && !event.shiftKey){if(event.preventDefault){event.preventDefault();}window.handleSendMessage();return false;}"
-                placeholder="輸入指令 (Enter 發送)..."></textarea>
+                placeholder="輸入指令 (Enter 發送，Shift+Enter 換行)..."></textarea>
             <button id="btn-send" onclick="window.handleSendMessage()" type="button" class="btn-send" title="發送指令">
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
             </button>
         </div>
     </footer>
@@ -514,9 +520,9 @@
                 // 防禦性捕捉
             }
         },
-        getSelectedContent: function(callback) {
+        getDocumentContent: function(preferWholeDoc, callback) {
             if (!this._isOfficeReady) {
-                callback("【單檔案/預覽模式】尚未連接 Office 主機，此為模擬選取文字。");
+                callback({ text: "【單檔案/預覽模式】尚未連接 Office 主機，此為模擬選取文字。", source: "mock", length: 28 });
                 return;
             }
             try {
@@ -524,36 +530,63 @@
                     Word.run(function(context) {
                         var sel = context.document.getSelection();
                         sel.load('text');
+                        var body = context.document.body;
+                        body.load('text');
                         return context.sync().then(function() {
-                            var txt = sel.text ? sel.text.replace(/^\s+|\s+$/g, '') : '';
-                            callback(txt);
+                            var selText = sel.text ? sel.text.replace(/^\s+|\s+$/g, '') : '';
+                            var bodyText = body.text ? body.text.replace(/^\s+|\s+$/g, '') : '';
+                            if (selText && !preferWholeDoc) {
+                                callback({ text: selText, source: 'selection', length: selText.length });
+                            } else if (bodyText) {
+                                var maxLen = 4000;
+                                var trimmed = (bodyText.length > maxLen) ? (bodyText.slice(0, maxLen) + '\n...(後續字元因長度限制已截斷)...') : bodyText;
+                                callback({ text: trimmed, source: 'body', length: bodyText.length });
+                            } else {
+                                callback(null);
+                            }
                         });
-                    })['catch'](function() {
-                        callback('');
+                    })['catch'](function(err) {
+                        callback(null);
                     });
                     return;
                 } else if (this._hostType === 'Excel' && typeof Excel !== 'undefined' && Excel.run) {
                     Excel.run(function(context) {
                         var range = context.workbook.getSelectedRange();
                         range.load(['values', 'rowCount', 'columnCount']);
+                        var sheet = context.workbook.worksheets.getActiveWorksheet();
+                        var usedRange = sheet.getUsedRange();
+                        usedRange.load(['values', 'rowCount', 'columnCount']);
                         return context.sync().then(function() {
-                            var rows = range.values || [];
-                            var lines = [];
-                            for (var r = 0; r < rows.length; r++) {
-                                lines.push(rows[r].join('\t'));
+                            var selVals = range.values || [];
+                            var hasSel = false;
+                            if (selVals.length > 1 || (selVals.length === 1 && selVals[0].length > 1) || (selVals.length === 1 && selVals[0][0])) {
+                                hasSel = true;
                             }
-                            callback(lines.join('\n'));
+                            var targetVals = (!preferWholeDoc && hasSel) ? selVals : (usedRange.values || selVals);
+                            var lines = [];
+                            var maxRows = Math.min(targetVals.length, 120);
+                            for (var r = 0; r < maxRows; r++) {
+                                lines.push(targetVals[r].join('\t'));
+                            }
+                            if (targetVals.length > 120) lines.push('...(後續列數因長度限制已截斷)...');
+                            var resText = lines.join('\n');
+                            callback({ text: resText, source: (!preferWholeDoc && hasSel) ? 'selection' : 'sheet', length: resText.length });
                         });
-                    })['catch'](function() {
-                        callback('');
+                    })['catch'](function(err) {
+                        callback(null);
                     });
                     return;
                 }
             } catch(e) {
-                callback('');
+                callback(null);
                 return;
             }
-            callback('');
+            callback(null);
+        },
+        getSelectedContent: function(callback) {
+            this.getDocumentContent(false, function(res) {
+                callback(res ? res.text : '');
+            });
         },
         insertText: function(text, replace, callback) {
             if (!this._isOfficeReady) {
@@ -619,7 +652,7 @@
 
     // ── 5. 全域操作函式 (掛載至 window 供 HTML 原生 onclick 即點即應) ──
 
-    // 發送訊息
+    // 發送訊息 (支援自動附帶 Word/Excel 左側文件上下文)
     window.handleSendMessage = function() {
         var input = document.getElementById('input-user-msg');
         if (!input) return;
@@ -627,7 +660,26 @@
         if (!text || isGenerating) return;
 
         input.value = '';
-        appendMessage('user', escapeHtml(text).replace(/\n/g, '<br>'));
+
+        var chkAutoDoc = document.getElementById('chk-auto-doc');
+        var shouldReadDoc = chkAutoDoc ? chkAutoDoc.checked : true;
+
+        if (shouldReadDoc && window.OfficeBridge._isOfficeReady) {
+            window.OfficeBridge.getDocumentContent(false, function(docInfo) {
+                _executeSendMessage(text, docInfo);
+            });
+        } else {
+            _executeSendMessage(text, null);
+        }
+    };
+
+    function _executeSendMessage(text, docInfo) {
+        var userHtml = escapeHtml(text).replace(/\n/g, '<br>');
+        if (docInfo && docInfo.text) {
+            var srcLabel = (docInfo.source === 'selection') ? '選取內容' : (window.OfficeBridge._hostType + ' 全文');
+            userHtml = userHtml + '<div style="font-size:9px; color:#c084fc; background:#2e1065; border:1px solid #581c87; border-radius:4px; padding:2px 6px; margin-top:4px; display:inline-block;">📎 已附帶 ' + srcLabel + ' (' + docInfo.length + ' 字)</div>';
+        }
+        appendMessage('user', userHtml);
         chatHistory.push({ role: 'user', content: text, timestamp: new Date().toISOString() });
 
         isGenerating = true;
@@ -639,8 +691,17 @@
         var msgs = [
             { role: 'system', content: addinConfig.systemPrompt }
         ];
-        for (var i = 0; i < chatHistory.length; i++) {
+        // 帶入歷史對話 (不含最後一條，因為最後一條要附帶當前文檔上下文)
+        for (var i = 0; i < chatHistory.length - 1; i++) {
             msgs.push({ role: chatHistory[i].role, content: chatHistory[i].content });
+        }
+        // 當前指令：若有文檔內容，組裝進 prompt 傳給模型
+        if (docInfo && docInfo.text) {
+            var host = window.OfficeBridge._hostType;
+            var docContext = "【當前 " + host + " 文件內容 (" + (docInfo.source === 'selection' ? '選取段落' : '全文') + ")】：\n" + docInfo.text + "\n\n【使用者指示】：\n" + text;
+            msgs.push({ role: 'user', content: docContext });
+        } else {
+            msgs.push({ role: 'user', content: text });
         }
 
         var targetUrl = normalizeApiUrl(addinConfig.apiEndpoint);
@@ -663,7 +724,7 @@
             if (err) {
                 var errStr = err.message || String(err);
                 aiBubble.innerHTML = '<span style="color:#f87171; font-weight:bold;">⚠️ 連線失敗:</span> ' + escapeHtml(errStr) +
-                    '<br><span style="font-size:9px; color:#9ca3af; margin-top:3px; display:block;">💡 提示：若使用 TokenTable 或雲端模型，請點右上角「⚙️ 設定」輸入 Key。<br>申請 Key：<a href="https://top.yia.app/token" target="_blank" style="color:#818cf8; text-decoration:underline;">https://top.yia.app/token</a></span>';
+                    '<br><span style="font-size:9px; color:#9ca3af; margin-top:3px; display:block;">💡 提示：若使用 TokenTable 或雲端模型，請點右上角「⚙️ 設定」輸入 Key。<br><button type="button" onclick="window.openInEdge(\'https://top.yia.app/token\')" style="background:transparent; border:none; color:#818cf8; text-decoration:underline; font-size:9px; cursor:pointer; padding:0;">🔑 申請 Key (在 Edge 開啟)</button></span>';
             } else {
                 var reply = (data && data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content) ? data.choices[0].message.content : '（無回應）';
                 aiBubble.innerHTML = escapeHtml(reply).replace(/\n/g, '<br>');
@@ -672,7 +733,7 @@
             }
             scrollToBottom();
         });
-    };
+    }
 
     // 快捷提示詞
     window.quickPrompt = function(promptText) {
@@ -683,18 +744,49 @@
         showToast('已帶入快捷指令');
     };
 
-    // 讀取選取文字
-    window.readDocumentSelection = function() {
-        window.OfficeBridge.getSelectedContent(function(text) {
+    // 讀取選取或全文文字至輸入框
+    window.readDocumentSelection = function(preferWholeDoc) {
+        window.OfficeBridge.getDocumentContent(preferWholeDoc, function(res) {
             var input = document.getElementById('input-user-msg');
-            if (text && input) {
-                input.value = "【以下為選取內容】：\n" + text + "\n\n請幫我分析並潤飾這段內容。";
+            if (res && res.text && input) {
+                var label = (res.source === 'selection') ? '選取內容' : (window.OfficeBridge._hostType + ' 全文內容');
+                input.value = "【以下為" + label + "】：\n" + res.text + "\n\n請幫我分析並潤飾以上內容。";
                 input.focus();
-                showToast('已帶入選取內容！');
+                showToast('已帶入' + label + '！');
             } else {
                 showToast('目前未選取任何內容', true);
             }
         });
+    };
+
+    // 在 Microsoft Edge 或預設瀏覽器開啟網址
+    window.openInEdge = function(url) {
+        if (!url) url = 'https://top.yia.app/token';
+        // 1. Office 原生外開瀏覽器 API
+        if (typeof Office !== 'undefined' && Office.context && Office.context.ui && Office.context.ui.openBrowserWindow) {
+            try {
+                Office.context.ui.openBrowserWindow(url);
+                showToast('已在系統瀏覽器開啟申請頁面');
+                return;
+            } catch(e) {}
+        }
+        // 2. 透過常駐程式叫起 Windows msedge
+        try {
+            var xhr = new XMLHttpRequest();
+            xhr.open('POST', 'http://127.0.0.1:8001/api/open_browser', true);
+            xhr.setRequestHeader('Content-Type', 'application/json');
+            xhr.timeout = 2500;
+            xhr.onreadystatechange = function() {
+                if (xhr.readyState === 4 && xhr.status === 200) {
+                    showToast('已在 Microsoft Edge 開啟申請頁面');
+                }
+            };
+            xhr.send(JSON.stringify({ url: url }));
+        } catch(err) {}
+        // 3. 原生 window.open 備援
+        try {
+            window.open(url, '_blank');
+        } catch(wErr) {}
     };
 
     // 設定面板開關
@@ -717,14 +809,10 @@
             epEl.value = 'https://tokentable.asia/v1';
             modelEl.value = 'qwen3.8-flash';
             showToast('已套用 TokenTable 高速推薦配置！');
-        } else if (name === 'copilot') {
-            epEl.value = 'https://tokentable.asia/v1';
-            modelEl.value = 'gpt-4o';
-            showToast('已套用微軟 Copilot 同核心 (GPT-4o)！');
         } else if (name === 'daemon') {
-            epEl.value = (window.location.protocol.indexOf('https') === 0) ? 'https://127.0.0.1:8002/v1' : 'http://127.0.0.1:8001/v1';
+            epEl.value = 'http://127.0.0.1:8001/v1';
             modelEl.value = 'qwen3.8-flash';
-            showToast('已套用本機 Webcom 常駐代理 (8001/8002)');
+            showToast('已套用本機 Webcom 常駐代理 (8001)');
         } else if (name === 'lmstudio') {
             epEl.value = 'http://127.0.0.1:1234/v1';
             modelEl.value = 'auto';
@@ -781,6 +869,13 @@
         var key = (keyEl ? keyEl.value.replace(/^\s+|\s+$/g, '') : '');
         var model = (modelEl ? modelEl.value.replace(/^\s+|\s+$/g, '') : '') || 'qwen3.8-flash';
 
+        // 若使用遠端 TokenTable 且尚未填入 Key，防呆引導
+        if (!key && ep.indexOf('127.0.0.1') === -1 && ep.indexOf('localhost') === -1) {
+            showToast('⚠️ 請先填入 API 金鑰 (Key)，再進行連線測試！', true);
+            if (keyEl) keyEl.focus();
+            return;
+        }
+
         var targetUrl = normalizeApiUrl(ep);
         showToast('🔍 正在測試連線端點...');
 
@@ -800,27 +895,31 @@
             if (err) {
                 var errStr = err.message || String(err);
                 if (errStr.indexOf('401') !== -1) {
-                    showToast('❌ 驗證失敗 (401): API Key 不正確', true);
+                    showToast('❌ 金鑰無效 (401): API Key 不正確，請重新檢查', true);
+                } else if (errStr.indexOf('400') !== -1) {
+                    showToast('❌ 缺少金鑰 (400): 請在 API 金鑰欄位輸入 Key', true);
                 } else if (errStr.indexOf('404') !== -1) {
                     showToast('❌ 端點不存在 (404): 請確認網址結尾包含 /v1', true);
+                } else if (errStr.indexOf('連線失敗') !== -1 || errStr.indexOf('Network') !== -1 || errStr.indexOf('Failed') !== -1) {
+                    showToast('❌ 連線失敗: 請確認 8001 常駐程式或網路狀態', true);
                 } else {
                     showToast('❌ 連線測試失敗: ' + errStr, true);
                 }
             } else {
-                showToast('✅ 連線成功！' + model + ' 回應正常');
+                showToast('✅ 連線成功！' + model + ' 運作正常');
             }
         });
     };
 
-    // 自 Webcom 同步設定 (向 8001 / 8002 取得主控台之 TokenTable / 模型配置)
+    // 自 Webcom 同步設定 (優先向 8001 取得主控台之 TokenTable / 模型配置)
     window.syncFromWebcom = function() {
-        var url1 = (window.location.protocol.indexOf('https') === 0) ? 'https://127.0.0.1:8002/api/settings/llm' : 'http://127.0.0.1:8001/api/settings/llm';
+        var url1 = 'http://127.0.0.1:8001/api/settings/llm';
         showToast('正在向 Webcom 讀取設定...');
 
         function tryFetch(url, fallback) {
             var xhr = new XMLHttpRequest();
             xhr.open('GET', url, true);
-            xhr.timeout = 4000;
+            xhr.timeout = 3500;
             xhr.onreadystatechange = function() {
                 if (xhr.readyState === 4) {
                     if (xhr.status === 200) {
@@ -846,14 +945,13 @@
             };
             xhr.onerror = function() {
                 if (fallback) fallback();
-                else showToast('Webcom 常駐程式未回應 (請確認 8001/8002 埠運行中)', true);
+                else showToast('Webcom 常駐程式未回應 (請確認 8001 埠運行中)', true);
             };
             xhr.send(null);
         }
 
         tryFetch(url1, function() {
-            var altUrl = (url1.indexOf('8002') !== -1) ? 'http://127.0.0.1:8001/api/settings/llm' : 'https://127.0.0.1:8002/api/settings/llm';
-            tryFetch(altUrl, null);
+            tryFetch('https://127.0.0.1:8002/api/settings/llm', null);
         });
     };
 
@@ -1025,7 +1123,7 @@
     // ── 7. Webcom ⟷ Office 雙向橋接輪詢器 (讓 Webcom 主控台一鍵寫入 Word/Excel) ──
     var bridgePollTimer = null;
     function pollOfficeBridge() {
-        var bridgeUrl = (window.location.protocol.indexOf('https') === 0) ? 'https://127.0.0.1:8002/api/office/bridge' : 'http://127.0.0.1:8001/api/office/bridge';
+        var bridgeUrl = 'http://127.0.0.1:8001/api/office/bridge';
         try {
             var xhr = new XMLHttpRequest();
             xhr.open('GET', bridgeUrl, true);
@@ -1058,7 +1156,7 @@
         if (addinConfig.apiEndpoint === 'https://tokentable.asia/chat/completions' || addinConfig.apiEndpoint === 'https://tokentable.asia') {
             addinConfig.apiEndpoint = 'https://tokentable.asia/v1';
             safeSetStorage('webcom_addin_endpoint', addinConfig.apiEndpoint);
-        } else if (addinConfig.apiEndpoint === 'http://127.0.0.1:8001/chat/completions') {
+        } else if (addinConfig.apiEndpoint === 'http://127.0.0.1:8001/chat/completions' || addinConfig.apiEndpoint === 'https://127.0.0.1:8002/v1') {
             addinConfig.apiEndpoint = 'http://127.0.0.1:8001/v1';
             safeSetStorage('webcom_addin_endpoint', addinConfig.apiEndpoint);
         }
@@ -1080,11 +1178,11 @@
             else { b.innerHTML = 'Web'; }
         });
 
-        // 若使用者尚未在本機輸入過 Key，背景嘗試向 Webcom 8001/8002 自動預載設定
+        // 若使用者尚未在本機輸入過 Key，背景嘗試向 Webcom 8001 自動預載設定
         if (!addinConfig.apiKey) {
             setTimeout(function() {
                 try {
-                    var sUrl = (window.location.protocol.indexOf('https') === 0) ? 'https://127.0.0.1:8002/api/settings/llm' : 'http://127.0.0.1:8001/api/settings/llm';
+                    var sUrl = 'http://127.0.0.1:8001/api/settings/llm';
                     var sxhr = new XMLHttpRequest();
                     sxhr.open('GET', sUrl, true);
                     sxhr.timeout = 2000;
