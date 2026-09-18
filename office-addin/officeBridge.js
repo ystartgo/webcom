@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Webcom Office Bridge
  * 封裝微軟 Office.js 原生 API，支援 Word, Excel, PowerPoint 自動操作與圖表產生
  */

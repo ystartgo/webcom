@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Webcom Office Add-in Taskpane Logic
  * 負責內嵌對話、模型調度、圖表自動繪製、與 Webcom 對話紀錄雙向聯動
  */
