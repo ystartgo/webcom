@@ -2562,6 +2562,85 @@ if __name__ == "__main__":
                     pass
     except Exception:
         pass
+    def _start_office_https_server():
+        try:
+            import threading
+            import datetime
+            import ipaddress
+            from cryptography import x509
+            from cryptography.x509.oid import NameOID
+            from cryptography.hazmat.primitives import hashes, serialization
+            from cryptography.hazmat.primitives.asymmetric import rsa
+
+            ssl_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "assets", "ssl")
+            os.makedirs(ssl_dir, exist_ok=True)
+            cert_path = os.path.join(ssl_dir, "cert.pem")
+            key_path = os.path.join(ssl_dir, "key.pem")
+
+            user_dev_certs = os.path.expanduser("~/.office-addin-dev-certs")
+            user_cert = os.path.join(user_dev_certs, "localhost.crt")
+            user_key = os.path.join(user_dev_certs, "localhost.key")
+            if os.path.exists(user_cert) and os.path.exists(user_key):
+                cert_path = user_cert
+                key_path = user_key
+            elif not (os.path.exists(cert_path) and os.path.exists(key_path)):
+                key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
+                name = x509.Name([x509.NameAttribute(NameOID.COMMON_NAME, u'localhost')])
+                san = x509.SubjectAlternativeName([
+                    x509.DNSName(u'localhost'),
+                    x509.IPAddress(ipaddress.IPv4Address('127.0.0.1'))
+                ])
+                now = datetime.datetime.now(datetime.timezone.utc)
+                cert = (
+                    x509.CertificateBuilder()
+                    .subject_name(name)
+                    .issuer_name(name)
+                    .public_key(key.public_key())
+                    .serial_number(x509.random_serial_number())
+                    .not_valid_before(now)
+                    .not_valid_after(now + datetime.timedelta(days=3650))
+                    .add_extension(san, critical=False)
+                    .sign(key, hashes.SHA256())
+                )
+                with open(cert_path, 'wb') as f:
+                    f.write(cert.public_bytes(serialization.Encoding.PEM))
+                with open(key_path, 'wb') as f:
+                    f.write(key.private_bytes(
+                        encoding=serialization.Encoding.PEM,
+                        format=serialization.PrivateFormat.TraditionalOpenSSL,
+                        encryption_algorithm=serialization.NoEncryption()
+                    ))
+
+            if sys.platform == 'win32':
+                try:
+                    s8002 = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                    r8002 = s8002.connect_ex(('127.0.0.1', 8002))
+                    s8002.close()
+                    if r8002 == 0:
+                        lines = subprocess.check_output('netstat -ano | findstr :8002', shell=True, text=True, stderr=subprocess.DEVNULL).splitlines()
+                        for line in lines:
+                            parts = line.strip().split()
+                            if len(parts) >= 5 and 'LISTENING' in parts:
+                                pid = int(parts[-1])
+                                if pid != os.getpid() and pid > 0:
+                                    subprocess.run(f"taskkill /F /PID {pid}", shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                                    time.sleep(0.5)
+                except Exception:
+                    pass
+
+            def _run_https():
+                try:
+                    print("Webcom Office Add-in HTTPS 正在啟動於 https://127.0.0.1:8002 ...")
+                    uvicorn.run(app, host="127.0.0.1", port=8002, ssl_certfile=cert_path, ssl_keyfile=key_path, log_level="warning")
+                except Exception as e:
+                    print(f"[warning] Office Add-in HTTPS 啟動失敗: {e}")
+
+            t = threading.Thread(target=_run_https, daemon=True)
+            t.start()
+        except Exception as ex:
+            print(f"[warning] 無法啟動 Office Add-in HTTPS (8002): {ex}")
+
+    _start_office_https_server()
     print("Webcom Daemon 正在啟動於 http://127.0.0.1:8001 ...")
     uvicorn.run(app, host="127.0.0.1", port=8001)
 

@@ -8,7 +8,7 @@ let isGenerating = false;
 
 // 預設配置：可連接 Webcom Daemon 或本機 LM Studio 或遠端 OpenAI
 const addinConfig = {
-    apiEndpoint: localStorage.getItem('webcom_addin_endpoint') || 'http://127.0.0.1:8001/v1/chat/completions',
+    apiEndpoint: localStorage.getItem('webcom_addin_endpoint') || (window.location.protocol.startsWith('http') ? (window.location.origin + '/v1/chat/completions') : 'https://127.0.0.1:8002/v1/chat/completions'),
     apiKey: localStorage.getItem('webcom_addin_key') || '',
     model: localStorage.getItem('webcom_addin_model') || 'auto',
     systemPrompt: `你是一個專業的微軟 Office 智慧協作助理 (Webcom for Office)。

@@ -13,8 +13,8 @@
   <DefaultLocale>zh-TW</DefaultLocale>
   <DisplayName DefaultValue="Webcom AI 智慧助理" />
   <Description DefaultValue="Webcom 智慧辦公增益集：支援 Word、Excel、PowerPoint 內嵌對話、自動修改檔案、圖表繪製與雙向對話紀錄聯動。" />
-  <IconUrl DefaultValue="https://127.0.0.1:8001/office-addin/assets/icon-32.png" />
-  <HighResolutionIconUrl DefaultValue="https://127.0.0.1:8001/office-addin/assets/icon-64.png" />
+  <IconUrl DefaultValue="https://127.0.0.1:8002/office-addin/assets/icon-32.png" />
+  <HighResolutionIconUrl DefaultValue="https://127.0.0.1:8002/office-addin/assets/icon-64.png" />
   <SupportUrl DefaultValue="https://github.com/ystartgo/webcom" />
   
   <!-- 支援的 Office 主機應用程式 (Hosts) -->
@@ -25,7 +25,7 @@
   </Hosts>
   
   <DefaultSettings>
-    <SourceLocation DefaultValue="https://127.0.0.1:8001/office-addin/taskpane.html" />
+    <SourceLocation DefaultValue="https://127.0.0.1:8002/office-addin/taskpane.html" />
   </DefaultSettings>
   
   <!-- 權限等級：ReadWriteDocument 允許讀取選取區與自動修改/繪製內容 -->
@@ -143,12 +143,12 @@
 
     <Resources>
       <bt:Images>
-        <bt:Image id="Icon.16" DefaultValue="https://127.0.0.1:8001/office-addin/assets/icon-16.png" />
-        <bt:Image id="Icon.32" DefaultValue="https://127.0.0.1:8001/office-addin/assets/icon-32.png" />
-        <bt:Image id="Icon.80" DefaultValue="https://127.0.0.1:8001/office-addin/assets/icon-80.png" />
+        <bt:Image id="Icon.16" DefaultValue="https://127.0.0.1:8002/office-addin/assets/icon-16.png" />
+        <bt:Image id="Icon.32" DefaultValue="https://127.0.0.1:8002/office-addin/assets/icon-32.png" />
+        <bt:Image id="Icon.80" DefaultValue="https://127.0.0.1:8002/office-addin/assets/icon-80.png" />
       </bt:Images>
       <bt:Urls>
-        <bt:Url id="Taskpane.Url" DefaultValue="https://127.0.0.1:8001/office-addin/taskpane.html" />
+        <bt:Url id="Taskpane.Url" DefaultValue="https://127.0.0.1:8002/office-addin/taskpane.html" />
       </bt:Urls>
       <bt:ShortStrings>
         <bt:String id="Webcom.TabLabel" DefaultValue="Webcom AI" />
