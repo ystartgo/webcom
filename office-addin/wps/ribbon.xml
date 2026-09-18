@@ -1,0 +1,15 @@
+<customUI xmlns="http://schemas.microsoft.com/office/2006/01/customui">
+  <ribbon startFromScratch="false">
+    <tabs>
+      <tab id="WebcomTab" label="Webcom AI">
+        <group id="WebcomGroup" label="AI 智慧助理">
+          <button id="btnWebcomToggle" 
+                  label="開啟 Webcom" 
+                  size="large"
+                  onAction="OnToggleTaskPane" 
+                  imageMso="FileSave" />
+        </group>
+      </tab>
+    </tabs>
+  </ribbon>
+</customUI>
