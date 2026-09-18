@@ -1,0 +1,163 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<OfficeApp
+          xmlns="http://schemas.microsoft.com/office/appforoffice/1.1"
+          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+          xmlns:bt="http://schemas.microsoft.com/office/officeappbasictypes/1.0"
+          xmlns:ov="http://schemas.microsoft.com/office/taskpaneappversionoverrides"
+          xsi:type="TaskPaneApp">
+
+  <!-- 基本設定 (Basic Settings) -->
+  <Id>b781df03-e83c-42b7-a365-d917849182a4</Id>
+  <Version>1.0.0.0</Version>
+  <ProviderName>Webcom AI Studio</ProviderName>
+  <DefaultLocale>zh-TW</DefaultLocale>
+  <DisplayName DefaultValue="Webcom AI 智慧助理" />
+  <Description DefaultValue="Webcom 智慧辦公增益集：支援 Word、Excel、PowerPoint 內嵌對話、自動修改檔案、圖表繪製與雙向對話紀錄聯動。" />
+  <IconUrl DefaultValue="https://127.0.0.1:8001/office-addin/assets/icon-32.png" />
+  <HighResolutionIconUrl DefaultValue="https://127.0.0.1:8001/office-addin/assets/icon-64.png" />
+  <SupportUrl DefaultValue="https://github.com/ystartgo/webcom" />
+  
+  <!-- 支援的 Office 主機應用程式 (Hosts) -->
+  <Hosts>
+    <Host Name="Document" />       <!-- Microsoft Word -->
+    <Host Name="Workbook" />       <!-- Microsoft Excel -->
+    <Host Name="Presentation" />   <!-- Microsoft PowerPoint -->
+  </Hosts>
+  
+  <DefaultSettings>
+    <SourceLocation DefaultValue="https://127.0.0.1:8001/office-addin/taskpane.html" />
+  </DefaultSettings>
+  
+  <!-- 權限等級：ReadWriteDocument 允許讀取選取區與自動修改/繪製內容 -->
+  <Permissions>ReadWriteDocument</Permissions>
+
+  <!-- 版本與功能區覆寫 (Version Overrides for Modern Ribbon & Taskpane) -->
+  <VersionOverrides xmlns="http://schemas.microsoft.com/office/taskpaneappversionoverrides" xsi:type="VersionOverridesV1_0">
+    <Hosts>
+      
+      <!-- 1. Microsoft Word -->
+      <Host xsi:type="Document">
+        <DesktopFormFactor>
+          <ExtensionPoint xsi:type="PrimaryCommandSurface">
+            <CustomTab id="Webcom.Word.Tab">
+              <Group id="Webcom.Word.Group">
+                <Label resid="Webcom.GroupLabel" />
+                <Icon>
+                  <bt:Image size="16" resid="Icon.16" />
+                  <bt:Image size="32" resid="Icon.32" />
+                  <bt:Image size="80" resid="Icon.80" />
+                </Icon>
+                <Control xsi:type="Button" id="Webcom.Word.TaskpaneButton">
+                  <Label resid="Webcom.ButtonLabel" />
+                  <Supertip>
+                    <Title resid="Webcom.ButtonLabel" />
+                    <Description resid="Webcom.ButtonDesc" />
+                  </Supertip>
+                  <Icon>
+                    <bt:Image size="16" resid="Icon.16" />
+                    <bt:Image size="32" resid="Icon.32" />
+                    <bt:Image size="80" resid="Icon.80" />
+                  </Icon>
+                  <Action xsi:type="ShowTaskpane">
+                    <TaskpaneId>Webcom.Taskpane</TaskpaneId>
+                    <SourceLocation resid="Taskpane.Url" />
+                  </Action>
+                </Control>
+              </Group>
+              <Label resid="Webcom.TabLabel" />
+            </CustomTab>
+          </ExtensionPoint>
+        </DesktopFormFactor>
+      </Host>
+
+      <!-- 2. Microsoft Excel -->
+      <Host xsi:type="Workbook">
+        <DesktopFormFactor>
+          <ExtensionPoint xsi:type="PrimaryCommandSurface">
+            <CustomTab id="Webcom.Excel.Tab">
+              <Group id="Webcom.Excel.Group">
+                <Label resid="Webcom.GroupLabel" />
+                <Icon>
+                  <bt:Image size="16" resid="Icon.16" />
+                  <bt:Image size="32" resid="Icon.32" />
+                  <bt:Image size="80" resid="Icon.80" />
+                </Icon>
+                <Control xsi:type="Button" id="Webcom.Excel.TaskpaneButton">
+                  <Label resid="Webcom.ButtonLabel" />
+                  <Supertip>
+                    <Title resid="Webcom.ButtonLabel" />
+                    <Description resid="Webcom.ButtonDesc" />
+                  </Supertip>
+                  <Icon>
+                    <bt:Image size="16" resid="Icon.16" />
+                    <bt:Image size="32" resid="Icon.32" />
+                    <bt:Image size="80" resid="Icon.80" />
+                  </Icon>
+                  <Action xsi:type="ShowTaskpane">
+                    <TaskpaneId>Webcom.Taskpane</TaskpaneId>
+                    <SourceLocation resid="Taskpane.Url" />
+                  </Action>
+                </Control>
+              </Group>
+              <Label resid="Webcom.TabLabel" />
+            </CustomTab>
+          </ExtensionPoint>
+        </DesktopFormFactor>
+      </Host>
+
+      <!-- 3. Microsoft PowerPoint -->
+      <Host xsi:type="Presentation">
+        <DesktopFormFactor>
+          <ExtensionPoint xsi:type="PrimaryCommandSurface">
+            <CustomTab id="Webcom.PPT.Tab">
+              <Group id="Webcom.PPT.Group">
+                <Label resid="Webcom.GroupLabel" />
+                <Icon>
+                  <bt:Image size="16" resid="Icon.16" />
+                  <bt:Image size="32" resid="Icon.32" />
+                  <bt:Image size="80" resid="Icon.80" />
+                </Icon>
+                <Control xsi:type="Button" id="Webcom.PPT.TaskpaneButton">
+                  <Label resid="Webcom.ButtonLabel" />
+                  <Supertip>
+                    <Title resid="Webcom.ButtonLabel" />
+                    <Description resid="Webcom.ButtonDesc" />
+                  </Supertip>
+                  <Icon>
+                    <bt:Image size="16" resid="Icon.16" />
+                    <bt:Image size="32" resid="Icon.32" />
+                    <bt:Image size="80" resid="Icon.80" />
+                  </Icon>
+                  <Action xsi:type="ShowTaskpane">
+                    <TaskpaneId>Webcom.Taskpane</TaskpaneId>
+                    <SourceLocation resid="Taskpane.Url" />
+                  </Action>
+                </Control>
+              </Group>
+              <Label resid="Webcom.TabLabel" />
+            </CustomTab>
+          </ExtensionPoint>
+        </DesktopFormFactor>
+      </Host>
+    </Hosts>
+
+    <Resources>
+      <bt:Images>
+        <bt:Image id="Icon.16" DefaultValue="https://127.0.0.1:8001/office-addin/assets/icon-16.png" />
+        <bt:Image id="Icon.32" DefaultValue="https://127.0.0.1:8001/office-addin/assets/icon-32.png" />
+        <bt:Image id="Icon.80" DefaultValue="https://127.0.0.1:8001/office-addin/assets/icon-80.png" />
+      </bt:Images>
+      <bt:Urls>
+        <bt:Url id="Taskpane.Url" DefaultValue="https://127.0.0.1:8001/office-addin/taskpane.html" />
+      </bt:Urls>
+      <bt:ShortStrings>
+        <bt:String id="Webcom.TabLabel" DefaultValue="Webcom AI" />
+        <bt:String id="Webcom.GroupLabel" DefaultValue="AI 助理" />
+        <bt:String id="Webcom.ButtonLabel" DefaultValue="開啟 Webcom 對話" />
+      </bt:ShortStrings>
+      <bt:LongStrings>
+        <bt:String id="Webcom.ButtonDesc" DefaultValue="開啟 Webcom AI 工作窗格，支援對話、自動修改檔案、圖表繪製與對話聯動。" />
+      </bt:LongStrings>
+    </Resources>
+  </VersionOverrides>
+</OfficeApp>

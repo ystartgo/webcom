@@ -1,0 +1,113 @@
+﻿<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Webcom for Office</title>
+    <!-- 微軟 Office.js 官方運行庫 -->
+    <script src="https://appsforoffice.microsoft.com/lib/1/hosted/office.js"></script>
+    <!-- Tailwind CSS (相容離線/線上) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Marked Markdown 解析器 -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <!-- Apache ECharts 圖表繪製引擎 -->
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+    <!-- 樣式表 -->
+    <link rel="stylesheet" href="taskpane.css">
+</head>
+<body class="flex flex-col h-screen bg-[#0b0f19] text-gray-100 select-none">
+
+    <!-- 頂部標題與工具列 -->
+    <header class="p-2.5 bg-gray-900 border-b border-gray-800 flex items-center justify-between shrink-0">
+        <div class="flex items-center gap-1.5">
+            <div class="w-6 h-6 rounded-md bg-indigo-600 flex items-center justify-center font-bold text-xs text-white shadow-sm">
+                W
+            </div>
+            <span class="font-bold text-xs tracking-wide text-white">Webcom AI</span>
+            <span id="host-badge" class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-gray-800 text-gray-400 border border-gray-700">檢測中...</span>
+        </div>
+        <div class="flex items-center gap-1">
+            <button id="btn-read-selection" title="讀取當前選取內容注入對話"
+                class="px-2 py-1 bg-indigo-950/80 hover:bg-indigo-900 border border-indigo-700/60 rounded text-[10px] font-bold text-indigo-300 transition flex items-center gap-1 cursor-pointer">
+                <span>📑 帶入選取</span>
+            </button>
+            <button id="btn-import-chat" title="自 Webcom 匯入對話紀錄 (.json)"
+                class="p-1 bg-gray-800 hover:bg-gray-700 border border-gray-700 rounded text-green-400 transition cursor-pointer">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
+            </button>
+            <input type="file" id="file-import-chat" class="hidden" accept=".json">
+            <button id="btn-export-chat" title="匯出對話紀錄給 Webcom (.json)"
+                class="p-1 bg-gray-800 hover:bg-gray-700 border border-gray-700 rounded text-blue-400 transition cursor-pointer">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+            </button>
+            <button id="btn-toggle-settings" title="模型與端點設定"
+                class="p-1 bg-gray-800 hover:bg-gray-700 border border-gray-700 rounded text-gray-300 transition cursor-pointer">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+            </button>
+            <button id="btn-clear-chat" title="清空對話"
+                class="p-1 bg-gray-800 hover:bg-gray-700 border border-gray-700 rounded text-rose-400 transition cursor-pointer">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+            </button>
+        </div>
+    </header>
+
+    <!-- 摺疊設定面板 (Settings Panel) -->
+    <div id="settings-panel" class="hidden p-3 bg-gray-950 border-b border-gray-800 text-xs space-y-2 shrink-0">
+        <div>
+            <label class="block text-[10px] text-gray-400 font-bold mb-1">API 端點 (相容 Webcom / LM Studio / OpenAI)</label>
+            <input type="text" id="input-endpoint" class="w-full bg-gray-900 border border-gray-700 rounded px-2 py-1 text-white font-mono text-[11px] focus:outline-none focus:border-indigo-500" placeholder="http://127.0.0.1:8001/v1/chat/completions">
+        </div>
+        <div class="flex gap-2">
+            <div class="flex-1">
+                <label class="block text-[10px] text-gray-400 font-bold mb-1">API 金鑰 (選填)</label>
+                <input type="password" id="input-key" class="w-full bg-gray-900 border border-gray-700 rounded px-2 py-1 text-white font-mono text-[11px] focus:outline-none focus:border-indigo-500" placeholder="可為空或填入金鑰">
+            </div>
+            <div class="flex-1">
+                <label class="block text-[10px] text-gray-400 font-bold mb-1">模型名稱</label>
+                <input type="text" id="input-model" class="w-full bg-gray-900 border border-gray-700 rounded px-2 py-1 text-white font-mono text-[11px] focus:outline-none focus:border-indigo-500" placeholder="auto">
+            </div>
+        </div>
+        <div class="flex justify-end pt-1">
+            <button id="btn-save-settings" class="px-3 py-1 bg-indigo-600 hover:bg-indigo-500 rounded text-white font-bold text-[10px] transition">儲存設定</button>
+        </div>
+    </div>
+
+    <!-- 聊天對話訊息流區域 -->
+    <main id="chat-container" class="flex-1 overflow-y-auto p-3 space-y-3">
+        <!-- 預設歡迎卡片 -->
+        <div class="p-3.5 bg-gray-900/60 border border-gray-800 rounded-xl space-y-2">
+            <div class="font-bold text-xs text-indigo-300 flex items-center gap-1.5">
+                <span>👋 歡迎使用 Webcom Office 增益集</span>
+            </div>
+            <p class="text-[11px] text-gray-400 leading-relaxed">
+                隨時在右側對話框輸入指令，或點擊頂部 <strong>[📑 帶入選取]</strong> 讓 AI 深入分析、潤飾或校對目前選取的文字與表格。
+            </p>
+            <div class="grid grid-cols-2 gap-1.5 pt-1 text-[10px] text-gray-300 font-mono">
+                <div class="p-1.5 bg-black/40 rounded border border-gray-800">
+                    <span class="text-emerald-400">Excel:</span> 自動生成圖表與填表
+                </div>
+                <div class="p-1.5 bg-black/40 rounded border border-gray-800">
+                    <span class="text-blue-400">Word:</span> 潤飾取代與排版撰寫
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- 底部輸入區域 -->
+    <footer class="p-2.5 bg-gray-900 border-t border-gray-800 shrink-0">
+        <div class="flex items-end gap-1.5">
+            <textarea id="input-user-msg" rows="2"
+                class="flex-1 bg-gray-950 border border-gray-700 rounded-xl p-2 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-indigo-500 resize-none font-sans leading-relaxed"
+                placeholder="請輸入給 AI 的指令 (支援自動修改文件、畫圖、分析)..."></textarea>
+            <button id="btn-send"
+                class="px-3 py-2 bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700 disabled:opacity-50 text-white rounded-xl font-bold text-xs transition flex items-center justify-center shrink-0 cursor-pointer shadow-lg shadow-indigo-950/50">
+                <span>發送</span>
+            </button>
+        </div>
+    </footer>
+
+    <!-- 業務邏輯腳本 -->
+    <script src="officeBridge.js"></script>
+    <script src="taskpane.js"></script>
+</body>
+</html>

@@ -130,6 +130,11 @@ if os.path.exists(markitdown_dir):
     mimetypes.add_type("application/octet-stream", ".whl")
     app.mount("/markitdown", StaticFiles(directory=markitdown_dir, html=True), name="markitdown")
 
+# 掛載 Office Add-in (提供 http://127.0.0.1:8001/office-addin/)
+office_addin_dir = os.path.join(webcom_dir, "office-addin")
+if os.path.exists(office_addin_dir):
+    app.mount("/office-addin", StaticFiles(directory=office_addin_dir, html=True), name="office-addin")
+
 # ── URL 代理與 SSRF 防護 (/api/fetch-url) ──────────────────────────────────
 import ipaddress, socket, urllib.request, urllib.parse
 
