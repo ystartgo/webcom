@@ -33,20 +33,26 @@ if %ERRORLEVEL% equ 0 (
 )
 
 echo.
-echo [3/5] 檢查並設定網路共用目錄 (雙重保障)...
-net share WebcomAddin="%SCRIPT_DIR%" /grant:Everyone,READ >nul 2>&1
+echo [3/6] 檢查並設定網路共用目錄 (雙重保障)...
+sc query LanmanServer | findstr /i "RUNNING" >nul 2>&1
 if %ERRORLEVEL% equ 0 (
-    echo   [OK] 已成功建立 Windows 共用: \\localhost\WebcomAddin
-    reg add "HKCU\Software\Microsoft\Office\16.0\WEF\TrustedCatalogs\{b781df03-e83c-42b7-a365-d917849182a4}" /v "Id" /t REG_SZ /d "{b781df03-e83c-42b7-a365-d917849182a4}" /f >nul 2>&1
-    reg add "HKCU\Software\Microsoft\Office\16.0\WEF\TrustedCatalogs\{b781df03-e83c-42b7-a365-d917849182a4}" /v "Url" /t REG_SZ /d "\\localhost\WebcomAddin" /f >nul 2>&1
-    reg add "HKCU\Software\Microsoft\Office\16.0\WEF\TrustedCatalogs\{b781df03-e83c-42b7-a365-d917849182a4}" /v "Flags" /t REG_DWORD /d 1 /f >nul 2>&1
+    echo y | net share WebcomAddin="%SCRIPT_DIR%" /grant:Everyone,READ /y >nul 2>&1
+    if %ERRORLEVEL% equ 0 (
+        echo   [OK] 已成功建立 Windows 共用: \\localhost\WebcomAddin
+        reg add "HKCU\Software\Microsoft\Office\16.0\WEF\TrustedCatalogs\{b781df03-e83c-42b7-a365-d917849182a4}" /v "Id" /t REG_SZ /d "{b781df03-e83c-42b7-a365-d917849182a4}" /f >nul 2>&1
+        reg add "HKCU\Software\Microsoft\Office\16.0\WEF\TrustedCatalogs\{b781df03-e83c-42b7-a365-d917849182a4}" /v "Url" /t REG_SZ /d "\\localhost\WebcomAddin" /f >nul 2>&1
+        reg add "HKCU\Software\Microsoft\Office\16.0\WEF\TrustedCatalogs\{b781df03-e83c-42b7-a365-d917849182a4}" /v "Flags" /t REG_DWORD /d 1 /f >nul 2>&1
+    ) else (
+        echo   [提示] 免開共用模式已啟動 - 直接透過 Step 2 開發者登錄檔載入。
+        reg delete "HKCU\Software\Microsoft\Office\16.0\WEF\TrustedCatalogs\{b781df03-e83c-42b7-a365-d917849182a4}" /f >nul 2>&1
+    )
 ) else (
-    echo   [提示] 免開共用模式已啟動 (直接透過開發者登錄檔載入，無須網路共用權限)。
+    echo   [提示] 本機共用服務未啟動 - 自動使用免開共用開發者模式。
     reg delete "HKCU\Software\Microsoft\Office\16.0\WEF\TrustedCatalogs\{b781df03-e83c-42b7-a365-d917849182a4}" /f >nul 2>&1
 )
 
 echo.
-echo [4/5] 清除 Office 快取以確保立即載入最新清單...
+echo [4/6] 清除 Office 快取以確保立即載入最新清單...
 if exist "%LOCALAPPDATA%\Microsoft\Office\16.0\Wef" (
     del /s /q "%LOCALAPPDATA%\Microsoft\Office\16.0\Wef\*.*" >nul 2>&1
     echo   [OK] 已清除 Office WEF 快取。
@@ -55,8 +61,7 @@ if exist "%LOCALAPPDATA%\Microsoft\Office\16.0\Wef" (
 )
 
 echo.
-echo.
-echo [5/6] 設定本機開發者 SSL 憑證信任 (支援 view.yia.app 與 localhost)...
+echo [5/6] 設定本機開發者 SSL 憑證信任 - 支援 view.yia.app 與 localhost...
 set "CERT_FILE="
 if exist "%ROOT_DIR%\assets\ssl\cert.pem" (
     set "CERT_FILE=%ROOT_DIR%\assets\ssl\cert.pem"
@@ -65,9 +70,9 @@ if exist "%ROOT_DIR%\assets\ssl\cert.pem" (
 )
 
 if defined CERT_FILE (
-    echo   找到本機 SSL 憑證 (%CERT_FILE%)，註冊至 Windows 受信任根授權單位...
-    echo   (若彈出 Windows 警告對話框，請點選【是】以信任本機通訊)
-    certutil -user -addstore Root "%CERT_FILE%" >nul 2>&1
+    echo   找到本機 SSL 憑證: %CERT_FILE%
+    echo   正在註冊至 Windows 受信任根授權單位...
+    certutil -user -f -addstore Root "%CERT_FILE%" >nul 2>&1
     echo   [OK] SSL 憑證信任已就緒。
 ) else (
     echo   [提示] 憑證將於首次啟動 python daemon.py 時自動建立。

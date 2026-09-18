@@ -99,7 +99,8 @@
             padding: 8px 10px; font-size: 10px;
             flex-shrink: 0;
         }
-        #settings-panel.hidden { display: none; }
+        .hidden { display: none !important; }
+        #settings-panel.hidden { display: none !important; }
         .input-label { font-size: 9px; font-weight: bold; color: #9ca3af; margin-bottom: 2px; display: block; }
         .text-input {
             width: 100%; background: #111827; border: 1px solid #374151; border-radius: 5px;
@@ -257,7 +258,7 @@
         </div>
         <div class="toolbar-right">
             <!-- 停止朗讀按鈕 (朗讀進行中時自動顯示) -->
-            <button id="btn-stop-tts" onclick="window.ttsManager && window.ttsManager.stop()" type="button" class="btn-toolbar hidden" style="color:#f87171; border-color:#dc2626; background:#450a0a; padding:1px 5px;" title="停止目前語音朗讀">
+            <button id="btn-stop-tts" onclick="window.stopTts()" type="button" class="btn-toolbar hidden" style="color:#f87171; border-color:#dc2626; background:#450a0a; padding:1px 6px; cursor:pointer;" title="停止目前語音朗讀">
                 <span>⏹️ 停讀</span>
             </button>
             <!-- 讀取 Word 選取或全文 -->
@@ -441,6 +442,22 @@
             }
         } catch (e) {}
         memoryStore[key] = val;
+    }
+
+    // ── 0.5 自動探測後端常駐服務 API 基底網址 (同源優先，100% 杜絕 HTTPS 到 HTTP 的 Mixed Content 阻擋) ──
+    function getDaemonApiUrl(path) {
+        if (!path) path = '';
+        if (path.charAt(0) !== '/') path = '/' + path;
+
+        // 1. 若當前 Taskpane 本身就是由 daemon 提供 (如 8002, 2096, 8001, view.yia.app)
+        if (typeof window !== 'undefined' && window.location && window.location.origin && window.location.origin.indexOf('http') === 0) {
+            return window.location.origin + path;
+        }
+        // 2. 若以 file:/// 或其它特殊協議開啟，依據安全策略配對同等安全協議
+        if (typeof window !== 'undefined' && window.location && window.location.protocol === 'https:') {
+            return 'https://127.0.0.1:8002' + path;
+        }
+        return 'http://127.0.0.1:8001' + path;
     }
 
     // ── 1. 全域配置與狀態 ──
@@ -721,7 +738,8 @@
             var self = this;
             try {
                 var xhr = new XMLHttpRequest();
-                xhr.open('POST', 'http://127.0.0.1:8001/api/tts/speak', true);
+                var speakUrl = getDaemonApiUrl('/api/tts/speak');
+                xhr.open('POST', speakUrl, true);
                 xhr.setRequestHeader('Content-Type', 'application/json');
                 xhr.timeout = 10000;
                 xhr.onreadystatechange = function() {
@@ -735,12 +753,13 @@
                             }, estimatedSec * 1000);
                         } else {
                             self._handleSpeechEnd();
-                            showToast('無法調用本機語音服務 (請確認 8001 運行中)', true);
+                            showToast('無法調用本機語音服務 (HTTP ' + xhr.status + ')', true);
                         }
                     }
                 };
                 xhr.onerror = function() {
                     self._handleSpeechEnd();
+                    showToast('本機語音服務未回應，請確認常駐後端運行中', true);
                 };
                 xhr.send(JSON.stringify({
                     text: cleanText,
@@ -765,15 +784,17 @@
                 } catch(e) {}
             }
 
-            // 2. 停止本機 SAPI
+            // 2. 停止本機 SAPI (使用 getDaemonApiUrl 杜絕 Mixed Content 阻擋)
             try {
                 var xhr = new XMLHttpRequest();
-                xhr.open('POST', 'http://127.0.0.1:8001/api/tts/stop', true);
+                var stopUrl = getDaemonApiUrl('/api/tts/stop');
+                xhr.open('POST', stopUrl, true);
                 xhr.timeout = 1500;
                 xhr.send(null);
             } catch(ex) {}
 
             self._handleSpeechEnd();
+            showToast('已停止語音朗讀');
         },
 
         _handleSpeechEnd: function() {
@@ -1216,7 +1237,8 @@
         // 2. 透過常駐程式叫起 Windows msedge
         try {
             var xhr = new XMLHttpRequest();
-            xhr.open('POST', 'http://127.0.0.1:8001/api/open_browser', true);
+            var openUrl = getDaemonApiUrl('/api/open_browser');
+            xhr.open('POST', openUrl, true);
             xhr.setRequestHeader('Content-Type', 'application/json');
             xhr.timeout = 2500;
             xhr.onreadystatechange = function() {
@@ -1253,9 +1275,10 @@
             modelEl.value = 'qwen3.8-flash';
             showToast('已套用 TokenTable 高速推薦配置！');
         } else if (name === 'daemon') {
-            epEl.value = 'http://127.0.0.1:8001/v1';
+            var daemonApi = getDaemonApiUrl('/v1');
+            epEl.value = daemonApi;
             modelEl.value = 'qwen3.8-flash';
-            showToast('已套用本機 Webcom 常駐代理 (8001)');
+            showToast('已套用本機 Webcom 常駐端點');
         } else if (name === 'lmstudio') {
             epEl.value = 'http://127.0.0.1:1234/v1';
             modelEl.value = 'auto';
@@ -1322,6 +1345,9 @@
             window.ttsManager.speak("您好！這是 Webcom 智慧助理語音朗讀測試，目前語速為 " + window.ttsManager.currentSpeed + " 倍速。");
         }
     };
+    window.stopTts = function() {
+        if (window.ttsManager) window.ttsManager.stop();
+    };
 
     // 測試連線 (即時檢測端點與 Key 是否有效)
     window.testConnection = function() {
@@ -1337,6 +1363,14 @@
             showToast('⚠️ 請先填入 API 金鑰 (Key)，再進行連線測試！', true);
             if (keyEl) keyEl.focus();
             return;
+        }
+
+        // 自動防護：若在 HTTPS 頁面連線本機 HTTP 8001，自動修復為同源 HTTPS 端點，防止 Mixed Content 阻擋
+        if (window.location && window.location.protocol === 'https:' && ep.indexOf('http://127.0.0.1:8001') === 0) {
+            ep = ep.replace('http://127.0.0.1:8001', getDaemonApiUrl(''));
+            if (epEl) epEl.value = ep;
+            addinConfig.apiEndpoint = ep;
+            safeSetStorage('webcom_addin_endpoint', ep);
         }
 
         var targetUrl = normalizeApiUrl(ep);
@@ -1364,7 +1398,7 @@
                 } else if (errStr.indexOf('404') !== -1) {
                     showToast('❌ 端點不存在 (404): 請確認網址結尾包含 /v1', true);
                 } else if (errStr.indexOf('連線失敗') !== -1 || errStr.indexOf('Network') !== -1 || errStr.indexOf('Failed') !== -1) {
-                    showToast('❌ 連線失敗: 請確認 8001 常駐程式或網路狀態', true);
+                    showToast('❌ 連線失敗: 請確認常駐後端程式或網路狀態', true);
                 } else {
                     showToast('❌ 連線測試失敗: ' + errStr, true);
                 }
@@ -1374,9 +1408,9 @@
         });
     };
 
-    // 自 Webcom 同步設定 (優先向 8001 取得主控台之 TokenTable / 模型配置)
+    // 自 Webcom 同步設定 (向本機常駐後端取得主控台之 TokenTable / 模型配置)
     window.syncFromWebcom = function() {
-        var url1 = 'http://127.0.0.1:8001/api/settings/llm';
+        var url1 = getDaemonApiUrl('/api/settings/llm');
         showToast('正在向 Webcom 讀取設定...');
 
         function tryFetch(url, fallback) {
@@ -1408,13 +1442,14 @@
             };
             xhr.onerror = function() {
                 if (fallback) fallback();
-                else showToast('Webcom 常駐程式未回應 (請確認 8001 埠運行中)', true);
+                else showToast('Webcom 常駐程式未回應 (請確認常駐後端運行中)', true);
             };
             xhr.send(null);
         }
 
         tryFetch(url1, function() {
-            tryFetch('https://127.0.0.1:8002/api/settings/llm', null);
+            var altUrl = (url1.indexOf('https:') === 0) ? 'http://127.0.0.1:8001/api/settings/llm' : 'https://127.0.0.1:8002/api/settings/llm';
+            tryFetch(altUrl, null);
         });
     };
 
@@ -1634,8 +1669,8 @@
 
     function pollOfficeBridge() {
         if (isBridgeProcessing) return;
-        // 關鍵 1: 附加時間戳避免 IE11 磁碟快取重播舊的指令 JSON
-        var bridgeUrl = 'http://127.0.0.1:8001/api/office/bridge?_t=' + (new Date().getTime());
+        // 關鍵 1: 使用 getDaemonApiUrl 配合當前頁面協議，並附加時間戳破除 IE11 快取
+        var bridgeUrl = getDaemonApiUrl('/api/office/bridge?_t=' + (new Date().getTime()));
         try {
             var xhr = new XMLHttpRequest();
             xhr.open('GET', bridgeUrl, true);
@@ -1683,12 +1718,15 @@
 
     // ── 8. 初始化執行 (自我修復舊端點、超時 800ms 切換主機狀態標籤、自 Webcom 預載配置) ──
     (function initUI() {
-        // 自我修復舊版遺留的不帶 /v1 之錯誤端點
+        // 自我修復舊版遺留的不帶 /v1 之錯誤端點與在 HTTPS 增益集內將 HTTP 8001 自動升級同源端點
         if (addinConfig.apiEndpoint === 'https://tokentable.asia/chat/completions' || addinConfig.apiEndpoint === 'https://tokentable.asia') {
             addinConfig.apiEndpoint = 'https://tokentable.asia/v1';
             safeSetStorage('webcom_addin_endpoint', addinConfig.apiEndpoint);
+        } else if (addinConfig.apiEndpoint.indexOf('127.0.0.1:8001') !== -1 && window.location && window.location.protocol === 'https:') {
+            addinConfig.apiEndpoint = getDaemonApiUrl('/v1');
+            safeSetStorage('webcom_addin_endpoint', addinConfig.apiEndpoint);
         } else if (addinConfig.apiEndpoint === 'http://127.0.0.1:8001/chat/completions' || addinConfig.apiEndpoint === 'https://127.0.0.1:8002/v1') {
-            addinConfig.apiEndpoint = 'http://127.0.0.1:8001/v1';
+            addinConfig.apiEndpoint = getDaemonApiUrl('/v1');
             safeSetStorage('webcom_addin_endpoint', addinConfig.apiEndpoint);
         }
 
@@ -1719,11 +1757,11 @@
             else { b.innerHTML = 'Web'; }
         });
 
-        // 若使用者尚未在本機輸入過 Key，背景嘗試向 Webcom 8001 自動預載設定
+        // 若使用者尚未在本機輸入過 Key，背景嘗試向本機常駐後端自動預載設定
         if (!addinConfig.apiKey) {
             setTimeout(function() {
                 try {
-                    var sUrl = 'http://127.0.0.1:8001/api/settings/llm';
+                    var sUrl = getDaemonApiUrl('/api/settings/llm');
                     var sxhr = new XMLHttpRequest();
                     sxhr.open('GET', sUrl, true);
                     sxhr.timeout = 2000;
