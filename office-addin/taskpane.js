@@ -3,17 +3,38 @@
  * 深度參考 Webcom index.html：具備離線韌性、全域函式直綁、對話雙向聯動、圖表自動繪製
  */
 
+// ── 0. 防禦性 Storage 封裝 (防範 file:/// 安全沙箱阻斷) ──
+function safeGetStorage(key, fallback = '') {
+    try {
+        if (typeof localStorage !== 'undefined') {
+            const val = localStorage.getItem(key);
+            return val !== null ? val : fallback;
+        }
+    } catch(e) {}
+    return fallback;
+}
+function safeSetStorage(key, val) {
+    try {
+        if (typeof localStorage !== 'undefined') {
+            localStorage.setItem(key, val);
+        }
+    } catch(e) {}
+}
+
 let chatHistory = [];
 let isGenerating = false;
 
-// 預設配置：連接 Webcom Daemon (支援 8002 / 8001) 或 LM Studio / OpenAI
+// 預設配置：首選官方 TokenTable 高速端點，相容微軟 Copilot (GPT-4o) 核心模型
+const defaultEndpoint = safeGetStorage('webcom_addin_endpoint', 'https://tokentable.asia/v1');
+const defaultModel = safeGetStorage('webcom_addin_model', 'qwen3.8-flash');
+
 const addinConfig = {
-    apiEndpoint: localStorage.getItem('webcom_addin_endpoint') || (window.location.protocol.startsWith('http') ? (window.location.origin + '/v1/chat/completions') : 'https://127.0.0.1:8002/v1/chat/completions'),
-    apiKey: localStorage.getItem('webcom_addin_key') || '',
-    model: localStorage.getItem('webcom_addin_model') || 'auto',
+    apiEndpoint: defaultEndpoint,
+    apiKey: safeGetStorage('webcom_addin_key', ''),
+    model: defaultModel,
     systemPrompt: `你是一個專業的微軟 Office 智慧協作助理 (Webcom for Office)。
-你可以直接協助使用者讀取、分析、編修 Word 文件、Excel 試算表或 PowerPoint 簡報。
-當使用者要求繪製圖表時，你可以回應標準 JSON 圖表定義 (包裹在 ```chart JSON 區塊內)，格式範例：
+可以直接協助使用者讀取、分析、編修 Word 文件、Excel 試算表或 PowerPoint 簡報。
+當使用者要求繪製圖表時，你可以回應標準 JSON 圖表定義 (包裹在 \`\`\`chart JSON 區塊內)，格式範例：
 \`\`\`chart
 {
   "type": "bar",
@@ -100,18 +121,29 @@ window.handleSendMessage = async function() {
             ...chatHistory.map(m => ({ role: m.role, content: m.content }))
         ];
 
-        let endpoint = addinConfig.apiEndpoint;
-        if (!endpoint.endsWith('/chat/completions')) {
-            endpoint = endpoint.replace(/\/+$/, '') + '/chat/completions';
+        // 智慧標準化 API 端點 (完整相容 TokenTable、Azure OpenAI、LM Studio、OpenAI 等)
+        function normalizeApiUrl(base) {
+            if (!base) return '';
+            let clean = base.trim();
+            if (clean.includes('openai.azure.com')) return clean;
+            if (clean.endsWith('/chat/completions')) return clean;
+            if (clean.endsWith('/')) clean = clean.slice(0, -1);
+            if (!clean.endsWith('/v1') && !clean.includes('/v1/')) {
+                clean += '/v1';
+            }
+            return clean + '/chat/completions';
         }
+
+        const endpoint = normalizeApiUrl(addinConfig.apiEndpoint);
 
         const headers = { 'Content-Type': 'application/json' };
         if (addinConfig.apiKey) {
             headers['Authorization'] = `Bearer ${addinConfig.apiKey}`;
+            headers['api-key'] = addinConfig.apiKey; // 相容 Azure OpenAI
         }
 
         const payload = {
-            model: addinConfig.model || 'local-model',
+            model: addinConfig.model || 'qwen3.8-flash',
             messages: msgs,
             temperature: 0.7,
             stream: false
@@ -124,7 +156,12 @@ window.handleSendMessage = async function() {
         });
 
         if (!res.ok) {
-            throw new Error(`HTTP ${res.status}: ${await res.text()}`);
+            let errDetail = await res.text();
+            try {
+                const parsed = JSON.parse(errDetail);
+                if (parsed.error && parsed.error.message) errDetail = parsed.error.message;
+            } catch(e) {}
+            throw new Error(`HTTP ${res.status}: ${errDetail}`);
         }
 
         const data = await res.json();
@@ -185,6 +222,45 @@ window.toggleSettingsPanel = function() {
     panel.classList.toggle('hidden');
 };
 
+// 快速套用預設組態
+window.applyPreset = function(name) {
+    const epEl = document.getElementById('input-endpoint');
+    const modelEl = document.getElementById('input-model');
+    if (!epEl || !modelEl) return;
+    if (name === 'tokentable') {
+        epEl.value = 'https://tokentable.asia/v1';
+        modelEl.value = 'qwen3.8-flash';
+        showToast('已套用 TokenTable 高速推薦配置！請輸入 Key 後儲存。');
+    } else if (name === 'copilot') {
+        epEl.value = 'https://tokentable.asia/v1';
+        modelEl.value = 'gpt-4o';
+        showToast('已套用微軟 Copilot 同核心 (GPT-4o)！');
+    } else if (name === 'daemon') {
+        epEl.value = (window.location.protocol.startsWith('https')) 
+            ? 'https://127.0.0.1:8002/v1' 
+            : 'http://127.0.0.1:8001/v1';
+        modelEl.value = 'qwen3.8-flash';
+        showToast('已套用本機 Webcom 常駐代理 (8001/8002)');
+    } else if (name === 'lmstudio') {
+        epEl.value = 'http://127.0.0.1:1234/v1';
+        modelEl.value = 'auto';
+        showToast('已套用本機 LM Studio 配置');
+    } else if (name === 'azure') {
+        epEl.value = 'https://{resource}.openai.azure.com/openai/deployments/{deployment}/chat/completions?api-version=2024-08-01-preview';
+        modelEl.value = 'gpt-4o';
+        showToast('已填入 Azure OpenAI / Copilot 企業端點格式');
+    }
+};
+
+// 快速選取模型標籤
+window.selectModel = function(modelName) {
+    const modelEl = document.getElementById('input-model');
+    if (modelEl) {
+        modelEl.value = modelName;
+        showToast(`已選取模型：${modelName}`);
+    }
+};
+
 // 儲存設定
 window.saveSettings = function() {
     const ep = document.getElementById('input-endpoint')?.value.trim();
@@ -193,12 +269,12 @@ window.saveSettings = function() {
 
     if (ep) {
         addinConfig.apiEndpoint = ep;
-        localStorage.setItem('webcom_addin_endpoint', ep);
+        safeSetStorage('webcom_addin_endpoint', ep);
     }
     addinConfig.apiKey = key || '';
-    localStorage.setItem('webcom_addin_key', addinConfig.apiKey);
-    addinConfig.model = model || 'auto';
-    localStorage.setItem('webcom_addin_model', addinConfig.model);
+    safeSetStorage('webcom_addin_key', addinConfig.apiKey);
+    addinConfig.model = model || 'qwen3.8-flash';
+    safeSetStorage('webcom_addin_model', addinConfig.model);
 
     document.getElementById('settings-panel')?.classList.add('hidden');
     showToast('設定已儲存！');

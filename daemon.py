@@ -2522,6 +2522,118 @@ def call_mcp_tool(req: MCPCallRequest):
 
     return {"isError": True, "content": [{"type": "text", "text": f"未知的 MCP 工具: {tool_name}"}]}
 
+
+# ── 相容 TokenTable / 微軟 Copilot (OpenAI API 規範) 之 LLM 轉發端點 ──
+@app.post("/v1/chat/completions")
+async def chat_completions_proxy(request: Request):
+    """
+    OpenAI-compatible chat completion proxy endpoint.
+    Routes to TokenTable (https://tokentable.asia/v1/chat/completions) by default,
+    or upstream specified via headers / config. Supports streaming and non-streaming.
+    """
+    import json
+    import httpx
+    from fastapi.responses import StreamingResponse, JSONResponse
+
+    try:
+        body = await request.json()
+    except Exception:
+        return JSONResponse(
+            status_code=400,
+            content={"error": {"message": "無效的 JSON 請求體", "type": "invalid_request_error"}}
+        )
+
+    # 取得 Authorization / API Key
+    auth_header = request.headers.get("Authorization", "")
+    api_key = ""
+    if auth_header.startswith("Bearer "):
+        api_key = auth_header[7:].strip()
+    elif "api-key" in request.headers:
+        api_key = request.headers["api-key"].strip()
+
+    if not api_key:
+        api_key = os.environ.get("TOKENTABLE_API_KEY", "").strip() or os.environ.get("OPENAI_API_KEY", "").strip()
+
+    # 決定 Upstream 轉發目標
+    # 支援透過 X-Upstream-Endpoint 或 X-Base-URL 自訂，預設為 TokenTable 高速端點
+    upstream_url = request.headers.get("X-Upstream-Endpoint", "").strip()
+    if not upstream_url:
+        custom_base = request.headers.get("X-Base-URL", "").strip()
+        if custom_base:
+            upstream_url = custom_base.rstrip("/") + "/chat/completions"
+        else:
+            upstream_url = os.environ.get("LLM_UPSTREAM_ENDPOINT", "https://tokentable.asia/v1/chat/completions").strip()
+
+    if not api_key and "127.0.0.1" not in upstream_url and "localhost" not in upstream_url:
+        return JSONResponse(
+            status_code=401,
+            content={
+                "error": {
+                    "message": "尚未提供 API Key。請在請求標頭傳入 Authorization: Bearer <KEY> 或於環境變數設定 TOKENTABLE_API_KEY。可至 https://top.yia.app/token 取得 TokenTable API Key。",
+                    "type": "authentication_error",
+                    "code": 401
+                }
+            }
+        )
+
+    req_headers = {
+        "Content-Type": "application/json"
+    }
+    if api_key:
+        req_headers["Authorization"] = f"Bearer {api_key}"
+        req_headers["api-key"] = api_key
+
+    is_stream = body.get("stream", False)
+
+    try:
+        client = httpx.AsyncClient(timeout=120.0)
+        if is_stream:
+            async def event_generator():
+                try:
+                    async with client.stream("POST", upstream_url, json=body, headers=req_headers) as response:
+                        if response.status_code != 200:
+                            err_content = await response.aread()
+                            err_str = err_content.decode("utf-8", errors="replace")
+                            err_msg = json.dumps({"error": {"message": f"Upstream error HTTP {response.status_code}: {err_str}"}})
+                            yield f"data: {err_msg}\n\n".encode("utf-8")
+                            return
+                        async for chunk in response.aiter_bytes():
+                            yield chunk
+                finally:
+                    await client.aclose()
+
+            return StreamingResponse(event_generator(), media_type="text/event-stream")
+        else:
+            async with client:
+                resp = await client.post(upstream_url, json=body, headers=req_headers)
+                try:
+                    data = resp.json()
+                    return JSONResponse(status_code=resp.status_code, content=data)
+                except Exception:
+                    return Response(content=resp.content, status_code=resp.status_code, media_type=resp.headers.get("content-type", "application/json"))
+
+    except Exception as e:
+        return JSONResponse(
+            status_code=502,
+            content={"error": {"message": f"連線至上游端點 ({upstream_url}) 失敗: {str(e)}", "type": "api_connection_error"}}
+        )
+
+
+@app.get("/v1/models")
+async def list_models():
+    """相容 OpenAI /v1/models 模型清單，提供 TokenTable 與微軟 Copilot (GPT-4o) 推薦模型"""
+    return {
+        "object": "list",
+        "data": [
+            {"id": "qwen3.8-flash", "object": "model", "owned_by": "tokentable", "description": "TokenTable 高速推理模型 (推薦首選)"},
+            {"id": "gpt-4o", "object": "model", "owned_by": "openai/copilot", "description": "微軟 Copilot 核心引擎 (GPT-4o 旗艦模型)"},
+            {"id": "gpt-4o-mini", "object": "model", "owned_by": "openai", "description": "微軟輕量高速模型"},
+            {"id": "claude-3-5-sonnet", "object": "model", "owned_by": "anthropic", "description": "Claude 3.5 Sonnet 程式與邏輯模型"},
+            {"id": "auto", "object": "model", "owned_by": "webcom", "description": "自動選擇最佳可用模型"}
+        ]
+    }
+
+
 if __name__ == "__main__":
     import time
     try:

@@ -17,6 +17,15 @@
   <HighResolutionIconUrl DefaultValue="https://127.0.0.1:8002/office-addin/assets/icon-64.png" />
   <SupportUrl DefaultValue="https://github.com/ystartgo/webcom" />
   
+  <!-- 信任外部連線網域 (包含 TokenTable 高速端點與本機 Daemon) -->
+  <AppDomains>
+    <AppDomain>https://127.0.0.1:8002</AppDomain>
+    <AppDomain>https://127.0.0.1:8001</AppDomain>
+    <AppDomain>https://tokentable.asia</AppDomain>
+    <AppDomain>https://top.yia.app</AppDomain>
+    <AppDomain>https://api.openai.com</AppDomain>
+  </AppDomains>
+
   <!-- 支援的 Office 主機應用程式 (Hosts) -->
   <Hosts>
     <Host Name="Document" />       <!-- Microsoft Word -->
