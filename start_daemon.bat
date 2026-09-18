@@ -101,8 +101,8 @@ pause
 exit /b 1
 
 :python_found
-REM 3. Ensure port 8001 is clean
-powershell -NoProfile -Command "Get-NetTCPConnection -LocalPort 8001 -ErrorAction SilentlyContinue | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue }" >nul 2>&1
+REM 3. Ensure ports 8001 and 8002 are clean
+powershell -NoProfile -Command "Get-NetTCPConnection -LocalPort 8001,8002 -ErrorAction SilentlyContinue | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue }" >nul 2>&1
 
 REM 4. Run Daemon
 if "%1"=="__bg__" goto :run_bg

@@ -2565,12 +2565,6 @@ if __name__ == "__main__":
     def _start_office_https_server():
         try:
             import threading
-            import datetime
-            import ipaddress
-            from cryptography import x509
-            from cryptography.x509.oid import NameOID
-            from cryptography.hazmat.primitives import hashes, serialization
-            from cryptography.hazmat.primitives.asymmetric import rsa
 
             ssl_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "assets", "ssl")
             os.makedirs(ssl_dir, exist_ok=True)
@@ -2584,32 +2578,42 @@ if __name__ == "__main__":
                 cert_path = user_cert
                 key_path = user_key
             elif not (os.path.exists(cert_path) and os.path.exists(key_path)):
-                key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
-                name = x509.Name([x509.NameAttribute(NameOID.COMMON_NAME, u'localhost')])
-                san = x509.SubjectAlternativeName([
-                    x509.DNSName(u'localhost'),
-                    x509.IPAddress(ipaddress.IPv4Address('127.0.0.1'))
-                ])
-                now = datetime.datetime.now(datetime.timezone.utc)
-                cert = (
-                    x509.CertificateBuilder()
-                    .subject_name(name)
-                    .issuer_name(name)
-                    .public_key(key.public_key())
-                    .serial_number(x509.random_serial_number())
-                    .not_valid_before(now)
-                    .not_valid_after(now + datetime.timedelta(days=3650))
-                    .add_extension(san, critical=False)
-                    .sign(key, hashes.SHA256())
-                )
-                with open(cert_path, 'wb') as f:
-                    f.write(cert.public_bytes(serialization.Encoding.PEM))
-                with open(key_path, 'wb') as f:
-                    f.write(key.private_bytes(
-                        encoding=serialization.Encoding.PEM,
-                        format=serialization.PrivateFormat.TraditionalOpenSSL,
-                        encryption_algorithm=serialization.NoEncryption()
-                    ))
+                try:
+                    import datetime
+                    import ipaddress
+                    from cryptography import x509
+                    from cryptography.x509.oid import NameOID
+                    from cryptography.hazmat.primitives import hashes, serialization
+                    from cryptography.hazmat.primitives.asymmetric import rsa
+
+                    key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
+                    name = x509.Name([x509.NameAttribute(NameOID.COMMON_NAME, u'localhost')])
+                    san = x509.SubjectAlternativeName([
+                        x509.DNSName(u'localhost'),
+                        x509.IPAddress(ipaddress.IPv4Address('127.0.0.1'))
+                    ])
+                    now = datetime.datetime.now(datetime.timezone.utc)
+                    cert = (
+                        x509.CertificateBuilder()
+                        .subject_name(name)
+                        .issuer_name(name)
+                        .public_key(key.public_key())
+                        .serial_number(x509.random_serial_number())
+                        .not_valid_before(now)
+                        .not_valid_after(now + datetime.timedelta(days=3650))
+                        .add_extension(san, critical=False)
+                        .sign(key, hashes.SHA256())
+                    )
+                    with open(cert_path, 'wb') as f:
+                        f.write(cert.public_bytes(serialization.Encoding.PEM))
+                    with open(key_path, 'wb') as f:
+                        f.write(key.private_bytes(
+                            encoding=serialization.Encoding.PEM,
+                            format=serialization.PrivateFormat.TraditionalOpenSSL,
+                            encryption_algorithm=serialization.NoEncryption()
+                        ))
+                except Exception as gen_err:
+                    print(f"[warning] 無法產生新 SSL 憑證: {gen_err}")
 
             if sys.platform == 'win32':
                 try:
