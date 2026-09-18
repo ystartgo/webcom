@@ -1,112 +1,153 @@
 <!DOCTYPE html>
-<html lang="zh-TW">
+<html lang="zh-TW" class="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Webcom for Office</title>
-    <!-- 微軟 Office.js 官方運行庫 -->
-    <script src="https://appsforoffice.microsoft.com/lib/1/hosted/office.js"></script>
-    <!-- Tailwind CSS (相容離線/線上) -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Marked Markdown 解析器 -->
-    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-    <!-- Apache ECharts 圖表繪製引擎 -->
-    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
-    <!-- 樣式表 -->
+    <!-- 離線優先 Local-First 資源載入 (參考 Webcom index.html 規範：斷網零依賴 + CDN 自動容錯備援) -->
+    <script src="assets/tailwindcss.js"></script>
+    <script>
+        if (!window.tailwind) {
+            document.write('<script src="https://cdn.tailwindcss.com"><\/script>');
+        }
+    </script>
+    <script>
+        if (window.tailwind) {
+            tailwind.config = { darkMode: 'class' };
+        }
+    </script>
+    <script src="assets/lucide.min.js"></script>
+    <script>
+        if (!window.lucide) {
+            document.write('<script src="https://unpkg.com/lucide@latest"><\/script>');
+        }
+    </script>
+    <script src="assets/marked.min.js"></script>
+    <script>
+        if (!window.marked) {
+            document.write('<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"><\/script>');
+        }
+    </script>
+    <!-- 微軟 Office.js 官方運行庫 (非同步 defer 載入，絕不阻塞網頁渲染或按鈕點擊) -->
+    <script src="https://appsforoffice.microsoft.com/lib/1/hosted/office.js" defer></script>
+    <!-- 專屬樣式表 -->
     <link rel="stylesheet" href="taskpane.css">
 </head>
-<body class="flex flex-col h-screen bg-[#0b0f19] text-gray-100 select-none">
+<body class="flex flex-col h-screen bg-[#0b0f19] text-gray-100 antialiased font-sans overflow-hidden">
 
-    <!-- 頂部標題與工具列 -->
-    <header class="p-2.5 bg-gray-900 border-b border-gray-800 flex items-center justify-between shrink-0">
-        <div class="flex items-center gap-1.5">
-            <div class="w-6 h-6 rounded-md bg-indigo-600 flex items-center justify-center font-bold text-xs text-white shadow-sm">
+    <!-- 頂部標題列與工具快捷按鈕 (參考 index.html 工具列) -->
+    <header class="px-3 py-2 bg-gray-900/90 backdrop-blur border-b border-gray-800 flex items-center justify-between shrink-0 select-none">
+        <div class="flex items-center gap-2">
+            <div class="w-6 h-6 rounded-lg bg-gradient-to-tr from-purple-600 to-indigo-600 flex items-center justify-center font-bold text-xs text-white shadow-md shadow-indigo-900/40">
                 W
             </div>
             <span class="font-bold text-xs tracking-wide text-white">Webcom AI</span>
-            <span id="host-badge" class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-gray-800 text-gray-400 border border-gray-700">檢測中...</span>
+            <span id="host-badge" class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-gray-800 text-gray-300 border border-gray-700 transition-colors">Web 模式</span>
         </div>
         <div class="flex items-center gap-1">
-            <button id="btn-read-selection" title="讀取當前選取內容注入對話"
-                class="px-2 py-1 bg-indigo-950/80 hover:bg-indigo-900 border border-indigo-700/60 rounded text-[10px] font-bold text-indigo-300 transition flex items-center gap-1 cursor-pointer">
+            <!-- 帶入選取按鈕 (原生 onclick 保證隨點隨應) -->
+            <button id="btn-read-selection" onclick="window.readDocumentSelection()" type="button" title="讀取當前選取內容注入對話"
+                class="px-2 py-1 bg-indigo-950/90 hover:bg-indigo-900 border border-indigo-700/60 rounded-lg text-[10px] font-bold text-indigo-300 transition-all flex items-center gap-1 cursor-pointer active:scale-95 shadow-sm">
                 <span>📑 帶入選取</span>
             </button>
-            <button id="btn-import-chat" title="自 Webcom 匯入對話紀錄 (.json)"
-                class="p-1 bg-gray-800 hover:bg-gray-700 border border-gray-700 rounded text-green-400 transition cursor-pointer">
-                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
+            <!-- 匯入紀錄 -->
+            <button id="btn-import-chat" onclick="window.triggerChatImport()" type="button" title="自 Webcom 匯入對話紀錄 (.json)"
+                class="p-1.5 bg-gray-800/80 hover:bg-gray-700 hover:text-green-400 border border-gray-700/80 rounded-lg text-gray-300 transition cursor-pointer active:scale-95">
+                <i data-lucide="upload" class="w-3.5 h-3.5 pointer-events-none"></i>
             </button>
-            <input type="file" id="file-import-chat" class="hidden" accept=".json">
-            <button id="btn-export-chat" title="匯出對話紀錄給 Webcom (.json)"
-                class="p-1 bg-gray-800 hover:bg-gray-700 border border-gray-700 rounded text-blue-400 transition cursor-pointer">
-                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+            <input type="file" id="file-import-chat" class="hidden" accept=".json" onchange="window.handleChatFileSelected(event)">
+            <!-- 匯出紀錄 -->
+            <button id="btn-export-chat" onclick="window.exportChatForWebcom()" type="button" title="匯出對話紀錄給 Webcom (.json)"
+                class="p-1.5 bg-gray-800/80 hover:bg-gray-700 hover:text-blue-400 border border-gray-700/80 rounded-lg text-gray-300 transition cursor-pointer active:scale-95">
+                <i data-lucide="download" class="w-3.5 h-3.5 pointer-events-none"></i>
             </button>
-            <button id="btn-toggle-settings" title="模型與端點設定"
-                class="p-1 bg-gray-800 hover:bg-gray-700 border border-gray-700 rounded text-gray-300 transition cursor-pointer">
-                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+            <!-- 設定面板摺疊按鈕 -->
+            <button id="btn-toggle-settings" onclick="window.toggleSettingsPanel()" type="button" title="模型與端點設定"
+                class="p-1.5 bg-gray-800/80 hover:bg-gray-700 hover:text-indigo-400 border border-gray-700/80 rounded-lg text-gray-300 transition cursor-pointer active:scale-95">
+                <i data-lucide="settings" class="w-3.5 h-3.5 pointer-events-none"></i>
             </button>
-            <button id="btn-clear-chat" title="清空對話"
-                class="p-1 bg-gray-800 hover:bg-gray-700 border border-gray-700 rounded text-rose-400 transition cursor-pointer">
-                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+            <!-- 清空對話 -->
+            <button id="btn-clear-chat" onclick="window.clearChatHistory()" type="button" title="清空對話"
+                class="p-1.5 bg-gray-800/80 hover:bg-rose-900/60 hover:text-rose-400 border border-gray-700/80 rounded-lg text-gray-300 transition cursor-pointer active:scale-95">
+                <i data-lucide="trash-2" class="w-3.5 h-3.5 pointer-events-none"></i>
             </button>
         </div>
     </header>
 
     <!-- 摺疊設定面板 (Settings Panel) -->
-    <div id="settings-panel" class="hidden p-3 bg-gray-950 border-b border-gray-800 text-xs space-y-2 shrink-0">
+    <div id="settings-panel" class="hidden p-3 bg-gray-950 border-b border-gray-800 text-xs space-y-2.5 shrink-0 transition-all">
         <div>
             <label class="block text-[10px] text-gray-400 font-bold mb-1">API 端點 (相容 Webcom / LM Studio / OpenAI)</label>
-            <input type="text" id="input-endpoint" class="w-full bg-gray-900 border border-gray-700 rounded px-2 py-1 text-white font-mono text-[11px] focus:outline-none focus:border-indigo-500" placeholder="http://127.0.0.1:8001/v1/chat/completions">
+            <input type="text" id="input-endpoint" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-2.5 py-1 text-white font-mono text-[11px] focus:outline-none focus:border-indigo-500" placeholder="https://127.0.0.1:8002/v1/chat/completions">
         </div>
         <div class="flex gap-2">
             <div class="flex-1">
                 <label class="block text-[10px] text-gray-400 font-bold mb-1">API 金鑰 (選填)</label>
-                <input type="password" id="input-key" class="w-full bg-gray-900 border border-gray-700 rounded px-2 py-1 text-white font-mono text-[11px] focus:outline-none focus:border-indigo-500" placeholder="可為空或填入金鑰">
+                <input type="password" id="input-key" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-2.5 py-1 text-white font-mono text-[11px] focus:outline-none focus:border-indigo-500" placeholder="可為空或填入金鑰">
             </div>
             <div class="flex-1">
                 <label class="block text-[10px] text-gray-400 font-bold mb-1">模型名稱</label>
-                <input type="text" id="input-model" class="w-full bg-gray-900 border border-gray-700 rounded px-2 py-1 text-white font-mono text-[11px] focus:outline-none focus:border-indigo-500" placeholder="auto">
+                <input type="text" id="input-model" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-2.5 py-1 text-white font-mono text-[11px] focus:outline-none focus:border-indigo-500" placeholder="auto">
             </div>
         </div>
-        <div class="flex justify-end pt-1">
-            <button id="btn-save-settings" class="px-3 py-1 bg-indigo-600 hover:bg-indigo-500 rounded text-white font-bold text-[10px] transition">儲存設定</button>
+        <div class="flex justify-end pt-0.5">
+            <button id="btn-save-settings" onclick="window.saveSettings()" type="button" class="px-3 py-1 bg-indigo-600 hover:bg-indigo-500 rounded-lg text-white font-bold text-[10px] transition cursor-pointer active:scale-95 shadow-md shadow-indigo-950/40">儲存設定</button>
         </div>
     </div>
 
     <!-- 聊天對話訊息流區域 -->
     <main id="chat-container" class="flex-1 overflow-y-auto p-3 space-y-3">
-        <!-- 預設歡迎卡片 -->
-        <div class="p-3.5 bg-gray-900/60 border border-gray-800 rounded-xl space-y-2">
+        <!-- 預設歡迎引導卡片 (參考 index.html 歡迎頁面設計) -->
+        <div id="welcome-card" class="p-3.5 bg-gray-900/60 border border-gray-800/80 rounded-2xl space-y-2.5 shadow-sm">
             <div class="font-bold text-xs text-indigo-300 flex items-center gap-1.5">
-                <span>👋 歡迎使用 Webcom Office 增益集</span>
+                <i data-lucide="sparkles" class="w-4 h-4 text-amber-400"></i>
+                <span>歡迎使用 Webcom Office 智慧助理</span>
             </div>
             <p class="text-[11px] text-gray-400 leading-relaxed">
-                隨時在右側對話框輸入指令，或點擊頂部 <strong>[📑 帶入選取]</strong> 讓 AI 深入分析、潤飾或校對目前選取的文字與表格。
+                直接在下方輸入指令，或點擊上方 <strong>[📑 帶入選取]</strong> 讓 AI 自動分析、潤飾或校對目前 Word 或 Excel 選取的文件內容。
             </p>
-            <div class="grid grid-cols-2 gap-1.5 pt-1 text-[10px] text-gray-300 font-mono">
-                <div class="p-1.5 bg-black/40 rounded border border-gray-800">
-                    <span class="text-emerald-400">Excel:</span> 自動生成圖表與填表
-                </div>
-                <div class="p-1.5 bg-black/40 rounded border border-gray-800">
-                    <span class="text-blue-400">Word:</span> 潤飾取代與排版撰寫
-                </div>
+            <!-- 快速提示按鈕群 (Quick Prompt Chips) -->
+            <div class="grid grid-cols-2 gap-1.5 pt-1 text-[11px]">
+                <button type="button" onclick="window.quickPrompt('請幫我分析並潤飾我選取的文字內容，使其具備清晰專業的商業風格。')"
+                    class="p-2 text-left rounded-xl bg-gray-950/60 hover:bg-gray-800 border border-gray-800/80 hover:border-indigo-500/50 transition text-gray-300 cursor-pointer active:scale-98">
+                    <span class="text-blue-400 font-bold block mb-0.5">✍️ 潤飾與排版</span>
+                    <span class="text-[10px] text-gray-500 block">改善文筆與商業修辭</span>
+                </button>
+                <button type="button" onclick="window.quickPrompt('請幫我繪製一幅圖表展示營運趨勢，使用 ```chart JSON 區塊輸出圖表定義。')"
+                    class="p-2 text-left rounded-xl bg-gray-950/60 hover:bg-gray-800 border border-gray-800/80 hover:border-indigo-500/50 transition text-gray-300 cursor-pointer active:scale-98">
+                    <span class="text-emerald-400 font-bold block mb-0.5">📊 智能繪圖</span>
+                    <span class="text-[10px] text-gray-500 block">生成並一鍵插入圖表</span>
+                </button>
+                <button type="button" onclick="window.quickPrompt('請幫我將這份資料整理成結構化的 Markdown 表格。')"
+                    class="p-2 text-left rounded-xl bg-gray-950/60 hover:bg-gray-800 border border-gray-800/80 hover:border-indigo-500/50 transition text-gray-300 cursor-pointer active:scale-98">
+                    <span class="text-amber-400 font-bold block mb-0.5">📋 結構化表格</span>
+                    <span class="text-[10px] text-gray-500 block">整併為清晰試算表格式</span>
+                </button>
+                <button type="button" onclick="window.readDocumentSelection()"
+                    class="p-2 text-left rounded-xl bg-gray-950/60 hover:bg-gray-800 border border-gray-800/80 hover:border-indigo-500/50 transition text-gray-300 cursor-pointer active:scale-98">
+                    <span class="text-purple-400 font-bold block mb-0.5">📑 帶入當前選取</span>
+                    <span class="text-[10px] text-gray-500 block">抓取目前游標選取內容</span>
+                </button>
             </div>
         </div>
     </main>
 
-    <!-- 底部輸入區域 -->
-    <footer class="p-2.5 bg-gray-900 border-t border-gray-800 shrink-0">
-        <div class="flex items-end gap-1.5">
+    <!-- 底部輸入區域 (完全參考 index.html Capsule 圓角輸入艙設計) -->
+    <footer class="p-2.5 bg-gray-900/90 backdrop-blur border-t border-gray-800 shrink-0 select-none">
+        <div class="flex items-end gap-2 bg-gray-950 border border-gray-800 rounded-2xl p-1.5 focus-within:border-indigo-500/80 focus-within:ring-1 focus-within:ring-indigo-500/30 transition shadow-inner">
             <textarea id="input-user-msg" rows="2"
-                class="flex-1 bg-gray-950 border border-gray-700 rounded-xl p-2 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-indigo-500 resize-none font-sans leading-relaxed"
-                placeholder="請輸入給 AI 的指令 (支援自動修改文件、畫圖、分析)..."></textarea>
-            <button id="btn-send"
-                class="px-3 py-2 bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700 disabled:opacity-50 text-white rounded-xl font-bold text-xs transition flex items-center justify-center shrink-0 cursor-pointer shadow-lg shadow-indigo-950/50">
-                <span>發送</span>
+                onkeydown="if(event.key==='Enter' && !event.shiftKey){event.preventDefault();window.handleSendMessage();}"
+                class="flex-1 bg-transparent border-0 rounded-xl px-2 py-1 text-xs text-white placeholder-gray-500 focus:outline-none resize-none font-sans leading-relaxed"
+                placeholder="輸入指令 (Enter 發送，Shift+Enter 換行)..."></textarea>
+            <button id="btn-send" onclick="window.handleSendMessage()" type="button"
+                class="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white w-8 h-8 rounded-xl transition-all shadow-md shadow-purple-900/40 flex items-center justify-center shrink-0 cursor-pointer hover:scale-105 active:scale-95"
+                title="發送指令">
+                <i data-lucide="arrow-up" class="w-4 h-4 transition-transform"></i>
             </button>
         </div>
     </footer>
 
-    <!-- 業務邏輯腳本 -->
+    <!-- 業務邏輯腳本 (確保最先載入且具備完全全域函數) -->
     <script src="officeBridge.js"></script>
     <script src="taskpane.js"></script>
 </body>

@@ -135,6 +135,11 @@ office_addin_dir = os.path.join(webcom_dir, "office-addin")
 if os.path.exists(office_addin_dir):
     app.mount("/office-addin", StaticFiles(directory=office_addin_dir, html=True), name="office-addin")
 
+# 掛載 Webcom 全域靜態資源 (提供 /assets/ 供本機離線載入)
+global_assets_dir = os.path.join(webcom_dir, "assets")
+if os.path.exists(global_assets_dir):
+    app.mount("/assets", StaticFiles(directory=global_assets_dir), name="assets")
+
 # ── URL 代理與 SSRF 防護 (/api/fetch-url) ──────────────────────────────────
 import ipaddress, socket, urllib.request, urllib.parse
 
