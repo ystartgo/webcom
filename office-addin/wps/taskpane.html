@@ -281,6 +281,10 @@
             <button id="btn-export-chat" onclick="window.exportChatForWebcom()" type="button" class="btn-toolbar btn-icon" title="匯出對話紀錄給 Webcom">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
             </button>
+            <!-- 側邊欄寬度切換 (500px / 680px) -->
+            <button id="btn-toggle-width" onclick="window.togglePaneWidth()" type="button" class="btn-toolbar btn-icon" title="切換側邊欄寬度 (標準 500px / 寬螢幕 680px)">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:12px;height:12px;"><path d="M8 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h3m8-18h3a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-3M4 12h16m-4-4 4 4-4 4M8 8l-4 4 4 4"/></svg>
+            </button>
             <!-- 設定面板開關 -->
             <button id="btn-toggle-settings" onclick="window.toggleSettingsPanel()" type="button" class="btn-toolbar btn-icon" title="端點與模型設定">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
@@ -1454,6 +1458,25 @@
         } catch(wErr) {}
     };
 
+    // 側邊欄寬度切換 (舒適寬度 500px / 寬螢幕模式 680px)
+    window.togglePaneWidth = function() {
+        try {
+            if (typeof wps !== 'undefined' && wps.PluginStorage) {
+                var tsId = wps.PluginStorage.getItem("WebcomTaskPaneId");
+                var tp = tsId ? wps.GetTaskPane(tsId) : null;
+                if (tp) {
+                    var curW = tp.Width || 500;
+                    var nextW = (curW < 580) ? 680 : 500;
+                    tp.Width = nextW;
+                    wps.PluginStorage.setItem("WebcomTaskPaneWidth", String(nextW));
+                    showToast(nextW > 550 ? '📐 已展開寬螢幕模式 (' + nextW + 'px)' : '📐 已切換至舒適標準寬度 (' + nextW + 'px)');
+                    return;
+                }
+            }
+        } catch(e) {}
+        showToast('💡 提示：可直接按住側邊欄左邊線向左拖曳擴展寬度');
+    };
+
     // 設定面板開關
     window.toggleSettingsPanel = function() {
         var p = document.getElementById('settings-panel');
@@ -2084,6 +2107,16 @@
                 b.className = 'badge';
                 if (host.indexOf('WPS') !== -1) {
                     b.innerHTML = host;
+                    // WPS 啟動時自動擴大至 500px 舒適寬度
+                    try {
+                        if (typeof wps !== 'undefined' && wps.PluginStorage) {
+                            var tsId = wps.PluginStorage.getItem("WebcomTaskPaneId");
+                            var tp = tsId ? wps.GetTaskPane(tsId) : null;
+                            if (tp && (!tp.Width || tp.Width < 460)) {
+                                tp.Width = 500;
+                            }
+                        }
+                    } catch(wpsErr) {}
                     if (host.indexOf('表格') !== -1 || host.indexOf('Excel') !== -1) {
                         b.className = 'badge wps excel';
                     } else if (host.indexOf('演示') !== -1 || host.indexOf('PPT') !== -1) {

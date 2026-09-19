@@ -9,8 +9,8 @@
 
         <!-- 群組 2: 智慧寫作 -->
         <group id="grpWrite" label="智慧寫作">
-          <button id="btnWrite" label="幫我寫" size="large" onAction="OnAction" imageMso="BlogNewAccount" />
-          <button id="btnContinue" label="續寫" size="normal" onAction="OnAction" imageMso="MacroPlay" />
+          <button id="btnWrite" label="幫我寫" size="large" onAction="OnAction" imageMso="FileNew" />
+          <button id="btnContinue" label="續寫" size="normal" onAction="OnAction" imageMso="Next" />
           <button id="btnRewrite" label="重寫" size="normal" onAction="OnAction" imageMso="Redo" />
           <button id="btnExpand" label="擴寫" size="normal" onAction="OnAction" imageMso="FontGrow" />
           <button id="btnShrink" label="縮寫" size="normal" onAction="OnAction" imageMso="FontShrink" />
@@ -20,30 +20,30 @@
         <group id="grpPolish" label="潤飾校對">
           <button id="btnPolish" label="潤色" size="large" onAction="OnAction" imageMso="ReviewAcceptChange" />
           <button id="btnProofread" label="AI 校對" size="normal" onAction="OnAction" imageMso="Spelling" />
-          <button id="btnImprove" label="改善寫作" size="normal" onAction="OnAction" imageMso="SmartArtChangeShapeGallery" />
-          <button id="btnFormat" label="AI 排版" size="normal" onAction="OnAction" imageMso="PageSetupDialog" />
+          <button id="btnImprove" label="改善寫作" size="normal" onAction="OnAction" imageMso="ReviewNextChange" />
+          <button id="btnFormat" label="AI 排版" size="normal" onAction="OnAction" imageMso="PageSetup" />
         </group>
 
         <!-- 群組 4: 文件問答與分析 -->
         <group id="grpDoc" label="文件問答分析">
-          <button id="btnDocSummary" label="全文總結" size="large" onAction="OnAction" imageMso="AutoSummary" />
+          <button id="btnDocSummary" label="全文總結" size="large" onAction="OnAction" imageMso="PrintPreview" />
           <button id="btnDocQA" label="文件問答" size="normal" onAction="OnAction" imageMso="Help" />
-          <button id="btnTranslate" label="對照翻譯" size="normal" onAction="OnAction" imageMso="TranslateWord" />
-          <button id="btnContract" label="合約審查" size="normal" onAction="OnAction" imageMso="ReviewReviewingPane" />
-          <button id="btnAcademic" label="學術助手" size="normal" onAction="OnAction" imageMso="FormulaInsertGallery" />
+          <button id="btnTranslate" label="對照翻譯" size="normal" onAction="OnAction" imageMso="Translate" />
+          <button id="btnContract" label="合約審查" size="normal" onAction="OnAction" imageMso="ReviewProtectDocument" />
+          <button id="btnAcademic" label="學術助手" size="normal" onAction="OnAction" imageMso="EquationInsert" />
         </group>
 
         <!-- 群組 5: 語音朗讀 -->
         <group id="grpSpeech" label="語音朗讀">
           <button id="btnReadAloud" label="朗讀選取" size="large" onAction="OnAction" imageMso="Speech" />
-          <button id="btnStopSpeech" label="停止朗讀" size="normal" onAction="OnAction" imageMso="StopRecording" />
+          <button id="btnStopSpeech" label="停止朗讀" size="normal" onAction="OnAction" imageMso="Delete" />
         </group>
 
         <!-- 群組 6: 偏好設定 -->
         <group id="grpSettings" label="偏好設定">
           <button id="btnDeepThink" label="深度思考" size="normal" onAction="OnAction" imageMso="Calculator" />
           <button id="btnHistory" label="歷史會話" size="normal" onAction="OnAction" imageMso="History" />
-          <button id="btnSettings" label="設置" size="normal" onAction="OnAction" imageMso="ControlProperties" />
+          <button id="btnSettings" label="設置" size="normal" onAction="OnAction" imageMso="Properties" />
         </group>
       </tab>
     </tabs>

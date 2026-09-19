@@ -50,7 +50,15 @@ function EnsureTaskPane() {
             tp.DockPosition = 2; // msoCTPDockPositionRight
         } catch(dpErr) {}
         try {
-            tp.Width = 350;
+            // 預設加大寬度至 500px (原 350px 偏窄)，使用者手動拖曳更大寬度時予以保留
+            var targetWidth = 500;
+            try {
+                var sw = wps.PluginStorage.getItem("WebcomTaskPaneWidth");
+                if (sw) targetWidth = parseInt(sw, 10);
+            } catch(wEx) {}
+            if (!tp.Width || tp.Width < 460) {
+                tp.Width = targetWidth || 500;
+            }
         } catch(wErr) {}
         tp.Visible = true;
         if (typeof tp.Show === 'function') {
