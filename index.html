@@ -8629,6 +8629,7 @@ ffmpeg -f pulse -i default -acodec libmp3lame -ab 128k -f mp3 -listen 1 http://0
                 // 本區塊在 import() 完成後強制覆蓋這些路徑為本地資源。
 
                 const _isExt_onnx = typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.getURL;
+                const _cdnjsBase = "https://cdnjs.cloudflare.com/ajax/libs/onnxruntime-web/1.29.0/";
                 let _basePath_onnx;
                 if (_isExt_onnx) {
                     _basePath_onnx = chrome.runtime.getURL("assets/");
@@ -8639,7 +8640,23 @@ ffmpeg -f pulse -i default -acodec libmp3lame -ab 128k -f mp3 -listen 1 http://0
                         _basePath_onnx = (window.location.origin || '') + '/assets/';
                     }
                 } else {
-                    _basePath_onnx = "https://cdn.jsdelivr.net/npm/onnxruntime-web@1.26.0-dev.20260416-b7804b056c/dist/";
+                    _basePath_onnx = _cdnjsBase;
+                }
+
+                // 檢測本地 assets/ 服務是否可用，若不可用自動無縫切換至 Cloudflare cdnjs 1.29.0
+                if (!_isExt_onnx && _basePath_onnx !== _cdnjsBase) {
+                    try {
+                        const _probeRes = await fetch(_basePath_onnx + 'ort-wasm-simd-threaded.asyncify.mjs', { method: 'HEAD' });
+                        if (!_probeRes.ok) {
+                            console.warn('[Webcom ONNX] Local assets unavailable, falling back to cdnjs 1.29.0:', _probeRes.status);
+                            _basePath_onnx = _cdnjsBase;
+                        } else {
+                            console.log('[Webcom ONNX] Local assets verified OK on', _basePath_onnx);
+                        }
+                    } catch(eProbe) {
+                        console.warn('[Webcom ONNX] Local assets probe failed, falling back to cdnjs 1.29.0:', eProbe);
+                        _basePath_onnx = _cdnjsBase;
+                    }
                 }
 
                 // 完整對應 ONNX Runtime Web 所有 WASM / MJS 變體 (包含 JSEP WebGPU 與 Asyncify SIMD CPU)
